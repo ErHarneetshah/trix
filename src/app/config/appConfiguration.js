@@ -10,6 +10,11 @@ class appConfiguration {
       dbPassword: process.env.DB_PASSWORD,
       port: process.env.PORT || 3000, // Default to 3000 if PORT is not set
     };
+
+    this.jwt_config = {
+      jwtSecret: process.env.JWT_SECRET,
+      jwtExpTime: process.env.JWT_EXP_TIME,
+    };
   }
 }
 
