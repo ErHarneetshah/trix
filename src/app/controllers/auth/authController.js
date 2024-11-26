@@ -1,10 +1,5 @@
-// import { User } from "../models/userModel";
-// import { Department } from "../models/departmentModel";
-// import { generateToken } from "../utils/jwtUtils";
 import responseUtils from "../../../utils/common/responseUtils.js";
 import authValidationSchema from "../../validations/authValidationSchema.js";
-// import { UserSettings } from "../models/userSettingsModel";
-// import { adminController } from "../sockets/adminSocket";
 
 class authController {
   register = async (req, res) => {
