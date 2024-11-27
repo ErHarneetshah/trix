@@ -1,7 +1,10 @@
 import jwt from "jsonwebtoken";
-import appConfiguration from "../../app/config/appConfiguration.js";
+import appConfiguration from "../../app/config/appConfig.js";
 
 const jwtConfig = new appConfiguration().jwt_config;
+console.log("JWT Configuration");
+console.log(jwtConfig);
+
 
 class jwtService {
   constructor(){}
