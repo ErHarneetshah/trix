@@ -1,168 +1,240 @@
-// import { User } from "../models/userModel";
-// import { Department } from "../models/departmentModel";
-// import { generateToken } from "../utils/jwtUtils";
 import responseUtils from "../../../utils/common/responseUtils.js";
 import authValidationSchema from "../../validations/authValidationSchema.js";
-// import { UserSettings } from "../models/userSettingsModel";
-// import { adminController } from "../sockets/adminSocket";
+import sequelize from "../../../database/queries/dbConnection.js";
+import User from "../../../database/models/userModel.js";
+import userSetting from "../../../database/models/userSettingModel.js";
+import jwtService from "../../../utils/services/jwtService.js";
+import accessToken from "../../../database/models/accessTokenModel.js";
+import appConfig from "../../config/appConfig.js";
+import { Op } from "sequelize";
 
-class authController {
+const jwtConfig = new appConfig().jwt_config;
+
+class authController extends jwtService {
   register = async (req, res) => {
+    const dbTransaction = await sequelize.transaction();
     try {
-      let {
+      const {
+        name,
+        username,
         email,
         password,
-        username,
-        department,
-        designation,
-        phoneNumber,
-        deviceId,
-        deviceName,
+        departmentId,
+        designationId,
+        roleId,
+        workstationId,
+        teamId,
+        mobile,
         country,
+        isAdmin,
+        status,
       } = req.body;
-
-      console.log(email, password, username);
-      
+  
       // Validate request body using Joi
-      const { error } = authValidationSchema.authSchema.validate({
+      const { error } = authValidationSchema.registerSchema.validate({
+        name,
+        username,
         email,
         password,
-        username,
-        department,
-        designation,
-        phoneNumber,
-        deviceId,
-        deviceName,
+        departmentId,
+        designationId,
+        roleId,
+        mobile,
         country,
+      });
+      if (error) {
+        throw new Error(error.details[0].message);
+      }
+  
+      // Check if the user already exists
+      const existingUser = await User.findOne({
+        where: {
+          [Op.or]: [{ email }, { username }],
+        },
+        transaction: dbTransaction,
+      });
+  
+      if (existingUser) {
+        if (existingUser.email === email) {
+          throw new Error("Email already in use");
+        }
+        if (existingUser.username === username) {
+          throw new Error("Username already in use");
+        }
+        if (existingUser.status) {
+          throw new Error("This account has been deactivated");
+        }
+      }
+  
+      // Create and save the new user
+      const user = await User.create(
+        {
+          name,
+          username,
+          email,
+          password,
+          departmentId,
+          designationId,
+          roleId,
+          workstationId,
+          teamId,
+          mobile,
+          country,
+          isAdmin,
+          status,
+        },
+        { transaction: dbTransaction } // Include transaction in model creation
+      );
+  
+      await userSetting.create(
+        {
+          userId: user.id,
+          screenshot_time: 300,
+          app_history_time: 300,
+          browser_history_time: 300,
+          status: 1,
+        },
+        { transaction: dbTransaction }
+      );
+  
+      // Generate JWT token
+      const token = this.generateToken(user.id.toString(), user.isAdmin);
+
+      // Save token to the database
+      const expireTime = this.calculateTime();
+      await accessToken.create(
+        {
+          userId: user.id,
+          isUserAdmin: user.isAdmin,
+          token,
+          expiry_time: expireTime,
+        },
+        { transaction: dbTransaction }
+      );
+
+      await dbTransaction.commit();
+  
+      return responseUtils.successResponse(res, { token }, 201);
+    } catch (error) {
+      if (dbTransaction) {
+        await dbTransaction.rollback();
+      }
+      return responseUtils.errorResponse(res, error.message, 400);
+    }
+  };
+  
+
+  login = async (req, res) => {
+    const dbTransaction = await sequelize.transaction();
+    try {
+      const { email, password } = req.body;
+
+      // Validate request body using Joi
+      const { error } = authValidationSchema.loginSchema.validate({
+        email,
+        password,
       });
       if (error) {
         return responseUtils.errorResponse(res, error.details[0].message, 400);
       }
 
-      // Check if the total number of users has reached 6
-      const totalUsersCount = await User.countDocuments();
+      // Find the user and check if they are deactivated
+      const user = await User.findOne({ email });
+      if (!user || !(await user.comparePassword(password))) {
+        return responseUtils.errorResponse(res, "Invalid credentials", 401);
+      }
 
-      if (totalUsersCount >= 6) {
+      // Check if the user is deactivated
+      if (!user.status) {
         return responseUtils.errorResponse(
-          c,
-          "The maximum number of users (5) has been reached",
-          400
+          res,
+          "Your account has been deactivated. Contact support.",
+          403
         );
       }
 
-      // Check if the user already exists, either active or deactivated
-      const existingUser = await User.findOne({
-        $or: [{ userId }, { email }, { username }],
-      });
-
-      if (existingUser) {
-        if (existingUser.userId === userId) {
-          return responseUtils.errorResponse(res, "UserId already in use", 400);
-        }
-        if (existingUser.email === email) {
-          return responseUtils.errorResponse(res, "Email already in use", 400);
-        }
-        if (existingUser.username === username) {
-          return responseUtils.errorResponse(res, "Username already in use", 400);
-        }
-        if (existingUser.isDeactivated) {
-          return responseUtils.errorResponse(
-            res,
-            "This account has been deactivated",
-            400
-          );
-        }
-      }
-
-      if (department) {
-        department = department.toLowerCase(); // Convert to lowercase
-      }
-
-      // Find the department by name
-      const departmentDoc = await Department.findOne({ name: department });
-      if (!departmentDoc) {
-        return responseUtils.errorResponse(res, "Department not found", 400);
-      }
-
-      // Create and save the new user
-      const user = new User({
-        userId,
-        email,
-        password,
-        username,
-        department: departmentDoc._id,
-        designation,
-        phoneNumber,
-        deviceId,
-        deviceName,
-        country,
-      });
-      await user.save();
-
-      // Set default user settings
-      const defaultUserSettings = new UserSettings({
-        user: user._id,
-        screenshotTime: 300,
-        appHistoryTime: 300,
-        browsingHistoryTime: 300,
-      });
-      await defaultUserSettings.save();
-
-      // Exclude sensitive information like password, _id, __v from the response
-      const { password: _, _id, __v, ...userDetails } = user.toObject();
-
       // Generate JWT token
-      const token = generateToken(user.userId.toString(), user.isAdmin);
-      adminController.updateUsers(); // Call to update users for the admin panel
+      const token = this.generateToken(user.id.toString(), user.isAdmin);
+
+      // Save token to the database
+      const expireTime = this.calculateTime();
+      await accessToken.create(
+        {
+          userId: user.id,
+          isUserAdmin: user.isAdmin,
+          token,
+          expiry_time: expireTime,
+        },
+        { transaction: dbTransaction }
+      );
 
       // Send success response with token and user details
-      return responseUtils.successResponse(
-        c,
-        { token, user: userDetails },
-        201
-      );
+      await dbTransaction.commit();
+      return responseUtils.successResponse(res, token, 200);
     } catch (error) {
-      return responseUtils.errorResponse(res, "Department not found", 400);
+      await dbTransaction.rollback();
+      return responseUtils.errorResponse(res, error.message, 400);
     }
   };
 
-  login = async () => {
-    const { email, password } = await c.req.json().catch((e) => {
-      return responseUtils.errorResponse(res, "Invalid request body", 400);
-    });
+  adminLogin = async (req, res) => {
+    const dbTransaction = await sequelize.transaction();
+    try {
+      const { email, password } = req.body;
 
-    // Validate request body using Joi
-    const { error } = userLoginSchema.validate({ email, password });
-    if (error) {
-      return responseUtils.errorResponse(res, error.details[0].message, 400);
+      // Validate request body using Joi
+      const { error } = authValidationSchema.loginSchema.validate({
+        email,
+        password,
+      });
+      if (error) {
+        return responseUtils.errorResponse(res, error.details[0].message, 400);
+      }
+
+      // Find the user and check if they are deactivated
+      const user = await User.findOne({ email });
+      if (!user || !(await user.comparePassword(password))) {
+        return responseUtils.errorResponse(res, "Invalid credentials", 401);
+      }
+
+      // Check if the user is admin or not
+      if (!user.isAdmin) {
+        return responseUtils.errorResponse(
+          res,
+          "You are not authorized for this!",
+          401
+        );
+      }
+
+      // Check if the user is deactivated
+      if (!user.status) {
+        return responseUtils.errorResponse(
+          res,
+          "Your account has been deactivated. Contact support.",
+          403
+        );
+      }
+
+      // Generate JWT token
+      const token = this.generateToken(user.id.toString(), user.isAdmin);
+
+      // Send success response with token and user details
+      await dbTransaction.commit();
+      return responseUtils.successResponse(res, token, 200);
+    } catch (error) {
+      await dbTransaction.rollback();
+      return responseUtils.errorResponse(res, error.message, 400);
     }
+  };
 
-    // Find the user and check if they are deactivated
-    const user = await User.findOne({ email }).populate("department");
-    if (!user || !(await user.comparePassword(password))) {
-      return responseUtils.errorResponse(res, "Invalid credentials", 401);
-    }
+  calculateTime = () => {
+    const oneDayInMilliseconds = 24 * 60 * 60 * 1000; // 1 day = 24 hours, 60 minutes, 60 seconds, 1000 ms
+    const now = new Date(); // Current date and time
 
-    // Check if the user is deactivated
-    if (user.isDeactivated) {
-      return responseUtils.errorResponse(
-        res,
-        "Your account has been deactivated. Contact support.",
-        403
-      );
-    }
+    // Add 1 day to the current date
+    const oneDayFromNow = new Date(now.getTime() + oneDayInMilliseconds).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' });
 
-    // Generate JWT token
-    const token = generateToken(user.userId.toString(), user.isAdmin);
-
-    // Exclude sensitive information like password, _id, __v from the response
-    const { password: _, _id, __v, ...userWithoutPassword } = user.toObject();
-
-    // Send success response with token and user details
-    return responseUtils.successResponse(res, {
-      token,
-      user: userWithoutPassword,
-    });
+    return oneDayFromNow;
   };
 }
 
