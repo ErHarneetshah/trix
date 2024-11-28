@@ -6,5 +6,6 @@ const authInstance = new authController();
 
 router.post("/register", authInstance.register);
 router.post("/login", authInstance.login);
+router.post("/admin/login", authInstance.adminLogin);
 
 export default router;

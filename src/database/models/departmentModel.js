@@ -1,12 +1,12 @@
 import { DataTypes } from 'sequelize';
-import sequelize  from '../queries/db_connection.js';
+import sequelize  from '../queries/dbConnection.js';
 
 const department = sequelize.define('departments', {
   id: {
     type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-    allowNull: false,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
   },
   name: {
     type: DataTypes.STRING,
