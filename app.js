@@ -1,7 +1,7 @@
 import express from 'express';
-import appConfiguration from './src/app/config/appConfiguration.js';
+import appConfiguration from './src/app/config/appConfig.js';
 import routes from './src/routes/routes.js';
-import sequelize  from './src/database/queries/db_connection.js';
+import sequelize  from './src/database/queries/dbConnection.js';
 
 const app = express();
 const appConfig = new appConfiguration();

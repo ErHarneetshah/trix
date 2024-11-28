@@ -1,11 +1,11 @@
-import department from "../../../database/models/departmentModel.js";
+import designation from "../../../database/models/designationModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import responseUtils from "../../../utils/common/responseUtils.js";
 
-class deptController {
-  getAllDept = async (req, res) => {
+class desigController {
+  getAllDesig = async (req, res) => {
     try {
-        const alldata = await department.findAll();
+        const alldata = await designation.findAll();
         if(!alldata) return responseUtils.errorResponse(res,"No data is available",400);
 
         return responseUtils.successResponse(
@@ -18,33 +18,33 @@ class deptController {
     }
   };
 
-  addDept = async (req, res) => {
+  addDesig = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name } = req.body;
       if (!name)
         return responseUtils.errorResponse(res, "Name is Required", 400);
 
-      const existingDept = await department.findOne({
+      const existingDesig = await designation.findOne({
         where: { name },
         transaction: dbTransaction,
       });
-      if (existingDept)
+      if (existingDesig)
         return responseUtils.errorResponse(
           res,
-          "Department Already Exists",
+          "Designation Already Exists",
           400
         );
 
       // Create and save the new user
-      const addNewDept = await department.create(
+      const addNewDesig = await designation.create(
         { name },
         { transaction: dbTransaction }
       );
       await dbTransaction.commit();
       return responseUtils.successResponse(
         res,
-        { message: "Department added successfully" },
+        { message: "Designation added successfully" },
         200
       );
     } catch (error) {
@@ -55,21 +55,21 @@ class deptController {
     }
   };
 
-  updateDept = async (req, res) => {
+  updateDesig = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name, newName, newStatus } = req.body;
       if (!name)
         return responseUtils.errorResponse(res, "Name is Required", 400);
 
-      const existingDept = await department.findOne({
+      const existingDesig = await designation.findOne({
         where: { name },
         transaction: dbTransaction,
       });
-      if (!existingDept)
+      if (!existingDesig)
         return responseUtils.errorResponse(
           res,
-          "Department does not Exists",
+          "Designation does not Exists",
           400
         );
 
@@ -87,7 +87,7 @@ class deptController {
         }
     
         // Perform the update operation
-        const [updatedRows] = await department.update(updateData, {
+        const [updatedRows] = await designation.update(updateData, {
           where: { name },
           transaction: dbTransaction,
         });
@@ -96,14 +96,14 @@ class deptController {
         await dbTransaction.commit();
         return responseUtils.successResponse(
           res,
-          { message: "Department updated successfully" },
+          { message: "Designation updated successfully" },
           200
         );
       } else {
         await dbTransaction.rollback();
         return responseUtils.errorResponse(
           res,
-          { message: "Unable to update the department" },
+          { message: "Unable to update the designation" },
           200
         );
       }
@@ -122,35 +122,35 @@ class deptController {
       if (!name)
         return responseUtils.errorResponse(res, "Name is Required", 400);
 
-      const existingDept = await department.findOne({
+      const existingDesig = await designation.findOne({
         where: { name },
         transaction: dbTransaction,
       });
-      if (!existingDept)
+      if (!existingDesig)
         return responseUtils.errorResponse(
           res,
-          "Department does not Exists",
+          "Designation does not Exists",
           400
         );
 
       // Create and save the new user
-      const deleteDept = await department.destroy({
+      const deleteDesig = await designation.destroy({
         where: { name },
         transaction: dbTransaction,
       });
 
-      if (deleteDept) {
+      if (deleteDesig) {
         await dbTransaction.commit();
         return responseUtils.successResponse(
           res,
-          { message: "Department deleted successfully" },
+          { message: "Designation deleted successfully" },
           200
         );
       } else {
         await dbTransaction.rollback();
         return responseUtils.errorResponse(
           res,
-          { message: "Unable to delete the department" },
+          { message: "Unable to delete the designation" },
           200
         );
       }
@@ -163,4 +163,4 @@ class deptController {
   };
 }
 
-export default deptController;
+export default desigController;

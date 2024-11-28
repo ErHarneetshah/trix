@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import sequelize  from '../queries/db_connection.js';
+import sequelize  from '../queries/dbConnection.js';
 
 const role = sequelize.define('roles', {
   id: {

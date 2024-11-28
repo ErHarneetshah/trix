@@ -1,14 +1,14 @@
 import responseUtils from "../../../utils/common/responseUtils.js";
 import authValidationSchema from "../../validations/authValidationSchema.js";
-import sequelize from "../../../database/queries/db_connection.js";
+import sequelize from "../../../database/queries/dbConnection.js";
 import User from "../../../database/models/userModel.js";
 import userSetting from "../../../database/models/userSettingModel.js";
 import jwtService from "../../../utils/services/jwtService.js";
 import accessToken from "../../../database/models/accessTokenModel.js";
-import appConfiguration from "../../config/appConfig.js";
+import appConfig from "../../config/appConfig.js";
 import { Op } from "sequelize";
 
-const jwtConfig = new appConfiguration().jwt_config;
+const jwtConfig = new appConfig().jwt_config;
 
 class authController extends jwtService {
   register = async (req, res) => {
@@ -99,7 +99,7 @@ class authController extends jwtService {
   
       // Generate JWT token
       const token = this.generateToken(user.id.toString(), user.isAdmin);
-  
+
       // Save token to the database
       const expireTime = this.calculateTime();
       await accessToken.create(
@@ -111,7 +111,7 @@ class authController extends jwtService {
         },
         { transaction: dbTransaction }
       );
-  
+
       await dbTransaction.commit();
   
       return responseUtils.successResponse(res, { token }, 201);
@@ -155,6 +155,18 @@ class authController extends jwtService {
 
       // Generate JWT token
       const token = this.generateToken(user.id.toString(), user.isAdmin);
+
+      // Save token to the database
+      const expireTime = this.calculateTime();
+      await accessToken.create(
+        {
+          userId: user.id,
+          isUserAdmin: user.isAdmin,
+          token,
+          expiry_time: expireTime,
+        },
+        { transaction: dbTransaction }
+      );
 
       // Send success response with token and user details
       await dbTransaction.commit();

@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
-import User from '../../database/models/userModel';
-import accessToken from '../../database/models/accessTokenModel';
-import variables from '../config/variableConfig';
-import logs from '../../storage/logs/logs';
+import User from '../../database/models/userModel.js';
+import accessToken from '../../database/models/accessTokenModel.js';
+import variables from '../config/variableConfig.js';
+import logs from '../../storage/logs/logs.js';
 // dotenv.config();
 
 const verifyAdminMiddleware = async (req, res, next) => {
@@ -23,7 +23,7 @@ const verifyAdminMiddleware = async (req, res, next) => {
 
     // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.id;
+    const userId = decoded.userId;
 
     // Fetch the full user object, excluding the password
     const user = await User.findOne({

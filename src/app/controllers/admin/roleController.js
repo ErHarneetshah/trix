@@ -1,11 +1,11 @@
-import department from "../../../database/models/departmentModel.js";
+import role from "../../../database/models/roleModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import responseUtils from "../../../utils/common/responseUtils.js";
 
-class deptController {
-  getAllDept = async (req, res) => {
+class roleController {
+  getAllRole = async (req, res) => {
     try {
-        const alldata = await department.findAll();
+        const alldata = await role.findAll();
         if(!alldata) return responseUtils.errorResponse(res,"No data is available",400);
 
         return responseUtils.successResponse(
@@ -18,33 +18,33 @@ class deptController {
     }
   };
 
-  addDept = async (req, res) => {
+  addRole = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name } = req.body;
       if (!name)
         return responseUtils.errorResponse(res, "Name is Required", 400);
 
-      const existingDept = await department.findOne({
+      const existingRole = await role.findOne({
         where: { name },
         transaction: dbTransaction,
       });
-      if (existingDept)
+      if (existingRole)
         return responseUtils.errorResponse(
           res,
-          "Department Already Exists",
+          "Role Already Exists",
           400
         );
 
       // Create and save the new user
-      const addNewDept = await department.create(
+      const addNewRole = await role.create(
         { name },
         { transaction: dbTransaction }
       );
       await dbTransaction.commit();
       return responseUtils.successResponse(
         res,
-        { message: "Department added successfully" },
+        { message: "Role added successfully" },
         200
       );
     } catch (error) {
@@ -55,21 +55,21 @@ class deptController {
     }
   };
 
-  updateDept = async (req, res) => {
+  updateRole = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name, newName, newStatus } = req.body;
       if (!name)
         return responseUtils.errorResponse(res, "Name is Required", 400);
 
-      const existingDept = await department.findOne({
+      const existingRole = await role.findOne({
         where: { name },
         transaction: dbTransaction,
       });
-      if (!existingDept)
+      if (!existingRole)
         return responseUtils.errorResponse(
           res,
-          "Department does not Exists",
+          "Role does not Exists",
           400
         );
 
@@ -87,7 +87,7 @@ class deptController {
         }
     
         // Perform the update operation
-        const [updatedRows] = await department.update(updateData, {
+        const [updatedRows] = await role.update(updateData, {
           where: { name },
           transaction: dbTransaction,
         });
@@ -96,14 +96,14 @@ class deptController {
         await dbTransaction.commit();
         return responseUtils.successResponse(
           res,
-          { message: "Department updated successfully" },
+          { message: "Role updated successfully" },
           200
         );
       } else {
         await dbTransaction.rollback();
         return responseUtils.errorResponse(
           res,
-          { message: "Unable to update the department" },
+          { message: "Unable to update the role" },
           200
         );
       }
@@ -115,42 +115,42 @@ class deptController {
     }
   };
 
-  deleteDept = async (req, res) => {
+  deleteRole = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name } = req.body;
       if (!name)
         return responseUtils.errorResponse(res, "Name is Required", 400);
 
-      const existingDept = await department.findOne({
+      const existingRole = await role.findOne({
         where: { name },
         transaction: dbTransaction,
       });
-      if (!existingDept)
+      if (!existingRole)
         return responseUtils.errorResponse(
           res,
-          "Department does not Exists",
+          "Role does not Exists",
           400
         );
 
       // Create and save the new user
-      const deleteDept = await department.destroy({
+      const deleteRole = await role.destroy({
         where: { name },
         transaction: dbTransaction,
       });
 
-      if (deleteDept) {
+      if (deleteRole) {
         await dbTransaction.commit();
         return responseUtils.successResponse(
           res,
-          { message: "Department deleted successfully" },
+          { message: "Role deleted successfully" },
           200
         );
       } else {
         await dbTransaction.rollback();
         return responseUtils.errorResponse(
           res,
-          { message: "Unable to delete the department" },
+          { message: "Unable to delete the role" },
           200
         );
       }
@@ -163,4 +163,4 @@ class deptController {
   };
 }
 
-export default deptController;
+export default roleController;

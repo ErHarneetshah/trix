@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-class appConfiguration {
+class appConfig {
   constructor() {
     this.db_config = {
       dbHost: process.env.DB_HOST,
@@ -18,4 +18,4 @@ class appConfiguration {
   }
 }
 
-export default appConfiguration;
+export default appConfig;
