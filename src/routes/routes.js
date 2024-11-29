@@ -10,5 +10,6 @@ router.use('/auth', authRouter);
 router.use('/admin/dept', deptRouter);
 router.use('/admin/desig', desigRouter);
 router.use('/admin/role', roleRouter);
+router.use('/admin/settings', settingRouter);
 
 export default router;
