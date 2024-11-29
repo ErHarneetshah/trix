@@ -11,7 +11,14 @@ const User = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
-    name: {
+    firstname: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: true, // Prevents empty string
+      },
+    },
+    lastname: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {

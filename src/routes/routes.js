@@ -3,6 +3,7 @@ import authRouter from './auth/authRoutes.js';
 import deptRouter from './admin/deptRoutes.js';
 import desigRouter from './admin/desigRoutes.js';
 import roleRouter from './admin/roleRoutes.js';
+import settingRouter from './admin/settingRoutes.js';
 
 const router = express.Router();
 
