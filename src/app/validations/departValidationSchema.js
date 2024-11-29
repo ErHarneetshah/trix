@@ -1,18 +1,15 @@
 import Joi from "joi";
 
-class authValidationSchema {
+class departValidationSchema {
   static passwordSchema = Joi.string().min(6).required().messages({
     "any.required": "Password is required",
     "string.base": "Password must be a String",
     "string.min": "Password must be at least 6 characters long",
   });
 
-  static registerSchema = Joi.object({
-    firstname: Joi.string().required().messages({
-      "any.required": "First Name is required",
-    }),
-    lastname: Joi.string().required().messages({
-      "any.required": "Last Name is required",
+  static addDeptSchema = Joi.object({
+    name: Joi.string().required().messages({
+      "any.required": "Name is required",
     }),
     username: Joi.string().required().messages({
       "any.required": "Username is required",
@@ -67,4 +64,4 @@ class authValidationSchema {
   });
 }
 
-export default authValidationSchema;
+export default deptValidationSchema;

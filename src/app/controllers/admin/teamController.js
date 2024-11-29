@@ -21,30 +21,30 @@ class teamController {
   addTeam = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name , departmentId, shiftId} = req.body;
+      const { name , departmentId, shiftId } = req.body;
       if (!name)
         return responseUtils.errorResponse(res, "Name is Required", 400);
 
-      const existingRole = await team.findOne({
-        where: { name },
+      const existingTeam = await team.findOne({
+        where: { name , departmentId, shiftId },
         transaction: dbTransaction,
       });
-      if (existingRole)
+      if (existingTeam)
         return responseUtils.errorResponse(
           res,
-          "Role Already Exists",
+          "Team Already Exists",
           400
         );
 
       // Create and save the new user
-      const addNewRole = await team.create(
-        { name },
+      const addNewTeam = await team.create(
+        { name , departmentId, shiftId },
         { transaction: dbTransaction }
       );
       await dbTransaction.commit();
       return responseUtils.successResponse(
         res,
-        { message: "Role added successfully" },
+        { message: "Team added successfully" },
         200
       );
     } catch (error) {
@@ -58,39 +58,71 @@ class teamController {
   updateTeam = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, newName, newStatus } = req.body;
-      if (!name)
-        return responseUtils.errorResponse(res, "Name is Required", 400);
+      const { name , departmentId, shiftId } = req.body;
+      const { error } =
+        await teamValidationSchema.updateReportManagerSchema.validateAsync(
+          { userId, teamId }
+        );
 
-      const existingRole = await team.findOne({
-        where: { name },
-        transaction: dbTransaction,
-      });
-      if (!existingRole)
+      const userExists = await User.findOne({ where: { id: userId } });
+      const teamExists = await team.findOne({ where: { id: teamId } });
+      const newUserExists = await User.findOne({ where: { id: newUserId } });
+      const newTeamExists = await team.findOne({ where: { id: newTeamId } });
+
+      if (!userExists)
         return responseUtils.errorResponse(
           res,
-          "Role does not Exists",
+          "User does not exists in system",
+          400
+        );
+      if (!teamExists)
+        return responseUtils.errorResponse(
+          res,
+          "Team does not exists in system",
+          400
+        );
+      if (!newUserExists)
+        return responseUtils.errorResponse(
+          res,
+          "New User does not exists in system",
+          400
+        );
+      if (!newTeamExists)
+        return responseUtils.errorResponse(
+          res,
+          "New Team does not exists in system",
           400
         );
 
-        const updateData = {};
-        if (newName) updateData.name = newName;
-        if (newStatus) updateData.status = newStatus;
-    
-        // Check if there's anything to update
-        if (Object.keys(updateData).length === 0) {
-          return responseUtils.errorResponse(
-            res,
-            "No fields provided to update",
-            400
-          );
-        }
-    
-        // Perform the update operation
-        const [updatedRows] = await team.update(updateData, {
-          where: { name },
-          transaction: dbTransaction,
-        });
+      const existingReportManager = await reportingManager.findOne({
+        where: { userId, teamId },
+        transaction: dbTransaction,
+      });
+      if (!existingReportManager)
+        return responseUtils.errorResponse(
+          res,
+          "Report Manager does not Exists",
+          400
+        );
+
+      const updateData = {};
+      if (newUserId) updateData.name = newUserId;
+      if (newTeamId) updateData.status = newTeamId;
+
+      // Check if there's anything to update
+      if (Object.keys(updateData).length === 0) {
+        return responseUtils.errorResponse(
+          res,
+          "No fields provided to update",
+          400
+        );
+      }
+
+      // Perform the update operation
+      const [updatedRows] = await reportingManager.update(updateData, {
+        where: { userId, teamId },
+        transaction: dbTransaction,
+      });
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
@@ -103,7 +135,7 @@ class teamController {
         await dbTransaction.rollback();
         return responseUtils.errorResponse(
           res,
-          { message: "Unable to update the role" },
+          { message: "Unable to update the report manager" },
           200
         );
       }

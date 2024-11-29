@@ -15,7 +15,8 @@ class authController extends jwtService {
     const dbTransaction = await sequelize.transaction();
     try {
       const {
-        name,
+        firstname,
+        lastname,
         username,
         email,
         password,
@@ -32,7 +33,8 @@ class authController extends jwtService {
   
       // Validate request body using Joi
       const { error } = authValidationSchema.registerSchema.validate({
-        name,
+        firstname,
+        lastname,
         username,
         email,
         password,
@@ -69,7 +71,8 @@ class authController extends jwtService {
       // Create and save the new user
       const user = await User.create(
         {
-          name,
+          firstname,
+          lastname,
           username,
           email,
           password,

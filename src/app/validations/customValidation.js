@@ -5,23 +5,6 @@ import TronWeb from 'tronweb'
 import moment from 'moment';
 
 
-// const hasDuplicates = (arr) => arr.some((e, i, arr) => arr.indexOf(e) !== i);
-
-// Validator.registerAsync('distinct', function (columnValue, attribute, req, passes) {
-
-//     let grp = _.map(columnValue, 'currency');
-
-
-
-//     if (hasDuplicates(grp)) {
-//         return passes(false, "Currency should be unique");
-//     }
-
-//     return passes();
-// });
-
-
-
 Validator.registerAsync('gte', function (columnValue, attribute, req, passes) {
     // console.log({columnValue,attribute,req})
     if (parseFloat(attribute) > parseFloat(columnValue)) {
@@ -40,20 +23,9 @@ Validator.registerAsync('gt', function (columnValue, attribute, req, passes) {
     }
 });
 
-// Validator.registerAsync('lt', function (columnValue, attribute, req, passes) {
-//     // console.log({columnValue,attribute,req})
-//     if (parseFloat(columnValue) > parseFloat(attribute)) {
-//         return passes(false, `The ${req} should be less than ${attribute}`);
-//     } else {
-//         return passes();
-//     }
-// });
-
-
 
 
 Validator.registerAsync('is_wallet_address', function (columnValue, attribute, req, passes) {
-    // console.log({columnValue,attribute,req})
     const isAddress = TronWeb.isAddress(columnValue);
     if (isAddress === false) {
         return passes(false, `Invalid Wallet Address`);
@@ -76,9 +48,7 @@ Validator.registerAsync('unique', function (columnValue, attribute, req, passes)
 
 Validator.registerAsync('exists', function (columnValue, attribute, req, passes) {
 
-    const attr = attribute.split(",");  // 0 = tablename , 1 = columnname
-    // console.log({attr , q:`SELECT * FROM ${attr[0]} Where ${attr[1]} = "${columnValue}" LIMIT 1`})
-
+    const attr = attribute.split(",");
     Model.query(`SELECT * FROM ${attr[0]} Where ${attr[1]} = "${columnValue}" LIMIT 1`).then(([results]) => {
         return (results.length == 0) ? passes(false, `The ${req} is not Exists.`) : passes();
     }).catch((error) => {
