@@ -54,4 +54,22 @@ const accessToken = sequelize.define(
   }
 );
 
+export const createAccessToken = async (userId, isUserAdmin, token, expireTime, dbTransaction) => {
+  try {
+    const accessTokenData = await userSetting.create(
+      {
+        userId: userId,
+        isUserAdmin: isUserAdmin,
+        token,
+        expiry_time: expireTime,
+      },
+      { transaction: dbTransaction }
+    );
+    return accessTokenData;
+  } catch (error) {
+    console.error('Error creating access token:', error.message);
+    throw error;
+  }
+};
+
 export default accessToken;

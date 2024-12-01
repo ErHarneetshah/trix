@@ -1,20 +1,34 @@
 import department from "../../../database/models/departmentModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
-import responseUtils from "../../../utils/common/responseUtils.js";
+import variables from "../../config/variableConfig.js";
+import helper from "../../../utils/services/helper.js";
 
 class deptController {
   getAllDept = async (req, res) => {
     try {
-        const alldata = await department.findAll();
-        if(!alldata) return responseUtils.errorResponse(res,"No data is available",400);
+      const allData = await department.findAll();
 
-        return responseUtils.successResponse(
-            res,
-            { message: "Data fetched Successfully", data: alldata },
-            200
-          );
+      if (!allData)
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          error.message
+        );
+
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        { data: allData },
+        "Data Fetched Succesfully"
+      );
     } catch (error) {
-      return responseUtils.errorResponse(res, error.message, 400);
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -23,17 +37,23 @@ class deptController {
     try {
       const { name } = req.body;
       if (!name)
-        return responseUtils.errorResponse(res, "Name is Required", 400);
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "Name is Required!"
+        );
 
       const existingDept = await department.findOne({
         where: { name },
         transaction: dbTransaction,
       });
       if (existingDept)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Department Already Exists",
-          400
+          variables.ValidationError,
+          null,
+          "Department Already Exists in our system"
         );
 
       // Create and save the new user
@@ -42,16 +62,20 @@ class deptController {
         { transaction: dbTransaction }
       );
       await dbTransaction.commit();
-      return responseUtils.successResponse(
+      return helper.sendResponse(
         res,
-        { message: "Department added successfully" },
-        200
+        variables.Success,
+        { data: allData },
+        "Data Fetched Succesfully"
       );
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -60,58 +84,70 @@ class deptController {
     try {
       const { name, newName, newStatus } = req.body;
       if (!name)
-        return responseUtils.errorResponse(res, "Name is Required", 400);
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "Name is Required!"
+        );
 
       const existingDept = await department.findOne({
         where: { name },
         transaction: dbTransaction,
       });
       if (!existingDept)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Department does not Exists",
-          400
+          variables.NotFound,
+          null,
+          "Department does not found in our system"
         );
 
-        const updateData = {};
-        if (newName) updateData.name = newName;
-        if (newStatus) updateData.status = newStatus;
-    
-        // Check if there's anything to update
-        if (Object.keys(updateData).length === 0) {
-          return responseUtils.errorResponse(
-            res,
-            "No fields provided to update",
-            400
-          );
-        }
-    
-        // Perform the update operation
-        const [updatedRows] = await department.update(updateData, {
-          where: { name },
-          transaction: dbTransaction,
-        });
+      const updateData = {};
+      if (newName) updateData.name = newName;
+      if (newStatus) updateData.status = newStatus;
+
+      // Check if there's anything to update
+      if (Object.keys(updateData).length === 0) {
+        return helper.sendResponse(
+          res,
+          variables.ValidationError,
+          null,
+          "No Updation Data is Provided"
+        );
+      }
+
+      // Perform the update operation
+      const [updatedRows] = await department.update(updateData, {
+        where: { name },
+        transaction: dbTransaction,
+      });
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return responseUtils.successResponse(
+        return helper.sendResponse(
           res,
-          { message: "Department updated successfully" },
-          200
+          variables.Success,
+          null,
+          "Data Updated Succesfully"
         );
       } else {
         await dbTransaction.rollback();
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          { message: "Unable to update the department" },
-          200
+          variables.InternalServerError,
+          null,
+          "Unable to update the deppartment"
         );
       }
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -120,17 +156,23 @@ class deptController {
     try {
       const { name } = req.body;
       if (!name)
-        return responseUtils.errorResponse(res, "Name is Required", 400);
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "Name is Required!"
+        );
 
       const existingDept = await department.findOne({
         where: { name },
         transaction: dbTransaction,
       });
       if (!existingDept)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Department does not Exists",
-          400
+          variables.NotFound,
+          null,
+          "Department does not found in our system"
         );
 
       // Create and save the new user
@@ -141,24 +183,29 @@ class deptController {
 
       if (deleteDept) {
         await dbTransaction.commit();
-        return responseUtils.successResponse(
+        return helper.sendResponse(
           res,
-          { message: "Department deleted successfully" },
-          200
+          variables.Success,
+          null,
+          "Department Successfully Deleted"
         );
       } else {
         await dbTransaction.rollback();
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          { message: "Unable to delete the department" },
-          200
+          variables.UnknownError,
+          null,
+          "Unable to delete department"
         );
       }
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 }

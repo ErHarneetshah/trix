@@ -1,20 +1,32 @@
 import designation from "../../../database/models/designationModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
-import responseUtils from "../../../utils/common/responseUtils.js";
+import variables from "../../config/variableConfig.js";
+import helper from "../../../utils/services/helper.js";
 
 class desigController {
   getAllDesig = async (req, res) => {
     try {
         const alldata = await designation.findAll();
-        if(!alldata) return responseUtils.errorResponse(res,"No data is available",400);
+        if(!alldata) return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          error.message
+        );
 
-        return responseUtils.successResponse(
-            res,
-            { message: "Data fetched Successfully", data: alldata },
-            200
-          );
+        return helper.sendResponse(
+          res,
+          variables.Success,
+          { data: allData },
+          "Data Fetched Succesfully"
+        );
     } catch (error) {
-      return responseUtils.errorResponse(res, error.message, 400);
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 

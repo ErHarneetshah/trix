@@ -1,53 +1,25 @@
-import responseUtils from "../../../utils/common/responseUtils.js";
-import authValidationSchema from "../../validations/authValidationSchema.js";
+import authValidation from "../../../utils/validations/authValidation.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import User from "../../../database/models/userModel.js";
-import userSetting from "../../../database/models/userSettingModel.js";
+import { createUserSetting } from "../../../database/models/userSettingModel.js";
 import jwtService from "../../../utils/services/jwtService.js";
-import accessToken from "../../../database/models/accessTokenModel.js";
-import appConfig from "../../config/appConfig.js";
+import { createAccessToken } from "../../../database/models/accessTokenModel.js";
 import { Op } from "sequelize";
-
-const jwtConfig = new appConfig().jwt_config;
+import helper from "../../../utils/services/helper.js";
+import variables from "../../config/variableConfig.js";
 
 class authController extends jwtService {
   register = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const {
-        firstname,
-        lastname,
-        username,
-        email,
-        password,
-        departmentId,
-        designationId,
-        roleId,
-        workstationId,
-        teamId,
-        mobile,
-        country,
-        isAdmin,
-        status,
-      } = req.body;
-  
-      // Validate request body using Joi
-      const { error } = authValidationSchema.registerSchema.validate({
-        firstname,
-        lastname,
-        username,
-        email,
-        password,
-        departmentId,
-        designationId,
-        roleId,
-        mobile,
-        country,
-      });
-      if (error) {
-        throw new Error(error.details[0].message);
-      }
-  
+      const requestData = req.body;
+
+      // Validating request body
+      const validationResult = await authValidation.registerValid(
+        requestData,
+        res
+      );
+
       // Check if the user already exists
       const existingUser = await User.findOne({
         where: {
@@ -55,7 +27,7 @@ class authController extends jwtService {
         },
         transaction: dbTransaction,
       });
-  
+
       if (existingUser) {
         if (existingUser.email === email) {
           throw new Error("Email already in use");
@@ -67,166 +39,101 @@ class authController extends jwtService {
           throw new Error("This account has been deactivated");
         }
       }
-  
+
       // Create and save the new user
-      const user = await User.create(
-        {
-          firstname,
-          lastname,
-          username,
-          email,
-          password,
-          departmentId,
-          designationId,
-          roleId,
-          workstationId,
-          teamId,
-          mobile,
-          country,
-          isAdmin,
-          status,
-        },
-        { transaction: dbTransaction } // Include transaction in model creation
-      );
-  
-      await userSetting.create(
-        {
-          userId: user.id,
-          screenshot_time: 300,
-          app_history_time: 300,
-          browser_history_time: 300,
-          status: 1,
-        },
-        { transaction: dbTransaction }
-      );
-  
+      const user = await User.create(requestData, {
+        transaction: dbTransaction,
+      });
+
+      // Create user settings
+      await createUserSetting(user.id, dbTransaction);
+
       // Generate JWT token
-      const token = this.generateToken(user.id.toString(), user.isAdmin);
+      const token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
 
       // Save token to the database
       const expireTime = this.calculateTime();
-      await accessToken.create(
-        {
-          userId: user.id,
-          isUserAdmin: user.isAdmin,
-          token,
-          expiry_time: expireTime,
-        },
-        { transaction: dbTransaction }
+      await createAccessToken(
+        user.id,
+        user.isAdmin,
+        token,
+        expireTime,
+        dbTransaction
       );
 
       await dbTransaction.commit();
-  
-      return responseUtils.successResponse(res, { token }, 201);
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        { AuthToken: token },
+        "Register Successfully"
+      );
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
-  
 
   login = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { email, password } = req.body;
+      const requestData = req.body;
 
       // Validate request body using Joi
-      const { error } = authValidationSchema.loginSchema.validate({
-        email,
-        password,
-      });
-      if (error) {
-        return responseUtils.errorResponse(res, error.details[0].message, 400);
-      }
+      const validationResult = await authValidation.loginValid(
+        requestData,
+        res
+      );
 
       // Find the user and check if they are deactivated
       const user = await User.findOne({ email });
       if (!user || !(await user.comparePassword(password))) {
-        return responseUtils.errorResponse(res, "Invalid credentials", 401);
+        return helper.sendResponse(
+          res,
+          variables.Unauthorized,
+          null,
+          "Invalid Credentials"
+        );
       }
 
       // Check if the user is deactivated
       if (!user.status) {
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Your account has been deactivated. Contact support.",
-          403
+          variables.Forbidden,
+          null,
+          "Your Account has beem De-Activated. Contact Support"
         );
       }
 
       // Generate JWT token
-      const token = this.generateToken(user.id.toString(), user.isAdmin);
+      const token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
 
       // Save token to the database
       const expireTime = this.calculateTime();
-      await accessToken.create(
-        {
-          userId: user.id,
-          isUserAdmin: user.isAdmin,
-          token,
-          expiry_time: expireTime,
-        },
-        { transaction: dbTransaction }
+      await createAccessToken(
+        user.id,
+        user.isAdmin,
+        token,
+        expireTime,
+        dbTransaction
       );
 
-      // Send success response with token and user details
       await dbTransaction.commit();
-      return responseUtils.successResponse(res, token, 200);
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        { AuthToken: token },
+        "Login Successfully"
+      );
     } catch (error) {
       await dbTransaction.rollback();
-      return responseUtils.errorResponse(res, error.message, 400);
-    }
-  };
-
-  adminLogin = async (req, res) => {
-    const dbTransaction = await sequelize.transaction();
-    try {
-      const { email, password } = req.body;
-
-      // Validate request body using Joi
-      const { error } = authValidationSchema.loginSchema.validate({
-        email,
-        password,
-      });
-      if (error) {
-        return responseUtils.errorResponse(res, error.details[0].message, 400);
-      }
-
-      // Find the user and check if they are deactivated
-      const user = await User.findOne({ email });
-      if (!user || !(await user.comparePassword(password))) {
-        return responseUtils.errorResponse(res, "Invalid credentials", 401);
-      }
-
-      // Check if the user is admin or not
-      if (!user.isAdmin) {
-        return responseUtils.errorResponse(
-          res,
-          "You are not authorized for this!",
-          401
-        );
-      }
-
-      // Check if the user is deactivated
-      if (!user.status) {
-        return responseUtils.errorResponse(
-          res,
-          "Your account has been deactivated. Contact support.",
-          403
-        );
-      }
-
-      // Generate JWT token
-      const token = this.generateToken(user.id.toString(), user.isAdmin);
-
-      // Send success response with token and user details
-      await dbTransaction.commit();
-      return responseUtils.successResponse(res, token, 200);
-    } catch (error) {
-      await dbTransaction.rollback();
-      return responseUtils.errorResponse(res, error.message, 400);
+      return helper.sendResponse(res, variables.BadRequest, null, error.message);
     }
   };
 
@@ -235,8 +142,9 @@ class authController extends jwtService {
     const now = new Date(); // Current date and time
 
     // Add 1 day to the current date
-    const oneDayFromNow = new Date(now.getTime() + oneDayInMilliseconds).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' });
-
+    const oneDayFromNow = new Date(
+      now.getTime() + oneDayInMilliseconds
+    ).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" });
     return oneDayFromNow;
   };
 }

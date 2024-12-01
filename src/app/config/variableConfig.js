@@ -1,7 +1,6 @@
 const variables = {
 
     // return response related variables here 
-
     Success: 200,
     Created: 201,
     BadRequest: 400,
@@ -48,7 +47,6 @@ const variables = {
     //wallet reports types
     StakingIncome: 1,
     LoyalityIncome: 2,
-
 };
 
 export default variables;

@@ -1,22 +1,26 @@
 import Sequelize from 'sequelize';
-import appConfiguration from '../../app/config/appConfig.js';
+import appConfig from '../../app/config/appConfig.js';
+
+const dbConfig = new appConfig().getConfig();
 
 
-const dbConfig = new appConfiguration().db_config;
-
-const sequelize = new Sequelize(dbConfig.dbName, dbConfig.dbUser, dbConfig.dbPassword, {
-  host: dbConfig.dbHost,
+const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.password, {
+  host: dbConfig.host,
   dialect: 'mysql',
   logging: false,
+  pool: {
+    max: 20,
+    min: 2,
+    acquire: 30000,
+    idle: 60000
+  }
 });
 
-sequelize.authenticate()
-    .then(() => {
-        console.log('Database connected...');
-    })
-    
-    .catch(err => {
-        console.error('Error: ' + err);
-    });
+try {
+    await sequelize.authenticate();
+     console.log('Connection has been established successfully.');
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
 
 export default sequelize;

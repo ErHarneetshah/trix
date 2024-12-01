@@ -45,4 +45,23 @@ const userSetting = sequelize.define('users_settings', {
   timestamps: true, // Adds createdAt and updatedAt columns
 });
 
+export const createUserSetting = async (userId, dbTransaction) => {
+  try {
+    const userSettingData = await userSetting.create(
+      {
+        userId,
+        screenshot_time: 300,
+        app_history_time: 300,
+        browser_history_time: 300,
+        status: true,
+      },
+      { transaction: dbTransaction }
+    );
+    return userSettingData;
+  } catch (error) {
+    console.error('Error creating user setting:', error.message);
+    throw error;
+  }
+};
+
 export default userSetting;
