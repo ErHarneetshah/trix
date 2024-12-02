@@ -11,6 +11,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "No Data is available!"
         );
@@ -18,6 +19,7 @@ class roleController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         null,
         "All Data Fetched Successfully!"
       );
@@ -25,6 +27,7 @@ class roleController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -39,6 +42,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -51,6 +55,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           "This Role Already Exists"
         );
@@ -64,6 +69,7 @@ class roleController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         null,
         "Role Added Successfully!"
       );
@@ -72,6 +78,7 @@ class roleController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -86,6 +93,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -98,6 +106,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           "Role does not Exists"
         );
@@ -111,6 +120,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "No Updating Values provide to update!"
         );
@@ -127,6 +137,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Role updated Successfully!"
         );
@@ -135,6 +146,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.UnknownError,
+          0,
           null,
           "Unable to update the role!"
         );
@@ -144,6 +156,7 @@ class roleController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -158,6 +171,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -170,6 +184,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Role does not exists!"
         );
@@ -185,6 +200,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Role deleted successfully"
         );
@@ -193,6 +209,7 @@ class roleController {
         return helper.sendResponse(
           res,
           variables.UnknownError,
+          0,
           null,
           "Unable to delete the role"
         );
@@ -202,6 +219,7 @@ class roleController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );

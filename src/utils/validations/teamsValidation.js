@@ -21,6 +21,7 @@ class teamsValidationSchema {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           message
         );
@@ -32,6 +33,7 @@ class teamsValidationSchema {
       return helper.sendResponse(
         res,
         variables.InternalServerError,
+        0,
         null,
         error.message
       );

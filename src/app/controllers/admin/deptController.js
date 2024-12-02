@@ -7,11 +7,11 @@ class deptController {
   getAllDept = async (req, res) => {
     try {
       const allData = await department.findAll();
-
       if (!allData)
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           error.message
         );
@@ -19,6 +19,7 @@ class deptController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         { data: allData },
         "Data Fetched Succesfully"
       );
@@ -26,6 +27,7 @@ class deptController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -40,6 +42,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -52,6 +55,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           "Department Already Exists in our system"
         );
@@ -64,6 +68,7 @@ class deptController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         null,
         "Department Added Successfully!"
       );
@@ -72,6 +77,7 @@ class deptController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -86,6 +92,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -98,6 +105,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Department does not found in our system"
         );
@@ -111,6 +119,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           "No Updation Data is Provided"
         );
@@ -127,6 +136,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Data Updated Succesfully"
         );
@@ -135,6 +145,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.InternalServerError,
+          0,
           null,
           "Unable to update the deppartment"
         );
@@ -144,6 +155,7 @@ class deptController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -158,6 +170,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -170,6 +183,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Department does not found in our system"
         );
@@ -185,6 +199,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Department Successfully Deleted"
         );
@@ -193,6 +208,7 @@ class deptController {
         return helper.sendResponse(
           res,
           variables.UnknownError,
+          0,
           null,
           "Unable to delete department"
         );
@@ -202,6 +218,7 @@ class deptController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );

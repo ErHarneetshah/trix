@@ -60,6 +60,7 @@ class authController extends jwtService {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         { token: token },
         "Register Successfully"
       );
@@ -69,6 +70,7 @@ class authController extends jwtService {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -95,6 +97,7 @@ class authController extends jwtService {
         return helper.sendResponse(
           res,
           variables.Unauthorized,
+          0,
           null,
           "Invalid Credentials"
         );
@@ -105,6 +108,7 @@ class authController extends jwtService {
         return helper.sendResponse(
           res,
           variables.Forbidden,
+          0,
           null,
           "Your Account has beem De-Activated. Contact Support"
         );
@@ -127,12 +131,13 @@ class authController extends jwtService {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         { token: token },
         "Login Successfully"
       );
     } catch (error) {
       await dbTransaction.rollback();
-      return helper.sendResponse(res, variables.BadRequest, null, error.message);
+      return helper.sendResponse(res, variables.BadRequest,0, null, error.message);
     }
   };
 

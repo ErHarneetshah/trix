@@ -1,6 +1,10 @@
 import { DataTypes } from "sequelize";
 import bcrypt from 'bcryptjs';
 import sequelize from "../queries/dbConnection.js";
+import department from "./departmentModel.js";
+import designation from "./designationModel.js";
+import role from "./roleModel.js";
+import team from "./teamModel.js";
 
 const User = sequelize.define(
   "users",
@@ -11,20 +15,6 @@ const User = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
-    // firstname: {
-    //   type: DataTypes.STRING,
-    //   allowNull: false,
-    //   validate: {
-    //     notEmpty: true, // Prevents empty string
-    //   },
-    // },
-    // lastname: {
-    //   type: DataTypes.STRING,
-    //   allowNull: false,
-    //   validate: {
-    //     notEmpty: true, // Prevents empty string
-    //   },
-    // },
     fullname: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -101,20 +91,41 @@ const User = sequelize.define(
   },
   {
     timestamps: true,
-    hooks: {
+      hooks: {
       async beforeCreate(user) {
         if (user.password) {
-          // Hash the password before saving it
           user.password = await bcrypt.hash(user.password, 10);
         }
       },
-      async beforeUpdate(user) {
+      async beforeUpdate(user, options) {    
+        // Hash the password if it's being updated
         if (user.password) {
-          // Hash the password before updating it
-          user.password = await bcrypt.hash(user.password, 10);
+            user.password = await bcrypt.hash(user.password, 10);
         }
-      },
-    },
+    
+        // Define a mapping of fields to their respective models
+        const validationMap = {
+            departmentId: department,
+            designationId: designation,
+            roleId: role,
+            teamId: team,
+        };
+    
+        // Iterate through the fields to validate
+        for (const [field, model] of Object.entries(validationMap)) {
+            if (user[field]) {
+                const recordExists = await model.findOne({
+                    where: { id: user[field] },
+                    transaction: options.transaction,
+                });
+    
+                if (!recordExists) {
+                    throw new Error(`${field.replace(/Id$/, '')} with ID ${user[field]} does not exist.`);
+                }
+            }
+        }
+      }
+    }
   }
 );
 
@@ -122,5 +133,7 @@ const User = sequelize.define(
 User.prototype.comparePassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
+
+
 
 export default User;

@@ -7,10 +7,10 @@ import fs from 'fs';
 const ACCESS_TOKEN = new appConfig().getJwtConfig();
 
 export default { 
-    sendResponse: (res, statusCode, data, message,) => {
+    sendResponse: (res, statusCode, status, data, message,) => {
         res.status(statusCode).json({
-            status: 1,
-            message: message || 'Success',
+            status: status,
+            message: message ||  (status === 1 ? 'Success' : 'Error'),
             data: data || null,
         });
     },   

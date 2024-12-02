@@ -13,6 +13,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           error.message
         );
@@ -20,6 +21,7 @@ class reportingManagerController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         { data: allData },
         "Data Fetched Succesfully"
       );
@@ -27,6 +29,7 @@ class reportingManagerController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -42,6 +45,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "User Id is Required!"
         );
@@ -49,6 +53,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Team Id is Required!"
         );
@@ -60,6 +65,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "User does not exists in system!"
         );
@@ -67,6 +73,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Team does not exists in system!"
         );
@@ -79,6 +86,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           "Report Manager Already Exists in our system"
         );
@@ -92,6 +100,7 @@ class reportingManagerController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         null,
         "Reporting Manager Added Successfully!"
       );
@@ -100,6 +109,7 @@ class reportingManagerController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -114,6 +124,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "User Id is Required!"
         );
@@ -121,6 +132,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Team Id is Required!"
         );
@@ -133,6 +145,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Reporting Manager does not exists"
         );
@@ -146,6 +159,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           error.message
         );
@@ -162,6 +176,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Reporting Manager updated successfully!"
         );
@@ -170,6 +185,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.BadRequest,
+          0,
           null,
           "Unable to update reporting manager!"
         );
@@ -179,6 +195,7 @@ class reportingManagerController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -193,6 +210,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "User Id is Required!"
         );
@@ -200,6 +218,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Team Id is Required!"
         );
@@ -212,6 +231,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           "Report Manager does not exists"
         );
@@ -227,6 +247,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Report Manager deleted Successfully!"
         );
@@ -235,6 +256,7 @@ class reportingManagerController {
         return helper.sendResponse(
           res,
           variables.UnknownError,
+          0,
           null,
           "Unable to delete reporting Manager!"
         );
@@ -245,6 +267,7 @@ class reportingManagerController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );

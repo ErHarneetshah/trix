@@ -16,6 +16,7 @@ class teamMemberController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "No Data is available!"
         );
@@ -23,6 +24,7 @@ class teamMemberController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         { data: alldata },
         "All Data fetched Successfully!"
       );
@@ -30,6 +32,7 @@ class teamMemberController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         "All Data fetched Successfully!"
       );
@@ -89,6 +92,7 @@ class teamMemberController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         { token: token },
         "Team Member Added Successfully"
       );
@@ -98,6 +102,7 @@ class teamMemberController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -109,47 +114,26 @@ class teamMemberController {
     try {
       const requestData = req.body;
 
-      const existingShift = await User.findOne({
-        where: {name: name, start_time: start_time, end_time: end_time},
+      const existingTeamMember = await User.findOne({
+        where: {id: requestData.id},
         transaction: dbTransaction,
       });
 
-      if (!existingShift)
+      if (!existingTeamMember)
         return helper.sendResponse(
           res,
           variables.BadRequest,
+          0,
           null,
           "Shift does not exists"
         );
-
-      const updateData = {};
-      if (newShiftName) updateData.name = newShiftName;
-      if (newStart_time) updateData.start_time = newStart_time;
-      if (newEnd_time) updateData.end_time = newEnd_time;
-      if (newDays) updateData.days = newDays;
-
-      // Check if there's anything to update
-      if (Object.keys(updateData).length === 0) {
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "No Updating values provided to update"
-        );
-      }
-
-      if (newStart_time && newEnd_time) {
-        updateData.total_hours = await this.calTotalHr(
-          newStart_time,
-          newEnd_time
-        );
-      }
-
-      console.log(updateData);
+      const { id, ...updateFields } = requestData;
+        
       // Perform the update operation
-      const [updatedRows] = await User.update(updateData, {
-        where: {name: name, start_time: start_time, end_time: end_time},
+      const [updatedRows] = await User.update(updateFields, {
+        where: { id },
         transaction: dbTransaction,
+        individualHooks: true,
       });
 
       if (updatedRows > 0) {
@@ -157,6 +141,7 @@ class teamMemberController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Shift Updated Successfully"
         );
@@ -165,6 +150,7 @@ class teamMemberController {
         return helper.sendResponse(
           res,
           variables.UnknownError,
+          0,
           null,
           "Unable to update the shift"
         );
@@ -174,90 +160,11 @@ class teamMemberController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
     }
-  };
-
-  deleteTeamMembers = async (req, res) => {
-    const dbTransaction = await sequelize.transaction();
-    try {
-      const { name, start_time, end_time } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "Name is Required!"
-        );
-      if (!start_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "Start Time is Required!"
-        );
-      if (!end_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "End Time is Required!"
-        );
-
-      const existingShift = await User.findOne({
-        where: {name: name, start_time: start_time, end_time: end_time},
-        transaction: dbTransaction,
-      });
-      if (!existingShift)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          null,
-          "Shift does not exists!"
-        );
-
-      // Create and save the new user
-      const deleteShift = await User.destroy({
-        where: {name: name, start_time: start_time, end_time: end_time},
-        transaction: dbTransaction,
-      });
-
-      if (deleteShift) {
-        await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          null,
-          "Shift deleted Successfully!"
-        );
-      } else {
-        await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          null,
-          "Unable to delete the Shift!"
-        );
-      }
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        null,
-        error.message
-      );
-    }
-  };
-
-  calTotalHr = async (start_time, end_time) => {
-    let startTime = parseInt(start_time.split(":")[0], 10); // Extract the hour part: 18
-    let endTime = parseInt(end_time.split(":")[0], 10); // Extract the hour part: 9
-
-    let total_hours = endTime - startTime;
-    return total_hours;
   };
 }
 

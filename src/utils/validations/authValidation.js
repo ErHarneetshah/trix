@@ -22,6 +22,7 @@ class authValidationSchema {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           message
         );
@@ -33,6 +34,7 @@ class authValidationSchema {
       return helper.sendResponse(
         res,
         variables.InternalServerError,
+        0,
         null,
         error.message
       );
@@ -51,6 +53,7 @@ class authValidationSchema {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           message
         );
@@ -62,6 +65,7 @@ class authValidationSchema {
       return helper.sendResponse(
         res,
         variables.InternalServerError,
+        0,
         null,
         error.message
       );

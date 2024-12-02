@@ -12,6 +12,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "No Data is available!"
         );
@@ -19,6 +20,7 @@ class shiftController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         { data: alldata },
         "All Data fetched Successfully!"
       );
@@ -26,6 +28,7 @@ class shiftController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         "All Data fetched Successfully!"
       );
@@ -40,6 +43,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -47,6 +51,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Start Time is Required!"
         );
@@ -54,6 +59,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "End Time is Required!"
         );
@@ -61,6 +67,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Days is Required!"
         );
@@ -73,6 +80,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           "Shift Already Exists!"
         );
@@ -88,6 +96,7 @@ class shiftController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         null,
         "Shift Added Successfully!"
       );
@@ -96,6 +105,7 @@ class shiftController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -119,6 +129,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -126,6 +137,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Start Time is Required!"
         );
@@ -133,6 +145,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "End Time is Required!"
         );
@@ -140,12 +153,13 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Days is Required!"
         );
 
       const existingShift = await shift.findOne({
-        where: {name: name, start_time: start_time, end_time: end_time},
+        where: { name: name, start_time: start_time, end_time: end_time },
         transaction: dbTransaction,
       });
 
@@ -153,6 +167,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.BadRequest,
+          0,
           null,
           "Shift does not exists"
         );
@@ -168,6 +183,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "No Updating values provided to update"
         );
@@ -183,7 +199,7 @@ class shiftController {
       console.log(updateData);
       // Perform the update operation
       const [updatedRows] = await shift.update(updateData, {
-        where: {name: name, start_time: start_time, end_time: end_time},
+        where: { name: name, start_time: start_time, end_time: end_time },
         transaction: dbTransaction,
       });
 
@@ -192,6 +208,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Shift Updated Successfully"
         );
@@ -200,6 +217,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.UnknownError,
+          0,
           null,
           "Unable to update the shift"
         );
@@ -209,6 +227,7 @@ class shiftController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -223,6 +242,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -230,6 +250,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Start Time is Required!"
         );
@@ -237,25 +258,27 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "End Time is Required!"
         );
 
       const existingShift = await shift.findOne({
-        where: {name: name, start_time: start_time, end_time: end_time},
+        where: { name: name, start_time: start_time, end_time: end_time },
         transaction: dbTransaction,
       });
       if (!existingShift)
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           "Shift does not exists!"
         );
 
       // Create and save the new user
       const deleteShift = await shift.destroy({
-        where: {name: name, start_time: start_time, end_time: end_time},
+        where: { name: name, start_time: start_time, end_time: end_time },
         transaction: dbTransaction,
       });
 
@@ -264,6 +287,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Shift deleted Successfully!"
         );
@@ -272,6 +296,7 @@ class shiftController {
         return helper.sendResponse(
           res,
           variables.UnknownError,
+          0,
           null,
           "Unable to delete the Shift!"
         );
@@ -281,6 +306,7 @@ class shiftController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -288,11 +314,21 @@ class shiftController {
   };
 
   calTotalHr = async (start_time, end_time) => {
-    let startTime = parseInt(start_time.split(":")[0], 10); // Extract the hour part: 18
-    let endTime = parseInt(end_time.split(":")[0], 10); // Extract the hour part: 9
+    const [startHour, startMinute] = start_time.split(":").map(Number);
+    const [endHour, endMinute] = end_time.split(":").map(Number);
 
-    let total_hours = endTime - startTime;
-    return total_hours;
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+
+    let totalMinutes;
+    if (endTotalMinutes >= startTotalMinutes) {
+      totalMinutes = endTotalMinutes - startTotalMinutes;
+    } else {
+      totalMinutes = 24 * 60 - startTotalMinutes + endTotalMinutes;
+    }
+
+    const totalHours = totalMinutes / 60;
+    return totalHours;
   };
 }
 

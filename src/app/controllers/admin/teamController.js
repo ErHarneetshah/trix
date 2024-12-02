@@ -11,6 +11,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "No Data is available!"
         );
@@ -18,6 +19,7 @@ class teamController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         { data:alldata },
         "All Data fetched Successfully!"
       );
@@ -25,6 +27,7 @@ class teamController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         "All Data fetched Successfully!"
       );
@@ -39,6 +42,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -46,6 +50,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Department Id is Required!"
         );
@@ -53,6 +58,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Shift Id is Required!"
         );
@@ -65,6 +71,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           "Team Already Exists!"
         );
@@ -78,6 +85,7 @@ class teamController {
       return helper.sendResponse(
         res,
         variables.Success,
+        1,
         null,
         "Team Added Successfully!"
       );
@@ -86,6 +94,7 @@ class teamController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -100,6 +109,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -107,6 +117,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Department Id is Required!"
         );
@@ -114,6 +125,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Shift Id is Required!"
         );
@@ -126,6 +138,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.BadRequest,
+          0,
           null,
           "Team does not exists"
         );
@@ -140,6 +153,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "No Updating values provided to update"
         );
@@ -156,6 +170,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Tea, Updated Successfully"
         );
@@ -164,6 +179,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.UnknownError,
+          0,
           null,
           "Unable to update the team"
         );
@@ -173,6 +189,7 @@ class teamController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
@@ -187,6 +204,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Name is Required!"
         );
@@ -194,6 +212,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Department Id is Required!"
         );
@@ -201,6 +220,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.NotFound,
+          0,
           null,
           "Shift Id is Required!"
         );
@@ -213,6 +233,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.ValidationError,
+          0,
           null,
           "Team does not exists!"
         );
@@ -228,6 +249,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.Success,
+          1,
           null,
           "Team deleted Successfully!"
         );
@@ -236,6 +258,7 @@ class teamController {
         return helper.sendResponse(
           res,
           variables.UnknownError,
+          0,
           null,
           "Unable to delete the Team!"
         );
@@ -245,6 +268,7 @@ class teamController {
       return helper.sendResponse(
         res,
         variables.BadRequest,
+        0,
         null,
         error.message
       );
