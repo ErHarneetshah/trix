@@ -1,31 +1,41 @@
 import CValidator from "./customValidation.js";
 import variables from "../../app/config/variableConfig.js";
+import helper from "../services/helper.js";
 
 class authValidationSchema {
   static registerValid = async (data, res) => {
     try {
       const { status, message } = await CValidator(data, {
-        firstname: "required|regex:/^[a-zA-Z ]*$/|min:3|max:30",
-        lastname: "required|regex:/^[a-zA-Z ]*$/|min:3|max:30",
+        fullname: "required|regex:/^[a-zA-Z ]*$/|min:3|max:50",
         email: "required|email",
-        mobile: "required|string",
         password: "required|password_regex|min:8",
-        confirm_pass: "required|same:password",
         departmentId: "required",
         designationId: "required",
         roleId: "required",
         teamId: "required",
-        country: "required",
+        isAdmin: "required",
       });
 
+      console.log("Register Validation -------------------------");
+      console.log(status);
       if (!status) {
-        return reply.failed(res, variables.ValidationError, message);
+        return helper.sendResponse(
+          res,
+          variables.ValidationError,
+          null,
+          message
+        );
       }
 
       return { status: true };
     } catch (error) {
       console.error("Validation error:", error);
-      return reply.failed(res, variables.InternalServerError, error.message);
+      return helper.sendResponse(
+        res,
+        variables.InternalServerError,
+        null,
+        error.message
+      );
     }
   };
 
@@ -37,13 +47,24 @@ class authValidationSchema {
       });
 
       if (!status) {
-        return reply.failed(res, variables.ValidationError, message);
+        console.log("Login Validation Error");
+        return helper.sendResponse(
+          res,
+          variables.ValidationError,
+          null,
+          message
+        );
       }
 
       return { status: true };
     } catch (error) {
       console.error("Validation error:", error);
-      return reply.failed(res, variables.InternalServerError, error.message);
+      return helper.sendResponse(
+        res,
+        variables.InternalServerError,
+        null,
+        error.message
+      );
     }
   };
 }

@@ -6,8 +6,8 @@ import helper from "../../../utils/services/helper.js";
 class desigController {
   getAllDesig = async (req, res) => {
     try {
-        const alldata = await designation.findAll();
-        if(!alldata) return helper.sendResponse(
+        const allData = await designation.findAll();
+        if(!allData) return helper.sendResponse(
           res,
           variables.NotFound,
           null,
@@ -35,18 +35,26 @@ class desigController {
     try {
       const { name } = req.body;
       if (!name)
-        return responseUtils.errorResponse(res, "Name is Required", 400);
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          null,
+          "Name is Required!"
+        );
 
       const existingDesig = await designation.findOne({
-        where: { name },
+        where: { name: name },
         transaction: dbTransaction,
-      });
+    });
+    
       if (existingDesig)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Designation Already Exists",
-          400
+          variables.ValidationError,
+          null,
+          "Designation Already Exists"
         );
+        
 
       // Create and save the new user
       const addNewDesig = await designation.create(
@@ -54,16 +62,20 @@ class desigController {
         { transaction: dbTransaction }
       );
       await dbTransaction.commit();
-      return responseUtils.successResponse(
+      return helper.sendResponse(
         res,
-        { message: "Designation added successfully" },
-        200
+        variables.Success,
+        null,
+        "Designation Added Successfully!"
       );
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -72,17 +84,23 @@ class desigController {
     try {
       const { name, newName, newStatus } = req.body;
       if (!name)
-        return responseUtils.errorResponse(res, "Name is Required", 400);
+        return helper.sendResponse(
+          res,
+          variables.ValidationError,
+          null,
+          "Name is Required!"
+        );
 
       const existingDesig = await designation.findOne({
         where: { name },
         transaction: dbTransaction,
       });
       if (!existingDesig)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Designation does not Exists",
-          400
+          variables.NotFound,
+          null,
+          "Designation does not exists!"
         );
 
         const updateData = {};
@@ -91,10 +109,11 @@ class desigController {
     
         // Check if there's anything to update
         if (Object.keys(updateData).length === 0) {
-          return responseUtils.errorResponse(
+          return helper.sendResponse(
             res,
-            "No fields provided to update",
-            400
+            variables.NotFound,
+            null,
+            "No new values provided for updation!"
           );
         }
     
@@ -106,24 +125,29 @@ class desigController {
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return responseUtils.successResponse(
+        return helper.sendResponse(
           res,
-          { message: "Designation updated successfully" },
-          200
+          variables.Success,
+          null,
+          "Designation updated Successfully!"
         );
       } else {
         await dbTransaction.rollback();
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          { message: "Unable to update the designation" },
-          200
+          variables.UnknownError,
+          null,
+          "Unable to update the designation!"
         );
       }
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -132,17 +156,23 @@ class desigController {
     try {
       const { name } = req.body;
       if (!name)
-        return responseUtils.errorResponse(res, "Name is Required", 400);
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          null,
+          "Name is Required!"
+        );
 
       const existingDesig = await designation.findOne({
         where: { name },
         transaction: dbTransaction,
       });
       if (!existingDesig)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Designation does not Exists",
-          400
+          variables.NotFound,
+          null,
+          "Designation does not exists!"
         );
 
       // Create and save the new user
@@ -153,24 +183,29 @@ class desigController {
 
       if (deleteDesig) {
         await dbTransaction.commit();
-        return responseUtils.successResponse(
+        return helper.sendResponse(
           res,
-          { message: "Designation deleted successfully" },
-          200
+          variables.Success,
+          null,
+          "Designation deleted Successfully!"
         );
       } else {
         await dbTransaction.rollback();
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          { message: "Unable to delete the designation" },
-          200
+          variables.UnknownError,
+          null,
+          "Unable to delete designation!"
         );
       }
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 }

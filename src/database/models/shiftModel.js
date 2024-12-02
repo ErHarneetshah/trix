@@ -16,14 +16,14 @@ const shift = sequelize.define('shifts', {
       },
   },
   start_time: {
-    type: DataTypes.TIME,
+    type: DataTypes.STRING,
     allowNull: false,
     validate: {
         notEmpty: true, // Prevents empty string
       },
   },
   end_time: {
-    type: DataTypes.TIME,
+    type: DataTypes.STRING,
     allowNull: false,
     validate: {
         notEmpty: true, // Prevents empty string

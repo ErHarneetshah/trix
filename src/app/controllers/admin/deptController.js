@@ -56,7 +56,6 @@ class deptController {
           "Department Already Exists in our system"
         );
 
-      // Create and save the new user
       const addNewDept = await department.create(
         { name },
         { transaction: dbTransaction }
@@ -65,8 +64,8 @@ class deptController {
       return helper.sendResponse(
         res,
         variables.Success,
-        { data: allData },
-        "Data Fetched Succesfully"
+        null,
+        "Department Added Successfully!"
       );
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();

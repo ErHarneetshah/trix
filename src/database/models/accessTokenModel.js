@@ -56,7 +56,7 @@ const accessToken = sequelize.define(
 
 export const createAccessToken = async (userId, isUserAdmin, token, expireTime, dbTransaction) => {
   try {
-    const accessTokenData = await userSetting.create(
+    const accessTokenData = await accessToken.create(
       {
         userId: userId,
         isUserAdmin: isUserAdmin,

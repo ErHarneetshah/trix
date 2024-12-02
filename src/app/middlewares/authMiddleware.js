@@ -2,14 +2,13 @@ import jwt from "jsonwebtoken";
 import User from "../../database/models/userModel.js";
 import accessToken from "../../database/models/accessTokenModel.js";
 import variables from "../config/variableConfig.js";
-import logs from "../../storage/logs/logs.js";
 import appConfig from "../config/appConfig.js";
 
 const jwtConfig = new appConfig().getJwtConfig();
 
 const authMiddleware = async (req, res, next) => {
   try {
-    const logger = new logs(); // not working
+    console.log("Auth Middleware -----------------------------");
     const authHeader = req.header("Authorization");
 
     if (!authHeader)
@@ -48,7 +47,6 @@ const authMiddleware = async (req, res, next) => {
     // return res.json({ status: variables.SuccessStatus, message: 'verify done', user: req.user });
     next();
   } catch (e) {
-    logger.errorLogger(`Error occurred: ${e.message}`);
     if (e.name === "TokenExpiredError") {
       return res.json({
         status: variables.Unauthorized,

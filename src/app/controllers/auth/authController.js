@@ -22,18 +22,13 @@ class authController extends jwtService {
 
       // Check if the user already exists
       const existingUser = await User.findOne({
-        where: {
-          [Op.or]: [{ email }, { username }],
-        },
+        where: { email: requestData.email },
         transaction: dbTransaction,
       });
 
       if (existingUser) {
         if (existingUser.email === email) {
           throw new Error("Email already in use");
-        }
-        if (existingUser.username === username) {
-          throw new Error("Username already in use");
         }
         if (existingUser.status) {
           throw new Error("This account has been deactivated");
@@ -65,11 +60,12 @@ class authController extends jwtService {
       return helper.sendResponse(
         res,
         variables.Success,
-        { AuthToken: token },
+        { token: token },
         "Register Successfully"
       );
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      console.log(error.message);
       return helper.sendResponse(
         res,
         variables.BadRequest,
@@ -89,6 +85,9 @@ class authController extends jwtService {
         requestData,
         res
       );
+      
+      let email = requestData.email;
+      let password = requestData.password; 
 
       // Find the user and check if they are deactivated
       const user = await User.findOne({ email });
@@ -128,7 +127,7 @@ class authController extends jwtService {
       return helper.sendResponse(
         res,
         variables.Success,
-        { AuthToken: token },
+        { token: token },
         "Login Successfully"
       );
     } catch (error) {

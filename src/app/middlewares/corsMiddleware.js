@@ -1,13 +1,15 @@
-import cors from 'cors';
+let whitelist = ["https://www.google.com", "http://192.168.11.89:3000" , "http://192.168.11.94:3001", "http://192.168.11.94:3000"];
+let corsMiddleware = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus:200
 
-const corsOptions = {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 204,
 };
 
-const corsMiddleware = cors(corsOptions);
- 
 export default corsMiddleware;

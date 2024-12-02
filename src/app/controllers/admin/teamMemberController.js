@@ -1,13 +1,17 @@
-import { start } from "repl";
-import shift from "../../../database/models/shiftModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
+import User from "../../../database/models/userModel.js";
+import teamsValidationSchema from "../../../utils/validations/teamsValidation.js";
 
-class shiftController {
-  getAllShift = async (req, res) => {
+class teamMemberController {
+  getAllTeamMembers = async (req, res) => {
     try {
-      const alldata = await shift.findAll();
+      const alldata = await User.findAll({
+        where: { isAdmin: 0 },
+        attributes: { exclude: ['password', 'mobile', 'country', 'isAdmin', 'workstationId', 'createdAt', 'updatedAt'] }, // Exclude the password field
+      });
+      ;
       if (!alldata)
         return helper.sendResponse(
           res,
@@ -32,67 +36,65 @@ class shiftController {
     }
   };
 
-  addShift = async (req, res) => {
+
+
+  addTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, start_time, end_time, days } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "Name is Required!"
-        );
-      if (!start_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "Start Time is Required!"
-        );
-      if (!end_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "End Time is Required!"
-        );
-      if (!days)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "Days is Required!"
-        );
+      const requestData = req.body;
 
-      const existingShift = await shift.findOne({
-        where: { name, start_time, end_time, days },
+      // Validating request body
+      const validationResult = await teamsValidationSchema.teamMemberValid(
+        requestData,
+        res
+      );
+
+      // Check if the user already exists
+      const existingUser = await User.findOne({
+        where: { email: requestData.email },
         transaction: dbTransaction,
       });
-      if (existingShift)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          null,
-          "Shift Already Exists!"
-        );
 
-      let total_hours = await this.calTotalHr(start_time, end_time);
+      if (existingUser) {
+        if (existingUser.email === email) {
+          throw new Error("Email already in use");
+        }
+        if (existingUser.status) {
+          throw new Error("This account has been deactivated");
+        }
+      }
 
       // Create and save the new user
-      const addNewShift = await shift.create(
-        { name, start_time, end_time, days, total_hours },
-        { transaction: dbTransaction }
+      const teamMember = await User.create(requestData, {
+        transaction: dbTransaction,
+      });
+
+      // Create user settings
+      await createUserSetting(teamMember.id, dbTransaction);
+
+      // Generate JWT token
+      const token = this.generateToken(teamMember.id.toString(), teamMember.isAdmin, "1d");
+
+      // Save token to the database
+      const expireTime = this.calculateTime();
+      await createAccessToken(
+        teamMember.id,
+        teamMember.isAdmin,
+        token,
+        expireTime,
+        dbTransaction
       );
+
       await dbTransaction.commit();
       return helper.sendResponse(
         res,
         variables.Success,
-        null,
-        "Shift Added Successfully!"
+        { token: token },
+        "Team Member Added Successfully"
       );
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      console.log(error.message);
       return helper.sendResponse(
         res,
         variables.BadRequest,
@@ -102,49 +104,12 @@ class shiftController {
     }
   };
 
-  updateShift = async (req, res) => {
+  updateTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const {
-        name,
-        start_time,
-        end_time,
-        days,
-        newShiftName,
-        newStart_time,
-        newEnd_time,
-        newDays,
-      } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "Name is Required!"
-        );
-      if (!start_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "Start Time is Required!"
-        );
-      if (!end_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "End Time is Required!"
-        );
-      if (!days)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          null,
-          "Days is Required!"
-        );
+      const requestData = req.body;
 
-      const existingShift = await shift.findOne({
+      const existingShift = await User.findOne({
         where: {name: name, start_time: start_time, end_time: end_time},
         transaction: dbTransaction,
       });
@@ -182,7 +147,7 @@ class shiftController {
 
       console.log(updateData);
       // Perform the update operation
-      const [updatedRows] = await shift.update(updateData, {
+      const [updatedRows] = await User.update(updateData, {
         where: {name: name, start_time: start_time, end_time: end_time},
         transaction: dbTransaction,
       });
@@ -215,7 +180,7 @@ class shiftController {
     }
   };
 
-  deleteShift = async (req, res) => {
+  deleteTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name, start_time, end_time } = req.body;
@@ -241,7 +206,7 @@ class shiftController {
           "End Time is Required!"
         );
 
-      const existingShift = await shift.findOne({
+      const existingShift = await User.findOne({
         where: {name: name, start_time: start_time, end_time: end_time},
         transaction: dbTransaction,
       });
@@ -254,7 +219,7 @@ class shiftController {
         );
 
       // Create and save the new user
-      const deleteShift = await shift.destroy({
+      const deleteShift = await User.destroy({
         where: {name: name, start_time: start_time, end_time: end_time},
         transaction: dbTransaction,
       });
@@ -296,4 +261,4 @@ class shiftController {
   };
 }
 
-export default shiftController;
+export default teamMemberController;

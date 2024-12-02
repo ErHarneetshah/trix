@@ -2,23 +2,34 @@ import reportingManager from "../../../database/models/reportingManagerModel.js"
 import team from "../../../database/models/teamModel.js";
 import User from "../../../database/models/userModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
-import responseUtils from "../../../utils/common/responseUtils.js";
-import reportManagerValidationSchema from "../../validations/reportManagerValidationSchema.js";
+import variables from "../../config/variableConfig.js";
+import helper from "../../../utils/services/helper.js";
 
 class reportingManagerController {
   getAllReportManager = async (req, res) => {
     try {
-      const alldata = await reportingManager.findAll();
-      if (!alldata)
-        return responseUtils.errorResponse(res, "No data is available", 400);
+      const allData = await reportingManager.findAll();
+      if (!allData)
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          error.message
+        );
 
-      return responseUtils.successResponse(
+      return helper.sendResponse(
         res,
-        { message: "Data fetched Successfully", data: alldata },
-        200
+        variables.Success,
+        { data: allData },
+        "Data Fetched Succesfully"
       );
     } catch (error) {
-      return responseUtils.errorResponse(res, error.message, 400);
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -27,29 +38,37 @@ class reportingManagerController {
     try {
       const { userId, teamId } = req.body;
 
-      const { error } =
-        await reportManagerValidationSchema.addReportManagerSchema.validateAsync(
-          { userId, teamId }
+      if (!userId)
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "User Id is Required!"
         );
-
-      if (error) {
-        throw new Error(error.details[0].message);
-      }
+      if (!teamId)
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "Team Id is Required!"
+        );
 
       const userExists = await User.findOne({ where: { id: userId } });
       const teamExists = await team.findOne({ where: { id: teamId } });
 
       if (!userExists)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "User does not exists in system",
-          400
+          variables.NotFound,
+          null,
+          "User does not exists in system!"
         );
       if (!teamExists)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Team does not exists in system",
-          400
+          variables.NotFound,
+          null,
+          "Team does not exists in system!"
         );
 
       const existingReportManager = await reportingManager.findOne({
@@ -57,10 +76,11 @@ class reportingManagerController {
         transaction: dbTransaction,
       });
       if (existingReportManager)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Report Manager Already Exists",
-          400
+          variables.ValidationError,
+          null,
+          "Report Manager Already Exists in our system"
         );
 
       // Create and save the new user
@@ -69,16 +89,20 @@ class reportingManagerController {
         { transaction: dbTransaction }
       );
       await dbTransaction.commit();
-      return responseUtils.successResponse(
+      return helper.sendResponse(
         res,
-        { message: "Report Manager added successfully" },
-        200
+        variables.Success,
+        null,
+        "Reporting Manager Added Successfully!"
       );
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -86,39 +110,19 @@ class reportingManagerController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { userId, teamId, newUserId, newTeamId } = req.body;
-      const { error } =
-        await reportManagerValidationSchema.updateReportManagerSchema.validateAsync(
-          { userId, teamId }
-        );
-
-      const userExists = await User.findOne({ where: { id: userId } });
-      const teamExists = await team.findOne({ where: { id: teamId } });
-      const newUserExists = await User.findOne({ where: { id: newUserId } });
-      const newTeamExists = await team.findOne({ where: { id: newTeamId } });
-
-      if (!userExists)
-        return responseUtils.errorResponse(
+      if (!userId)
+        return helper.sendResponse(
           res,
-          "User does not exists in system",
-          400
+          variables.NotFound,
+          null,
+          "User Id is Required!"
         );
-      if (!teamExists)
-        return responseUtils.errorResponse(
+      if (!teamId)
+        return helper.sendResponse(
           res,
-          "Team does not exists in system",
-          400
-        );
-      if (!newUserExists)
-        return responseUtils.errorResponse(
-          res,
-          "New User does not exists in system",
-          400
-        );
-      if (!newTeamExists)
-        return responseUtils.errorResponse(
-          res,
-          "New Team does not exists in system",
-          400
+          variables.NotFound,
+          null,
+          "Team Id is Required!"
         );
 
       const existingReportManager = await reportingManager.findOne({
@@ -126,22 +130,24 @@ class reportingManagerController {
         transaction: dbTransaction,
       });
       if (!existingReportManager)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Report Manager does not Exists",
-          400
+          variables.NotFound,
+          null,
+          "Reporting Manager does not exists"
         );
 
       const updateData = {};
-      if (newUserId) updateData.name = newUserId;
-      if (newTeamId) updateData.status = newTeamId;
+      if (newUserId) updateData.userId = newUserId;
+      if (newTeamId) updateData.teamId = newTeamId;
 
-      // Check if there's anything to update
+      //   Check if there's anything to update
       if (Object.keys(updateData).length === 0) {
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "No fields provided to update",
-          400
+          variables.NotFound,
+          null,
+          error.message
         );
       }
 
@@ -153,24 +159,29 @@ class reportingManagerController {
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return responseUtils.successResponse(
+        return helper.sendResponse(
           res,
-          { message: "Role updated successfully" },
-          200
+          variables.Success,
+          null,
+          "Reporting Manager updated successfully!"
         );
       } else {
         await dbTransaction.rollback();
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          { message: "Unable to update the report manager" },
-          200
+          variables.BadRequest,
+          null,
+          "Unable to update reporting manager!"
         );
       }
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -178,9 +189,19 @@ class reportingManagerController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { userId, teamId } = req.body;
-      const { error } =
-        await reportManagerValidationSchema.updateReportManagerSchema.validateAsync(
-          { userId, teamId }
+      if (!userId)
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "User Id is Required!"
+        );
+      if (!teamId)
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "Team Id is Required!"
         );
 
       const existingReportManager = await reportingManager.findOne({
@@ -188,7 +209,12 @@ class reportingManagerController {
         transaction: dbTransaction,
       });
       if (!existingReportManager)
-        return responseUtils.errorResponse(res, "Report Manager does not Exists", 400);
+        return helper.sendResponse(
+          res,
+          variables.ValidationError,
+          null,
+          "Report Manager does not exists"
+        );
 
       // Create and save the new user
       const deleteRole = await reportingManager.destroy({
@@ -198,24 +224,30 @@ class reportingManagerController {
 
       if (deleteRole) {
         await dbTransaction.commit();
-        return responseUtils.successResponse(
+        return helper.sendResponse(
           res,
-          { message: "Report Manager deleted successfully" },
-          200
+          variables.Success,
+          null,
+          "Report Manager deleted Successfully!"
         );
       } else {
         await dbTransaction.rollback();
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          { message: "Unable to delete the report manager" },
-          200
+          variables.UnknownError,
+          null,
+          "Unable to delete reporting Manager!"
         );
       }
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 }

@@ -1,20 +1,33 @@
 import role from "../../../database/models/roleModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
-import responseUtils from "../../../utils/common/responseUtils.js";
+import variables from "../../config/variableConfig.js";
+import helper from "../../../utils/services/helper.js";
 
 class roleController {
   getAllRole = async (req, res) => {
     try {
-        const alldata = await role.findAll();
-        if(!alldata) return responseUtils.errorResponse(res,"No data is available",400);
+      const alldata = await role.findAll();
+      if (!alldata)
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "No Data is available!"
+        );
 
-        return responseUtils.successResponse(
-            res,
-            { message: "Data fetched Successfully", data: alldata },
-            200
-          );
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        null,
+        "All Data Fetched Successfully!"
+      );
     } catch (error) {
-      return responseUtils.errorResponse(res, error.message, 400);
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -23,17 +36,23 @@ class roleController {
     try {
       const { name } = req.body;
       if (!name)
-        return responseUtils.errorResponse(res, "Name is Required", 400);
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "Name is Required!"
+        );
 
       const existingRole = await role.findOne({
         where: { name },
         transaction: dbTransaction,
       });
       if (existingRole)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Role Already Exists",
-          400
+          variables.ValidationError,
+          null,
+          "This Role Already Exists"
         );
 
       // Create and save the new user
@@ -42,16 +61,20 @@ class roleController {
         { transaction: dbTransaction }
       );
       await dbTransaction.commit();
-      return responseUtils.successResponse(
+      return helper.sendResponse(
         res,
-        { message: "Role added successfully" },
-        200
+        variables.Success,
+        null,
+        "Role Added Successfully!"
       );
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -60,58 +83,70 @@ class roleController {
     try {
       const { name, newName, newStatus } = req.body;
       if (!name)
-        return responseUtils.errorResponse(res, "Name is Required", 400);
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "Name is Required!"
+        );
 
       const existingRole = await role.findOne({
         where: { name },
         transaction: dbTransaction,
       });
       if (!existingRole)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Role does not Exists",
-          400
+          variables.ValidationError,
+          null,
+          "Role does not Exists"
         );
 
-        const updateData = {};
-        if (newName) updateData.name = newName;
-        if (newStatus) updateData.status = newStatus;
-    
-        // Check if there's anything to update
-        if (Object.keys(updateData).length === 0) {
-          return responseUtils.errorResponse(
-            res,
-            "No fields provided to update",
-            400
-          );
-        }
-    
-        // Perform the update operation
-        const [updatedRows] = await role.update(updateData, {
-          where: { name },
-          transaction: dbTransaction,
-        });
+      const updateData = {};
+      if (newName) updateData.name = newName;
+      if (newStatus) updateData.status = newStatus;
+
+      // Check if there's anything to update
+      if (Object.keys(updateData).length === 0) {
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "No Updating Values provide to update!"
+        );
+      }
+
+      // Perform the update operation
+      const [updatedRows] = await role.update(updateData, {
+        where: { name },
+        transaction: dbTransaction,
+      });
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return responseUtils.successResponse(
+        return helper.sendResponse(
           res,
-          { message: "Role updated successfully" },
-          200
+          variables.Success,
+          null,
+          "Role updated Successfully!"
         );
       } else {
         await dbTransaction.rollback();
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          { message: "Unable to update the role" },
-          200
+          variables.UnknownError,
+          null,
+          "Unable to update the role!"
         );
       }
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 
@@ -120,17 +155,23 @@ class roleController {
     try {
       const { name } = req.body;
       if (!name)
-        return responseUtils.errorResponse(res, "Name is Required", 400);
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          null,
+          "Name is Required!"
+        );
 
       const existingRole = await role.findOne({
         where: { name },
         transaction: dbTransaction,
       });
       if (!existingRole)
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          "Role does not Exists",
-          400
+          variables.NotFound,
+          null,
+          "Role does not exists!"
         );
 
       // Create and save the new user
@@ -141,24 +182,29 @@ class roleController {
 
       if (deleteRole) {
         await dbTransaction.commit();
-        return responseUtils.successResponse(
+        return helper.sendResponse(
           res,
-          { message: "Role deleted successfully" },
-          200
+          variables.Success,
+          null,
+          "Role deleted successfully"
         );
       } else {
         await dbTransaction.rollback();
-        return responseUtils.errorResponse(
+        return helper.sendResponse(
           res,
-          { message: "Unable to delete the role" },
-          200
+          variables.UnknownError,
+          null,
+          "Unable to delete the role"
         );
       }
     } catch (error) {
-      if (dbTransaction) {
-        await dbTransaction.rollback();
-      }
-      return responseUtils.errorResponse(res, error.message, 400);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        null,
+        error.message
+      );
     }
   };
 }

@@ -11,21 +11,21 @@ const User = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
-    firstname: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
-    },
-    lastname: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
-    },
-    username: {
+    // firstname: {
+    //   type: DataTypes.STRING,
+    //   allowNull: false,
+    //   validate: {
+    //     notEmpty: true, // Prevents empty string
+    //   },
+    // },
+    // lastname: {
+    //   type: DataTypes.STRING,
+    //   allowNull: false,
+    //   validate: {
+    //     notEmpty: true, // Prevents empty string
+    //   },
+    // },
+    fullname: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
@@ -49,7 +49,7 @@ const User = sequelize.define(
     },
     mobile: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       validate: {
         notEmpty: true, // Prevents empty string
         isNumeric: true,
@@ -58,7 +58,7 @@ const User = sequelize.define(
     },
     country: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       validate: {
         notEmpty: true, // Prevents empty string
       },
@@ -85,10 +85,6 @@ const User = sequelize.define(
       },
     },
     teamId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
-    workstationId: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
