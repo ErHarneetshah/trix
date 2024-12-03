@@ -7,6 +7,7 @@ import reportManagerRouter from './admin/reportManagerRoutes.js';
 import teamRouter from './admin/teamRoutes.js';
 import shiftRouter from './admin/shiftRoutes.js';
 import teamMemberRouter from './admin/teamMembersRoutes.js';
+import settingRouter from './admin/settingRoutes.js';
 
 const router = express.Router();
 
@@ -24,6 +25,7 @@ router.use('/admin/reportManager', reportManagerRouter);
 router.use('/admin/team', teamRouter);
 router.use('/admin/shift', shiftRouter);
 router.use('/admin/teamMember', teamMemberRouter);
+router.use('/admin/settings', settingRouter);
 
 
 export default router;
