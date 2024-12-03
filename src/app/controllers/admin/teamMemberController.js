@@ -27,6 +27,8 @@ class teamMemberController {
       // Validating request body
       const validationResult = await teamsValidationSchema.teamMemberValid(requestData, res);
 
+      console.log(requestData);
+      return true;
       // Check if the user already exists
       const existingUser = await User.findOne({
         where: { email: requestData.email },

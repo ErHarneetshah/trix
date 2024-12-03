@@ -5,6 +5,8 @@ import helper from "../services/helper.js";
 class teamsValidationSchema {
   static teamMemberValid = async (data, res) => {
     try {
+
+      delete data.isAdmin;
       const { status, message } = await CValidator(data, {
         fullname: "required|regex:/^[a-zA-Z ]*$/|min:3|max:30",
         email: "required|email",
