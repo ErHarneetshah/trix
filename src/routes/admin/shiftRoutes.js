@@ -8,7 +8,7 @@ const shiftInstance = new shiftController();
 
 router.get("/getAllShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getAllShift);
 router.post("/addShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.addShift);
-router.post("/updateShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.updateShift);
-router.post("/deleteShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.deleteShift);
+router.put("/updateShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.updateShift);
+router.delete("/deleteShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.deleteShift);
 
 export default router;

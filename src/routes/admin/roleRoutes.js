@@ -8,7 +8,7 @@ const roleInstance = new roleController();
 
 router.get("/getAllRole",  authMiddleware,verifyAdminMiddleware,   roleInstance.getAllRole);
 router.post("/addRole",  authMiddleware,verifyAdminMiddleware,   roleInstance.addRole);
-router.post("/updateRole", authMiddleware,verifyAdminMiddleware,   roleInstance.updateRole);
-router.post("/deleteRole", authMiddleware,verifyAdminMiddleware,   roleInstance.deleteRole);
+router.put("/updateRole", authMiddleware,verifyAdminMiddleware,   roleInstance.updateRole);
+router.delete("/deleteRole", authMiddleware,verifyAdminMiddleware,   roleInstance.deleteRole);
 
 export default router;

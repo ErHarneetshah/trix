@@ -7,30 +7,11 @@ class desigController {
   getAllDesig = async (req, res) => {
     try {
       const allData = await designation.findAll();
-      if (!allData)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          error.message
-        );
+      if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        { data: allData },
-        "Data Fetched Succesfully"
-      );
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
@@ -38,192 +19,84 @@ class desigController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Name is Required!"
-        );
+      if (!name) return helper.failed(res, variables.BadRequest, "Name is Required!");
 
       const existingDesig = await designation.findOne({
         where: { name: name },
         transaction: dbTransaction,
       });
 
-      if (existingDesig)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "Designation Already Exists"
-        );
+      if (existingDesig) return helper.failed(res, variables.ValidationError, "Designation Already Exists");
 
       // Create and save the new user
-      const addNewDesig = await designation.create(
-        { name },
-        { transaction: dbTransaction }
-      );
+      const addNewDesig = await designation.create({ name }, { transaction: dbTransaction });
       await dbTransaction.commit();
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        null,
-        "Designation Added Successfully!"
-      );
+      return helper.success(res, variables.Success, "Designation Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   updateDesig = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, newName, newStatus } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "Name is Required!"
-        );
+      const { id, ...updateFields } = req.body;
+      if (!id) return helper.failed(res, variables.ValidationError, "Id is Required!");
 
       const existingDesig = await designation.findOne({
-        where: { name },
+        where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingDesig)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Designation does not exists!"
-        );
+      if (!existingDesig) return helper.failed(res, variables.NotFound, "Designation does not exists!");
 
-      const updateData = {};
-      if (newName) updateData.name = newName;
-      if (newStatus) updateData.status = newStatus;
-
-      // Check if there's anything to update
-      if (Object.keys(updateData).length === 0) {
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "No new values provided for updation!"
-        );
-      }
-
-      // Perform the update operation
-      const [updatedRows] = await designation.update(updateData, {
-        where: { name },
+      const [updatedRows] = await designation.update(updateFields, {
+        where: { id: id },
         transaction: dbTransaction,
+        individualHooks: true,
       });
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Designation updated Successfully!"
-        );
+        return helper.success(res, variables.Success, "Designation updated Successfully!");
       } else {
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to update the designation!"
-        );
+        return helper.failed(res, variables.UnknownError, 0, null, "Unable to update the designation!");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   deleteDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Name is Required!"
-        );
+      const { id } = req.body;
+      if (!id) return helper.failed(res, variables.BadRequest, "Id is Required!");
 
       const existingDesig = await designation.findOne({
-        where: { name },
+        where: { id:id },
         transaction: dbTransaction,
       });
-      if (!existingDesig)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Designation does not exists!"
-        );
+      if (!existingDesig) return helper.failed(res, variables.NotFound, "Designation does not exists!");
 
       // Create and save the new user
       const deleteDesig = await designation.destroy({
-        where: { name },
+        where: { id: id },
         transaction: dbTransaction,
       });
 
       if (deleteDesig) {
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Designation deleted Successfully!"
-        );
+        return helper.success(res, variables.Success, "Designation deleted Successfully!");
       } else {
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to delete designation!"
-        );
+        return helper.failed(res, variables.UnknownError, "Unable to delete designation!");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 }

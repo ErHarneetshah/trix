@@ -19,25 +19,13 @@ class authValidationSchema {
       console.log("Register Validation -------------------------");
       console.log(status);
       if (!status) {
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          message
-        );
+        return helper.failed(res, variables.ValidationError, message);
       }
 
       return { status: true };
     } catch (error) {
       console.error("Validation error:", error);
-      return helper.sendResponse(
-        res,
-        variables.InternalServerError,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.InternalServerError, error.message);
     }
   };
 
@@ -45,30 +33,18 @@ class authValidationSchema {
     try {
       const { status, message } = await CValidator(data, {
         email: "required|email",
-        password: "required|password_regex|min:8",
+        password: "required",
       });
 
       if (!status) {
         console.log("Login Validation Error");
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          message
-        );
+        return helper.failed(res, variables.ValidationError, message);
       }
 
-      return { status: true };
+      return true;
     } catch (error) {
       console.error("Validation error:", error);
-      return helper.sendResponse(
-        res,
-        variables.InternalServerError,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.InternalServerError, error.message);
     }
   };
 }

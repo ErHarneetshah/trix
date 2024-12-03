@@ -3,8 +3,8 @@ import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
 
-class deptController {
-  getAllDept = async (req, res) => {
+class moduleController {
+  getAllModules = async (req, res) => {
     try {
       const allData = await department.findAll();
       if (!allData) return helper.failed(res, variables.NotFound, error.message);
@@ -15,7 +15,7 @@ class deptController {
     }
   };
 
-  addDept = async (req, res) => {
+  addModules = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name } = req.body;
@@ -36,7 +36,7 @@ class deptController {
     }
   };
 
-  updateDept = async (req, res) => {
+  updateModules = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, ...updateFields } = req.body;
@@ -67,7 +67,7 @@ class deptController {
     }
   };
 
-  deleteDept = async (req, res) => {
+  deleteModules = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;
@@ -99,4 +99,4 @@ class deptController {
   };
 }
 
-export default deptController;
+export default moduleController;

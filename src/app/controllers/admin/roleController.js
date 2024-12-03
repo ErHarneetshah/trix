@@ -7,30 +7,11 @@ class roleController {
   getAllRole = async (req, res) => {
     try {
       const alldata = await role.findAll();
-      if (!alldata)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "No Data is available!"
-        );
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        null,
-        "All Data Fetched Successfully!"
-      );
+      return helper.success(res, variables.Success, "All Data Fetched Successfully!", alldata);
     } catch (error) {
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
@@ -38,191 +19,84 @@ class roleController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
+      if (!name) return helper.failed(res, variables.NotFound, "Name is required!");
 
       const existingRole = await role.findOne({
-        where: { name },
+        where: { name: name },
         transaction: dbTransaction,
       });
-      if (existingRole)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "This Role Already Exists"
-        );
+      if (existingRole) return helper.failed(res, variables.ValidationError, "Role Already Exists!");
 
       // Create and save the new user
-      const addNewRole = await role.create(
-        { name },
-        { transaction: dbTransaction }
-      );
+      const addNewRole = await role.create({ name }, { transaction: dbTransaction });
       await dbTransaction.commit();
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        null,
-        "Role Added Successfully!"
-      );
+      return helper.success(res, variables.Created, "Role Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   updateRole = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, newName, newStatus } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
+      const { id, ...updateFields } = req.body;
+      if (!id) return helper.failed(res, variables.NotFound, "Id is required!");
 
       const existingRole = await role.findOne({
-        where: { name },
+        where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingRole)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "Role does not Exists"
-        );
+      if (!existingRole) 
+        return helper.failed(res, variables.ValidationError, "Role does not exists!");
 
-      const updateData = {};
-      if (newName) updateData.name = newName;
-      if (newStatus) updateData.status = newStatus;
-
-      // Check if there's anything to update
-      if (Object.keys(updateData).length === 0) {
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "No Updating Values provide to update!"
-        );
-      }
-
-      // Perform the update operation
-      const [updatedRows] = await role.update(updateData, {
-        where: { name },
+      const [updatedRows] = await role.update(updateFields, {
+        where: { id: id },
         transaction: dbTransaction,
+        individualHooks: true,
       });
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Role updated Successfully!"
-        );
+        return helper.success(res, variables.Success, "Role Updated Successfully!");
       } else {
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to update the role!"
-        );
+        return helper.failed(res, variables.UnknownError, "Unable to update the role!");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);      
     }
   };
 
   deleteRole = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
+      const { id } = req.body;
+      if (!id) return helper.failed(res, variables.NotFound,"Id is Required!");
 
       const existingRole = await role.findOne({
-        where: { name },
+        where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingRole)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Role does not exists!"
-        );
+      if (!existingRole) return helper.failed(res, variables.ValidationError, "Role does not exists!");
 
       // Create and save the new user
       const deleteRole = await role.destroy({
-        where: { name },
+        where: { id: id },
         transaction: dbTransaction,
       });
 
       if (deleteRole) {
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Role deleted successfully"
-        );
+        return helper.success(res, variables.Created,"Role deleted successfully");
       } else {
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to delete the role"
-        );
+        return helper.failed(res, variables.UnknownError, "Unable to delete the role");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 }

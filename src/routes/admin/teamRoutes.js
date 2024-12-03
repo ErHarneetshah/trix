@@ -8,7 +8,7 @@ const teamInstance = new teamController();
 
 router.get("/getAllTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.getAllTeam);
 router.post("/addTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.addTeam);
-router.post("/updateTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.updateTeam);
-router.post("/deleteTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.deleteTeam);
+router.put("/updateTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.updateTeam);
+router.delete("/deleteTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.deleteTeam);
 
 export default router;

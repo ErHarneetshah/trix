@@ -15,28 +15,60 @@ class teamsValidationSchema {
         teamId: "required",
       });
 
-      console.log("Teams Validation -------------------------");
+      console.log("Team Member Validation -------------------------");
       console.log(status);
       if (!status) {
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          message
-        );
+        return helper.failed(res, variables.ValidationError, message);
       }
 
       return { status: true };
     } catch (error) {
       console.error("Validation error:", error);
-      return helper.sendResponse(
-        res,
-        variables.InternalServerError,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.InternalServerError, error.message);
+    }
+  };
+
+  static shiftValid = async (data, res) => {
+    try {
+      console.log("Shift Validation -------------------------");
+      const { status, message } = await CValidator(data, {
+        name: "required|string",
+        start_time: `required|string`,
+        end_time: `required|string`,
+        days: "required|array",
+        "days.*": "required|string|in:Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+      });
+
+      console.log(status);
+      if (!status) {
+        return helper.failed(res, variables.ValidationError, message);
+      }
+
+      return { status: true };
+    } catch (error) {
+      console.error("Validation error:", error);
+      return helper.failed(res, variables.InternalServerError, error.message);
+    }
+  };
+
+  static teamsValid = async (data, res) => {
+    try {
+      console.log("Teams Validation -------------------------");
+      const { status, message } = await CValidator(data, {
+        name: "required|string",
+        departmentId: "required",
+        shiftId: "required"
+      });
+
+      console.log(status);
+      if (!status) {
+        return helper.failed(res, variables.ValidationError, message);
+      }
+
+      return { status: true };
+    } catch (error) {
+      console.error("Validation error:", error);
+      return helper.failed(res, variables.InternalServerError, error.message);
     }
   };
 }

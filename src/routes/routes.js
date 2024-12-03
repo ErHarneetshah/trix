@@ -8,6 +8,7 @@ import teamRouter from './admin/teamRoutes.js';
 import shiftRouter from './admin/shiftRoutes.js';
 import teamMemberRouter from './admin/teamMembersRoutes.js';
 import settingRouter from './admin/settingRoutes.js';
+import moduleRouter from './admin/moduleRoutes.js';
 
 const router = express.Router();
 
@@ -26,6 +27,6 @@ router.use('/admin/team', teamRouter);
 router.use('/admin/shift', shiftRouter);
 router.use('/admin/teamMember', teamMemberRouter);
 router.use('/admin/settings', settingRouter);
-
+router.use('/admin/module', moduleRouter);
 
 export default router;

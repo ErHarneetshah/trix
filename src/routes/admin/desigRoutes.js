@@ -8,7 +8,7 @@ const desigInstance = new desigController();
 
 router.get("/getAllDesig",  authMiddleware,verifyAdminMiddleware,   desigInstance.getAllDesig);
 router.post("/addDesig",  authMiddleware,verifyAdminMiddleware,   desigInstance.addDesig);
-router.post("/updateDesig", authMiddleware,verifyAdminMiddleware,   desigInstance.updateDesig);
-router.post("/deleteDesig", authMiddleware,verifyAdminMiddleware,   desigInstance.deleteDept);
+router.put("/updateDesig", authMiddleware,verifyAdminMiddleware,   desigInstance.updateDesig);
+router.delete("/deleteDesig", authMiddleware,verifyAdminMiddleware,   desigInstance.deleteDept);
 
 export default router;

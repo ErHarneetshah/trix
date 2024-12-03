@@ -8,7 +8,7 @@ const deptInstance = new deptController();
 
 router.get("/getAllDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.getAllDept);
 router.post("/addDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.addDept);
-router.post("/updateDept", authMiddleware,verifyAdminMiddleware,   deptInstance.updateDept);
-router.post("/deleteDept", authMiddleware,verifyAdminMiddleware,   deptInstance.deleteDept);
+router.put("/updateDept", authMiddleware,verifyAdminMiddleware,   deptInstance.updateDept);
+router.delete("/deleteDept", authMiddleware,verifyAdminMiddleware,   deptInstance.deleteDept);
 
 export default router;

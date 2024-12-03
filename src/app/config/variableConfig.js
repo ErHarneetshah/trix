@@ -3,6 +3,7 @@ const variables = {
     // return response related variables here 
     Success: 200,
     Created: 201,
+    NoContent: 204,
     BadRequest: 400,
     Unauthorized: 401,
     Forbidden: 403,
@@ -11,7 +12,8 @@ const variables = {
     MethodNotAllowed: 405,
     InternalServerError: 500,
     UnknownError: 520,
-
+    badGateway: 502,
+    serviceUnavailabe: 503,
 
     //user related variables here
     Registration: 1,
