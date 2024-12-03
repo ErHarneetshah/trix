@@ -19,7 +19,7 @@ app.use(cors(corsMiddleware));
 // app.options('*', cors(corsOptions));
 app.use(routes);
 
-sequelize.sync();
+// sequelize.sync();
 app.listen(PORT, () =>
   console.log(
     `Server up and Running on http://${ip.address()}:${PORT} --------------------------`
