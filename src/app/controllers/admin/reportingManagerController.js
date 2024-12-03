@@ -1,14 +1,11 @@
 import reportingManager from "../../../database/models/reportingManagerModel.js";
 import team from "../../../database/models/teamModel.js";
 import User from "../../../database/models/userModel.js";
-import team from "../../../database/models/teamModel.js";
-import User from "../../../database/models/userModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
 
 class reportingManagerController {
-  getAllReportManager = async (req, res) => {
   getAllReportManager = async (req, res) => {
     try {
       const allData = await reportingManager.findAll();
@@ -39,7 +36,6 @@ class reportingManagerController {
     }
   };
 
-  addReportManager = async (req, res) => {
   addReportManager = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
@@ -82,8 +78,7 @@ class reportingManagerController {
           "Team does not exists in system!"
         );
 
-      const existingReportManager = await reportingManager.findOne({
-        where: { userId, teamId },
+      
       const existingReportManager = await reportingManager.findOne({
         where: { userId, teamId },
         transaction: dbTransaction,
@@ -98,8 +93,6 @@ class reportingManagerController {
         );
 
       // Create and save the new user
-      const addNewReportManager = await reportingManager.create(
-        { userId, teamId },
       const addNewReportManager = await reportingManager.create(
         { userId, teamId },
         { transaction: dbTransaction }
@@ -125,7 +118,6 @@ class reportingManagerController {
   };
 
   updateReportManager = async (req, res) => {
-  updateReportManager = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { userId, teamId, newUserId, newTeamId } = req.body;
@@ -146,8 +138,7 @@ class reportingManagerController {
           "Team Id is Required!"
         );
 
-      const existingReportManager = await reportingManager.findOne({
-        where: { userId, teamId },
+      
       const existingReportManager = await reportingManager.findOne({
         where: { userId, teamId },
         transaction: dbTransaction,
@@ -214,7 +205,6 @@ class reportingManagerController {
   };
 
   deleteReportManager = async (req, res) => {
-  deleteReportManager = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { userId, teamId } = req.body;
@@ -237,8 +227,6 @@ class reportingManagerController {
 
       const existingReportManager = await reportingManager.findOne({
         where: { userId, teamId },
-      const existingReportManager = await reportingManager.findOne({
-        where: { userId, teamId },
         transaction: dbTransaction,
       });
       if (!existingReportManager)
@@ -251,8 +239,6 @@ class reportingManagerController {
         );
 
       // Create and save the new user
-      const deleteRole = await reportingManager.destroy({
-        where: { userId, teamId },
       const deleteRole = await reportingManager.destroy({
         where: { userId, teamId },
         transaction: dbTransaction,
