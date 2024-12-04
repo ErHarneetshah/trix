@@ -1,7 +1,7 @@
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
-import { Op } from "sequelize";
+import { Model, Op } from "sequelize";
 import rolePermission from "../../../database/models/rolePermissionModel.js";
 
 class rolePermissionController {
@@ -18,6 +18,21 @@ class rolePermissionController {
     }
   };
 
+  getSpecificRolePermissions = async (roleId, moduleName) => {
+    try {
+      console.log(roleId);
+      const roleModuledata = await rolePermission.findOne({
+        where:{roleId: roleId, modules: moduleName},
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
+      if (!roleModuledata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+      return roleModuledata;
+      // return helper.success(res, variables.Success, "All Data Fetched Successfully!", roleModuledata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
 
   addRolePermissions = async (module, roleId, transaction) => {
     try {
@@ -25,10 +40,10 @@ class rolePermissionController {
         roleId,
         modules: module.name,
         permissions:{
-          create: false,
-          view: false,
-          update: false,
-          delete: false,
+          POST: false,
+          GET: false,
+          PUT: false,
+          DELETE: false,
         },
       };
       console.log(permissionData);

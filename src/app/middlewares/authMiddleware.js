@@ -36,6 +36,7 @@ const authMiddleware = async (req, res, next) => {
     });
     if (!user) return helper.failed(res, variables.NotFound, "User not found in system!");
     req.user = user;
+    req.testData = "TestData";
     next();
   } catch (e) {
     if (e.name === "TokenExpiredError") {
