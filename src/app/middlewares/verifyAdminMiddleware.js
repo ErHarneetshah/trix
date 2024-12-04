@@ -10,7 +10,7 @@ const verifyAdminMiddleware = async (req, res, next) => {
   const authHeader = req.header('Authorization');
 
   if (!authHeader) return res.json({ status: 204, message: 'Access denied. No token provided.' });
-  const token = authHeader.replace('Bearer ', '');  // Extract token from header
+  const token = authHeader.replace('Bearer ', '');  // Extract token from heaacder
 
   try {
     const access_token = await accessToken.findOne({ where: { token } });

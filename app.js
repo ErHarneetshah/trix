@@ -7,6 +7,8 @@ import sequelize  from './src/database/queries/dbConnection.js';
 import blockedWebsites from './src/database/models/blockedWebsitesModel.js';
 import appInfo from './src/database/models/blockedWebsitesModel.js';
 import reportSettings from './src/database/models/reportSettingsModel.js';
+import emailGateway from './src/database/models/emailGatewayModel.js';
+import userReports from './src/database/models/workReportsModel.js';
 
 
 const app = express();
