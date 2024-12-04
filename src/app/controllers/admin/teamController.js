@@ -7,12 +7,31 @@ import variables from "../../config/variableConfig.js";
 class teamController {
   getAllTeam = async (req, res) => {
     try {
-      const alldata = await team.findAll();
+      const alldata = await team.findAll({
+        attributes: { exclude: ['createdAt', 'updatedAt'] }
+      });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, "All Data fetched Successfully!");
+    }
+  };
+
+  getSpecificTeam = async (req, res) => {
+    try {
+      const requestData = req.body;
+      if(!requestData.departmentId) return helper.failed(res, variables.NotFound, "Department Id is required");
+
+      const specificData = await team.findOne({
+        attributes: { exclude: ['createdAt', 'updatedAt'] },
+        where: requestData,
+      });
+      if (!specificData) return helper.failed(res, variables.NotFound, `Data not Found of matching attributes `);
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 

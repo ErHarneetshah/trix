@@ -3,6 +3,7 @@ import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import User from "../../../database/models/userModel.js";
 import teamsValidationSchema from "../../../utils/validations/teamsValidation.js";
+import { createUserSetting } from "../../../database/models/userSettingModel.js";
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
@@ -27,8 +28,6 @@ class teamMemberController {
       // Validating request body
       const validationResult = await teamsValidationSchema.teamMemberValid(requestData, res);
 
-      console.log(requestData);
-      return true;
       // Check if the user already exists
       const existingUser = await User.findOne({
         where: { email: requestData.email },
@@ -36,31 +35,28 @@ class teamMemberController {
       });
 
       if (existingUser) {
-        if (existingUser.email === email) {
-          throw new Error("Email already in use");
-        }
-        if (existingUser.status) {
-          throw new Error("This account has been deactivated");
-        }
+        return helper.failed(res, variables.Unauthorized, "User already exists with this mail!");
       }
 
+      const password = await helper.generatePass();
+      if (!password) return helper.failed(res, variables.UnknownError, "User already exists with this mail!");
+      requestData.password = password;
+      console.log(requestData);
       // Create and save the new user
       const teamMember = await User.create(requestData, {
         transaction: dbTransaction,
       });
 
       // Create user settings
-      await createUserSetting(teamMember.id, dbTransaction);
+      const userSetting = await createUserSetting(teamMember.id, dbTransaction, res);
 
-      // Generate JWT token
-      // const token = this.generateToken(teamMember.id.toString(), teamMember.isAdmin, "1d");
-
-      // Save token to the database
-      // const expireTime = this.calculateTime();
-      // await createAccessToken(teamMember.id, teamMember.isAdmin, token, expireTime, dbTransaction);
-
-      await dbTransaction.commit();
-      return helper.success(res, variables.Success, "Team Member Added Successfully");
+      if (userSetting) {
+        await dbTransaction.commit();
+        return helper.success(res, variables.Success, "Team Member Added Successfully", {note: "This response is just for testing purposes for now", requestData: requestData, addedMember: teamMember});
+      } else {
+        await dbTransaction.rollback();
+        return helper.failed(res, variables.UnknownError, "Unknow Error Occured While creating User Setting");
+      }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       console.log(error.message);
@@ -78,7 +74,8 @@ class teamMemberController {
         transaction: dbTransaction,
       });
 
-      if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "Shift does not exists");
+      if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists");
+      if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
       const { id, ...updateFields } = requestData;
 
       // Perform the update operation
@@ -90,7 +87,7 @@ class teamMemberController {
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return helper.success(res, variables.Success, "Shift Updated Successfully");
+        return helper.success(res, variables.Success, "User Updated Successfully");
       } else {
         await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to update the shift");

@@ -9,15 +9,10 @@ import shiftRouter from './admin/shiftRoutes.js';
 import teamMemberRouter from './admin/teamMembersRoutes.js';
 import settingRouter from './admin/settingRoutes.js';
 import moduleRouter from './admin/moduleRoutes.js';
+import rolePermissionRouter from './admin/rolePermissionRoutes.js';
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
-    res.json({
-        message: 'CORS is working correctly for the /auth route!',
-        success: true,
-    });
-});
 router.use('/auth', authRouter);
 router.use('/admin/dept', deptRouter);
 router.use('/admin/desig', desigRouter);
@@ -28,5 +23,6 @@ router.use('/admin/shift', shiftRouter);
 router.use('/admin/teamMember', teamMemberRouter);
 router.use('/admin/settings', settingRouter);
 router.use('/admin/module', moduleRouter);
+router.use('/admin/rolePermission', rolePermissionRouter);
 
 export default router;

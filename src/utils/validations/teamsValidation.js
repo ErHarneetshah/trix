@@ -10,7 +10,6 @@ class teamsValidationSchema {
       const { status, message } = await CValidator(data, {
         fullname: "required|regex:/^[a-zA-Z ]*$/|min:3|max:30",
         email: "required|email",
-        password: "required|password_regex|min:8",
         departmentId: "required",
         designationId: "required",
         roleId: "required",

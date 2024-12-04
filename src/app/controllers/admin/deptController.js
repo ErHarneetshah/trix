@@ -6,10 +6,29 @@ import helper from "../../../utils/services/helper.js";
 class deptController {
   getAllDept = async (req, res) => {
     try {
-      const allData = await department.findAll();
-      if (!allData) return helper.failed(res, variables.NotFound, error.message);
+      const allData = await department.findAll({
+        attributes: { exclude: ['createdAt', 'updatedAt'] }
+      });
+      if (!allData) return helper.failed(res, variables.NotFound,"Data Not Found");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getSpecificDept = async (req, res) => {
+    try {
+      const { id } = req.body;
+      if(!id) return helper.failed(res, variables.NotFound, "Id is required");
+
+      const deptData = await department.findOne({
+        where: { id: id },
+        attributes: { exclude: ['createdAt', 'updatedAt'] },
+      });
+      if (!deptData) return helper.failed(res, variables.NotFound, "Data Not Found");
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", deptData);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }

@@ -7,7 +7,7 @@ class moduleController {
   getAllModules = async (req, res) => {
     try {
       const allData = await department.findAll();
-      if (!allData) return helper.failed(res, variables.NotFound, error.message);
+      if (!allData) return helper.failed(res, variables.NotFound, "Data not Found");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {

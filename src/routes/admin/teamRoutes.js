@@ -7,6 +7,7 @@ const router = express.Router();
 const teamInstance = new teamController();
 
 router.get("/getAllTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.getAllTeam);
+router.get("/getSpecificTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.getSpecificTeam);
 router.post("/addTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.addTeam);
 router.put("/updateTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.updateTeam);
 router.delete("/deleteTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.deleteTeam);

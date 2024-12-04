@@ -2,11 +2,16 @@ import role from "../../../database/models/roleModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
+import module from "../../../database/models/moduleModel.js";
+import { Op } from "sequelize";
+import rolePermissionController from "./rolePermissionController.js";
 
 class roleController {
   getAllRole = async (req, res) => {
     try {
-      const alldata = await role.findAll();
+      const alldata = await role.findAll({
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
       return helper.success(res, variables.Success, "All Data Fetched Successfully!", alldata);
@@ -15,8 +20,26 @@ class roleController {
     }
   };
 
+  getSpecificRole = async (req, res) => {
+    try {
+      const { id } = req.body;
+      if (!id) return helper.failed(res, variables.NotFound, "Id is required");
+
+      const roleData = await role.findOne({
+        where: { id: id },
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
+      if (!roleData) return helper.failed(res, variables.NotFound, "Data Not Found");
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", roleData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
   addRole = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
+    const permissionInstance = new rolePermissionController();
     try {
       const { name } = req.body;
       if (!name) return helper.failed(res, variables.NotFound, "Name is required!");
@@ -29,6 +52,14 @@ class roleController {
 
       // Create and save the new user
       const addNewRole = await role.create({ name }, { transaction: dbTransaction });
+
+      const permissionModules = await module.findAll({
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      })
+      for (const module of permissionModules) {
+        await permissionInstance.addRolePermissions(module, addNewRole.id, dbTransaction);
+      }
+
       await dbTransaction.commit();
       return helper.success(res, variables.Created, "Role Added Successfully!");
     } catch (error) {
@@ -40,21 +71,47 @@ class roleController {
   updateRole = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { id, ...updateFields } = req.body;
+      const { id, name } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is required!");
+      if (!name) return helper.failed(res, variables.NotFound, "No Updation value is present");
 
+      // Checking whether the role id exists in system or not
       const existingRole = await role.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingRole) 
-        return helper.failed(res, variables.ValidationError, "Role does not exists!");
+      if (!existingRole) return helper.failed(res, variables.ValidationError, "Role does not exists!");
 
-      const [updatedRows] = await role.update(updateFields, {
-        where: { id: id },
+      // Checking whether the role name exists in system or not excluding the id we passed to update for
+      const existingRoleWithName = await role.findOne({
+        where: {
+          name: name,
+          id: { [Op.ne]: id }, // Exclude the current record by id
+        },
         transaction: dbTransaction,
-        individualHooks: true,
       });
+      if (existingRoleWithName) {
+        return helper.failed(res, variables.ValidationError, "Role name already exists in different record!");
+      }
+
+      // if updating name for the role id is already the same value that exists in system with same id
+      const alreadySameRole = await role.findOne({
+        where: { id: id, name: name },
+        transaction: dbTransaction,
+      });
+      if (alreadySameRole) return helper.success(res, variables.Success, "Role Re-Updated Successfully!");
+
+      // when there is actually something to update
+      const [updatedRows] = await role.update(
+        {
+          name: name,
+        },
+        {
+          where: { id: id },
+          transaction: dbTransaction,
+          // individualHooks: true,
+        }
+      );
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
@@ -65,7 +122,7 @@ class roleController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.failed(res, variables.BadRequest, error.message);      
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
@@ -73,7 +130,7 @@ class roleController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;
-      if (!id) return helper.failed(res, variables.NotFound,"Id is Required!");
+      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
       const existingRole = await role.findOne({
         where: { id: id },
@@ -89,7 +146,7 @@ class roleController {
 
       if (deleteRole) {
         await dbTransaction.commit();
-        return helper.success(res, variables.Created,"Role deleted successfully");
+        return helper.success(res, variables.Created, "Role deleted successfully");
       } else {
         await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to delete the role");

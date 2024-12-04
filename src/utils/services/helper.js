@@ -1,5 +1,8 @@
 // import appConfig from "../../app/config/appConfig.js";
+import { fail } from "assert";
 import fs from "fs";
+import generator from "generate-password";
+import variables from "../../app/config/variableConfig.js";
 
 // const ACCESS_TOKEN = new appConfig().getJwtConfig();
 
@@ -37,55 +40,14 @@ export default {
     return res.status(statusCode).json(result);
   },
 
-  unauth: () => {
-    return {
-      status: "0",
-      status_text: "failed",
-      message: "Unauthenticated",
-    };
+  sendResponse: (res, statusCode, status, data, message) => {
+    res.status(statusCode).json({
+      status: status,
+      message: message || (status === 1 ? "Success" : "Error"),
+      data: data || null,
+    });
   },
 
-  // notfound: () => {
-  //     return {
-  //         status: "0",
-  //         status_text: "failed",
-  //         message: 'Not Found',
-  //     }
-  // },
-
-  s_success: (message, data = null, extra = null) => {
-    var result = {
-      status: "1",
-      status_text: "success",
-      message: message,
-    };
-
-    if (data != null || data == []) {
-      result["data"] = data;
-    }
-
-    if (extra != null) {
-      Object.assign(result, extra);
-    }
-
-    return result;
-  },
-
-  s_failed: (message) => {
-    return {
-      status: "0",
-      status_text: "failed",
-      message: message,
-    };
-  },
-
-    sendResponse: (res, statusCode, status, data, message) => {
-      res.status(statusCode).json({
-        status: status,
-        message: message || (status === 1 ? "Success" : "Error"),
-        data: data || null,
-      });
-    },
   // jwtToken: (id) => {
   //     return JWT.sign({
   //         userInfo: {
@@ -106,6 +68,23 @@ export default {
     } catch (error) {
       console.log({ del_file_error: error });
       return { message: `Unable to delete file at this moment`, status: 0 };
+    }
+  },
+
+  generatePass: async() => {
+    try {
+      const generatedPass = generator.generate({
+        length: 10,
+        numbers: true,
+        uppercase: false,
+        excludeSimilarCharacters: true,
+        strict: true,
+      });
+      if (generatedPass) return generatedPass;
+
+      return this.failed(res, variables.Unauthorized, "Unable to generate password for team member!");
+    } catch (error) {
+      return this.failed(res, variables.UnknownError, error.message);
     }
   },
 };

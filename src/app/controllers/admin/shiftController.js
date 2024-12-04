@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import shift from "../../../database/models/shiftModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import helper from "../../../utils/services/helper.js";
@@ -7,12 +8,36 @@ import variables from "../../config/variableConfig.js";
 class shiftController {
   getAllShift = async (req, res) => {
     try {
-      const alldata = await shift.findAll();
+      const alldata = await shift.findAll({
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, "All Data fetched Successfully!");
+      return helper.failed(res, variables.BadRequest, "Unable to fetch data");
+    }
+  };
+
+  getSpecificShift = async (req, res) => {
+    try {
+      const requestData = req.body;
+
+      const specificData = await shift.findOne({
+        where: {
+          name: requestData.name,
+          start_time: requestData.start_time,
+          end_time: requestData.end_time,
+          days: JSON.stringify(requestData.days), // Ensure days are correctly formatted for comparison
+        },
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
+
+      if (!specificData) return helper.failed(res, variables.NotFound, `Data not Found of matching attributes `);
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
@@ -34,7 +59,7 @@ class shiftController {
         },
         transaction: dbTransaction,
       });
-      if (existingShift) return helper.failed(res, variables.ValidationError,"Shift Already Exists!");
+      if (existingShift) return helper.failed(res, variables.ValidationError, "Shift Already Exists!");
 
       // Calulating total_hours in the shift
       // let total_hours = await this.calTotalHr(requestData.start_time, requestData.end_time);

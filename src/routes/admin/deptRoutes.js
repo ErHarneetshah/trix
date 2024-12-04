@@ -7,6 +7,7 @@ const router = express.Router();
 const deptInstance = new deptController();
 
 router.get("/getAllDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.getAllDept);
+router.get("/getSpecificDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.getSpecificDept);
 router.post("/addDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.addDept);
 router.put("/updateDept", authMiddleware,verifyAdminMiddleware,   deptInstance.updateDept);
 router.delete("/deleteDept", authMiddleware,verifyAdminMiddleware,   deptInstance.deleteDept);

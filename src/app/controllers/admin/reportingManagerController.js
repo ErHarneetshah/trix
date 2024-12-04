@@ -8,10 +8,28 @@ import helper from "../../../utils/services/helper.js";
 class reportingManagerController {
   getAllReportManager = async (req, res) => {
     try {
-      const allData = await reportingManager.findAll();
-      if (!allData) return helper.failed(res, variables.NotFound, error.message);
+      const allData = await reportingManager.findAll({
+        attributes: { exclude: ['createdAt', 'updatedAt'] }
+      });
+      if (!allData) return helper.failed(res, variables.NotFound, "Data not Found");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getSpecificReportManager = async (req, res) => {
+    try {
+      const requestData = req.body;
+      
+      const specificData = await reportingManager.findOne({
+        attributes: { exclude: ['createdAt', 'updatedAt'] },
+        where: requestData,
+      });
+      if (!specificData) return helper.failed(res, variables.NotFound, "Data not Found");
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }

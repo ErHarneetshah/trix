@@ -9,52 +9,52 @@ import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 
 class authController extends jwtService {
-  register = async (req, res) => {
-    const dbTransaction = await sequelize.transaction();
-    try {
-      const requestData = req.body;
+  // register = async (req, res) => {
+  //   const dbTransaction = await sequelize.transaction();
+  //   try {
+  //     const requestData = req.body;
 
-      // Validating request body
-      const validationResult = await authValidation.registerValid(requestData, res);
+  //     // Validating request body
+  //     const validationResult = await authValidation.registerValid(requestData, res);
 
-      // Check if the user already exists
-      const existingUser = await User.findOne({
-        where: { email: requestData.email },
-        transaction: dbTransaction,
-      });
+  //     // Check if the user already exists
+  //     const existingUser = await User.findOne({
+  //       where: { email: requestData.email },
+  //       transaction: dbTransaction,
+  //     });
 
-      if (existingUser) {
-        if (existingUser.email === email) {
-          throw new Error("Email already in use");
-        }
-        if (existingUser.status) {
-          throw new Error("This account has been deactivated");
-        }
-      }
+  //     if (existingUser) {
+  //       return helper.sendResponse(res, variables.Unauthorized, 0, null, "User already exists with this mail!");
+  //     }
 
-      // Create and save the new user
-      const user = await User.create(requestData, {
-        transaction: dbTransaction,
-      });
+  //     // Create and save the new user
+  //     const user = await User.create(requestData, {
+  //       transaction: dbTransaction,
+  //     });
 
-      // Create user settings
-      await createUserSetting(user.id, dbTransaction);
+  //     // Create user settings
+  //     const userSetting = await createUserSetting(teamMember.id, dbTransaction, res);
 
-      // Generate JWT token
-      const token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
+  //     if(!userSetting){
+  //       await dbTransaction.rollback();
+  //       return helper.failed(res, variables.UnknownError, "Unknow Error Occured While creating User Setting");
+  //     }
 
-      // Save token to the database
-      const expireTime = this.calculateTime();
-      await createAccessToken(user.id, user.isAdmin, token, expireTime, dbTransaction);
+  //     // Generate JWT token
+  //     const token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
 
-      await dbTransaction.commit();
-      return helper.sendResponse(res, variables.Success, 1, { token: token }, "Register Successfully");
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
-      console.log(error.message);
-      return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
-    }
-  };
+  //     // Save token to the database
+  //     const expireTime = this.calculateTime();
+  //     await createAccessToken(user.id, user.isAdmin, token, expireTime, dbTransaction);
+
+  //     await dbTransaction.commit();
+  //     return helper.sendResponse(res, variables.Success, 1, { token: token }, "Register Successfully");
+  //   } catch (error) {
+  //     if (dbTransaction) await dbTransaction.rollback();
+  //     console.log(error.message);
+  //     return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
+  //   }
+  // };
 
   login = async (req, res) => {
     const dbTransaction = await sequelize.transaction();

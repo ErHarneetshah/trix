@@ -11,9 +11,6 @@ const module = sequelize.define('modules', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-    validate: {
-        notEmpty: true,
-      },
   }
 }, {
   timestamps: true,
