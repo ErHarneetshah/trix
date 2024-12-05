@@ -163,4 +163,16 @@ User.prototype.comparePassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
 
+// User belongs to Department
+User.belongsTo(department, { as: 'department', foreignKey: 'departmentId' });
+
+// User belongs to Designation
+User.belongsTo(designation, { as: 'designation', foreignKey: 'designationId' });
+
+// User belongs to Role
+User.belongsTo(role, { as: 'role', foreignKey: 'roleId' });
+
+// User belongs to Team
+User.belongsTo(team, { as: 'team', foreignKey: 'teamId' });
+
 export default User;

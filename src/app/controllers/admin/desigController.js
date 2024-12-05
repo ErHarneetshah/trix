@@ -17,6 +17,20 @@ class desigController {
     }
   };
 
+  getDesigDropdown = async (req, res) => {
+    try {
+      const allData = await designation.findAll({
+        where: {status: true},
+        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
+      });
+      if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
   getSpecificDesig = async (req, res) => {
     try {
       const { id } = req.body;

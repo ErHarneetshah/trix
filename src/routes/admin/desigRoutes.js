@@ -6,7 +6,8 @@ import desigController from "../../app/controllers/admin/desigController.js";
 const router = express.Router();
 const desigInstance = new desigController();
 
-router.get("/getAllDesig",  authMiddleware,verifyAdminMiddleware,   desigInstance.getAllDesig)
+router.get("/getAllDesig",  authMiddleware,verifyAdminMiddleware,   desigInstance.getAllDesig);
+router.get("/getDesigDropdown",  authMiddleware,verifyAdminMiddleware,   desigInstance.getDesigDropdown);
 router.get("/getSpecificDesig",  authMiddleware,verifyAdminMiddleware,   desigInstance.getSpecificDesig);
 router.post("/addDesig",  authMiddleware,verifyAdminMiddleware,   desigInstance.addDesig);
 router.put("/updateDesig", authMiddleware,verifyAdminMiddleware,   desigInstance.updateDesig);

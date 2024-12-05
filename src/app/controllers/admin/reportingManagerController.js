@@ -19,6 +19,20 @@ class reportingManagerController {
     }
   };
 
+  getReportManagerDropdown = async (req, res) => {
+    try {
+      const allData = await reportingManager.findAll({
+        where: {status: true},
+        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
+      });
+      if (!allData) return helper.failed(res, variables.NotFound, "Data not Found");
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
   getSpecificReportManager = async (req, res) => {
     try {
       const requestData = req.body;

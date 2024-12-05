@@ -20,7 +20,6 @@ class rolePermissionController {
 
   getSpecificRolePermissions = async (roleId, moduleName) => {
     try {
-      console.log(roleId);
       const roleModuledata = await rolePermission.findOne({
         where:{roleId: roleId, modules: moduleName},
         attributes: { exclude: ["createdAt", "updatedAt"] },

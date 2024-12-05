@@ -7,6 +7,7 @@ const router = express.Router();
 const roleInstance = new roleController();
 
 router.get("/getAllRole",  authMiddleware,verifyAdminMiddleware,   roleInstance.getAllRole);
+router.get("/getRoleDropdown",  authMiddleware,verifyAdminMiddleware,   roleInstance.getRoleDropdown);
 router.get("/getSpecificRole",  authMiddleware,verifyAdminMiddleware,   roleInstance.getSpecificRole);
 router.post("/addRole",  authMiddleware,verifyAdminMiddleware,   roleInstance.addRole);
 router.put("/updateRole", authMiddleware,verifyAdminMiddleware,   roleInstance.updateRole);

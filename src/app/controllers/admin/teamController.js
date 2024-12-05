@@ -1,3 +1,5 @@
+import department from "../../../database/models/departmentModel.js";
+import shift from "../../../database/models/shiftModel.js";
 import team from "../../../database/models/teamModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import helper from "../../../utils/services/helper.js";
@@ -7,8 +9,49 @@ import variables from "../../config/variableConfig.js";
 class teamController {
   getAllTeam = async (req, res) => {
     try {
+      // const alldata = await team.findAll({
+      //   attributes: { exclude: ['createdAt', 'updatedAt'] }
+      // });
+      // if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+      const rawData = await team.findAll({
+        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
+        include: [
+          {
+            model: department,
+            as: 'department',
+            attributes: ['name'],
+          },
+          {
+            model: shift,
+            as: 'shift',
+            attributes: ['name'],
+          },
+        ],
+        raw: true,
+        nest: true, // Keeps nested data for easier manipulation
+      });
+
+      const alldata = rawData.map(item => ({
+        ...item,
+        department: item.department?.name || null,
+        shift: item.shift?.name || null,
+      }));
+
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, "All Data fetched Successfully!");
+    }
+  };
+
+  getTeamDropdown = async (req, res) => {
+    try {
       const alldata = await team.findAll({
-        attributes: { exclude: ['createdAt', 'updatedAt'] }
+        where: {status: true},
+        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 

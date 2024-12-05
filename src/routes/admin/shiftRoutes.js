@@ -7,6 +7,7 @@ const router = express.Router();
 const shiftInstance = new shiftController();
 
 router.get("/getAllShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getAllShift);
+router.get("/getShiftDropdown",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getShiftDropdown);
 router.get("/getSpecificShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getSpecificShift);
 router.post("/addShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.addShift);
 router.put("/updateShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.updateShift);

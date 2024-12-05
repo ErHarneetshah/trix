@@ -4,19 +4,94 @@ import variables from "../../config/variableConfig.js";
 import User from "../../../database/models/userModel.js";
 import teamsValidationSchema from "../../../utils/validations/teamsValidation.js";
 import { createUserSetting } from "../../../database/models/userSettingModel.js";
+import department from "../../../database/models/departmentModel.js";
+import designation from "../../../database/models/designationModel.js";
+import role from "../../../database/models/roleModel.js";
+import team from "../../../database/models/teamModel.js";
+import { Op } from "sequelize";
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
     try {
-      const alldata = await User.findAll({
-        where: { isAdmin: 0 },
-        attributes: { exclude: ["password", "mobile", "country", "isAdmin", "workstationId", "createdAt", "updatedAt"] }, // Exclude the password field
+      let { searchParam, limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+
+      let where = {};
+      let search = [];
+
+      let searchable = [
+        "fullname",
+        "email",
+        "mobile",
+        "country",
+        "$department.name$",
+        "$designation.name$",
+        "$role.name$",
+        "$team.name$",
+      ];
+
+      if (searchParam) {
+        //searchable filter
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+      }
+
+      where.isAdmin = 0;
+      const alldata = await User.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt", "status"] }, // Exclude fields
+        include: [
+          {
+            model: department,
+            as: "department",
+            attributes: ["name"],
+          },
+          {
+            model: designation,
+            as: "designation",
+            attributes: ["name"],
+          },
+          {
+            model: role,
+            as: "role",
+            attributes: ["name"],
+          },
+          {
+            model: team,
+            as: "team",
+            attributes: ["name"],
+          },
+        ],
+        raw: true,
+        nest: true, // Keeps nested data for easier manipulation
       });
+
+      // const alldata = rawData.map((item) => ({
+      //   ...item,
+      //   department: item.department?.name || null,
+      //   designation: item.designation?.name || null,
+      //   role: item.role?.name || null,
+      //   team: item.team?.name || null,
+      // }));
+
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, "All Data fetched Successfully!");
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
@@ -52,7 +127,11 @@ class teamMemberController {
 
       if (userSetting) {
         await dbTransaction.commit();
-        return helper.success(res, variables.Success, "Team Member Added Successfully", {note: "This response is just for testing purposes for now", requestData: requestData, addedMember: teamMember});
+        return helper.success(res, variables.Success, "Team Member Added Successfully", {
+          note: "This response is just for testing purposes for now",
+          requestData: requestData,
+          addedMember: teamMember,
+        });
       } else {
         await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unknow Error Occured While creating User Setting");

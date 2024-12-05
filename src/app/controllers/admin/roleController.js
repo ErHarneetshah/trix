@@ -10,6 +10,20 @@ class roleController {
   getAllRole = async (req, res) => {
     try {
       const alldata = await role.findAll({
+        where: {status: true},
+        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
+      });
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+      return helper.success(res, variables.Success, "All Data Fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getRoleDropdown = async (req, res) => {
+    try {
+      const alldata = await role.findAll({
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
