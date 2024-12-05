@@ -133,12 +133,14 @@ class deptController {
       const { id, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
+      // Check if there is a dept already exists
       const existingDept = await department.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
       if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
 
+      // Check if there is a dept with a name in a different id
       const existingDeptWithName = await department.findOne({
         where: {
           name: updateFields.name,
@@ -150,13 +152,14 @@ class deptController {
         return helper.failed(res, variables.ValidationError, "Department name already exists in different record!");
       }
 
+      // if the id has the same value in db
       const alreadySameDept = await department.findOne({
         where: { id: id, name: updateFields.name },
         transaction: dbTransaction,
       });
       if (alreadySameDept) return helper.success(res, variables.Success, "Department Re-Updated Successfully!");
 
-
+      // Update the row
       const [updatedRows] = await department.update(updateFields, {
         where: { id: id },
         transaction: dbTransaction,
