@@ -107,6 +107,7 @@ const User = sequelize.define(
         // Iterate through the fields to validate
         for (const [field, model] of Object.entries(validationMap)) {
           if (user[field]) {
+            console.log(model);
             const recordExists = await model.findOne({
               where: { id: user[field] },
               transaction: options.transaction,
@@ -139,6 +140,8 @@ const User = sequelize.define(
         // Iterate through the fields to validate
         for (const [field, model] of Object.entries(validationMap)) {
           if (user[field]) {
+            console.log("------------------------");
+            console.log(model);
             const recordExists = await model.findOne({
               where: { id: user[field] },
               transaction: options.transaction,

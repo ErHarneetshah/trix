@@ -28,17 +28,17 @@ const updateAdminDetails = async (req, res) => {
   try {
     const { firstname, lastname, email, mobile } = req.body;
     if (!firstname || !lastname || !email || !mobile) {
-      // return responseUtils.errorResponse(res, "All fields (firstname, lastname, email, mobile) are required.", 400);
+      return helper.failed(res, variables.BadRequest, "All fields (firstname, lastname, email, mobile) are required");
     }
     const user = await User.findByPk(req.params.id);
     if (!user) {
-      // return responseUtils.errorResponse(res, "User not exits.", 400);
+      return helper.failed(res, variables.BadRequest, "User not exists");
     }
     await User.update({ firstname, lastname, email, mobile }, { where: { id: req.params.id } });
-    // return responseUtils.successResponse(res, { message: "Admin Profile Updated Successfully." }, 200);
+    return helper.success(res, variables.Success, { message: "Admin Profile Updated Successfully" });
   } catch (error) {
     console.error("Error updating admin details:", error);
-    // return responseUtils.errorResponse(res, "Error updating admin details", 400);
+    return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
@@ -46,7 +46,7 @@ const addBlockWebsites = async (req, res) => {
   try {
     const { Department_id, Sites } = req.body;
     if (!Department_id || !Sites) {
-      // return responseUtils.errorResponse(res, "Department_id and Sites are required.", 400);
+      return helper.failed(res, variables.ValidationError, "Department_id and Sites are required");
     }
     // // Optionally, validate the URL format
     // const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
@@ -57,55 +57,55 @@ const addBlockWebsites = async (req, res) => {
       where: { Sites },
     });
     if (existingWebsite) {
-      // return responseUtils.errorResponse(res, { message: "Website is already blocked" }, 400);
+      return helper.failed(res, variables.ValidationError, "Website is already blocked");
     }
     const newBlockedWebsite = await blockedWebsites.create({
       Department_id,
       Sites,
     });
-    // return responseUtils.successResponse(res, { website: newBlockedWebsite, message: "Website Blocked successfully" }, 200);
+    return helper.success(res, variables.Success, "Website Blocked successfully", newBlockedWebsite);
   } catch (error) {
     console.error("Error blocking website:", error);
-    // return responseUtils.errorResponse(res, error.message, 400);
+    return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
 const getBlockedWebsites = async (req, res) => {
   try {
+    console.log("-------------------------------------");
     const getBlockedSites = await blockedWebsites.findAll({
       where: {
         Status: {
           [Op.ne]: 0,
         },
       },
-      attributes: ["id", "Sites"],
+      attributes: ["id", "Sites", "status"],
     });
-    // return responseUtils.successResponse(res, { retrievedWebsite: getBlockedSites, message: "Retrieved  Blocked Website Successfully" }, 200);
+    return helper.success(res, variables.Success, "Website Blocked successfully", getBlockedSites);
   } catch (error) {
     console.error("Error blocking website:", error);
-    // return responseUtils.errorResponse(res, error.message, 400);
+    return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
 const updateSitesStatus = async (req, res) => {
   try {
-    const id = req.params.id;
-    const { status } = req.body;
+    const { id,status } = req.body;
     if (!id || status === undefined) {
-      // return responseUtils.errorResponse(res, "ID and Status are required", 400);
+      return helper.failed(res, variables.ValidationError, "ID and Status are required");
     }
     if (status !== 0 && status !== 1) {
-      // return responseUtils.errorResponse(res, "Status must be either 0 or 1.", 400);
+      return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
     }
-    const [updatedRows] = await blockedWebsites.update({ Status: status }, { where: { id } });
+    const [updatedRows] = await blockedWebsites.update({ Status: status }, { where: { id: id } });
 
     if (updatedRows === 0) {
-      // return responseUtils.errorResponse(res, "Site not found or status not changed", 404);
+      return helper.failed(res, variables.NotFound, "Site not found or status not changed");
     }
-    // return responseUtils.successResponse(res, { retrievedWebsite: updatedRows, message: "Site status updated successfully" }, 200);
+    return helper.success(res, variables.Success, "Site status updated successfully", updatedRows);
   } catch (error) {
     console.error("Error updating site status:", error);
-    // return responseUtils.errorResponse(res, error.message, 500);
+    return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
@@ -113,18 +113,18 @@ const addProductiveNonProductiveApps = async (req, res) => {
   try {
     const { department_id, app_logo, appname, website_url, is_productive } = req.body;
     if (!department_id || !app_logo || !appname || !website_url || is_productive === undefined) {
-      // return responseUtils.errorResponse(res, "All fields (department_id, app_logo, appname, website_url, is_productive) are required.", 400);
+      return helper.failed(res, variables.ValidationError, "All fields (department_id, app_logo, appname, website_url, is_productive) are required");
     }
     const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
     if (!urlPattern.test(website_url)) {
-      // return responseUtils.errorResponse(res, "Invalid URL format for website_url.", 400);
+      return helper.failed(res, variables.ValidationError, "Invalid URL format for website_url.");
     }
 
     const newAppInfo = await appInfo.create({ department_id, app_logo, appname, website_url, is_productive });
-    // return responseUtils.successResponse(res, { appInfo: newAppInfo, message: "App added Successfully." }, 200);
+    return helper.success(res, variables.Success, "App added Successfully", newAppInfo);
   } catch (error) {
     console.error("Error creating app info:", error);
-    // return responseUtils.errorResponse(res, error.message, 400);
+    return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
@@ -140,38 +140,33 @@ const getAppInfo = async (req, res) => {
       attributes: ["appname", "app_logo"],
     });
 
-    // return responseUtils.successResponse(res, {
-    //     productiveApps,
-    //     nonProductiveApps,
-    //     message: "Apps retrieved successfully."
-    // }, 200);
+    return helper.success(res, variables.Success, "Apps retrieved successfully", { productiveApps: productiveApps, nonProductiveApps: nonProductiveApps });
   } catch (error) {
     console.error("Error fetching app info:", error);
-    // return responseUtils.errorResponse(res, error.message, 400);
+    return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
 const updateReportSettings = async (req, res) => {
   try {
-    //check that the id exist or not
     const differentReportStatus = await reportSettings.findByPk(req.params.id);
     if (!differentReportStatus) {
-      // return responseUtils.errorResponse(res, "Somethong Went Wrong.", 400);
+      return helper.failed(res, variables.ValidationError, "Somethong Went Wrong");
     }
 
     const { status } = req.body;
     if (status === undefined) {
-      // return responseUtils.errorResponse(res, "Status is required.", 400);
+      return helper.failed(res, variables.ValidationError, "Status is required");
     }
     if (status !== 0 && status !== 1) {
-      // return responseUtils.errorResponse(res, "Status must be either 0 or 1.", 400);
+      return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
     }
 
     const [updateReportStatus] = await reportSettings.update({ is_active: status }, { where: { id: req.params.id } });
-    // return responseUtils.successResponse(res, { updatedRpows: updateReportStatus, message: "Report Status Updated Successfully." }, 200);
+    return helper.success(res, variables.Success, "Report Status Updated Successfully", updateReportStatus);
   } catch (error) {
     console.error("Error fetching app info:", error);
-    // return responseUtils.errorResponse(res, error.message, 400);
+    return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 

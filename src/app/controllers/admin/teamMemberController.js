@@ -136,16 +136,16 @@ class teamMemberController {
   updateTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const requestData = req.body;
 
+      const { id, ...updateFields } = req.body;
       const existingTeamMember = await User.findOne({
-        where: { id: requestData.id },
+        where: { id: id },
         transaction: dbTransaction,
       });
 
       if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists");
       if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
-      const { id, ...updateFields } = requestData;
+     
 
       // Perform the update operation
       const [updatedRows] = await User.update(updateFields, {

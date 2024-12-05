@@ -3,6 +3,7 @@ import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
 import { Op } from "sequelize";
+import reportingManager from "../../../database/models/reportingManagerModel.js";
 
 class deptController {
   getTestData = async (req, res) => {
@@ -119,6 +120,16 @@ class deptController {
       if (existingDept) return helper.failed(res, variables.ValidationError, "Department Already Exists in our system");
 
       const addNewDept = await department.create({ name }, { transaction: dbTransaction });
+      const departmentId = addNewDept.dataValues.id;
+
+      const existingReportManager = await reportingManager.findOne({
+        where: { departmentId: departmentId },
+        transaction: dbTransaction,
+      });
+      if (existingReportManager) return helper.failed(res, variables.ValidationError, "Report Manager record Already Exists for this departmentId");
+
+      const addNewReportManager = await reportingManager.create({ departmentId }, { transaction: dbTransaction });
+
       await dbTransaction.commit();
       return helper.success(res, variables.Created, "Department Added Successfully!");
     } catch (error) {
@@ -133,14 +144,14 @@ class deptController {
       const { id, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
-      // Check if there is a dept already exists
+      //* Check if there is a dept already exists
       const existingDept = await department.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
       if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
 
-      // Check if there is a dept with a name in a different id
+      //* Check if there is a dept with a name in a different id
       const existingDeptWithName = await department.findOne({
         where: {
           name: updateFields.name,
@@ -152,14 +163,14 @@ class deptController {
         return helper.failed(res, variables.ValidationError, "Department name already exists in different record!");
       }
 
-      // if the id has the same value in db
+      //* if the id has the same value in db
       const alreadySameDept = await department.findOne({
         where: { id: id, name: updateFields.name },
         transaction: dbTransaction,
       });
       if (alreadySameDept) return helper.success(res, variables.Success, "Department Re-Updated Successfully!");
 
-      // Update the row
+      //* Update the row
       const [updatedRows] = await department.update(updateFields, {
         where: { id: id },
         transaction: dbTransaction,

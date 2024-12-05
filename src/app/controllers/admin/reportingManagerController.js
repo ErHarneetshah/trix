@@ -1,9 +1,9 @@
 import reportingManager from "../../../database/models/reportingManagerModel.js";
-import team from "../../../database/models/teamModel.js";
 import User from "../../../database/models/userModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
+import department from "../../../database/models/departmentModel.js";
 
 class reportingManagerController {
   getAllReportManager = async (req, res) => {
@@ -52,27 +52,27 @@ class reportingManagerController {
   addReportManager = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { userId, teamId } = req.body;
+      const { userId, departmentId } = req.body;
 
-      if (!userId || !teamId) {
+      if (!userId || !departmentId) {
         const missingField = !userId ? "User Id" : "Team Id";
         return helper.failed(res, variables.NotFound,`${missingField} is Required!`);
       }
 
       const userExists = await User.findOne({ where: { id: userId } });
-      const teamExists = await team.findOne({ where: { id: teamId } });
+      const departmentExists = await department.findOne({ where: { id: departmentId } });
 
       if (!userExists) return helper.failed(res, variables.NotFound, "User does not exists in system!");
-      if (!teamExists) return helper.failed(res, variables.NotFound, "Team does not exists in system!");
+      if (!departmentExists) return helper.failed(res, variables.NotFound, "Department does not exists in system!");
 
       const existingReportManager = await reportingManager.findOne({
-        where: { userId, teamId },
+        where: { userId: userId, departmentId: departmentId },
         transaction: dbTransaction,
       });
       if (existingReportManager) return helper.failed(res, variables.ValidationError, "Report Manager Already Exists in our system");
 
       // Create and save the new user
-      const addNewReportManager = await reportingManager.create({ userId, teamId }, { transaction: dbTransaction });
+      const addNewReportManager = await reportingManager.create({ userId, departmentId }, { transaction: dbTransaction });
       await dbTransaction.commit();
       return helper.success(res, variables.Created, "Reporting Manager Added Successfully!");
     } catch (error) {
