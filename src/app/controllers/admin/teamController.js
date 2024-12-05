@@ -1,3 +1,6 @@
+import { Op } from "sequelize";
+import department from "../../../database/models/departmentModel.js";
+import shift from "../../../database/models/shiftModel.js";
 import team from "../../../database/models/teamModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import helper from "../../../utils/services/helper.js";
@@ -7,8 +10,69 @@ import variables from "../../config/variableConfig.js";
 class teamController {
   getAllTeam = async (req, res) => {
     try {
+      let { searchParam, limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+
+      let where = {};
+      let search = [];
+
+      let searchable = [
+        "name",
+        "$department.name$",
+        "$shift.name$"
+      ];
+
+      if (searchParam) {
+        //searchable filter
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+      }
+
+
+      const alldata = await team.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
+        include: [
+          {
+            model: department,
+            as: 'department',
+            attributes: ['name'],
+          },
+          {
+            model: shift,
+            as: 'shift',
+            attributes: ['name'],
+          },
+        ],
+      });
+
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getTeamDropdown = async (req, res) => {
+    try {
       const alldata = await team.findAll({
-        attributes: { exclude: ['createdAt', 'updatedAt'] }
+        where: {status: true},
+        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 

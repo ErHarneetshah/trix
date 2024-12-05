@@ -19,6 +19,20 @@ class shiftController {
     }
   };
 
+  getShiftDropdown = async (req, res) => {
+    try {
+      const alldata = await shift.findAll({
+        where: {status: true},
+        attributes: { exclude: ['createdAt', 'updatedAt', 'status', 'start_time', 'end_time', 'days', 'total_hours'] }
+      });
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, "Unable to fetch data");
+    }
+  };
+
   getSpecificShift = async (req, res) => {
     try {
       const requestData = req.body;

@@ -9,12 +9,77 @@ import rolePermissionController from "./rolePermissionController.js";
 class roleController {
   getAllRole = async (req, res) => {
     try {
-      const alldata = await role.findAll({
+      let { searchParam, limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+
+      let where = {};
+      let search = [];
+
+      let searchable = ["name", "status"];
+
+      if (searchParam) {
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+      }
+      const allData = await role.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+      if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
-      return helper.success(res, variables.Success, "All Data Fetched Successfully!", alldata);
+      return helper.success(res, variables.Success, "All Data Fetched Successfully!", allData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getRoleDropdown = async (req, res) => {
+    try {
+      let { searchParam, limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+
+      let where = {};
+      let search = [];
+
+      let searchable = ["name"];
+
+      if (searchParam) {
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+      }
+      const allData = await role.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
+      if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
+
+      return helper.success(res, variables.Success, "All Data Fetched Successfully!", allData);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }

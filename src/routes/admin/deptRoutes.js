@@ -9,6 +9,7 @@ const deptInstance = new deptController();
 
 router.get("/getTestMiddleware",  authMiddleware,verifyAdminMiddleware,rolePermissionMiddleware,   deptInstance.getAllDept);
 router.get("/getAllDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.getAllDept);
+router.get("/getDeptDropdown",  authMiddleware,verifyAdminMiddleware,   deptInstance.getDeptDropdown);
 router.get("/getSpecificDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.getSpecificDept);
 router.post("/addDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.addDept);
 router.put("/updateDept", authMiddleware,verifyAdminMiddleware,   deptInstance.updateDept);
