@@ -163,11 +163,6 @@ User.prototype.comparePassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
 
-// Add a custom method to compare password
-User.prototype.comparePassword = async function (password) {
-  return bcrypt.compare(password, this.password);
-};
-
 // User belongs to Department
 User.belongsTo(department, { as: 'department', foreignKey: 'departmentId' });
 

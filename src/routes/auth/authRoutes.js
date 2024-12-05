@@ -13,6 +13,6 @@ router.post("/register", (req, res) => {
 
 // router.post("/register", authInstance.register);
 router.post("/login", authInstance.login);
-router.post("/admin/login", authInstance.login);
+router.post("/user/login", authInstance.login);
 
 export default router;

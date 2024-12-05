@@ -23,7 +23,7 @@ class shiftController {
     try {
       const alldata = await shift.findAll({
         where: {status: true},
-        attributes: { exclude: ['createdAt', 'updatedAt', 'status', 'start_time', 'end_time', 'days', 'total_hours'] }
+        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 

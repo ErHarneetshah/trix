@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import sequelize  from '../queries/dbConnection.js';
-import department from './departmentModel.js';
 import shift from './shiftModel.js';
+import department from './departmentModel.js';
 
 const team = sequelize.define('teams', {
   id: {
