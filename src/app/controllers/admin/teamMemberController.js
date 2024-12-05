@@ -75,20 +75,10 @@ class teamMemberController {
             attributes: ["name"],
           },
         ],
-        raw: true,
-        nest: true, // Keeps nested data for easier manipulation
+        
       });
 
-      // const alldata = rawData.map((item) => ({
-      //   ...item,
-      //   department: item.department?.name || null,
-      //   designation: item.designation?.name || null,
-      //   role: item.role?.name || null,
-      //   team: item.team?.name || null,
-      // }));
-
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
-
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);

@@ -2,14 +2,41 @@ import department from "../../../database/models/departmentModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
+import { Op } from "sequelize";
 
 class deptController {
   getAllDept = async (req, res) => {
     try {
-      const allData = await department.findAll({
-        attributes: { exclude: ['createdAt', 'updatedAt'] }
+      let { searchParam, limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+
+      let where = {};
+      let search = [];
+
+      let searchable = ["name", "status"];
+
+      if (searchParam) {
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+      }
+      const allData = await department.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!allData) return helper.failed(res, variables.NotFound,"Data Not Found");
+      if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
@@ -19,11 +46,38 @@ class deptController {
 
   getDeptDropdown = async (req, res) => {
     try {
+      let { searchParam, limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+
+      let where = {};
+      let search = [];
+
+      let searchable = ["name", "status"];
+
+      if (searchParam) {
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+      }
+
+      where.status = 1;
       const allData = await department.findAll({
-        where: {status: true},
-        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
-      if (!allData) return helper.failed(res, variables.NotFound,"Data Not Found");
+      if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
@@ -34,11 +88,11 @@ class deptController {
   getSpecificDept = async (req, res) => {
     try {
       const { id } = req.body;
-      if(!id) return helper.failed(res, variables.NotFound, "Id is required");
+      if (!id) return helper.failed(res, variables.NotFound, "Id is required");
 
       const deptData = await department.findOne({
         where: { id: id },
-        attributes: { exclude: ['createdAt', 'updatedAt'] },
+        attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!deptData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
@@ -114,7 +168,7 @@ class deptController {
 
       // Create and save the new user
       const deleteDept = await department.destroy({
-        where: { id:id },
+        where: { id: id },
         transaction: dbTransaction,
       });
 

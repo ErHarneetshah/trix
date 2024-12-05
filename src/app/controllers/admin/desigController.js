@@ -2,12 +2,39 @@ import designation from "../../../database/models/designationModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
+import { Op } from "sequelize";
 
 class desigController {
   getAllDesig = async (req, res) => {
     try {
-      const allData = await designation.findAll({
-        attributes: { exclude: ['createdAt', 'updatedAt'] }
+      let { searchParam, limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+
+      let where = {};
+      let search = [];
+
+      let searchable = ["name", "status"];
+
+      if (searchParam) {
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+      }
+      const allData = await designation.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
@@ -19,9 +46,36 @@ class desigController {
 
   getDesigDropdown = async (req, res) => {
     try {
-      const allData = await designation.findAll({
-        where: {status: true},
-        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
+      let { searchParam, limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+
+      let where = {};
+      let search = [];
+
+      let searchable = ["name"];
+
+      if (searchParam) {
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+      }
+
+      where.status = 1;
+      const allData = await designation.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
