@@ -78,7 +78,7 @@ class teamController {
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, "All Data fetched Successfully!");
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 

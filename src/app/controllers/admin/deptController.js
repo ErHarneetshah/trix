@@ -137,7 +137,25 @@ class deptController {
         where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingDept) return helper.failed(res, variables.NotFound, "Department does not found in our system");
+      if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
+
+      const existingDeptWithName = await department.findOne({
+        where: {
+          name: updateFields.name,
+          id: { [Op.ne]: id }, // Exclude the current record by id
+        },
+        transaction: dbTransaction,
+      });
+      if (existingDeptWithName) {
+        return helper.failed(res, variables.ValidationError, "Department name already exists in different record!");
+      }
+
+      const alreadySameDept = await department.findOne({
+        where: { id: id, name: updateFields.name },
+        transaction: dbTransaction,
+      });
+      if (alreadySameDept) return helper.success(res, variables.Success, "Department Re-Updated Successfully!");
+
 
       const [updatedRows] = await department.update(updateFields, {
         where: { id: id },
