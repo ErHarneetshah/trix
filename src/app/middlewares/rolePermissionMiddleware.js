@@ -8,22 +8,27 @@ const rolePermissionMiddleware = async (req, res, next) => {
     const authUser = req.user;
     const reqMethod = req.method;
     const routeUrl = req.originalUrl;
-    const moduleName = routeUrl.split("/")[2]; // Extracts 'dept'
-    const customModule = "department";
-    const customRoleID = 30;
+    const moduleName = routeUrl.split("/")[2];
 
-    const getPermission = await permissionInstance.getSpecificRolePermissions(customRoleID, customModule);
+    // Testing variables
+    // const customModule = "department";
+    // const customRoleID = 30;
+
+    const getPermission = await permissionInstance.getSpecificRolePermissions(authUser.roleId, moduleName);
     const permissions = getPermission.dataValues.permissions;
-    console.log(permissions);
-    console.log(typeof permissions);
-   
-
-    return true;
-    // return helper.failed(res, variables.Unauthorized, "You are not allowed to access it.");
-    next();
+    if (reqMethod in permissions) {
+      if (permissions[reqMethod]) {
+        console.log("The Middleware is working");
+        next();
+      } else {
+        return helper.failed(res, variables.Unauthorized, "You Are Not Allowed to Access It");
+      }
+    } else {
+      return helper.failed(res, variables.Unauthorized, "Permission does not exists");
+    }
   } catch (e) {
     if (e.name === "TokenExpiredError") {
-      return helper.failed(res, variables.Unauthorized, "You are not allowed to access it.");
+      return helper.failed(res, variables.Unauthorized, "Token Expired. Please login again");
     }
     return helper.failed(res, variables.Unauthorized, e.message);
   }
