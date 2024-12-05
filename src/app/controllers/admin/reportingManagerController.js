@@ -9,7 +9,7 @@ class reportingManagerController {
   getAllReportManager = async (req, res) => {
     try {
       const allData = await reportingManager.findAll({
-        attributes: { exclude: ['createdAt', 'updatedAt'] }
+        attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data not Found");
 
@@ -22,8 +22,8 @@ class reportingManagerController {
   getReportManagerDropdown = async (req, res) => {
     try {
       const allData = await reportingManager.findAll({
-        where: {status: true},
-        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
+        where: { status: true },
+        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data not Found");
 
@@ -36,9 +36,9 @@ class reportingManagerController {
   getSpecificReportManager = async (req, res) => {
     try {
       const requestData = req.body;
-      
+
       const specificData = await reportingManager.findOne({
-        attributes: { exclude: ['createdAt', 'updatedAt'] },
+        attributes: { exclude: ["createdAt", "updatedAt"] },
         where: requestData,
       });
       if (!specificData) return helper.failed(res, variables.NotFound, "Data not Found");
@@ -56,7 +56,7 @@ class reportingManagerController {
 
       if (!userId || !departmentId) {
         const missingField = !userId ? "User Id" : "Team Id";
-        return helper.failed(res, variables.NotFound,`${missingField} is Required!`);
+        return helper.failed(res, variables.NotFound, `${missingField} is Required!`);
       }
 
       const userExists = await User.findOne({ where: { id: userId } });
@@ -87,11 +87,31 @@ class reportingManagerController {
       const { id, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
+      //* Check if there is a dept already exists
       const existingReportManager = await reportingManager.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingReportManager) return helper.failed(res, variables.NotFound, "Reporting Manager does not exists");
+      if (!existingReportManager) return helper.failed(res, variables.ValidationError, "Report Manager does not exists!");
+
+      //* Check if there is a dept with a name in a different id
+      const existingReportManagerWithName = await reportingManager.findOne({
+        where: {
+          name: updateFields.name,
+          id: { [Op.ne]: id }, // Exclude the current record by id
+        },
+        transaction: dbTransaction,
+      });
+      if (existingReportManagerWithName) {
+        return helper.failed(res, variables.ValidationError, "Report Manager name already exists in different record!");
+      }
+
+      //* if the id has the same value in db
+      const alreadySameReportManager = await reportingManager.findOne({
+        where: { id: id, name: updateFields.name },
+        transaction: dbTransaction,
+      });
+      if (alreadySameReportManager) return helper.success(res, variables.Success, "Report Manager Re-Updated Successfully!");
 
       const [updatedRows] = await reportingManager.update(updateFields, {
         where: { id: id },

@@ -91,17 +91,35 @@ class shiftController {
   updateShift = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      // const { name, start_time, end_time, days, newShiftName, newStart_time, newEnd_time, newDays } = req.body;
       const { id, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
+      //* Check if there is a dept already exists
       const existingShift = await shift.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
+      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists!");
 
-      if (!existingShift) return helper.failed(res, variables.BadRequest, "Shift does not exists");
+      //* Check if there is a dept with a name in a different id
+      const existingShiftWithName = await shift.findOne({
+        where: {
+          name: updateFields.name,
+          id: { [Op.ne]: id }, // Exclude the current record by id
+        },
+        transaction: dbTransaction,
+      });
+      if (existingShiftWithName) {
+        return helper.failed(res, variables.ValidationError, "Shift name already exists in different record!");
+      }
 
+      //* if the id has the same value in db
+      const alreadySameShift = await shift.findOne({
+        where: { id: id, name: updateFields.name },
+        transaction: dbTransaction,
+      });
+      if (alreadySameShift) return helper.success(res, variables.Success, "Shift Re-Updated Successfully!");
+  
       const [updatedRows] = await shift.update(updateFields, {
         where: { id: id },
         transaction: dbTransaction,

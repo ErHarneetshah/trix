@@ -131,11 +131,31 @@ class desigController {
       const { id, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.ValidationError, "Id is Required!");
 
+      //* Check if there is a dept already exists
       const existingDesig = await designation.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingDesig) return helper.failed(res, variables.NotFound, "Designation does not exists!");
+      if (!existingDesig) return helper.failed(res, variables.ValidationError, "Designation does not exists!");
+
+      //* Check if there is a dept with a name in a different id
+      const existingDesigWithName = await designation.findOne({
+        where: {
+          name: updateFields.name,
+          id: { [Op.ne]: id }, // Exclude the current record by id
+        },
+        transaction: dbTransaction,
+      });
+      if (existingDesigWithName) {
+        return helper.failed(res, variables.ValidationError, "Desgination name already exists in different record!");
+      }
+
+      //* if the id has the same value in db
+      const alreadySameDesign = await designation.findOne({
+        where: { id: id, name: updateFields.name },
+        transaction: dbTransaction,
+      });
+      if (alreadySameDesign) return helper.success(res, variables.Success, "Designation Re-Updated Successfully!");
 
       const [updatedRows] = await designation.update(updateFields, {
         where: { id: id },

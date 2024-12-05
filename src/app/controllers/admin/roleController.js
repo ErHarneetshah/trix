@@ -140,14 +140,14 @@ class roleController {
       if (!id) return helper.failed(res, variables.NotFound, "Id is required!");
       if (!name) return helper.failed(res, variables.NotFound, "No Updation value is present");
 
-      // Checking whether the role id exists in system or not
+      //* Checking whether the role id exists in system or not
       const existingRole = await role.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
       if (!existingRole) return helper.failed(res, variables.ValidationError, "Role does not exists!");
 
-      // Checking whether the role name exists in system or not excluding the id we passed to update for
+      //* Checking whether the role name exists in system or not excluding the id we passed to update for
       const existingRoleWithName = await role.findOne({
         where: {
           name: name,
@@ -159,7 +159,7 @@ class roleController {
         return helper.failed(res, variables.ValidationError, "Role name already exists in different record!");
       }
 
-      // if updating name for the role id is already the same value that exists in system with same id
+      //* if updating name for the role id is already the same value that exists in system with same id
       const alreadySameRole = await role.findOne({
         where: { id: id, name: name },
         transaction: dbTransaction,

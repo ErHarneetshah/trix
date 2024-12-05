@@ -17,11 +17,7 @@ class teamController {
       let where = {};
       let search = [];
 
-      let searchable = [
-        "name",
-        "$department.name$",
-        "$shift.name$"
-      ];
+      let searchable = ["name", "$department.name$", "$shift.name$"];
 
       if (searchParam) {
         //searchable filter
@@ -38,7 +34,6 @@ class teamController {
         };
       }
 
-
       const alldata = await team.findAndCountAll({
         where,
         offset: offset,
@@ -48,19 +43,18 @@ class teamController {
         include: [
           {
             model: department,
-            as: 'department',
-            attributes: ['name'],
+            as: "department",
+            attributes: ["name"],
           },
           {
             model: shift,
-            as: 'shift',
-            attributes: ['name'],
+            as: "shift",
+            attributes: ["name"],
           },
         ],
       });
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
-
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
@@ -71,8 +65,8 @@ class teamController {
   getTeamDropdown = async (req, res) => {
     try {
       const alldata = await team.findAll({
-        where: {status: true},
-        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
+        where: { status: true },
+        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
@@ -85,10 +79,10 @@ class teamController {
   getSpecificTeam = async (req, res) => {
     try {
       const requestData = req.body;
-      if(!requestData.departmentId) return helper.failed(res, variables.NotFound, "Department Id is required");
+      if (!requestData.departmentId) return helper.failed(res, variables.NotFound, "Department Id is required");
 
       const specificData = await team.findOne({
-        attributes: { exclude: ['createdAt', 'updatedAt'] },
+        attributes: { exclude: ["createdAt", "updatedAt"] },
         where: requestData,
       });
       if (!specificData) return helper.failed(res, variables.NotFound, `Data not Found of matching attributes `);
@@ -133,11 +127,31 @@ class teamController {
       const { id, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
-      const existingReportManager = await team.findOne({
+      //* Check if there is a dept already exists
+      const existingTeam = await team.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingReportManager) return helper.failed(res, variables.BadRequest, "Team does not exists");
+      if (!existingTeam) return helper.failed(res, variables.ValidationError, "Team does not exists!");
+
+      //* Check if there is a dept with a name in a different id
+      const existingTeamWithName = await team.findOne({
+        where: {
+          name: updateFields.name,
+          id: { [Op.ne]: id }, // Exclude the current record by id
+        },
+        transaction: dbTransaction,
+      });
+      if (existingTeamWithName) {
+        return helper.failed(res, variables.ValidationError, "Team name already exists in different record!");
+      }
+
+      //* if the id has the same value in db
+      const alreadySameTeam = await team.findOne({
+        where: { id: id, name: updateFields.name },
+        transaction: dbTransaction,
+      });
+      if (alreadySameTeam) return helper.success(res, variables.Success, "Team Re-Updated Successfully!");
 
       const [updatedRows] = await team.update(updateFields, {
         where: { id: id },
