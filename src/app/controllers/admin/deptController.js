@@ -5,6 +5,10 @@ import helper from "../../../utils/services/helper.js";
 import { Op } from "sequelize";
 
 class deptController {
+  getTestData = async (req, res) => {
+    return helper.success(res, variables.Success, "Permission Middleware Worked Successfully Succesfully");
+  }
+
   getAllDept = async (req, res) => {
     try {
       let { searchParam, limit, page } = req.query;

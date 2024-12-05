@@ -14,13 +14,16 @@ const rolePermissionMiddleware = async (req, res, next) => {
 
     const getPermission = await permissionInstance.getSpecificRolePermissions(customRoleID, customModule);
     const permissions = getPermission.dataValues.permissions;
-    console.log(permissions);
-    console.log(typeof permissions);
-   
-
-    return true;
-    // return helper.failed(res, variables.Unauthorized, "You are not allowed to access it.");
-    next();
+    if (reqMethod in permissions) {
+      if (permissions[reqMethod]) {
+        console.log("The Middleware is working");
+        next();
+      } else {
+        return helper.failed(res, variables.Unauthorized, "You Are Not Allowed to Access It");
+      }
+    } else {
+      return helper.failed(res, variables.Unauthorized, "Permission does not exists");
+    }
   } catch (e) {
     if (e.name === "TokenExpiredError") {
       return helper.failed(res, variables.Unauthorized, "You are not allowed to access it.");
