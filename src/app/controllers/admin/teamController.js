@@ -67,6 +67,18 @@ class teamController {
       const alldata = await team.findAll({
         where: { status: true },
         attributes: { exclude: ["createdAt", "updatedAt", "status"] },
+        include: [
+          {
+            model: department,
+            as: "department",
+            attributes: ["name"],
+          },
+          {
+            model: shift,
+            as: "shift",
+            attributes: ["name"],
+          },
+        ],
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
