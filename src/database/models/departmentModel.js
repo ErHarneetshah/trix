@@ -15,6 +15,10 @@ const department = sequelize.define('departments', {
         notEmpty: true, // Prevents empty string
       },
   },
+  reportingManagerId: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   status:{
     type: DataTypes.BOOLEAN,
     allowNull: false,

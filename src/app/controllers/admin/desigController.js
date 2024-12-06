@@ -5,8 +5,10 @@ import helper from "../../../utils/services/helper.js";
 import { Op } from "sequelize";
 
 class desigController {
+  //* API to get all the Designation data
   getAllDesig = async (req, res) => {
     try {
+      // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       let { searchParam, limit, page } = req.query;
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
@@ -29,6 +31,8 @@ class desigController {
           [Op.or]: search,
         };
       }
+
+      // Getting all the designation based on seacrh parameters with total count >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const allData = await designation.findAndCountAll({
         where,
         offset: offset,
@@ -44,8 +48,10 @@ class desigController {
     }
   };
 
+  //* API to get all the Designation data who's status is 1 (active)
   getDesigDropdown = async (req, res) => {
     try {
+      // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       let { searchParam, limit, page } = req.query;
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
@@ -70,7 +76,9 @@ class desigController {
       }
 
       where.status = 1;
-      const allData = await designation.findAndCountAll({
+
+      // Getting all the designations with status condtion to be 1 (active) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const allData = await designation.findAll({
         where,
         offset: offset,
         limit: limit,
@@ -85,14 +93,16 @@ class desigController {
     }
   };
 
+  //* API to get specific designation data
   getSpecificDesig = async (req, res) => {
     try {
       const { id } = req.body;
-      if(!id) return helper.failed(res, variables.NotFound, "Id is required");
+      if (!id) return helper.failed(res, variables.NotFound, "Id is required");
 
+      // Retrieve specific designation data from db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const desigData = await designation.findOne({
         where: { id: id },
-        attributes: { exclude: ['createdAt', 'updatedAt'] },
+        attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!desigData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
@@ -102,12 +112,14 @@ class desigController {
     }
   };
 
+  //* API to add new designation in the db
   addDesig = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name } = req.body;
       if (!name) return helper.failed(res, variables.BadRequest, "Name is Required!");
 
+      // Check if the designation id exists in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesig = await designation.findOne({
         where: { name: name },
         transaction: dbTransaction,
@@ -115,8 +127,10 @@ class desigController {
 
       if (existingDesig) return helper.failed(res, variables.ValidationError, "Designation Already Exists");
 
-      // Create and save the new user
+      // Add new designation in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const addNewDesig = await designation.create({ name }, { transaction: dbTransaction });
+      
+      // Commits db enteries if passes everything >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       await dbTransaction.commit();
       return helper.success(res, variables.Success, "Designation Added Successfully!");
     } catch (error) {
@@ -125,20 +139,21 @@ class desigController {
     }
   };
 
+  //* API to Update the designation from db
   updateDesig = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.ValidationError, "Id is Required!");
 
-      //* Check if there is a dept already exists
+      // Check if there is a dept already exists -----------------------------------------
       const existingDesig = await designation.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
       if (!existingDesig) return helper.failed(res, variables.ValidationError, "Designation does not exists!");
 
-      //* Check if there is a dept with a name in a different id
+      // Check if there is a dept with a name in a different id ----------------------------------
       const existingDesigWithName = await designation.findOne({
         where: {
           name: updateFields.name,
@@ -150,13 +165,14 @@ class desigController {
         return helper.failed(res, variables.ValidationError, "Desgination name already exists in different record!");
       }
 
-      //* if the id has the same value in db
+      // check if the id has the same value in db -----------------------------------------------
       const alreadySameDesign = await designation.findOne({
         where: { id: id, name: updateFields.name },
         transaction: dbTransaction,
       });
       if (alreadySameDesign) return helper.success(res, variables.Success, "Designation Re-Updated Successfully!");
 
+      // update the designation if passes everything ---------------------------------------------
       const [updatedRows] = await designation.update(updateFields, {
         where: { id: id },
         transaction: dbTransaction,
@@ -164,40 +180,47 @@ class desigController {
       });
 
       if (updatedRows > 0) {
+        // Commit the db enteries if passes everything --------------------------------------------
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Designation updated Successfully!");
       } else {
+        // Revert the db enteries if error occurs ------------------------------------------
         await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, 0, null, "Unable to update the designation!");
       }
     } catch (error) {
+      // Revert the db enteries if error occurs ---------------------------------------
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
+  //* API to Delete the designation from db
   deleteDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;
       if (!id) return helper.failed(res, variables.BadRequest, "Id is Required!");
 
+      // Check if the designation exists in db or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesig = await designation.findOne({
-        where: { id:id },
+        where: { id: id },
         transaction: dbTransaction,
       });
       if (!existingDesig) return helper.failed(res, variables.NotFound, "Designation does not exists!");
 
-      // Create and save the new user
+      // Delete the desgination from db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const deleteDesig = await designation.destroy({
         where: { id: id },
         transaction: dbTransaction,
       });
 
       if (deleteDesig) {
+        // Commits db enteries if passes everything >>>>>>>>>>>>>>>>>>>>>>>>>>>
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Designation deleted Successfully!");
       } else {
+        // Rollback db entereis if error occurs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to delete designation!");
       }
