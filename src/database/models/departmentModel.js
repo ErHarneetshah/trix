@@ -28,4 +28,5 @@ const department = sequelize.define('departments', {
   timestamps: true, // Adds createdAt and updatedAt columns
 });
 
+
 export default department;

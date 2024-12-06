@@ -3,7 +3,7 @@ import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
 import { Op } from "sequelize";
-import reportingManager from "../../../database/models/reportingManagerModel.js";
+// import reportingManager from "../../../database/models/reportingManagerModel.js";
 
 class deptController {
   //* Using this just for testing purposes of role permission middleware
@@ -134,15 +134,14 @@ class deptController {
 
       // Adding new department in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const addNewDept = await department.create({ name }, { transaction: dbTransaction });
-      const departmentId = addNewDept.dataValues.id;
 
       //! Need to update this code as there is no reporting manager separate code
-      const existingReportManager = await reportingManager.findOne({
-        where: { departmentId: departmentId },
-        transaction: dbTransaction,
-      });
-      if (existingReportManager) return helper.failed(res, variables.ValidationError, "Report Manager record Already Exists for this departmentId");
-      const addNewReportManager = await reportingManager.create({ departmentId }, { transaction: dbTransaction });
+      // const existingReportManager = await reportingManager.findOne({
+      //   where: { departmentId: departmentId },
+      //   transaction: dbTransaction,
+      // });
+      // if (existingReportManager) return helper.failed(res, variables.ValidationError, "Report Manager record Already Exists for this departmentId");
+      // const addNewReportManager = await reportingManager.create({ departmentId }, { transaction: dbTransaction });
 
       // Committing db enteries if passes every code correctly >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       await dbTransaction.commit();
@@ -157,7 +156,7 @@ class deptController {
   updateDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { id, ...updateFields } = req.body;
+      const { id, name, ...updatedField } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -170,7 +169,7 @@ class deptController {
       // Check if there is a dept with a name in a different id >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDeptWithName = await department.findOne({
         where: {
-          name: updateFields.name,
+          name: name,
           id: { [Op.ne]: id }, // Exclude the current record by id
         },
         transaction: dbTransaction,
@@ -181,22 +180,25 @@ class deptController {
 
       // Check if the id has the same value in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const alreadySameDept = await department.findOne({
-        where: { id: id, name: updateFields.name },
+        where: { id: id, name: name },
         transaction: dbTransaction,
       });
       if (alreadySameDept) return helper.success(res, variables.Success, "Department Re-Updated Successfully!");
 
-
-      if (updateFields.status !== 0 && updateFields.status !== 1) {
-        return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
-      }
+      // Check to stop updating the status of department >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      // if(updatedField.status !== undefined) return helper.success(res, variables.Success, "Cannot update the Department Status");
 
       // Update the db entry >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      const [updatedRows] = await department.update(updateFields, {
-        where: { id: id },
-        transaction: dbTransaction,
-        individualHooks: true,
-      });
+      const [updatedRows] = await department.update(
+        {
+          name: name,
+        },
+        {
+          where: { id: id },
+          transaction: dbTransaction,
+          individualHooks: true,
+        }
+      );
 
       if (updatedRows > 0) {
         // Committ enteries in db if passed everything >>>>>>>>>>>>>>>>>>>>>>>>>>>

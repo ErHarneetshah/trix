@@ -125,8 +125,7 @@ class shiftController {
       //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
       // }
 
-      con
-      st [updatedRows] = await shift.update(updateFields, {
+      const [updatedRows] = await shift.update(updateFields, {
         where: { id: id },
         transaction: dbTransaction,
         individualHooks: true,
