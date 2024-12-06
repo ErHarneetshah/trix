@@ -83,13 +83,13 @@ const addBlockWebsites = async (req, res) => {
       where: { departmentId: departmentId, sites: sites },
     });
     if (existingWebsite) {
-      return helper.failed(res, variables.ValidationError, "Website is already blocked for this department");
+      return helper.failed(res, variables.ValidationError, "Website is already added for this department");
     }
     const newBlockedWebsite = await blockedWebsites.create({
       departmentId,
       sites,
     });
-    return helper.success(res, variables.Success, "Website Blocked successfully");
+    return helper.success(res, variables.Success, "New Block Website added successfully");
   } catch (error) {
     console.error("Error blocking website:", error);
     return helper.failed(res, variables.BadRequest, error.message);
