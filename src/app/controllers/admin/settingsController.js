@@ -36,13 +36,13 @@ const updateAdminDetails = async (req, res) => {
       return helper.failed(res, variables.BadRequest, "All fields (fullname, email, mobile) are required");
     }
     const user = await User.findOne({
-      where: { id: req.params.id },
+      where: { id: req.user.id },
     });
     if (!user) {
       return helper.failed(res, variables.BadRequest, "User not exists");
     }
 
-    await User.update({ fullname, email, mobile }, { where: { id: req.params.id } });
+    await User.update({ fullname, email, mobile }, { where: { id: req.user.id } });
     return helper.success(res, variables.Success, "Admin Profile Updated Successfully");
   } catch (error) {
     console.error("Error updating admin details:", error);

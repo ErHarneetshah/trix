@@ -4,6 +4,7 @@ import appConfiguration from "./src/app/config/appConfig.js";
 import routes from "./src/routes/routes.js";
 import cors from "cors";
 import corsMiddleware from "./src/app/middlewares/corsMiddleware.js";
+import dbRelations from "./src/database/queries/dbRelations.js";
 
 
 const app = express();
