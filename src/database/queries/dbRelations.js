@@ -5,10 +5,10 @@ import role from "../models/roleModel.js";
 import team from "../models/teamModel.js";
 
 // User Relationships here
-User.hasMany(department, { as: "department", foreignKey: "departmentId" });
-User.hasMany(designation, { as: "designation", foreignKey: "designationId" });
-User.hasMany(role, { as: "role", foreignKey: "roleId" });
-User.hasMany(team, { as: "team", foreignKey: "teamId" });
+User.belongsTo(department, { as: "department", foreignKey: "departmentId" });
+User.belongsTo(designation, { as: "designation", foreignKey: "designationId" });
+User.belongsTo(role, { as: "role", foreignKey: "roleId" });
+User.belongsTo(team, { as: "team", foreignKey: "teamId" });
 
 // Department relationships here
 department.belongsTo(User, { as: "reportingManager", foreignKey: "reportingManagerId" });
