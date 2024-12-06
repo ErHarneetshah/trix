@@ -10,6 +10,6 @@ router.get("/getAllReportManager",  authMiddleware,verifyAdminMiddleware,   repo
 router.get("/getReportManagerDropdown",  authMiddleware,verifyAdminMiddleware,   reportManagerInstance.getReportManagerDropdown);
 // router.post("/addReportManager",  authMiddleware,verifyAdminMiddleware,   reportManagerInstance.addReportManager);
 router.put("/updateReportManager", authMiddleware,verifyAdminMiddleware,   reportManagerInstance.updateReportManager);
-router.delete("/deleteReportManager", authMiddleware,verifyAdminMiddleware,   reportManagerInstance.deleteReportManager);
+// router.delete("/deleteReportManager", authMiddleware,verifyAdminMiddleware,   reportManagerInstance.deleteReportManager);
 
 export default router;

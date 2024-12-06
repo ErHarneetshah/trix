@@ -119,7 +119,7 @@ class reportingManagerController {
       //* Check if there is a dept with a name in a different id
       const existingReportManager = await department.findOne({
         where: {
-          reportManagerId: reportManagerId,
+          reportingManagerId: reportManagerId,
           id: { [Op.ne]: id }, // Exclude the current record by id
         },
         transaction: dbTransaction,
@@ -133,18 +133,23 @@ class reportingManagerController {
         where: { id: id, reportingManagerId: reportManagerId },
         transaction: dbTransaction,
       });
-      if (alreadySameReportManager) return helper.success(res, variables.Success, "Report Manager Assigned Successfully!");
+      if (alreadySameReportManager) return helper.success(res, variables.Success, "Report Manager Re-Assigned Successfully!");
 
       // // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // if (updateFields.status !== 0 && updateFields.status !== 1) {
       //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
       // }
 
-      const [updatedRows] = await department.update(updateFields, {
-        where: { id: id, reportingManagerId: reportManagerId },
-        transaction: dbTransaction,
-        individualHooks: true,
-      });
+      const [updatedRows] = await department.update(
+        {
+          reportingManagerId: reportManagerId,
+        },
+        {
+          where: { id: id },
+          transaction: dbTransaction,
+          individualHooks: true,
+        }
+      );
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
@@ -159,36 +164,36 @@ class reportingManagerController {
     }
   };
 
-  deleteReportManager = async (req, res) => {
-    const dbTransaction = await sequelize.transaction();
-    try {
-      const { id } = req.body;
-      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
+  // deleteReportManager = async (req, res) => {
+  //   const dbTransaction = await sequelize.transaction();
+  //   try {
+  //     const { id } = req.body;
+  //     if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
-      const existingReportManager = await reportingManager.findOne({
-        where: { id: id },
-        transaction: dbTransaction,
-      });
-      if (!existingReportManager) return helper.failed(res, variables.ValidationError, "Report Manager does not exists");
+  //     const existingReportManager = await reportingManager.findOne({
+  //       where: { id: id },
+  //       transaction: dbTransaction,
+  //     });
+  //     if (!existingReportManager) return helper.failed(res, variables.ValidationError, "Report Manager does not exists");
 
-      // Create and save the new user
-      const deleteRole = await reportingManager.destroy({
-        where: { id: id },
-        transaction: dbTransaction,
-      });
+  //     // Create and save the new user
+  //     const deleteRole = await reportingManager.destroy({
+  //       where: { id: id },
+  //       transaction: dbTransaction,
+  //     });
 
-      if (deleteRole) {
-        await dbTransaction.commit();
-        return helper.success(res, variables.Success, "Report Manager deleted Successfully!");
-      } else {
-        await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unable to delete reporting Manager!");
-      }
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
+  //     if (deleteRole) {
+  //       await dbTransaction.commit();
+  //       return helper.success(res, variables.Success, "Report Manager deleted Successfully!");
+  //     } else {
+  //       await dbTransaction.rollback();
+  //       return helper.failed(res, variables.UnknownError, "Unable to delete reporting Manager!");
+  //     }
+  //   } catch (error) {
+  //     if (dbTransaction) await dbTransaction.rollback();
+  //     return helper.failed(res, variables.BadRequest, error.message);
+  //   }
+  // };
 }
 
 export default reportingManagerController;
