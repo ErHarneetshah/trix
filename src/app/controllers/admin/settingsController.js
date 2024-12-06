@@ -31,46 +31,21 @@ const getAdminDetails = async (req, res) => {
 
 const updateAdminDetails = async (req, res) => {
   try {
-    const { firstname, lastname, email, mobile } = req.body;
-    if (!firstname || !lastname || !email || !mobile) {
-      return helper.failed(res, variables.BadRequest, "All fields (firstname, lastname, email, mobile) are required");
+    const { fullname, email, mobile } = req.body;
+    if (!fullname || !email || !mobile) {
+      return helper.failed(res, variables.BadRequest, "All fields (fullname, email, mobile) are required");
     }
-    const user = await User.findByPk(req.params.id);
+    const user = await User.findOne({
+      where: {id: req.params.id}
+    });
     if (!user) {
       return helper.failed(res, variables.BadRequest, "User not exists");
     }
-    await User.update({ firstname, lastname, email, mobile }, { where: { id: req.params.id } });
-    return helper.success(res, variables.Success, { message: "Admin Profile Updated Successfully" });
+
+    await User.update({ fullname, email, mobile }, { where: { id: req.params.id } });
+    return helper.success(res, variables.Success, "Admin Profile Updated Successfully");
   } catch (error) {
     console.error("Error updating admin details:", error);
-    return helper.failed(res, variables.BadRequest, error.message);
-  }
-};
-
-const addBlockWebsites = async (req, res) => {
-  try {
-    const { Department_id, Sites } = req.body;
-    if (!Department_id || !Sites) {
-      return helper.failed(res, variables.ValidationError, "Department_id and Sites are required");
-    }
-    // // Optionally, validate the URL format
-    // const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
-    // if (!urlPattern.test(Sites)) {
-    //     return responseUtils.errorResponse(res, "Invalid URL format for Sites.", 400);
-    // }
-    const existingWebsite = await blockedWebsites.findOne({
-      where: { Sites },
-    });
-    if (existingWebsite) {
-      return helper.failed(res, variables.ValidationError, "Website is already blocked");
-    }
-    const newBlockedWebsite = await blockedWebsites.create({
-      Department_id,
-      Sites,
-    });
-    return helper.success(res, variables.Success, "Website Blocked successfully", newBlockedWebsite);
-  } catch (error) {
-    console.error("Error blocking website:", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -84,9 +59,37 @@ const getBlockedWebsites = async (req, res) => {
           [Op.ne]: 0,
         },
       },
-      attributes: ["id", "Sites", "status"],
+      attributes: ["id", "departmentId", "sites", "status"],
     });
     return helper.success(res, variables.Success, "Website Blocked successfully", getBlockedSites);
+  } catch (error) {
+    console.error("Error blocking website:", error);
+    return helper.failed(res, variables.BadRequest, error.message);
+  }
+};
+
+const addBlockWebsites = async (req, res) => {
+  try {
+    const { departmentId, sites } = req.body;
+    if (!departmentId || !sites) {
+      return helper.failed(res, variables.ValidationError, "departmentId and sites are required");
+    }
+    // // Optionally, validate the URL format
+    // const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
+    // if (!urlPattern.test(Sites)) {
+    //     return responseUtils.errorResponse(res, "Invalid URL format for Sites.", 400);
+    // }
+    const existingWebsite = await blockedWebsites.findOne({
+      where: { departmentId: departmentId, sites: sites },
+    });
+    if (existingWebsite) {
+      return helper.failed(res, variables.ValidationError, "Website is already blocked for this department");
+    }
+    const newBlockedWebsite = await blockedWebsites.create({
+      departmentId,
+      sites,
+    });
+    return helper.success(res, variables.Success, "Website Blocked successfully", newBlockedWebsite);
   } catch (error) {
     console.error("Error blocking website:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -116,16 +119,16 @@ const updateSitesStatus = async (req, res) => {
 
 const addProductiveNonProductiveApps = async (req, res) => {
   try {
-    const { department_id, app_logo, appname, website_url, is_productive } = req.body;
-    if (!department_id || !app_logo || !appname || !website_url || is_productive === undefined) {
-      return helper.failed(res, variables.ValidationError, "All fields (department_id, app_logo, appname, website_url, is_productive) are required");
+    const { departmentId, app_logo, appname, website_url, is_productive } = req.body;
+    if (!departmentId || !app_logo || !appname || !website_url || is_productive === undefined) {
+      return helper.failed(res, variables.ValidationError, "All fields (departmentId, app_logo, appname, website_url, is_productive) are required");
     }
     const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
     if (!urlPattern.test(website_url)) {
       return helper.failed(res, variables.ValidationError, "Invalid URL format for website_url.");
     }
 
-    const newAppInfo = await appInfo.create({ department_id, app_logo, appname, website_url, is_productive });
+    const newAppInfo = await appInfo.create({ departmentId, app_logo, appname, website_url, is_productive });
     return helper.success(res, variables.Success, "App added Successfully", newAppInfo);
   } catch (error) {
     console.error("Error creating app info:", error);

@@ -8,7 +8,7 @@ const appInfo = sequelize.define('productive_nonproductive_apps', {
         autoIncrement: true,
         allowNull: false,
     },
-    department_id: {
+    departmentId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         validate: {

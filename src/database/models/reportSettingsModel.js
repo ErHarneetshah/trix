@@ -15,7 +15,7 @@ const reportSettings = sequelize.define('report_settings', {
             notEmpty: true,
         },
     },
-    is_active: {
+    status: {
         type: DataTypes.TINYINT,
         allowNull: false,
         defaultValue: 1,
