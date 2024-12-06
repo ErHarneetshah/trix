@@ -20,7 +20,6 @@ class teamController {
       let searchable = ["name", "$department.name$", "$shift.name$"];
 
       if (searchParam) {
-        //searchable filter
         searchable.forEach((key) => {
           search.push({
             [key]: {
@@ -66,19 +65,7 @@ class teamController {
     try {
       const alldata = await team.findAll({
         where: { status: true },
-        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
-        include: [
-          {
-            model: department,
-            as: "department",
-            attributes: ["name"],
-          },
-          {
-            model: shift,
-            as: "shift",
-            attributes: ["name"],
-          },
-        ],
+        attributes: { exclude: ["createdAt", "updatedAt", "status", "departmentId", "shiftId"] },
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 

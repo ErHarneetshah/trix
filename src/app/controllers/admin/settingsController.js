@@ -6,18 +6,23 @@ import appInfo from "../../../database/models/productiveAppsModel.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
+import department from "../../../database/models/departmentModel.js";
 
 const getAdminDetails = async (req, res) => {
   try {
-    const users = await sequelize.query(
-      `SELECT DISTINCT u.fullname, u.email, u.mobile, d.name
-     FROM users AS u
-     INNER JOIN designations AS d ON u.designationId = d.id
-     WHERE u.isAdmin = 1;`,
-      { type: sequelize.QueryTypes.SELECT }
-    );
+    const alldata = await User.findOne({
+      where: { isAdmin: 1 },
+      attributes: ["fullname", "email", "mobile"] ,
+      include: [
+        {
+          model: department,
+          as: "department",
+          attributes: ["name"],
+        },
+      ],
+    });
 
-    return helper.success(res, variables.Success, "Retrieved Admin Profile Details Successfully.", users);
+    return helper.success(res, variables.Success, "Retrieved Admin Profile Details Successfully.", alldata);
   } catch (error) {
     console.error("Error fetching questions:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -90,7 +95,7 @@ const getBlockedWebsites = async (req, res) => {
 
 const updateSitesStatus = async (req, res) => {
   try {
-    const { id,status } = req.body;
+    const { id, status } = req.body;
     if (!id || status === undefined) {
       return helper.failed(res, variables.ValidationError, "ID and Status are required");
     }
