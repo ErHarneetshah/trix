@@ -55,7 +55,7 @@ const getBlockedWebsites = async (req, res) => {
     console.log("-------------------------------------");
     const getBlockedSites = await blockedWebsites.findAll({
       where: {
-        Status: {
+        status: {
           [Op.ne]: 0,
         },
       },
