@@ -66,7 +66,7 @@ class teamController {
     try {
       const alldata = await team.findAll({
         where: { status: true },
-        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
+        attributes: { exclude: ["createdAt", "updatedAt", "status", "departmentId", "shiftId"] },
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
