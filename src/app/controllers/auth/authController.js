@@ -3,10 +3,15 @@ import sequelize from "../../../database/queries/dbConnection.js";
 import User from "../../../database/models/userModel.js";
 import { createUserSetting } from "../../../database/models/userSettingModel.js";
 import jwtService from "../../../utils/services/jwtService.js";
-import { createAccessToken } from "../../../database/models/accessTokenModel.js";
-import { Op } from "sequelize";
+import accessToken, {
+  createAccessToken,
+} from "../../../database/models/accessTokenModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
+import TimeLog from "../../../database/models/TimeLog.js";
+import { getShiftData } from "../../../utils/validations/socketValidation.js";
+import bcrypt from "bcrypt";
+
 
 class authController extends jwtService {
   register = async (req, res) => {
@@ -87,13 +92,16 @@ class authController extends jwtService {
         requestData,
         res
       );
-      
+
       let email = requestData.email;
-      let password = requestData.password; 
+      let password = requestData.password;
 
       // Find the user and check if they are deactivated
-      const user = await User.findOne({ email });
-      if (!user || !(await user.comparePassword(password))) {
+      const user = await User.findOne({ where: { email: email } });
+
+      let compare_pwd = await bcrypt.compare(password,user.password);
+      
+      if (!compare_pwd) {
         return helper.sendResponse(
           res,
           variables.Unauthorized,
@@ -127,17 +135,130 @@ class authController extends jwtService {
         dbTransaction
       );
 
+      let shift_Data = await getShiftData(user.teamId);
+      user.current_status = 1;
+      user.save();
+
+      // Create Time Log
+      let date = new Date();
+      let currentHours = date.getHours();
+      let currentMinutes = date.getMinutes();
+      let [shiftHours, shiftMinutes] = shift_Data.start_time
+        .split(":")
+        .map(Number);
+
+      // Compare shift start time with the current time
+      if (
+        currentHours > shiftHours ||
+        (currentHours == shiftHours && currentMinutes > shiftMinutes)
+      ) {
+        let shiftTimeInMinutes = shiftHours * 60 + shiftMinutes;
+        let currentTimeInMinutes = currentHours * 60 + currentMinutes;
+
+        let timeDifference = currentTimeInMinutes - shiftTimeInMinutes;
+        let diffHours = Math.floor(timeDifference / 60);
+        let diffMinutes = timeDifference % 60;
+
+        await TimeLog.create({
+          user_id: user.id,
+          shift_id: shift_Data.id,
+          logged_in_time: `${currentHours}:${currentMinutes}`,
+          late_coming_duration: `${diffHours}:${diffMinutes}`,
+          late_coming: 1,
+        });
+      } else {
+        await TimeLog.create({
+          user_id: user.id,
+          shift_id: shift_Data.id,
+          logged_in_time: `${currentHours}:${currentMinutes}`,
+          late_coming_duration: "00:00",
+        });
+      }
       await dbTransaction.commit();
       return helper.sendResponse(
         res,
         variables.Success,
         1,
-        { token: token },
+        { token: token, user: user },
         "Login Successfully"
       );
     } catch (error) {
       await dbTransaction.rollback();
-      return helper.sendResponse(res, variables.BadRequest,0, null, error.message);
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        0,
+        null,
+        error.message
+      );
+    }
+  };
+
+  logout = async (req, res) => {
+    try {
+      let userData = await User.findOne({ where: { id: req.user.id } });
+      let token = await accessToken.findOne({ where: { userId: req.user.id } });
+
+      if (token) {
+        let shift_Data = await getShiftData(req.user.teamId);
+        let time_data = await TimeLog.findOne({
+          where: { user_id: req.user.id },
+          order: [["createdAt", "DESC"]],
+        });
+
+        userData.current_status = 0;
+        await userData.save();
+
+        // Create Time Log for disconnect
+        let date = new Date();
+        let currentHours = date.getHours();
+        let currentMinutes = date.getMinutes();
+        let [shiftEndHours, shiftEndMinutes] = shift_Data.end_time
+          .split(":")
+          .map(Number);
+
+        let shiftEndInMinutes = shiftEndHours * 60 + shiftEndMinutes;
+        let currentTimeInMinutes = currentHours * 60 + currentMinutes;
+
+        if (currentTimeInMinutes < shiftEndInMinutes) {
+          let remainingMinutes = shiftEndInMinutes - currentTimeInMinutes;
+          let remainingHours = Math.floor(remainingMinutes / 60);
+          let remainingMinutesMod = remainingMinutes % 60;
+          await time_data.update({
+            user_id: req.user.id,
+            shift_id: shift_Data.id,
+            logged_out_time: `${currentHours}:${currentMinutes}`,
+            early_going_duration: `${remainingHours}:${remainingMinutesMod}`,
+            early_going: 1,
+          });
+        } else {
+          await time_data.update({
+            user_id: req.user.id,
+            shift_id: shift_Data.id,
+            logged_out_time: `${currentHours}:${currentMinutes}`,
+            early_going_duration: "00:00",
+          });
+        }
+
+        await token.destroy();
+      }
+
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        1,
+        {},
+        "Logout Successfully"
+      );
+    } catch (error) {
+      // Handle errors
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        0,
+        null,
+        error.message
+      );
     }
   };
 

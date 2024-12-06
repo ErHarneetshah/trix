@@ -17,7 +17,7 @@ router.get('/', (req, res) => {
         success: true,
     });
 });
-router.use('/auth', authRouter);
+router.use('/api/auth', authRouter);
 router.use('/admin/dept', deptRouter);
 router.use('/admin/desig', desigRouter);
 router.use('/admin/role', roleRouter);
