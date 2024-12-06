@@ -10,6 +10,13 @@ const teamMemberDailyLog = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    companyId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
     empId: {
       type: DataTypes.INTEGER,
       allowNull: false,

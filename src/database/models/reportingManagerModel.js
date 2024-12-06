@@ -10,6 +10,13 @@ const reportingManager = sequelize.define('reporting_managers', {
     autoIncrement: true,
     allowNull: false,
   },
+  companyId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+    },
+  },
   userId:{
     type: DataTypes.INTEGER,
     allowNull: true,

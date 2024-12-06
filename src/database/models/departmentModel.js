@@ -8,6 +8,13 @@ const department = sequelize.define('departments', {
       autoIncrement: true,
       allowNull: false,
   },
+  companyId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
   name: {
     type: DataTypes.STRING,
     allowNull: false,

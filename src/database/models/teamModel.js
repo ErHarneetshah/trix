@@ -10,6 +10,13 @@ const team = sequelize.define('teams', {
     autoIncrement: true,
     allowNull: false,
   },
+  companyId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+    },
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -41,9 +48,9 @@ const team = sequelize.define('teams', {
 });
 
 // Team belongs to Department
-team.belongsTo(department, { as: 'department', foreignKey: 'departmentId' });
+// team.belongsTo(department, { as: 'department', foreignKey: 'departmentId' });
 
-// Team belongs to Shift
-team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
+// // Team belongs to Shift
+// team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
 
 export default team;

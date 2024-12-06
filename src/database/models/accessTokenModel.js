@@ -10,6 +10,14 @@ const accessToken = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+
+    companyId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -33,7 +41,7 @@ const accessToken = sequelize.define(
     },
     features: {
       type: DataTypes.JSON,
-      unique: true,
+      // unique: true,
       allowNull: true,
     },
     expiry_time: {

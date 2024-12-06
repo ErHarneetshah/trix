@@ -10,6 +10,13 @@ const blockedWebsites = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    companyId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
     departmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
