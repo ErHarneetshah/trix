@@ -12,7 +12,7 @@ const getAdminDetails = async (req, res) => {
   try {
     const alldata = await User.findOne({
       where: { isAdmin: 1 },
-      attributes: ["fullname", "email", "mobile"] ,
+      attributes: ["fullname", "email", "mobile"],
       include: [
         {
           model: department,
@@ -36,7 +36,7 @@ const updateAdminDetails = async (req, res) => {
       return helper.failed(res, variables.BadRequest, "All fields (fullname, email, mobile) are required");
     }
     const user = await User.findOne({
-      where: {id: req.params.id}
+      where: { id: req.params.id },
     });
     if (!user) {
       return helper.failed(res, variables.BadRequest, "User not exists");
@@ -89,7 +89,7 @@ const addBlockWebsites = async (req, res) => {
       departmentId,
       sites,
     });
-    return helper.success(res, variables.Success, "Website Blocked successfully", newBlockedWebsite);
+    return helper.success(res, variables.Success, "Website Blocked successfully");
   } catch (error) {
     console.error("Error blocking website:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -105,7 +105,7 @@ const updateSitesStatus = async (req, res) => {
     if (status !== 0 && status !== 1) {
       return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
     }
-    const [updatedRows] = await blockedWebsites.update({ Status: status }, { where: { id: id } });
+    const [updatedRows] = await blockedWebsites.update({ status: status }, { where: { id: id } });
 
     if (updatedRows === 0) {
       return helper.failed(res, variables.NotFound, "Site not found or status not changed");

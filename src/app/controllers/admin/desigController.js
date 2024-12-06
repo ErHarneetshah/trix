@@ -146,14 +146,14 @@ class desigController {
       const { id, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.ValidationError, "Id is Required!");
 
-      // Check if there is a dept already exists -----------------------------------------
+      // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesig = await designation.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
       if (!existingDesig) return helper.failed(res, variables.ValidationError, "Designation does not exists!");
 
-      // Check if there is a dept with a name in a different id ----------------------------------
+      // Check if there is a dept with a name in a different id >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesigWithName = await designation.findOne({
         where: {
           name: updateFields.name,
@@ -165,14 +165,19 @@ class desigController {
         return helper.failed(res, variables.ValidationError, "Desgination name already exists in different record!");
       }
 
-      // check if the id has the same value in db -----------------------------------------------
+      // check if the id has the same value in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const alreadySameDesign = await designation.findOne({
         where: { id: id, name: updateFields.name },
         transaction: dbTransaction,
       });
       if (alreadySameDesign) return helper.success(res, variables.Success, "Designation Re-Updated Successfully!");
 
-      // update the designation if passes everything ---------------------------------------------
+      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      if (updateFields.status !== 0 && updateFields.status !== 1) {
+        return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
+      }
+
+      // update the designation if passes everything >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const [updatedRows] = await designation.update(updateFields, {
         where: { id: id },
         transaction: dbTransaction,
@@ -180,16 +185,16 @@ class desigController {
       });
 
       if (updatedRows > 0) {
-        // Commit the db enteries if passes everything --------------------------------------------
+        // Commit the db enteries if passes everything >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Designation updated Successfully!");
       } else {
-        // Revert the db enteries if error occurs ------------------------------------------
+        // Revert the db enteries if error occurs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, 0, null, "Unable to update the designation!");
       }
     } catch (error) {
-      // Revert the db enteries if error occurs ---------------------------------------
+      // Revert the db enteries if error occurs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }

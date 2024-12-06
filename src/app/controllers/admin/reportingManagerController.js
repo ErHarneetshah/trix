@@ -113,6 +113,11 @@ class reportingManagerController {
       });
       if (alreadySameReportManager) return helper.success(res, variables.Success, "Report Manager Re-Updated Successfully!");
 
+      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      if (updateFields.status !== 0 && updateFields.status !== 1) {
+        return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
+      }
+
       const [updatedRows] = await reportingManager.update(updateFields, {
         where: { id: id },
         transaction: dbTransaction,

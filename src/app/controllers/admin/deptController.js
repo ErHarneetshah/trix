@@ -186,6 +186,11 @@ class deptController {
       });
       if (alreadySameDept) return helper.success(res, variables.Success, "Department Re-Updated Successfully!");
 
+
+      if (updateFields.status !== 0 && updateFields.status !== 1) {
+        return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
+      }
+
       // Update the db entry >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const [updatedRows] = await department.update(updateFields, {
         where: { id: id },

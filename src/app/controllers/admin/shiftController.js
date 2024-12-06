@@ -120,7 +120,13 @@ class shiftController {
       });
       if (alreadySameShift) return helper.success(res, variables.Success, "Shift Re-Updated Successfully!");
   
-      const [updatedRows] = await shift.update(updateFields, {
+      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      // if (updateFields.status !== 0 && updateFields.status !== 1) {
+      //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
+      // }
+
+      con
+      st [updatedRows] = await shift.update(updateFields, {
         where: { id: id },
         transaction: dbTransaction,
         individualHooks: true,

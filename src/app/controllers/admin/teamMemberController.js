@@ -146,6 +146,10 @@ class teamMemberController {
       if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists");
       if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
      
+      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      // if (updateFields.status !== 0 && updateFields.status !== 1) {
+      //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
+      // }
 
       // Perform the update operation
       const [updatedRows] = await User.update(updateFields, {

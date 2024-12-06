@@ -21,6 +21,7 @@ const blockedWebsites = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
+        isEmail: true,
         notEmpty: true, 
       },
     },

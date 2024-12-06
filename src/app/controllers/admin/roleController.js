@@ -166,6 +166,11 @@ class roleController {
       });
       if (alreadySameRole) return helper.success(res, variables.Success, "Role Re-Updated Successfully!");
 
+      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      // if (updateFields.status !== 0 && updateFields.status !== 1) {
+      //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
+      // }
+
       // when there is actually something to update
       const [updatedRows] = await role.update(
         {
