@@ -9,7 +9,6 @@ import helper from "../../../utils/services/helper.js";
 
 const retrieveUserReport = async (req, res) => {
     try {
-        // const user = await User.findByPk(req.params.id);
         let { id } = req.body;
         const user = await User.findOne({
             where: {id: id}
@@ -17,13 +16,13 @@ const retrieveUserReport = async (req, res) => {
         if (!user) {
             return responseUtils.errorResponse(res, "User not exists", 400);
         }
-        const query = `SELECT wr.id as id,wr.description, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time,DATE(wr.createdAt) AS submited_date, u.fullname, AS name FROM  work_reports AS wr JOIN users As u ON wr.user_id = u.id WHERE wr.user_id = :userId;`;
+        const query = `SELECT wr.id AS id, wr.description, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.user_id = ${id};`;
         const userReport = await userReports.sequelize.query(query, {
-            replacements: { userId: id },
+            // replacements: { userId: id },
             type: userReports.sequelize.QueryTypes.SELECT
         });
 
-        return helper.success(res, variables.Success, "Retrieved User Report Successfully");
+        return helper.success(res, variables.Success, "Retrieved User Report Successfully", userReport);
     } catch (error) {
         console.error('Error fetching reports:', error);
         return helper.failed(res, variables.BadRequest, error.message);        
