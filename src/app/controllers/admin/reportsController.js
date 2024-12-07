@@ -4,27 +4,29 @@ import responseUtils from "../../../utils/common/responseUtils.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import { Op } from "sequelize";
 import validate from '../../../utils/CustomValidation.js';
-
-
+import variables from "../../config/variableConfig.js";
 
 
 const retrieveUserReport = async (req, res) => {
     try {
-        const user = await User.findByPk(req.params.id);
+        // const user = await User.findByPk(req.params.id);
+        let { id } = req.body;
+        const user = await User.findOne({
+            where: {id: id}
+        });
         if (!user) {
             return responseUtils.errorResponse(res, "User not exists", 400);
         }
-        const query = `SELECT  wr.id as id,wr.description, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time,DATE(wr.createdAt) AS submited_date, CONCAT(u.firstname, ' ', u.lastname) AS name FROM  work_reports AS wr JOIN users As u ON wr.user_id = u.id WHERE wr.user_id = :userId;`;
+        const query = `SELECT wr.id as id,wr.description, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time,DATE(wr.createdAt) AS submited_date, u.fullname, AS name FROM  work_reports AS wr JOIN users As u ON wr.user_id = u.id WHERE wr.user_id = :userId;`;
         const userReport = await userReports.sequelize.query(query, {
-            replacements: { userId: req.params.id },
+            replacements: { userId: id },
             type: userReports.sequelize.QueryTypes.SELECT
-        }
-        );
+        });
 
-        return responseUtils.successResponse(res, { userReport, message: "Retrieved User Report Successfully." }, 200);
+        return helper.success(res, variables.Success, "Retrieved User Report Successfully");
     } catch (error) {
         console.error('Error fetching reports:', error);
-        return responseUtils.errorResponse(res, error.message, 400);
+        return helper.failed(res, variables.BadRequest, error.message);        
     }
 };
 
@@ -41,23 +43,23 @@ const approveDisaproveReport = async (req, res) => {
         const { status, message } = await validate(req.body, rules);
 
         if (status === 0) {
-            return responseUtils.errorResponse(res, message, 400);
+            return helper.failed(res, variables.ValidationError, message);
         }
 
         const reportId = await userReports.findByPk(id);
         if (!reportId) {
-            return responseUtils.errorResponse(res, "Id not exists.", 400);
+            return helper.failed(res, variables.NotFound, "Id not exists");
         }
         await userReports.update( { status: report_status, remarks: remarks ?? null , date:new Date()},  
             { where: { id: id } }   );           
         if(report_status == 2){
-            return responseUtils.successResponse(res, {  message: "Disapproved Report Successfully." }, 200);
+            return helper.success(res, variables.Success, "Disapproved Report Successfully");
         }
-        return responseUtils.successResponse(res, {  message: "Approved Report Successfully." }, 200);
+        return helper.success(res, variables.Success, "Approved Report Successfully");
 
     } catch (error) {
         console.error('Error while updating the status of approved ordisapproved reports:', error);
-        return responseUtils.errorResponse(res, error.message, 400);
+        return helper.failed(res, variables.BadRequest, error.message);
     }
 };
 

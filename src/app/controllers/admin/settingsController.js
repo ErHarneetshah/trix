@@ -133,7 +133,8 @@ const addProductiveNonProductiveApps = async (req, res) => {
         const { status, message } = await validate(req.body, rules);
 
         if (status === 0) {
-            return responseUtils.errorResponse(res, message, 400);
+          return helper.failed(res, variables.ValidationError, message);
+
         }
 
         const existingApp = await appInfo.findOne({
@@ -141,11 +142,10 @@ const addProductiveNonProductiveApps = async (req, res) => {
         });
 
         if (existingApp) {
-            return responseUtils.errorResponse(res, { message: "App with this name or website URL already exists." }, 400);
+          return helper.failed(res, variables.NotFound, "App with this name or website URL already exists");
         }
 
-        const newAppInfo = await appInfo.create({ department_id, app_logo, appname, website_url, is_productive });
-
+        const newAppInfo = await appInfo.create({ departmentId, app_logo, appname, website_url, is_productive });
         return helper.success(res, variables.Success, "App added successfully", newAppInfo);
 
     } catch (error) {
@@ -220,8 +220,7 @@ const updateReportSettings = async (req, res) => {
 
     } catch (error) {
         console.error("Error updating report settings:", error);
-return helper.failed(res, variables.BadRequest, error.message);
-
+        return helper.failed(res, variables.BadRequest, error.message);
     }
 };
 
