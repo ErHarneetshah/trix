@@ -6,7 +6,7 @@ import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.j
 //client routes
 import reportsController from "../../app/controllers/admin/reportsController.js";
 
-
+router.get('/get-all-report',   authMiddleware,verifyAdminMiddleware,   reportsController.retrieveAllReport);
 router.get('/get-user-report',   authMiddleware,verifyAdminMiddleware,   reportsController.retrieveUserReport);
 router.post('/approve-disapprove-report',   authMiddleware,verifyAdminMiddleware,   reportsController.approveDisaproveReport);
 

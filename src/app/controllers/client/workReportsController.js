@@ -1,4 +1,4 @@
-import userReports from "../../../database/models/workReportsModel.js";
+import workReports from "../../../database/models/workReportsModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import { Op } from "sequelize";
 import validate from '../../../utils/CustomValidation.js';
@@ -18,7 +18,7 @@ const createReport = async (req, res) => {
             return responseUtils.errorResponse(res, message, 400);
         }
 
-        await userReports.create({ user_id, description });
+        await workReports.create({ user_id, description });
         return responseUtils.successResponse(res, { message: "Your report submitted successfully." }, 200);
 
     } catch (error) {
@@ -31,7 +31,7 @@ const getSelfReport = async (req, res) => {
     try {
         const query = `SELECT wr.description, CASE  WHEN wr.status = 0 THEN 'Pending' WHEN wr.status = 1 THEN 'Approved' WHEN wr.status = 2 THEN 'Disapproved' ELSE 'Unknown' END AS status FROM work_reports As wr WHERE wr.user_id = 2`;
 
-        const selfReport = await userReports.sequelize.query(query, {
+        const selfReport = await workReports.sequelize.query(query, {
             type: userReports.sequelize.QueryTypes.SELECT}
         );
 

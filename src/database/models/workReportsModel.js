@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../queries/dbConnection.js';
 
-const userReports = sequelize.define('work_reports', {
+const workReports = sequelize.define('work_reports', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -37,4 +37,4 @@ const userReports = sequelize.define('work_reports', {
     timestamps: true,
 });
 
-export default userReports;
+export default workReports;
