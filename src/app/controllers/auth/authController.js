@@ -207,6 +207,7 @@ class authController extends jwtService {
         });
 
         userData.current_status = 0;
+        userData.socket_id = null;
         await userData.save();
 
         // Create Time Log for disconnect
@@ -240,8 +241,8 @@ class authController extends jwtService {
           });
         }
 
-        await token.destroy();
       }
+      await token.destroy();
 
       return helper.sendResponse(
         res,

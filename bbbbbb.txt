@@ -415,15 +415,15 @@ const emitUserDataToSpecificAdmins = async (targetUserId) => {
 
 //         //             if (!appName || !startTime || !endTime) {
 //         //                 return Promise.reject("Invalid history data");
-//         //             }
-
-//         //             // Check if an app entry with the same app name and start time already exists for today
-//         //             const existingAppHistory = userAppHistory.appHistory.find(
-//         //                 (appEntry) =>
-//         //                     appEntry.appName === appName &&
-//         //                     new Date(appEntry.startTime).getTime() ===
-//         //                     new Date(startTime).getTime()
-//         //             );
+//         //     // let { limit, page } = data;
+      // limit = limit || 10;
+      // let offset = (page - 1) * limit || 0;
+      let notifications = await Notification.findAll({
+        where: {},
+        order: [["createdAt", "DESC"]],
+        limit: limit|| 5,
+        // offset: parseInt(offset),
+      });        );
 
 //         //             if (existingAppHistory) {
 //         //                 // Update the end time of the existing entry
@@ -524,7 +524,15 @@ socket.on("login",async(data)=>{
     });
 
   const findAdminCount = await Notification.count({
-    where: { is_read: 0 }
+    where: {// let { limit, page } = data;
+      // limit = limit || 10;
+      // let offset = (page - 1) * limit || 0;
+      let notifications = await Notification.findAll({
+        where: {},
+        order: [["createdAt", "DESC"]],
+        limit: limit|| 5,
+        // offset: parseInt(offset),
+      }); is_read: 0 }
 });
 
 socket.to(adminUser.socket_id).emit("login",{"demo":findAdminCount})
@@ -545,18 +553,15 @@ socket.emit("login",data)
   
 }
 
-// export function startServer(db) {
-//     bucket = new GridFSBucket(db, { bucketName: "uploads" });
-//     io = new Server(httpServer, {
-//         cors: {
-//             origin: "*",
-//             methods: ["GET", "POST"],
-//         },
-//     });
-//     io.use(async (socket, next) => {
-//         const token = socket.handshake.headers.authorization;
-
-//         if (!token) {
+// export fun// let { limit, page } = data;
+      // limit = limit || 10;
+      // let offset = (page - 1) * limit || 0;
+      let notifications = await Notification.findAll({
+        where: {},
+        order: [["createdAt", "DESC"]],
+        limit: limit|| 5,
+        // offset: parseInt(offset),
+      });(!token) {
 //             return next(new Error("Authentication error"));
 //         }
 
@@ -620,7 +625,15 @@ socket.emit("login",data)
 //                 const { images } = data;
 //                 const userId = socket.data.user.userId;
 //                 const user = await User.findOne({ userId });
-
+// let { limit, page } = data;
+      // limit = limit || 10;
+      // let offset = (page - 1) * limit || 0;
+      let notifications = await Notification.findAll({
+        where: {},
+        order: [["createdAt", "DESC"]],
+        limit: limit|| 5,
+        // offset: parseInt(offset),
+      });
 //                 if (!images || images.length === 0) {
 //                     console.log("Invalid data received from the client");
 //                     socket.emit("imageError", { message: "Invalid data" });
@@ -856,3 +869,15 @@ socket.emit("login",data)
 // }
 
 export { emitUserDataToSpecificAdmins };
+
+
+
+///// let { limit, page } = data;
+      // limit = limit || 10;
+      // let offset = (page - 1) * limit || 0;
+      let notifications = await Notification.findAll({
+        where: {},
+        order: [["createdAt", "DESC"]],
+        limit: limit|| 5,
+        // offset: parseInt(offset),
+      });

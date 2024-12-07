@@ -166,6 +166,41 @@ class teamMemberController {
       );
     }
   };
+
+  updatesetting = async (req, res) => {
+    try {
+      let id = req.query.id; // Retrieve the user ID from the query parameters
+      let { screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
+  
+      // Update the user settings
+      const user = await User.findOne({ where: { id } });
+      if (user) {
+        user.screen_capture_time = screen_capture_time; 
+        user.broswer_capture_time = broswer_capture_time;
+        user.app_capture_time = app_capture_time
+        await user.save(); 
+      }
+  
+      // Send a success response
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        1,
+        null,
+        "Setting Updated Successfully"
+      );
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      return helper.sendResponse(
+        res,
+        variables.Failure,
+        0,
+        error.message,
+        "Failed to update settings"
+      );
+    }
+  };
+  
 }
 
 export default teamMemberController;

@@ -5,6 +5,7 @@ import department from "./departmentModel.js";
 import designation from "./designationModel.js";
 import role from "./roleModel.js";
 import team from "./teamModel.js";
+import { io } from "../../../app.js";
 
 const User = sequelize.define(
   "users",
@@ -25,6 +26,10 @@ const User = sequelize.define(
       validate: {
         notEmpty: true, // Prevents empty string
       },
+    },
+    company_id:{
+      type: DataTypes.INTEGER,
+      allowNull:false
     },
     email: {
       type: DataTypes.STRING,
@@ -141,39 +146,17 @@ const User = sequelize.define(
           }
         }
       },
-      // async beforeUpdate(user, options) {
-      //   // Hash the password if it's being updated
-      //   if (user.password) {
-      //     console.log("umang sirrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
-          
-      //     user.password = await bcrypt.hash(user.password, 10);
-      //   }
-
-      //   // Define a mapping of fields to their respective models
-      //   const validationMap = {
-      //     departmentId: department,
-      //     designationId: designation,
-      //     roleId: role,
-      //     teamId: team,
-      //   };
-
-      //   // Iterate through the fields to validate
-      //   for (const [field, model] of Object.entries(validationMap)) {
-      //     if (user[field]) {
-      //       const recordExists = await model.findOne({
-      //         where: { id: user[field] },
-      //         transaction: options.transaction,
-      //       });
-
-      //       if (!recordExists) {
-      //         throw new Error(
-      //           `${field.replace(/Id$/, "")} with ID ${user[field]
-      //           } does not exist.`
-      //         );
-      //       }
-      //     }
-      //   }
-      // },
+      async afterUpdate(user, options) {
+        io.to(user.socket_id).emit("getUserSettings", {
+          message: "User settings have been updated",
+          userSettings: {
+            screen_capture_time: user.screen_capture_time,
+            broswer_capture_time: user.broswer_capture_time,
+            app_capture_time : user.app_capture_time
+          },
+        });
+        
+      },
     },
   }
 );

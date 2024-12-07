@@ -25,7 +25,7 @@ export const UserHistory = sequelize.define("user_history", {
   },
 });
 
-await UserHistory.sync()
+await UserHistory.sync({alter:1})
 
 
 

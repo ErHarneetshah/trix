@@ -9,6 +9,11 @@ export const ImageUpload = sequelize.define(
       allowNull: false,
     },
 
+    date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+
     content: {
       type: DataTypes.TEXT("long"),
       allowNull: false,
