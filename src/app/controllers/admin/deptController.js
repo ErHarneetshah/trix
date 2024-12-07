@@ -2,7 +2,6 @@ import department from "../../../database/models/departmentModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
-import { Op } from "sequelize";
 // import reportingManager from "../../../database/models/reportingManagerModel.js";
 
 class deptController {
@@ -16,27 +15,10 @@ class deptController {
     try {
       // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       let { searchParam, limit, page } = req.query;
+      let searchable = ["name", "status"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-
-      let where = {};
-      let search = [];
-
-      let searchable = ["name", "status"];
-
-      if (searchParam) {
-        searchable.forEach((key) => {
-          search.push({
-            [key]: {
-              [Op.substring]: searchParam,
-            },
-          });
-        });
-
-        where = {
-          [Op.or]: search,
-        };
-      }
+      let where = await helper.searchCondition(searchParam, searchable);
 
       // Getting all the departments based on seacrh parameters with total count >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const allData = await department.findAndCountAll({
@@ -59,28 +41,10 @@ class deptController {
     try {
       // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       let { searchParam, limit, page } = req.query;
+      let searchable = ["name", "status"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-
-      let where = {};
-      let search = [];
-
-      let searchable = ["name", "status"];
-
-      if (searchParam) {
-        searchable.forEach((key) => {
-          search.push({
-            [key]: {
-              [Op.substring]: searchParam,
-            },
-          });
-        });
-
-        where = {
-          [Op.or]: search,
-        };
-      }
-
+      let where = await helper.searchCondition(searchParam, searchable);
       where.status = 1;
 
       // Getting all the departments with status condtion to be 1 (active) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

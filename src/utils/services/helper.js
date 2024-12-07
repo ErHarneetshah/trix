@@ -3,6 +3,8 @@ import { fail } from "assert";
 import fs from "fs";
 import generator from "generate-password";
 import variables from "../../app/config/variableConfig.js";
+import { Op } from "sequelize";
+
 
 // const ACCESS_TOKEN = new appConfig().getJwtConfig();
 
@@ -48,14 +50,6 @@ export default {
     });
   },
 
-  // jwtToken: (id) => {
-  //     return JWT.sign({
-  //         userInfo: {
-  //             id: id
-  //         },
-  //     }, ACCESS_TOKEN, { expiresIn: "1m" })
-  // },
-
   deleteFile: (filePath) => {
     try {
       fs.unlink(filePath, (err) => {
@@ -87,4 +81,30 @@ export default {
       return this.failed(res, variables.UnknownError, error.message);
     }
   },
+
+  searchCondition: async (searchParam, searchable, otherField = null, otherParam = null) => {
+      let where = {};
+      let search = [];
+
+      // let searchable = ["name", "status"];
+
+      if (searchParam) {
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+
+        if (otherParam) {
+          where.otherField = otherParam; // Adds another filter
+        }
+        return where;
+      }
+  }
 };

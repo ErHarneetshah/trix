@@ -10,7 +10,7 @@ class reportingManagerController {
   getAllReportManager = async (req, res) => {
     try {
       const allData = await department.findAll({
-        attributes: ["id", "reportingManagerId"],
+        attributes: ["id", "name", "reportingManagerId"],
         include: [
           {
             model: User,
