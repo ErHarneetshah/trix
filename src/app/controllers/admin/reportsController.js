@@ -16,7 +16,8 @@ const retrieveUserReport = async (req, res) => {
         if (!user) {
             return responseUtils.errorResponse(res, "User not exists", 400);
         }
-        const query = `SELECT wr.id AS id, wr.description, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.user_id = ${id};`;
+
+        const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.user_id = ${id};`;
         const userReport = await userReports.sequelize.query(query, {
             // replacements: { userId: id },
             type: userReports.sequelize.QueryTypes.SELECT
