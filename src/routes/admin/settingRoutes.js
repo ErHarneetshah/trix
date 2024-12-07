@@ -3,6 +3,7 @@ const router = express.Router();
 import authMiddleware from "../../app/middlewares/authMiddleware.js";
 import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.js";
 import settingsController from "../../app/controllers/admin/settingsController.js";
+import emailGatewayController from "../../app/controllers/admin/emailGatewayController.js";
 
 
 router.get('/get-admin-details',    authMiddleware,verifyAdminMiddleware,    settingsController.getAdminDetails);
@@ -16,6 +17,13 @@ router.put('/update-sites-status/:id',    authMiddleware,verifyAdminMiddleware, 
 router.post('/add-productive-nonpro-websites',    authMiddleware,verifyAdminMiddleware,    settingsController.addProductiveNonProductiveApps);
 router.get('/get-app-info',    authMiddleware,verifyAdminMiddleware,    settingsController.getAppInfo);
 router.put('/update-report-status/:id',    authMiddleware,verifyAdminMiddleware,    settingsController.updateReportSettings);
+
+//email gateway routes
+router.post('/add-email-gateways', authMiddleware,verifyAdminMiddleware,  emailGatewayController.addEmailGateeways);
+router.post('/check-email-server', authMiddleware,verifyAdminMiddleware,  emailGatewayController.checkEmailServer);
+router.get('/get-email-list', authMiddleware,verifyAdminMiddleware,  emailGatewayController.getEmailList);
+
+
 
 export default router;
 

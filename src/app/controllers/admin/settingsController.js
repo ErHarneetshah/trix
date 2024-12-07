@@ -1,12 +1,13 @@
 import User from "../../../database/models/userModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
-import { Op } from "sequelize";
+import { Op,QueryTypes } from "sequelize";
 import blockedWebsites from "../../../database/models/blockedWebsitesModel.js";
 import appInfo from "../../../database/models/productiveAppsModel.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import department from "../../../database/models/departmentModel.js";
+import validate from "../../../utils/CustomValidation.js";
 
 const getAdminDetails = async (req, res) => {
   try {
@@ -55,7 +56,7 @@ const getBlockedWebsites = async (req, res) => {
     console.log("-------------------------------------");
     const getBlockedSites = await blockedWebsites.findAll({
       // where: {
-      //   Status: {
+      //   status: {
       //     [Op.ne]: 0,
       //   },
       // },
@@ -118,22 +119,39 @@ const updateSitesStatus = async (req, res) => {
 };
 
 const addProductiveNonProductiveApps = async (req, res) => {
-  try {
-    const { departmentId, app_logo, appname, website_url, is_productive } = req.body;
-    if (!departmentId || !app_logo || !appname || !website_url || is_productive === undefined) {
-      return helper.failed(res, variables.ValidationError, "All fields (departmentId, app_logo, appname, website_url, is_productive) are required");
-    }
-    const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
-    if (!urlPattern.test(website_url)) {
-      return helper.failed(res, variables.ValidationError, "Invalid URL format for website_url.");
-    }
+    try {
+        const { departmentId, app_logo, appname, website_url, is_productive } = req.body;
 
-    const newAppInfo = await appInfo.create({ departmentId, app_logo, appname, website_url, is_productive });
-    return helper.success(res, variables.Success, "App added Successfully", newAppInfo);
-  } catch (error) {
-    console.error("Error creating app info:", error);
-    return helper.failed(res, variables.BadRequest, error.message);
-  }
+        const rules = {
+            departmentId: 'required|integer|min:1', 
+            // app_logo: 'required|string|min:1', 
+            // appname: 'required|string|min:3|max:50',
+            website_url: 'required|valid_url'
+            // is_productive: 'required|boolean'
+        };
+
+        const { status, message } = await validate(req.body, rules);
+
+        if (status === 0) {
+            return responseUtils.errorResponse(res, message, 400);
+        }
+
+        const existingApp = await appInfo.findOne({
+            where: { appname, website_url }
+        });
+
+        if (existingApp) {
+            return responseUtils.errorResponse(res, { message: "App with this name or website URL already exists." }, 400);
+        }
+
+        const newAppInfo = await appInfo.create({ department_id, app_logo, appname, website_url, is_productive });
+
+        return helper.success(res, variables.Success, "App added successfully", newAppInfo);
+
+    } catch (error) {
+        console.error("Error creating app info:", error);
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
 };
 
 const getAppInfo = async (req, res) => {
@@ -156,26 +174,57 @@ const getAppInfo = async (req, res) => {
 };
 
 const updateReportSettings = async (req, res) => {
-  try {
-    const differentReportStatus = await reportSettings.findByPk(req.params.id);
-    if (!differentReportStatus) {
-      return helper.failed(res, variables.ValidationError, "Somethong Went Wrong");
-    }
+    try {
+        const { exportType } = req.body;
 
-    const { status } = req.body;
-    if (status === undefined) {
-      return helper.failed(res, variables.ValidationError, "Status is required");
-    }
-    if (status !== 0 && status !== 1) {
-      return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
-    }
+        const rules = {
+            exportType: 'required|string|min:2|max:50',   
+        };
 
-    const [updateReportStatus] = await reportSettings.update({ is_active: status }, { where: { id: req.params.id } });
-    return helper.success(res, variables.Success, "Report Status Updated Successfully", updateReportStatus);
-  } catch (error) {
-    console.error("Error fetching app info:", error);
-    return helper.failed(res, variables.BadRequest, error.message);
-  }
+        const { status, message } = await validate(req.body, rules);
+
+        if (status === 0) {
+          return helper.failed(res, variables.ValidationError, "Status is required");
+
+        }
+
+        const getPreviousStatus = await reportSettings.findOne({
+            where: { is_active: 1 },
+            attributes: ['id']
+        });
+        const previousId = getPreviousStatus ? getPreviousStatus.id : 1;
+
+        const [updatedPreviousStatus] = await reportSettings.update(
+            { is_active: 0 },
+            { where: { id: previousId } }
+        );
+
+        const currentStatus = await reportSettings.findOne({
+            where: { name: exportType },
+            attributes: ['id']
+        });
+        const currentId = currentStatus ? currentStatus.id : 1;
+
+        const [updateCurrentStatus] = await reportSettings.update(
+            { is_active: 1 },
+            { where: { id: currentId } }
+        );
+
+        if (updateCurrentStatus > 0) {
+            return helper.success(res, variables.Success, "Report Status Updated Successfully", updateReportStatus);
+
+        } else {
+            return helper.failed(res, variables.BadRequest, "Something went wrong");
+
+        }
+
+    } catch (error) {
+        console.error("Error updating report settings:", error);
+return helper.failed(res, variables.BadRequest, error.message);
+
+    }
 };
+
+
 
 export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveNonProductiveApps, getAppInfo, updateReportSettings };

@@ -7,6 +7,7 @@ import { createAccessToken } from "../../../database/models/accessTokenModel.js"
 import { Op } from "sequelize";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
+import bcrypt from "bcryptjs";
 
 class authController extends jwtService {
   // register = async (req, res) => {
@@ -71,8 +72,8 @@ class authController extends jwtService {
       });
 
       // Password Matching
-      if (!user || !(await user.comparePassword(requestData.password))) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
+      if (!user) {
+        if (await bcrypt.compare(requestData.password, user.password)) return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
       }
 
       //Verifying Admin Account
@@ -90,7 +91,6 @@ class authController extends jwtService {
 
       // Save token to the database
       const expireTime = this.calculateTime();
-
       await createAccessToken(user.id, user.isAdmin, token, expireTime, dbTransaction);
 
       await dbTransaction.commit();
@@ -102,8 +102,8 @@ class authController extends jwtService {
   };
 
   calculateTime = () => {
-    const oneDayInMilliseconds = 24 * 60 * 60 * 1000; 
-    const now = new Date(); 
+    const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
+    const now = new Date();
     const oneDayFromNow = new Date(now.getTime() + oneDayInMilliseconds).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" });
     return oneDayFromNow;
   };

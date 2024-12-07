@@ -9,7 +9,19 @@ const reportManagerInstance = new reportingManagerController();
 router.get("/getAllReportManager",  authMiddleware,verifyAdminMiddleware,   reportManagerInstance.getAllReportManager);
 router.get("/getReportManagerDropdown",  authMiddleware,verifyAdminMiddleware,   reportManagerInstance.getReportManagerDropdown);
 // router.post("/addReportManager",  authMiddleware,verifyAdminMiddleware,   reportManagerInstance.addReportManager);
-router.put("/updateReportManager", authMiddleware,verifyAdminMiddleware,   reportManagerInstance.updateReportManager);
 // router.delete("/deleteReportManager", authMiddleware,verifyAdminMiddleware,   reportManagerInstance.deleteReportManager);
+router.put("/updateReportManager", authMiddleware,verifyAdminMiddleware,   reportManagerInstance.updateReportManager);
+router.post("/addReportManager",  (req, res) => {
+    res.status(200).json({
+      message: "This functionality is under construction.",
+    });
+})
+
+router.delete("/deleteReportManager", (req, res) => {
+    res.status(200).json({
+      message: "This functionality is under construction.",
+    });
+  });
+  
 
 export default router;
