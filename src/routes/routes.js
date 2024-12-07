@@ -10,9 +10,11 @@ import teamMemberRouter from './admin/teamMembersRoutes.js';
 import settingRouter from './admin/settingRoutes.js';
 import moduleRouter from './admin/moduleRoutes.js';
 import rolePermissionRouter from './admin/rolePermissionRoutes.js';
-
+import reportRouter from './admin/reportRoutes.js';
+import userReportRouter from './client/dailyReportRoutes.js';
 const router = express.Router();
 
+//admin routes
 router.use('/auth', authRouter);
 router.use('/admin/dept', deptRouter);
 router.use('/admin/desig', desigRouter);
@@ -24,5 +26,6 @@ router.use('/admin/teamMember', teamMemberRouter);
 router.use('/admin/settings', settingRouter);
 router.use('/admin/module', moduleRouter);
 router.use('/admin/rolePermission', rolePermissionRouter);
-
+router.use('/admin/reports', reportRouter);
+router.use('/client/reports', userReportRouter);
 export default router;

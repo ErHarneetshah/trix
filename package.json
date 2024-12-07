@@ -27,10 +27,14 @@
     "jsonwebtoken": "^9.0.2",
     "moment-timezone": "^0.5.46",
     "mysql2": "^3.11.4",
+    "nodemailer": "^6.9.16",
     "nodemon": "^3.1.7",
     "path": "^0.12.7",
     "sequelize": "^6.37.5",
+<<<<<<< HEAD
     "validate.js": "^0.13.1",
+=======
+>>>>>>> b8a9d454818d1f701beb03ee7c84ab3f31ca442f
     "validatorjs": "^3.22.1",
     "winston": "^3.17.0"
   }
