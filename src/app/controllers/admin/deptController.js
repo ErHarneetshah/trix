@@ -44,8 +44,7 @@ class deptController {
       let searchable = ["name", "status"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-      let where = await helper.searchCondition(searchParam, searchable);
-      where.status = 1;
+      let where = await helper.searchCondition(searchParam, searchable, "status", 1);
 
       // Getting all the departments with status condtion to be 1 (active) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const allData = await department.findAll({

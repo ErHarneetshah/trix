@@ -4,6 +4,7 @@ import { Op } from "sequelize";
 import validate from '../../../utils/CustomValidation.js';
 import variables from "../../config/variableConfig.js";
 import H from "nodemailer/lib/mailer/index.js";
+import helper from "../../../utils/services/helper.js";
 
 
 const addEmailGateeways = async (req, res) => {
@@ -26,11 +27,17 @@ const addEmailGateeways = async (req, res) => {
             return responseUtils.errorResponse(res, message, 400);
         }
 
+        await emailGateway.destroy({
+            where: {}
+            });
+           
+        await sequelize.query(`ALTER TABLE \`${emailGateway.getTableName()}\` AUTO_INCREMENT = 1;`);
+        
         await emailGateway.create({ protocol, host, username, password, port, encryption });
         return helper.success(res, variables.Created, "Created the Email Gateway Successfully");
     } catch (error) {
         console.error('Error while creating the email gateway setup', error);
-        return helper.error(res, variables.BadRequest, error.message);
+        return helper.failed(res, variables.BadRequest, error.message);
     }
 };
 
@@ -47,14 +54,14 @@ const checkEmailServer = async (req, res) => {
     const { status, message: validationMessage } = await validate(req.body, rules);
 
     if (status === 0) {
-        return helper.error(res, variables.validationMessage, validationMessage);
+        return helper.failed(res, variables.validationMessage, validationMessage);
     }
 
     const sendmail = await H.sendEmail(to, subject, message);
     if (sendmail.success) {
         return helper.success(res, variables.Success, sendmail.message);
     } else {
-        return helper.error(res, variables.BadRequest, sendmail.message);
+        return helper.failed(res, variables.BadRequest, sendmail.message);
     }
 };
 
