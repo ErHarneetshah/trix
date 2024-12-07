@@ -1,5 +1,4 @@
 import userReports from "../../../database/models/workReportsModel.js";
-import responseUtils from "../../../utils/common/responseUtils.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import { Op } from "sequelize";
 import validate from '../../../utils/CustomValidation.js';

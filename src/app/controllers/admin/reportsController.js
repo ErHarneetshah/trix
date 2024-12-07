@@ -1,10 +1,10 @@
 import userReports from "../../../database/models/workReportsModel.js";
 import User from "../../../database/models/userModel.js";
-import responseUtils from "../../../utils/common/responseUtils.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import { Op } from "sequelize";
 import validate from '../../../utils/CustomValidation.js';
 import variables from "../../config/variableConfig.js";
+import helper from "../../../utils/services/helper.js";
 
 
 const retrieveUserReport = async (req, res) => {
