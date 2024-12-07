@@ -26,6 +26,6 @@ router.use('/admin/teamMember', teamMemberRouter);
 router.use('/admin/settings', settingRouter);
 router.use('/admin/module', moduleRouter);
 router.use('/admin/rolePermission', rolePermissionRouter);
-router.use('/admin/reports', reportRouter);
+router.use('/admin/workReports', reportRouter);
 router.use('/client/reports', userReportRouter);
 export default router;

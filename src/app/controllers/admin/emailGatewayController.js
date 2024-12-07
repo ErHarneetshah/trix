@@ -1,10 +1,9 @@
 import emailGateway from "../../../database/models/emailGatewayModel.js";
-import responseUtils from "../../../utils/common/responseUtils.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import { Op } from "sequelize";
 import validate from '../../../utils/CustomValidation.js';
-import H from '../../../utils/Mail.js';
 import variables from "../../config/variableConfig.js";
+import H from "nodemailer/lib/mailer/index.js";
 
 
 const addEmailGateeways = async (req, res) => {

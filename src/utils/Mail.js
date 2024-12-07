@@ -1,6 +1,5 @@
 import nodeMailer from 'nodemailer'
 import emailGateway from "../database/models/emailGatewayModel.js";
-import responseUtils from "../utils/common/responseUtils.js";
 
 
 const sendEmail = async (to, message, cc = '', subject = '', from = "") => {
