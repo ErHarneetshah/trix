@@ -120,10 +120,10 @@ const updateSitesStatus = async (req, res) => {
 
 const addProductiveNonProductiveApps = async (req, res) => {
     try {
-        const { department_id, app_logo, appname, website_url, is_productive } = req.body;
+        const { departmentId, app_logo, appname, website_url, is_productive } = req.body;
 
         const rules = {
-            department_id: 'required|integer|min:1', 
+            departmentId: 'required|integer|min:1', 
             // app_logo: 'required|string|min:1', 
             // appname: 'required|string|min:3|max:50',
             website_url: 'required|valid_url'
