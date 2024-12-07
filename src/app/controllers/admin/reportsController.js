@@ -67,7 +67,7 @@ const retrieveUserReport = async (req, res) => {
     const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.user_id = ${id};`;
     const userReport = await workReports.sequelize.query(query, {
       // replacements: { userId: id },
-      type: userReports.sequelize.QueryTypes.SELECT,
+      type: workReports.sequelize.QueryTypes.SELECT,
     });
 
     return helper.success(res, variables.Success, "Retrieved User Report Successfully", userReport);
