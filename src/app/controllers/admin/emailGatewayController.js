@@ -4,6 +4,7 @@ import sequelize from "../../../database/queries/dbConnection.js";
 import { Op } from "sequelize";
 import validate from '../../../utils/CustomValidation.js';
 import H from '../../../utils/Mail.js';
+import variables from "../../config/variableConfig.js";
 
 
 const addEmailGateeways = async (req, res) => {
@@ -27,14 +28,12 @@ const addEmailGateeways = async (req, res) => {
         }
 
         await emailGateway.create({ protocol, host, username, password, port, encryption });
-        return responseUtils.successResponse(res, { message: "Created the Email Gateway Successfully." }, 200);
-
+        return helper.success(res, variables.Created, "Created the Email Gateway Successfully");
     } catch (error) {
         console.error('Error while creating the email gateway setup', error);
-        return responseUtils.errorResponse(res, "Error while creating the email gateway setup", 400);
+        return helper.error(res, variables.BadRequest, error.message);
     }
 };
-
 
 const checkEmailServer = async (req, res) => {
     const { to, subject, message } = req.body;
@@ -49,20 +48,14 @@ const checkEmailServer = async (req, res) => {
     const { status, message: validationMessage } = await validate(req.body, rules);
 
     if (status === 0) {
-        return res.status(400).json({
-            success: false,
-            message: validationMessage,
-        });
+        return helper.error(res, variables.validationMessage, validationMessage);
     }
 
-    const sendmail = await H.sendEmail(
-        to,
-        subject, message
-    );
+    const sendmail = await H.sendEmail(to, subject, message);
     if (sendmail.success) {
-        return responseUtils.successResponse(res, { message: sendmail.message }, 200);
+        return helper.success(res, variables.Success, sendmail.message);
     } else {
-        return responseUtils.errorResponse(res, { message: sendmail.message }, 400);
+        return helper.error(res, variables.BadRequest, sendmail.message);
     }
 };
 
@@ -75,10 +68,10 @@ const getEmailList = async (req, res) => {
                 }
             }, attributes: ['id', 'protocol', 'host','username','port','encryption']
         });
-        return responseUtils.successResponse(res, { retrievedEmail: getBlockedSites, message: "Retrieved  Email Lists Successfully" }, 200);
+        return helper.success(res, variables.Success, "Retrieved  Email Lists Successfully");
     } catch (error) {
         console.error('Error blocking website:', error);
-        return responseUtils.errorResponse(res, error.message, 400);
+        return helper.failed(res, variables.BadRequest, error.message);
     }
 };
 
