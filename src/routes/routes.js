@@ -11,6 +11,7 @@ import settingRouter from './admin/settingRoutes.js';
 import moduleRouter from './admin/moduleRoutes.js';
 import rolePermissionRouter from './admin/rolePermissionRoutes.js';
 import reportRouter from './admin/reportRoutes.js';
+import teamTimeLogRouter from './admin/teamMemberTimeLogRoutes.js';
 import userReportRouter from './client/dailyReportRoutes.js';
 const router = express.Router();
 
@@ -27,5 +28,6 @@ router.use('/admin/settings', settingRouter);
 router.use('/admin/module', moduleRouter);
 router.use('/admin/rolePermission', rolePermissionRouter);
 router.use('/admin/workReports', reportRouter);
+router.use('/admin/teamTimeLog', teamTimeLogRouter);
 router.use('/client/reports', userReportRouter);
 export default router;
