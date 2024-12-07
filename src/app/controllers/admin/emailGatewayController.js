@@ -9,7 +9,8 @@ import helper from "../../../utils/services/helper.js";
 
 const addEmailGateeways = async (req, res) => {
     try {
-        const { protocol, host, username, password, port, encryption } = req.body;
+        const { protocol, host, username, password, port } = req.body;
+        let encryption = "tls";
         const rules = {
             protocol: 'required|string|min:2|max:50',
             host: 'required|string|min:2|max:50',
@@ -18,7 +19,7 @@ const addEmailGateeways = async (req, res) => {
                 'required',
             ],
             port: 'required|numeric|min:1|max:65535',
-            encryption: 'required|string|min:2|max:50'
+            // encryption: 'required|string|min:2|max:50'
         };
 
         const { status, message } = await validate(req.body, rules);
