@@ -54,11 +54,11 @@ const getBlockedWebsites = async (req, res) => {
   try {
     console.log("-------------------------------------");
     const getBlockedSites = await blockedWebsites.findAll({
-      where: {
-        status: {
-          [Op.ne]: 0,
-        },
-      },
+      // where: {
+      //   status: {
+      //     [Op.ne]: 0,
+      //   },
+      // },
       attributes: ["id", "departmentId", "sites", "status"],
     });
     return helper.success(res, variables.Success, "Website Blocked successfully", getBlockedSites);

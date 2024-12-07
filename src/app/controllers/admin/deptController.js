@@ -26,7 +26,7 @@ class deptController {
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
-        attributes: { exclude: ["createdAt", "updatedAt"] },
+        attributes: ["id", "name", "status"],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 

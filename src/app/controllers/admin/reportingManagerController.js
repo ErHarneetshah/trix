@@ -32,9 +32,10 @@ class reportingManagerController {
       const allData = await User.findAll({
         where: {
           status: true,
-          id: {
-            [Op.notIn]: sequelize.literal(`(SELECT DISTINCT reportingManagerId FROM departments WHERE reportingManagerId IS NOT NULL)`),
-          },
+          isAdmin: 0,
+          // id: {
+          //   [Op.notIn]: sequelize.literal(`(SELECT DISTINCT reportingManagerId FROM departments WHERE reportingManagerId IS NOT NULL)`),
+          // },
         },
         attributes: ["id", "fullname"],
       });
@@ -115,6 +116,13 @@ class reportingManagerController {
         transaction: dbTransaction,
       });
       if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
+
+      //* Check if there is a dept already exists
+      const existingUser = await User.findOne({
+        where: { id: reportManagerId },
+        transaction: dbTransaction,
+      });
+      if (!existingUser) return helper.failed(res, variables.ValidationError, "User does not exists in system!");
 
       //* Check if there is a dept with a name in a different id
       const existingReportManager = await department.findOne({
