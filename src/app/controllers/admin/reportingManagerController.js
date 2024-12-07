@@ -109,7 +109,17 @@ class reportingManagerController {
       if (!id || !reportManagerId) {
         return helper.failed(res, variables.NotFound, "Id and reportManagerId both are Required!");
       }
-
+      console.log("-------------------------");
+      console.log("-------------------------");
+      console.log("-------------------------");
+      console.log("-------------------------");
+      console.log("-------------------------");
+      console.log("-------------------------");
+      console.log("--------------- Dept exist ------------------------------");
+      console.log("Department Id");
+      console.log(id);
+      console.log("reporting Manager Id");
+      console.log(reportManagerId);
       //* Check if there is a dept already exists
       const existingDept = await department.findOne({
         where: { id: id },
@@ -117,7 +127,12 @@ class reportingManagerController {
       });
       if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
 
-      //* Check if there is a dept already exists
+      console.log("--------------- User exist ------------------------------");
+      console.log("Department Id");
+      console.log(id);
+      console.log("reporting Manager Id");
+      console.log(reportManagerId);
+      //* Check if there is a user already exists
       const existingUser = await User.findOne({
         where: { id: reportManagerId },
         transaction: dbTransaction,
@@ -125,17 +140,22 @@ class reportingManagerController {
       if (!existingUser) return helper.failed(res, variables.ValidationError, "User does not exists in system!");
 
       //* Check if there is a dept with a name in a different id
-      const existingReportManager = await department.findOne({
-        where: {
-          reportingManagerId: reportManagerId,
-          id: { [Op.ne]: id }, // Exclude the current record by id
-        },
-        transaction: dbTransaction,
-      });
-      if (existingReportManager) {
-        return helper.failed(res, variables.ValidationError, "Report Manager Already Assigned to a department");
-      }
+      // const existingReportManager = await department.findOne({
+      //   where: {
+      //     reportingManagerId: reportManagerId,
+      //     id: { [Op.ne]: id }, // Exclude the current record by id
+      //   },
+      //   transaction: dbTransaction,
+      // });
+      // if (existingReportManager) {
+      //   return helper.failed(res, variables.ValidationError, "Report Manager Already Assigned to a department");
+      // }
 
+      console.log("--------------- Already Assigned ------------------------------");
+      console.log("Department Id");
+      console.log(id);
+      console.log("reporting Manager Id");
+      console.log(reportManagerId);
       //* if the id has the same value in db
       const alreadySameReportManager = await department.findOne({
         where: { id: id, reportingManagerId: reportManagerId },
@@ -147,7 +167,11 @@ class reportingManagerController {
       // if (updateFields.status !== 0 && updateFields.status !== 1) {
       //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
       // }
-
+      console.log("--------------- update ------------------------------");
+      console.log("Department Id");
+      console.log(id);
+      console.log("reporting Manager Id");
+      console.log(reportManagerId);
       const [updatedRows] = await department.update(
         {
           reportingManagerId: reportManagerId,
