@@ -143,7 +143,7 @@ class desigController {
   updateDesig = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { id, ...updateFields } = req.body;
+      const { id, name } = req.body;
       if (!id) return helper.failed(res, variables.ValidationError, "Id is Required!");
 
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -156,7 +156,7 @@ class desigController {
       // Check if there is a dept with a name in a different id >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesigWithName = await designation.findOne({
         where: {
-          name: updateFields.name,
+          name: name,
           id: { [Op.ne]: id }, // Exclude the current record by id
         },
         transaction: dbTransaction,
@@ -167,18 +167,20 @@ class desigController {
 
       // check if the id has the same value in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const alreadySameDesign = await designation.findOne({
-        where: { id: id, name: updateFields.name },
+        where: { id: id, name: name },
         transaction: dbTransaction,
       });
       if (alreadySameDesign) return helper.success(res, variables.Success, "Designation Re-Updated Successfully!");
 
-      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      if (updateFields.status !== 0 && updateFields.status !== 1) {
-        return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
-      }
+      // // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      // if (updateFields.status !== 0 && updateFields.status !== 1) {
+      //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
+      // }
 
       // update the designation if passes everything >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      const [updatedRows] = await designation.update(updateFields, {
+      const [updatedRows] = await designation.update({
+        name:name
+      }, {
         where: { id: id },
         transaction: dbTransaction,
         individualHooks: true,

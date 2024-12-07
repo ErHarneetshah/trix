@@ -37,9 +37,9 @@ const approveDisaproveReport = async (req, res) => {
             id: 'required|integer',
             report_status: 'required|integer|in:1,2'
         };
-        if (report_status == '2') {
-            rules.remarks = 'required|string';  
-        }
+        // if (report_status == '2') {
+        //     rules.remarks = 'required|string';  
+        // }
         const { status, message } = await validate(req.body, rules);
 
         if (status === 0) {

@@ -2,6 +2,7 @@ import department from "../../../database/models/departmentModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
+import { Op } from "sequelize";
 // import reportingManager from "../../../database/models/reportingManagerModel.js";
 
 class deptController {
