@@ -108,7 +108,22 @@ class teamController {
         transaction: dbTransaction,
       });
 
-      if (existingTeam) return helper.failed(res, variables.ValidationError, "Team Already Exists!");
+      const existingTeamWithSameParam = await team.findOne({
+        where: {
+          departmentId: requestData.departmentId,
+          shiftId: requestData.shiftId,
+        },
+        transaction: dbTransaction,
+      });
+      if (existingTeamWithSameParam) return helper.failed(res, variables.ValidationError, "Team Already Exists under different name!");
+
+      const existingTeamWithSameName = await team.findOne({
+        where: {
+          name: requestData.name,
+        },
+        transaction: dbTransaction,
+      });
+      if (existingTeamWithSameName) return helper.failed(res, variables.ValidationError, "Team with same Name Already Exists!");
 
       // Create and save the new user
       const addNewTeam = await team.create(requestData, { transaction: dbTransaction });
@@ -145,12 +160,19 @@ class teamController {
         return helper.failed(res, variables.ValidationError, "Team name already exists in different record!");
       }
 
-      //* if the id has the same value in db
-      const alreadySameTeam = await team.findOne({
-        where: { id: id, name: updateFields.name },
-        transaction: dbTransaction,
-      });
-      if (alreadySameTeam) return helper.success(res, variables.Success, "Team Re-Updated Successfully!");
+      if (updateFields.departmentId && updateFields.shiftId) {
+        const alreadySameTeam = await team.findOne({
+          where: { id: id, name: updateFields.name, departmentId: updateFields.departmentId, shiftId: updateFields.shiftId },
+          transaction: dbTransaction,
+        });
+        if (alreadySameTeam) return helper.success(res, variables.Success, "Team Re-Updated Successfully!");
+
+        const existingTeamWithSameParam = await team.findOne({
+          where: { departmentId: updateFields.departmentId, shiftId: updateFields.shiftId },
+          transaction: dbTransaction,
+        });
+        if (existingTeamWithSameParam) return helper.success(res, variables.Success, "Team With Same Specs already exists!");
+      }
 
       // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // if (updateFields.status !== 0 && updateFields.status !== 1) {
