@@ -83,6 +83,11 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: 0,
     },
+    currentStatus: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      comment: "Daily Log Active/InActive Status (0 for absent, 1 for present)"
+    },
     status: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
