@@ -43,20 +43,10 @@ class deptController {
   //* API to get all the Department data who's status is 1 (active)
   getDeptDropdown = async (req, res) => {
     try {
-      // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      let { searchParam, limit, page } = req.query;
-      let searchable = ["name", "status"];
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
-      let where = await helper.searchCondition(searchParam, searchable, "status", 1);
-
-      // Getting all the departments with status condtion to be 1 (active) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  
       const allData = await department.findAll({
-        where,
-        offset: offset,
-        limit: limit,
-        order: [["id", "DESC"]],
-        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
+        where: {status : 1},
+        attributes: ["id", "name"],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 

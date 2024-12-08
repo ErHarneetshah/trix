@@ -32,18 +32,8 @@ class shiftController {
 
   getShiftDropdown = async (req, res) => {
     try {
-      let { searchParam, limit, page } = req.query;
-      let searchable = ["name", "status"];
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
-      let where = await helper.searchCondition(searchParam, searchable);
-
-      where.status = true;
       const alldata = await shift.findAll({
-        where,
-        offset: offset,
-        limit: limit,
-        order: [["id", "DESC"]],
+        where:{status:true},
         attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
