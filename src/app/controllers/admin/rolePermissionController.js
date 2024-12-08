@@ -21,7 +21,7 @@ class rolePermissionController {
   getSpecificRolePermissions = async (roleId, moduleName) => {
     try {
       const roleModuledata = await rolePermission.findOne({
-        where:{roleId: roleId, modules: moduleName},
+        where: { roleId: roleId, modules: moduleName },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!roleModuledata) return helper.failed(res, variables.NotFound, "No Data is available!");
@@ -38,7 +38,7 @@ class rolePermissionController {
       const permissionData = {
         roleId,
         modules: module.name,
-        permissions:{
+        permissions: {
           POST: false,
           GET: false,
           PUT: false,
@@ -46,7 +46,7 @@ class rolePermissionController {
         },
       };
       console.log(permissionData);
-  
+
       await rolePermission.create(permissionData, { transaction });
       return true;
     } catch (error) {
@@ -54,7 +54,6 @@ class rolePermissionController {
       throw new Error("Error adding role permissions");
     }
   };
-  
 
   updateRolePermission = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
@@ -64,9 +63,21 @@ class rolePermissionController {
       if (!moduleName) return helper.failed(res, variables.NotFound, "Module name is required!");
       if (!permissions) return helper.failed(res, variables.NotFound, "Permissions are required!");
 
+      // Validate permissions object
+      if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {
+        return helper.failed(res, variables.BadRequest, "Permissions must be a valid object.");
+      }
+
+      // Ensure each key in `permissions` has a value of `true` or `false`
+      for (const [key, value] of Object.entries(permissions)) {
+        if (value !== true && value !== false) {
+          return helper.failed(res, variables.BadRequest, `Invalid value for permission "${key}". Only 'true' or 'false' are allowed.`);
+        }
+      }
+
       // Checking whether the role id exists in system or not
       const existingRolePermission = await rolePermission.findOne({
-        where: { roleId: roleId, modules:moduleName },
+        where: { roleId: roleId, modules: moduleName },
         transaction: dbTransaction,
       });
       if (!existingRolePermission) return helper.failed(res, variables.ValidationError, "Role Permission does not exists!");
@@ -95,36 +106,6 @@ class rolePermissionController {
     }
   };
 
-  deleteRole = async (req, res) => {
-    const dbTransaction = await sequelize.transaction();
-    try {
-      const { id } = req.body;
-      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
-
-      const existingRole = await role.findOne({
-        where: { id: id },
-        transaction: dbTransaction,
-      });
-      if (!existingRole) return helper.failed(res, variables.ValidationError, "Role does not exists!");
-
-      // Create and save the new user
-      const deleteRole = await role.destroy({
-        where: { id: id },
-        transaction: dbTransaction,
-      });
-
-      if (deleteRole) {
-        await dbTransaction.commit();
-        return helper.success(res, variables.Created, "Role deleted successfully");
-      } else {
-        await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unable to delete the role");
-      }
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
 }
 
 export default rolePermissionController;
