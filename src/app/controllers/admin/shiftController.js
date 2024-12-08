@@ -108,6 +108,11 @@ class shiftController {
       const { id, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
+      console.log("===============================================")
+      console.log(updateFields.days);
+      console.log("===============================================")
+
+
       //* Check if there is a dept already exists
       const existingShift = await shift.findOne({
         where: { id: id },
@@ -138,6 +143,8 @@ class shiftController {
       // if (updateFields.status !== 0 && updateFields.status !== 1) {
       //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
       // }
+
+      console.log(updateFields.days);
 
       const [updatedRows] = await shift.update(updateFields, {
         where: { id: id },
