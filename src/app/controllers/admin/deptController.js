@@ -99,14 +99,6 @@ class deptController {
       // Adding new department in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const addNewDept = await department.create({ name }, { transaction: dbTransaction });
 
-      //! Need to update this code as there is no reporting manager separate code
-      // const existingReportManager = await reportingManager.findOne({
-      //   where: { departmentId: departmentId },
-      //   transaction: dbTransaction,
-      // });
-      // if (existingReportManager) return helper.failed(res, variables.ValidationError, "Report Manager record Already Exists for this departmentId");
-      // const addNewReportManager = await reportingManager.create({ departmentId }, { transaction: dbTransaction });
-
       // Committing db enteries if passes every code correctly >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       await dbTransaction.commit();
       return helper.success(res, variables.Created, "Department Added Successfully!");
@@ -120,8 +112,8 @@ class deptController {
   updateDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { id, name, ...updatedField } = req.body;
-      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
+      const { id, name } = req.body;
+      if (!id || !name) return helper.failed(res, variables.NotFound, "Both Id and Name is Required!");
 
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
