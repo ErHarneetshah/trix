@@ -195,6 +195,7 @@ class shiftController {
       });
       if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists!");
 
+      
       // Create and save the new user
       const deleteShift = await shift.destroy({
         where: { id: id },
