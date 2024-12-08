@@ -15,35 +15,23 @@ const shift = sequelize.define(
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     start_time: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     end_time: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     total_hours: {
       type: DataTypes.FLOAT,
       allowNull: true,
-      defaultValue: 0
+      defaultValue: 0,
     },
     days: {
       type: DataTypes.JSON,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     status: {
       type: DataTypes.BOOLEAN,
@@ -57,26 +45,23 @@ const shift = sequelize.define(
       async beforeCreate(shift) {
         try {
           let calTotalHrTime = await calTotalHr(shift.start_time, shift.end_time);
-          if(calTotalHr < 5) 
-            return helper.failed(res, variables.ValidationError, "Start Time and End Time Must have a difference of 5 hours or more");
+          if (calTotalHr < 5) return helper.failed(res, variables.ValidationError, "Start Time and End Time Must have a difference of 5 hours or more");
 
-          shift.total_hours = calTotalHrTime
-
+          shift.total_hours = calTotalHrTime;
         } catch (error) {
-            return helper.failed(res, variables.BadRequest, error.message);
+          return helper.failed(res, variables.BadRequest, error.message);
         }
       },
       async beforeUpdate(shift) {
         if (shift.changed("start_time") || shift.changed("end_time")) {
           try {
             let calTotalHrTime = await calTotalHr(shift.start_time, shift.end_time);
-            if(calTotalHr < 5) 
-              return helper.failed(res, variables.ValidationError, "Start Time and End Time Must have a difference of 5 hours or more");
-  
+            console.log(calTotalHrTime);
+            if (calTotalHrTime < 5) throw new Error("Start Time and End Time Must have a difference of 5 hours or more");
+
             shift.total_hours = calTotalHrTime;
           } catch (error) {
-            return helper.failed(res, variables.BadRequest, error.message);
-            // throw new Error("Error recalculating total hours: " + error.message);
+            throw new Error("Error recalculating total hours: " + error.message);
           }
         }
       },

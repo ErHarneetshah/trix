@@ -5,6 +5,7 @@ import helper from "../../../utils/services/helper.js";
 import module from "../../../database/models/moduleModel.js";
 import { Op } from "sequelize";
 import rolePermissionController from "./rolePermissionController.js";
+import rolePermission from "../../../database/models/rolePermissionModel.js";
 
 class roleController {
   getAllRole = async (req, res) => {
@@ -208,6 +209,14 @@ class roleController {
       });
       if (!existingRole) return helper.failed(res, variables.ValidationError, "Role does not exists!");
 
+      // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const isUsedInUsers = await User.findOne({ where: { roleId: id } });
+      const isUsedInRolePermission = await rolePermission.findOne({ where: { roleId: id } });
+
+      if (isUsedInTeams || isUsedInRolePermission || isUsedInProductiveAndNonApps || isUsedInUsers) {
+        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
+      }
+      
       // Create and save the new user
       const deleteRole = await role.destroy({
         where: { id: id },

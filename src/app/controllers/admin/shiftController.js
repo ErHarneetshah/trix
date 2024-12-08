@@ -33,7 +33,7 @@ class shiftController {
   getShiftDropdown = async (req, res) => {
     try {
       const alldata = await shift.findAll({
-        where:{status:true},
+        where: { status: true },
         attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
@@ -89,8 +89,27 @@ class shiftController {
       });
       if (existingShift) return helper.failed(res, variables.ValidationError, "Shift Already Exists!");
 
-      // Calulating total_hours in the shift
-      // let total_hours = await this.calTotalHr(requestData.start_time, requestData.end_time);
+      //* Check if there is a dept with a name in a different id
+      const existingShiftWithName = await shift.findOne({
+        where: {
+          name: requestData.name,
+          // id: { [Op.ne]: id }, // Exclude the current record by id
+        },
+        transaction: dbTransaction,
+      });
+      if (existingShiftWithName) {
+        return helper.failed(res, variables.ValidationError, "Shift name already exists in different record!");
+      }
+
+      const existingSameShift = await shift.findOne({
+        where: {
+          start_time: requestData.start_time,
+          end_time: requestData.end_time,
+          days: JSON.stringify(requestData.days), // Ensure days are correctly formatted for comparison
+        },
+        transaction: dbTransaction,
+      });
+      if (existingSameShift) return helper.failed(res, variables.ValidationError, "Shift Already Exists with same parameters but different name!");
 
       // Create and save the new user
       const newShift = await shift.create(requestData, { transaction: dbTransaction });
@@ -105,7 +124,7 @@ class shiftController {
   updateShift = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { id, ...updateFields } = req.body;
+      const { id, days, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
       console.log("===============================================")
@@ -134,23 +153,22 @@ class shiftController {
 
       //* if the id has the same value in db
       const alreadySameShift = await shift.findOne({
-        where: { id: id, name: updateFields.name },
+        where: { id: id, name: updateFields.name, start_time: updateFields.start_time, end_time: updateFields.end_time, days: JSON.stringify(days) },
         transaction: dbTransaction,
       });
       if (alreadySameShift) return helper.success(res, variables.Success, "Shift Re-Updated Successfully!");
 
-      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      // if (updateFields.status !== 0 && updateFields.status !== 1) {
-      //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
-      // }
-
-      console.log(updateFields.days);
-
-      const [updatedRows] = await shift.update(updateFields, {
-        where: { id: id },
-        transaction: dbTransaction,
-        individualHooks: true,
-      });
+      const [updatedRows] = await shift.update(
+        {
+          ...updateFields,
+          days: JSON.stringify(days),
+        },
+        {
+          where: { id: id },
+          transaction: dbTransaction,
+          individualHooks: true,
+        }
+      );
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
