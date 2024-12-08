@@ -64,14 +64,14 @@ const retrieveUserReport = async (req, res) => {
       return responseUtils.errorResponse(res, "User not exists", 400);
     }
 
-    const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.user_id = ${id};`;
+    const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.id = ${id};`;
     const userReport = await workReports.sequelize.query(query, {
       // replacements: { userId: id },
       type: workReports.sequelize.QueryTypes.SELECT,
     });
 
-
     let data = userReport[0]
+    if(!data || data == undefined) return helper.failed(res, variables.NotFound, "No Work Report Data Found", data);
 
     return helper.success(res, variables.Success, "Retrieved User Report Successfully", data);
   } catch (error) {
