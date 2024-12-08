@@ -61,7 +61,7 @@ const retrieveUserReport = async (req, res) => {
       where: { id },
     });
     if (!user) {
-      return responseUtils.errorResponse(res, "User not exists", 400);
+      return helper.errorResponse(res, "User not exists", 400);
     }
 
     const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.user_id = ${id};`;
