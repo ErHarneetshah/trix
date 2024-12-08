@@ -13,35 +13,18 @@ const accessToken = sequelize.define(
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     isUserAdmin: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     token: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
-    },
-    features: {
-      type: DataTypes.JSON,
-      unique: true,
-      allowNull: true,
     },
     expiry_time: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     status: {
       type: DataTypes.BOOLEAN,
@@ -71,5 +54,7 @@ export const createAccessToken = async (userId, isUserAdmin, token, expireTime, 
     throw error;
   }
 };
+
+await accessToken.sync({alter:1})
 
 export default accessToken;

@@ -2,6 +2,8 @@
 import appConfig from "../../app/config/appConfig.js";
 import JWT from "jsonwebtoken";
 import fs from 'fs';
+import { parse } from 'tldts';
+
 
 
 const ACCESS_TOKEN = new appConfig().getJwtConfig();
@@ -35,5 +37,15 @@ export default {
             console.log({ "del_file_error": error });
             return { message: `Unable to delete file at this moment`, status: 0 };
         }
-    }    
+    }    ,
+
+    extractWebsiteName: (url)=> {
+        try {
+            const parsed = parse(url);
+            return parsed.domain 
+          } catch (error) {
+            console.error('Invalid URL:', url);
+            return null;
+          }
+      }
 }

@@ -12,7 +12,6 @@ import TimeLog from "../../../database/models/TimeLog.js";
 import { getShiftData } from "../../../utils/validations/socketValidation.js";
 import bcrypt from "bcrypt";
 
-
 class authController extends jwtService {
   register = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
@@ -85,23 +84,15 @@ class authController extends jwtService {
   login = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const requestData = req.body;
-
-      // Validate request body using Joi
-      const validationResult = await authValidation.loginValid(
-        requestData,
-        res
-      );
-
+      let today = new Date().toISOString().split("T")[0];
+      let requestData = req.body;
+      let validationResult = await authValidation.loginValid(requestData, res);
       let email = requestData.email;
       let password = requestData.password;
 
-      // Find the user and check if they are deactivated
-      const user = await User.findOne({ where: { email: email } });
-
-      let compare_pwd = await bcrypt.compare(password,user.password);
-      
-      if (!compare_pwd) {
+      let user = await User.findOne({ where: { email: email } });
+      let comparePwd = await bcrypt.compare(password, user.password);
+      if (!comparePwd) {
         return helper.sendResponse(
           res,
           variables.Unauthorized,
@@ -111,22 +102,43 @@ class authController extends jwtService {
         );
       }
 
-      // Check if the user is deactivated
       if (!user.status) {
         return helper.sendResponse(
           res,
           variables.Forbidden,
           0,
           null,
-          "Your Account has beem De-Activated. Contact Support"
+          "Your Account has been De-Activated. Contact Support"
         );
       }
 
-      // Generate JWT token
-      const token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
+      // Ensure the user isn't logging in after shift end time
 
-      // Save token to the database
-      const expireTime = this.calculateTime();
+      let now = new Date();
+      let currentHours = now.getHours();
+      let currentMinutes = now.getMinutes();
+
+      let shiftData = await getShiftData(user.teamId);
+
+      let [shiftHours, shiftMinutes] = shiftData.start_time
+        .split(":")
+        .map(Number);
+      let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
+      if (
+        currentHours > endHours ||
+        (currentHours === endHours && currentMinutes > endMinutes)
+      ) {
+        return helper.sendResponse(
+          res,
+          variables.Forbidden,
+          0,
+          {},
+          "Your shift is over. You cannot log in at this time."
+        );
+      }
+
+      let token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
+      let expireTime = this.calculateTime();
       await createAccessToken(
         user.id,
         user.isAdmin,
@@ -135,45 +147,60 @@ class authController extends jwtService {
         dbTransaction
       );
 
-      let shift_Data = await getShiftData(user.teamId);
-      user.current_status = 1;
-      user.save();
-
-      // Create Time Log
-      let date = new Date();
-      let currentHours = date.getHours();
-      let currentMinutes = date.getMinutes();
-      let [shiftHours, shiftMinutes] = shift_Data.start_time
-        .split(":")
-        .map(Number);
-
-      // Compare shift start time with the current time
-      if (
-        currentHours > shiftHours ||
-        (currentHours == shiftHours && currentMinutes > shiftMinutes)
-      ) {
-        let shiftTimeInMinutes = shiftHours * 60 + shiftMinutes;
-        let currentTimeInMinutes = currentHours * 60 + currentMinutes;
-
-        let timeDifference = currentTimeInMinutes - shiftTimeInMinutes;
-        let diffHours = Math.floor(timeDifference / 60);
-        let diffMinutes = timeDifference % 60;
-
-        await TimeLog.create({
+      let timeLog = await TimeLog.findOne({
+        where: {
           user_id: user.id,
-          shift_id: shift_Data.id,
-          logged_in_time: `${currentHours}:${currentMinutes}`,
-          late_coming_duration: `${diffHours}:${diffMinutes}`,
-          late_coming: 1,
-        });
+          date: today
+        },
+        order: [["createdAt", "DESC"]],
+      });
+      let lateComing = 0;
+      let lateComingDuration = "00:00";
+      let lateMinutes = 0;
+
+      if (timeLog && timeLog.logged_out_time != null) {
+        const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
+        let logoutTime = new Date();
+        logoutTime.setHours(hours, mins, 0, 0);
+        let spareMinutes = Math.floor((now - logoutTime) / 60000);
+        timeLog.spare_time =
+          parseInt(timeLog.spare_time) + parseInt(spareMinutes);
+        timeLog.logged_out_time = null;
+        timeLog.save();
+        user.current_status = 1;
+        user.save();
       } else {
+        if (
+          currentHours > shiftHours ||
+          (currentHours === shiftHours && currentMinutes > shiftMinutes)
+        ) {
+          lateMinutes =
+            (currentHours - shiftHours) * 60 + (currentMinutes - shiftMinutes);
+          lateComing = 1;
+          lateComingDuration = `${Math.floor(lateMinutes / 60)}:${
+            lateMinutes % 60
+          }`;
+        }
+        const [lateHours, lateMins] = lateComingDuration.split(":").map(Number);
+        lateMinutes = lateHours * 60 + lateMins;
+
+        user.current_status = 1;
+        user.save();
+  
+        // Create a new TimeLog entry
         await TimeLog.create({
           user_id: user.id,
-          shift_id: shift_Data.id,
+          shift_id: shiftData.id,
+          company_id: user.company_id,
           logged_in_time: `${currentHours}:${currentMinutes}`,
-          late_coming_duration: "00:00",
+          late_coming: lateComing,
+          late_coming_duration: lateMinutes,
+          spare_time: 0,
+          active_time: 0,
+          date:today
         });
       }
+
       await dbTransaction.commit();
       return helper.sendResponse(
         res,
@@ -183,6 +210,8 @@ class authController extends jwtService {
         "Login Successfully"
       );
     } catch (error) {
+      console.log(error);
+
       await dbTransaction.rollback();
       return helper.sendResponse(
         res,
@@ -200,7 +229,6 @@ class authController extends jwtService {
       let token = await accessToken.findOne({ where: { userId: req.user.id } });
 
       if (token) {
-        let shift_Data = await getShiftData(req.user.teamId);
         let time_data = await TimeLog.findOne({
           where: { user_id: req.user.id },
           order: [["createdAt", "DESC"]],
@@ -210,37 +238,22 @@ class authController extends jwtService {
         userData.socket_id = null;
         await userData.save();
 
-        // Create Time Log for disconnect
-        let date = new Date();
-        let currentHours = date.getHours();
-        let currentMinutes = date.getMinutes();
-        let [shiftEndHours, shiftEndMinutes] = shift_Data.end_time
+        let logged_out_time = new Date();
+        let [loginHours, loginMinutes] = time_data?.logged_in_time
           .split(":")
           .map(Number);
+        let loginTimeInMinutes = loginHours * 60 + loginMinutes;
+        let logoutHours = logged_out_time.getHours();
+        let logoutMinutes = logged_out_time.getMinutes();
+        let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
 
-        let shiftEndInMinutes = shiftEndHours * 60 + shiftEndMinutes;
-        let currentTimeInMinutes = currentHours * 60 + currentMinutes;
+        let duration = logoutTimeInMinutes - loginTimeInMinutes;
+        let active_time =parseInt(parseInt(duration)-parseInt(time_data?.spare_time))-parseInt(time_data?.idle_time);
 
-        if (currentTimeInMinutes < shiftEndInMinutes) {
-          let remainingMinutes = shiftEndInMinutes - currentTimeInMinutes;
-          let remainingHours = Math.floor(remainingMinutes / 60);
-          let remainingMinutesMod = remainingMinutes % 60;
-          await time_data.update({
-            user_id: req.user.id,
-            shift_id: shift_Data.id,
-            logged_out_time: `${currentHours}:${currentMinutes}`,
-            early_going_duration: `${remainingHours}:${remainingMinutesMod}`,
-            early_going: 1,
-          });
-        } else {
-          await time_data.update({
-            user_id: req.user.id,
-            shift_id: shift_Data.id,
-            logged_out_time: `${currentHours}:${currentMinutes}`,
-            early_going_duration: "00:00",
-          });
-        }
-
+        await time_data.update({
+          logged_out_time: `${logoutHours}:${logoutMinutes}`,
+          active_time,
+        });
       }
       await token.destroy();
 
@@ -264,7 +277,7 @@ class authController extends jwtService {
   };
 
   calculateTime = () => {
-    const oneDayInMilliseconds = 24 * 60 * 60 * 1000; // 1 day = 24 hours, 60 minutes, 60 seconds, 1000 ms
+    let oneDayInMilliseconds = 24 * 60 * 60 * 1000; // 1 day = 24 hours, 60 minutes, 60 seconds, 1000 ms
     const now = new Date(); // Current date and time
 
     // Add 1 day to the current date

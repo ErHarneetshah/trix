@@ -11,20 +11,20 @@ const TimeLog = sequelize.define('timelogs',{
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    company_id:{
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
     logged_in_time: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    total_active_duration: {
-      type: DataTypes.STRING,
+    active_time: {
+      type: DataTypes.INTEGER,
       allowNull: true
     },
     late_coming_duration: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    early_going_duration: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: true
     },
     logged_out_time: {
@@ -35,10 +35,18 @@ const TimeLog = sequelize.define('timelogs',{
       type: DataTypes.BOOLEAN,
       defaultValue: 0,
     },
-    early_going: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: 0,
-    }
+    spare_time:{
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    idle_time:{
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
   },
   {
     timestamps: true,

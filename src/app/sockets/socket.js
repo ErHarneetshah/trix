@@ -4,11 +4,17 @@ import { UserHistory } from "../../database/models/UserHistory.js";
 import User from "../../database/models/userModel.js";
 import { AppHistoryEntry } from "../../database/models/AppHistoryEntry.js";
 import { ImageUpload } from "../../database/models/ImageUpload.js";
-import { Sequelize } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import ProductiveApp from "../../database/models/ProductiveApp.js";
 import ProductiveWebsite from "../../database/models/ProductiveWebsite.js";
 import Model from "../../database/queries/dbConnection.js";
 import { QueryTypes } from "@sequelize/core";
+import { System } from "../../database/models/System.js";
+import helper from "../../utils/services/helper.js";
+
+
+
+
 
 User.hasMany(UserHistory, { foreignKey: "userId", as: "web" });
 User.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "app" });
@@ -40,10 +46,9 @@ const setupSocketIO = (io) => {
   io.on("connection", async (socket) => {
     let userData = await User.findOne({ where: { id: socket.user.userId } });
     if (User) {
-      userData.socket_id = socket.id;
+      userData.socket_id = socket.id; // Save socket id into user table
       await userData.save();
     }
-    // handleAdminSocket(socket, io);
     socket.join("Admin");
     if (socket.user.isAdmin) {
       handleAdminSocket(socket, io);
@@ -55,11 +60,62 @@ const setupSocketIO = (io) => {
   return io;
 };
 
+export const getUserStats = async () => {
+  try {
+    await adminController.updateUsers(io);
+    await adminController.updateAppsStats(io);
+    await adminController.updateURLHostStats(io);
+  } catch (error) {
+    console.error("Error fetching admin getuserstats:", error.message);
+  }
+};
+
+
 // Admin-specific handlers
 const handleAdminSocket = (socket, io) => {
-  console.log("Admin connected:", socket.user.userId)
-  socket.join("adminToUser")
-  // Example: Health check event
+  // User Report :
+  const userReport = async (id) => {
+    try {
+      let user = await User.findOne({ where: { id } });
+      let today = new Date().toISOString().split("T")[0];
+
+      let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${id} GROUP by url`;
+      let userHistories = await Model.query(web_query, {
+        type: QueryTypes.SELECT,
+      });
+
+      let app_query = `SELECT appName , count(id) as visits FROM app_histories where date = "${today}" AND userId = ${id} GROUP by appName`;
+      let appHistories = await Model.query(app_query, {
+        type: QueryTypes.SELECT,
+      });
+
+      let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
+      let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+
+      if (!user) {
+        return socket.emit("error", {
+          message: "User not found",
+        });
+      }
+      let response = {
+        status: 1,
+        message: "User Report fetched successfully",
+        data: {
+          user,
+          image,
+          userHistories,
+          appHistories,
+        },
+      };
+      io.to("privateRoom_" + id).emit("userReport", response);
+    } catch (error) {
+      console.log("Error fetching stats:", error);
+      socket.emit("error", {
+        message: `Error fetching stats: ${error.message}`,
+      });
+    }
+  };
+
   socket.on("check", () => socket.emit("pong"));
 
   // Notify admin of unread notifications
@@ -75,27 +131,19 @@ const handleAdminSocket = (socket, io) => {
   };
   sendAdminNotifications();
 
-
-  const getUserStats = async () =>{
+  socket.on("getRecentNotifications", async (data = {}) => {
     try {
-      await adminController.updateUsers(io);
-      await adminController.updateAppsStats(io);
-      await adminController.updateURLHostStats(io);
-      socket.emit("getUserStats");
-    } catch (error) {
-      console.error("Error fetching admin getuserstats:", error.message);
-    }
-  }
+      // Destructuring with default values for limit and page
+      let { limit = 5, page = 1 } = data;
+      let offset = (page - 1) * limit;
 
-  getUserStats();
-
-  socket.on("getRecentNotifications", async () => {
-    try {
-      let notifications = await Notification.findAll({
+      let notifications = await Notification.findAndCountAll({
         where: {},
-        order: [["createdAt", "DESC"]],
-        limit: 5,
+        order: [["id", "DESC"]],
+        limit,
+        offset,
       });
+
       socket.emit("recentNotifications", { notifications });
     } catch (error) {
       console.error("Error fetching recent notifications:", error.message);
@@ -109,25 +157,37 @@ const handleAdminSocket = (socket, io) => {
     try {
       let find = await Notification.findOne({ where: { id: data.id } });
       if (!find) {
-        socket.emit("isRead", {
-          message: "Notification Not Found ",
-          status: 0,
-        });
+        socket.emit("isRead", { message: "Notification Not Found", status: 0 });
       } else {
         find.is_read = 1;
         await find.save();
+        let notificationCount = await Notification.count({
+          where: { is_read: 0 },
+        });
         socket.emit("isRead", {
           message: "Notification Read Successfully",
           status: 1,
         });
+        io.emit("newNotification", { notificationCount });
       }
     } catch (error) {
-      console.error("Error fetching recent notifications:", error.message);
+      console.error("Error marking notification as read:", error.message);
       socket.emit("error", {
-        message: `Error fetching notifications: ${error.message}`,
+        message: `Error marking notification as read: ${error.message}`,
       });
     }
   });
+
+  const getUserStats = async () => {
+    try {
+      await adminController.updateUsers(io);
+      await adminController.updateAppsStats(io);
+      await adminController.updateURLHostStats(io);
+    } catch (error) {
+      console.error("Error fetching admin getuserstats:", error.message);
+    }
+  };
+  getUserStats();
 
   // socket.on("getUserStats", async (data) => {
   //   try {
@@ -145,21 +205,15 @@ const handleAdminSocket = (socket, io) => {
   socket.on("getUserReport", async (data) => {
     try {
       let user = await User.findOne({ where: { id: data.userId } });
+      socket.join("privateRoom_" + data.userId);
+      io.to(user.socket_id).socketsJoin("privateRoom");
 
-
-
-      socket.join(data.userId);
-
-      console.log(user.socket_id);
-      
       let today;
       if (data.date) {
         today = new Date(data.date).toISOString().split("T")[0];
       } else {
         today = new Date().toISOString().split("T")[0];
       }
-
-      
 
       let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${data.userId} GROUP by url`;
       let userHistories = await Model.query(web_query, {
@@ -189,7 +243,8 @@ const handleAdminSocket = (socket, io) => {
           appHistories,
         },
       };
-      io.to("Admin").emit("getUserReport", response);
+      // io.to("Admin").emit("getUserReport", response);
+      io.to("privateRoom").emit("userReport", response);
     } catch (error) {
       console.log("Error fetching stats:", error);
       socket.emit("error", {
@@ -198,20 +253,37 @@ const handleAdminSocket = (socket, io) => {
     }
   });
 
+  socket.on("getSystemConfig", async (data = {}) => {
+    try {
+      let { limit = 9, page = 1 } = data;
+      let offset = (page - 1) * limit;
+
+      let systemData = await System.findAll({
+        attributes: ["id","user_id","ram","rom","fan_speed","memory"],
+        where: {
+          id: {[Op.in]: Sequelize.literal(`(SELECT MAX(id) FROM systems GROUP BY user_id)`)},
+        },
+        order: [["user_id", "ASC"]],
+        offset
+      });
+
+      socket.emit("getSystemConfig", systemData);
+    } catch (error) {
+      console.error("Error fetching recent notifications:", error.message);
+      socket.emit("getSystemConfig", {
+        message: `Error fetching notifications: ${error.message}`,
+      });
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("Admin disconnected:", socket.user.userId);
   });
-  
 };
 
 // User-specific handlers
 const handleUserSocket = (socket, io) => {
-  console.log("User connected:", socket.user.userId);
-  socket.join(`User ${socket.user.userId}`);
-
-  socket.on("ping", async () => {
-    socket.emit("pong");
-  });
+  socket.join(`privateRoom_${socket.user.userId}`);
 
   // Notify admin of user login
   const notifyAdmin = async (message) => {
@@ -231,10 +303,55 @@ const handleUserSocket = (socket, io) => {
   };
   notifyAdmin("User Login successfully");
 
+  socket.on("ping", async () => {
+    socket.emit("pong");
+  });
+
+  const userReport = async (id) => {
+    try {
+      let user = await User.findOne({ where: { id } });
+      let today = new Date().toISOString().split("T")[0];
+
+      let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${id} GROUP by url`;
+      let userHistories = await Model.query(web_query, {
+        type: QueryTypes.SELECT,
+      });
+
+      let app_query = `SELECT appName , count(id) as visits FROM app_histories where date = "${today}" AND userId = ${id} GROUP by appName`;
+      let appHistories = await Model.query(app_query, {
+        type: QueryTypes.SELECT,
+      });
+
+      let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
+      let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+
+      if (!user) {
+        return socket.emit("error", {
+          message: "User not found",
+        });
+      }
+      let response = {
+        status: 1,
+        message: "User Report fetched successfully",
+        data: {
+          user,
+          image,
+          userHistories,
+          appHistories,
+        },
+      };
+      io.to("privateRoom_" + id).emit("userReport", response);
+    } catch (error) {
+      console.log("Error fetching stats:", error);
+      socket.emit("error", {
+        message: `Error fetching stats: ${error.message}`,
+      });
+    }
+  };
+
   socket.on("uploadImage", async (data) => {
     try {
       let today = new Date().toISOString().split("T")[0];
-      let { images } = data;
       let userId = socket.user.userId;
 
       let user = await User.findOne({ where: { id: userId } });
@@ -242,27 +359,31 @@ const handleUserSocket = (socket, io) => {
         socket.emit("imageError", { message: "Unauthorized access" });
         return;
       }
-
-      if (!images || images.length == 0) {
-        console.log("Invalid data received from the client");
+      let companyId = user?.company_id;
+      console.log(data);
+      
+      if (!data.images || data.images.length === 0) {
         socket.emit("imageError", { message: "Invalid data" });
         return;
       }
-      let uploadPromises = images.map(async (image) => {
-        return ImageUpload.create({
-          userId: user.id,
-          date: today,
-          content: `data:image/png;base64,${image.data}`,
-        });
-      });
+      console.log(data);
+      
+      await Promise.all(
+        data.images.map((image) =>
+          ImageUpload.create({
+            userId,
+            date: today,
+            companyId,
+            content: `${image.data}`
+            // content: `data:image/png;base64,${image.data}`,
+          })
+        )
+      );
 
-      await Promise.all(uploadPromises);
-
-      socket.emit("imageSuccess", {
-        message: "Images uploaded successfully",
-      });
+      socket.emit("imageSuccess", { message: "Images uploaded successfully" });
+      userReport(userId);
     } catch (error) {
-      console.error("Error uploading images:", error);
+      console.log("Error uploading images:", error);
       socket.emit("imageError", { message: "Failed to upload images" });
     }
   });
@@ -287,18 +408,25 @@ const handleUserSocket = (socket, io) => {
       let parsedVisitTime = isNaN(new Date(visitTime))
         ? new Date()
         : new Date(visitTime);
+      
+      let website_name = helper.extractWebsiteName(url);
+
+      let companyId = user?.company_id;
 
       await UserHistory.create({
         userId,
         date: today,
+        website_name,
         url,
         title,
+        companyId,
         visitTime: parsedVisitTime,
       });
+
       socket.emit("historySuccess", {
         message: "History uploaded successfully",
       });
-      io.to("Admin").emit("getUserReport")
+      await userReport(userId);
     } catch (error) {
       console.error("Error uploading history:", error.message);
       socket.emit("historyError", { message: "Failed to upload history" });
@@ -306,53 +434,64 @@ const handleUserSocket = (socket, io) => {
   });
 
   socket.on("uploadAppHistory", async (data) => {
-    let { histories } = data;
-    let userId = socket.user.userId;
+    try {
+      let { histories } = data;
+      let userId = socket.user.userId;
 
-    let user = await User.findOne({ where: { id: userId } });
-    if (!user) {
-      socket.emit("appHistoryError", { message: "Unauthorized access" });
-      return;
-    }
-
-    if (!histories || histories.length === 0) {
-      socket.emit("appHistoryError", { message: "Invalid data" });
-      return;
-    }
-
-    let today = new Date().toISOString().split("T")[0];
-    for (let history of histories) {
-      let { appName, startTime, endTime } = history;
-
-      if (!appName || !startTime || !endTime) {
-        continue;
+      let user = await User.findOne({ where: { id: userId } });
+      if (!user) {
+        socket.emit("appHistoryError", { message: "Unauthorized access" });
+        return;
       }
 
-      let existingEntry = await AppHistoryEntry.findOne({
-        where: {
-          userId: user.id,
-          date: today,
-          appName,
-          startTime: new Date(startTime),
-        },
-      });
+      if (!histories || histories.length === 0) {
+        socket.emit("appHistoryError", { message: "Invalid data" });
+        return;
+      }
 
-      if (existingEntry) {
-        existingEntry.endTime = new Date(endTime);
-        await existingEntry.save();
-      } else {
-        await AppHistoryEntry.create({
-          userId: user.id,
-          appName,
-          date: today,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
+      let today = new Date().toISOString().split("T")[0];
+      let companyId = user?.company_id;
+      for (let history of histories) {
+        let { appName, startTime, endTime } = history;
+
+        if (!appName || !startTime || !endTime) {
+          continue;
+        }
+
+        let existingEntry = await AppHistoryEntry.findOne({
+          where: {
+            userId: user.id,
+            companyId,
+            date: today,
+            appName,
+            startTime: new Date(startTime),
+          },
         });
+
+        if (existingEntry) {
+          existingEntry.endTime = new Date(endTime);
+          await existingEntry.save();
+        } else {
+          await AppHistoryEntry.create({
+            userId: user.id,
+            appName,
+            date: today,
+            startTime: new Date(startTime),
+            endTime: new Date(endTime),
+          });
+        }
       }
+
+      socket.emit("appHistorySuccess", {
+        message: "App history uploaded successfully",
+      });
+      await userReport(userId);
+    } catch (error) {
+      console.error("Error uploading app history:", error.message);
+      socket.emit("appHistoryError", {
+        message: "Failed to upload app history",
+      });
     }
-    socket.emit("appHistorySuccess", {
-      message: "App history uploaded successfully",
-    });
   });
 
   socket.on("getUserSettings", async () => {
@@ -379,50 +518,6 @@ const handleUserSocket = (socket, io) => {
     }
   });
 
-  socket.on("getproductiveApp", async () => {
-    try {
-      let userId = socket.user.userId;
-      let user = await User.findByPk(userId);
-      let Data = await ProductiveApp.findAll({
-        where: {
-          company_id: user?.company_id,
-          department_id: user?.departmentId,
-        },
-      });
-      socket.emit("getproductiveApp", {
-        message: "Productive app found",
-        Data,
-      });
-    } catch (error) {
-      console.error("Error fetching productive app:", error);
-      socket.emit("getproductiveAppError", {
-        message: "Failed to fetch productive app",
-      });
-    }
-  });
-
-  socket.on("getproductiveWebsite", async () => {
-    try {
-      let userId = socket.user.userId;
-      let user = await User.findByPk(userId);
-      let Data = await ProductiveWebsite.findOne({
-        where: {
-          company_id: user?.company_id,
-          department_id: user?.departmentId,
-        },
-      });
-      socket.emit("getproductiveWebsite", {
-        message: "Productive website found",
-        Data,
-      });
-    } catch (error) {
-      console.error("Error fetching productive website:", error);
-      socket.emit("getproductiveWebsiteError", {
-        message: "Failed to fetch productive app",
-      });
-    }
-  });
-
   socket.on("getStatus", async () => {
     try {
       let id = socket.user.userId;
@@ -441,21 +536,59 @@ const handleUserSocket = (socket, io) => {
     }
   });
 
+  socket.on("uploadSystemConfig", async (data) => {
+    try {
+      let { user_id, fan_speed, rom, ram, memory } = data;
+      if (!user_id || !fan_speed || !rom || !ram || !memory) {
+        socket.emit("uploadSystemConfig", { message: "Invalid data" });
+        return;
+      }
+      await System.create(data);
+      socket.emit("uploadSystemConfig", {
+        message: "System Configration updated Successfully",
+      });
+      io.to("Admin").emit("getSystemConfig", data);
+    } catch (error) {
+      console.error("Error fetching user status:", error);
+      socket.emit("uploadSystemConfig", {
+        message: "Failed to update system configration",
+      });
+    }
+  });
+
+  socket.on("getBlockedWebsites", async () => {
+    try {      
+      let userId = socket.user.userId;
+      let user = await User.findOne({where: { id: userId }});
+      if (!user) {
+        socket.emit("getBlockedWebsites", { message: "User not found" });
+        return;
+      }
+      let blockedWebsites = await BlockedWebsites.findByPk(user?.company_id)
+
+      socket.emit("getBlockedWebsites", { message: "Blocked website", user });
+    } catch (error) {
+      console.error("Error fetching user settings:", error);
+      socket.emit("getBlockedWebsites", {
+        message: "Failed to fetch user settings",
+      });
+    }
+  });
+  
   socket.on("disconnect", async () => {
     try {
       console.log("User disconnected:", socket.user.userId);
 
-        await Notification.create({
-          userId: socket.user.userId,
-          message: "User Logout successfully",
-          title: "User Logout",
-        });
+      await Notification.create({
+        userId: socket.user.userId,
+        message: "User Logout successfully",
+        title: "User Logout",
+      });
 
-        const notificationCount = await Notification.count({
-          where: { is_read: 0 },
-        });
-        io.to("Admin").emit("newNotification", { notificationCount });
-     
+      const notificationCount = await Notification.count({
+        where: { is_read: 0 },
+      });
+      io.to("Admin").emit("newNotification", { notificationCount });
     } catch (error) {
       console.error("Error during user disconnection:", error.message);
     }
@@ -475,7 +608,11 @@ export const adminController = {
         (user) => user.current_status == 0
       ).length;
 
-      io.to("Admin").emit("userCount", { totalUsers, activeUsers, inactiveUsers });
+      io.to("Admin").emit("userCount", {
+        totalUsers,
+        activeUsers,
+        inactiveUsers,
+      });
 
       // socket.emit("userCount", { totalUsers, activeUsers, inactiveUsers });
     } catch (error) {
@@ -489,7 +626,7 @@ export const adminController = {
 
       let findAll = await AppHistoryEntry.findAll({
         where: { date: today },
-      });     
+      });
       // socket.emit("appUsageStats", findAll);
       io.to("Admin").emit("appUsageStats", findAll);
     } catch (error) {

@@ -2,7 +2,7 @@ import User from "../../../database/models/userModel.js";
 // import responseUtils from "../../../utils/common/responseUtils.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import { Op } from "sequelize";
-import blockedWebsites from "../../../database/models/blockedWebsitesModel.js";
+import {blockedWebsites} from "../../../database/models/BlockedWebsite.js";
 import appInfo from "../../../database/models/productiveAppsModel.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
 

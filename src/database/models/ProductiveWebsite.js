@@ -18,20 +18,19 @@ const ProductiveWebsite = sequelize.define("productive_website",
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-
+    website_name:{
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    
     website: {
-      type: DataTypes.JSON,
+      type: DataTypes.STRING,
       allowNull: false,
     },
   },
   {
     timestamps: true,
-    // hooks: {
-    //   async afterUpdate(user, options) {
-    //     console.log({user,options});
-        
-    //   }
-    // }
+   
   }
 );
 

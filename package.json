@@ -31,6 +31,7 @@
     "path": "^0.12.7",
     "sequelize": "^6.37.5",
     "socket.io": "^4.8.1",
+    "tldts": "^6.1.66",
     "validate.js": "^0.13.1",
     "validatorjs": "^3.22.1",
     "winston": "^3.17.0"

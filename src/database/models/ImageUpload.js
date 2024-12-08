@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
+import { getUserStats } from "../../app/sockets/socket.js";
 
 export const ImageUpload = sequelize.define(
   "image_upload",
@@ -7,6 +8,11 @@ export const ImageUpload = sequelize.define(
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+    },
+
+    companyId:{
+      type: DataTypes.INTEGER,
+      allowNull:false
     },
 
     date: {
@@ -21,6 +27,11 @@ export const ImageUpload = sequelize.define(
   },
   {
     timestamps: true,
+    hooks: {
+      afterCreate: (imageUpload, options) => {
+        getUserStats();
+      },
+    },
   }
 );
 

@@ -7,8 +7,16 @@ export const UserHistory = sequelize.define("user_history", {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  companyId:{
+    type: DataTypes.INTEGER,
+    allowNull:false
+  },
   date: {
     type: DataTypes.DATEONLY,
+    allowNull: false,
+  },
+  website_name:{
+    type: DataTypes.STRING,
     allowNull: false,
   },
   url: {
