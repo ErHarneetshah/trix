@@ -56,9 +56,9 @@ const retrieveAllReport = async (req, res) => {
 
 const retrieveUserReport = async (req, res) => {
   try {
-    let { id } = req.body;
+    let { id } = req.query;
     const user = await User.findOne({
-      where: { id: id },
+      where: { id },
     });
     if (!user) {
       return responseUtils.errorResponse(res, "User not exists", 400);
@@ -70,7 +70,10 @@ const retrieveUserReport = async (req, res) => {
       type: workReports.sequelize.QueryTypes.SELECT,
     });
 
-    return helper.success(res, variables.Success, "Retrieved User Report Successfully", userReport);
+
+    let data = userReport[0]
+
+    return helper.success(res, variables.Success, "Retrieved User Report Successfully", data);
   } catch (error) {
     console.error("Error fetching reports:", error);
     return helper.failed(res, variables.BadRequest, error.message);
