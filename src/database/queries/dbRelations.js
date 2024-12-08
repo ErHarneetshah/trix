@@ -4,6 +4,8 @@ import designation from "../models/designationModel.js";
 import role from "../models/roleModel.js";
 import team from "../models/teamModel.js";
 import workReports from "../models/workReportsModel.js";
+import TimeLog from "../models/teamLogsModel.js";
+import shift from "../models/shiftModel.js";
 
 // User Relationships here
 User.belongsTo(department, { as: "department", foreignKey: "departmentId" });
@@ -16,5 +18,9 @@ department.belongsTo(User, { as: "reportingManager", foreignKey: "reportingManag
 
 // Work Reports relationships here
 workReports.belongsTo(User, { as: "user", foreignKey: "user_id" });
+
+// Time Log relationships here
+TimeLog.belongsTo(User, { as: "user", foreignKey: "user_id" });
+TimeLog.belongsTo(shift, { as: "shift", foreignKey: "shift_id" });
 
 export default {}
