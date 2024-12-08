@@ -4,6 +4,7 @@ import sequelize from "../../../database/queries/dbConnection.js";
 import helper from "../../../utils/services/helper.js";
 import teamsValidationSchema from "../../../utils/validations/teamsValidation.js";
 import variables from "../../config/variableConfig.js";
+import team from "../../../database/models/teamModel.js";
 
 class shiftController {
   getAllShift = async (req, res) => {
@@ -71,6 +72,17 @@ class shiftController {
     try {
       const requestData = req.body;
 
+      // Validation of start_time in 24 hr and HH:MM format only
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestData.start_time)) {
+        return helper.failed(res, variables.ValidationError, "Start Time must be in HH:MM 24-hour format.");
+      }
+
+      // Validation of end_time in 24 hr and HH:MM format only
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestData.end_time)) {
+        return helper.failed(res, variables.ValidationError, "End Time must be in HH:MM 24-hour format.");
+      }
+
+      // validating that both times cannot be same
       if (requestData.start_time == requestData.end_time) {
         return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
       }
@@ -127,10 +139,20 @@ class shiftController {
       const { id, days, ...updateFields } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
-      console.log("===============================================")
-      console.log(updateFields.days);
-      console.log("===============================================")
+      // Validation of start_time in 24 hr and HH:MM format only
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestData.start_time)) {
+        return helper.failed(res, variables.ValidationError, "Start Time must be in HH:MM 24-hour format.");
+      }
 
+      // Validation of end_time in 24 hr and HH:MM format only
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestData.end_time)) {
+        return helper.failed(res, variables.ValidationError, "End Time must be in HH:MM 24-hour format.");
+      }
+      
+      // validating that both times cannot be same
+      if (requestData.start_time == requestData.end_time) {
+        return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
+      }
 
       //* Check if there is a dept already exists
       const existingShift = await shift.findOne({
@@ -195,7 +217,13 @@ class shiftController {
       });
       if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists!");
 
-      
+      // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const isUsedInTeams = await team.findOne({ where: { shiftId: id } });
+
+      if (isUsedInTeams) {
+        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
+      }
+
       // Create and save the new user
       const deleteShift = await shift.destroy({
         where: { id: id },
