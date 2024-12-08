@@ -9,7 +9,17 @@ import { Op } from "sequelize";
 class reportingManagerController {
   getAllReportManager = async (req, res) => {
     try {
+      let { searchParam, limit, page } = req.query;
+      let searchable = ["name", `$reportingManager.fullname$`];
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      let where = await helper.searchCondition(searchParam, searchable);
+
       const allData = await department.findAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
         attributes: ["id", "name", "reportingManagerId"],
         include: [
           {
@@ -20,6 +30,15 @@ class reportingManagerController {
         ],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data not Found");
+
+      //! Adjust data in such a way that is changes null value to  {}
+      // const modifiedData = allData.map((item) => {
+      //   // Ensure reportingManager is not null, replace with {} if it is
+      //   if (!item.reportingManager) {
+      //     item.reportingManager = {};
+      //   }
+      //   return item;
+      // });
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
@@ -109,35 +128,21 @@ class reportingManagerController {
       if (!id || !reportManagerId) {
         return helper.failed(res, variables.NotFound, "Id and reportManagerId both are Required!");
       }
-      console.log("-------------------------");
-      console.log("-------------------------");
-      console.log("-------------------------");
-      console.log("-------------------------");
-      console.log("-------------------------");
-      console.log("-------------------------");
-      console.log("--------------- Dept exist ------------------------------");
-      console.log("Department Id");
-      console.log(id);
-      console.log("reporting Manager Id");
-      console.log(reportManagerId);
+
       //* Check if there is a dept already exists
       const existingDept = await department.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
       if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
-
-      console.log("--------------- User exist ------------------------------");
-      console.log("Department Id");
-      console.log(id);
-      console.log("reporting Manager Id");
-      console.log(reportManagerId);
+     
       //* Check if there is a user already exists
       const existingUser = await User.findOne({
         where: { id: reportManagerId },
         transaction: dbTransaction,
       });
       if (!existingUser) return helper.failed(res, variables.ValidationError, "User does not exists in system!");
+      if(existingUser.isAdmin) return helper.failed(res, variables.Unauthorized, "Not allowed to assign to this Id");
 
       //* Check if there is a dept with a name in a different id
       // const existingReportManager = await department.findOne({
@@ -151,11 +156,6 @@ class reportingManagerController {
       //   return helper.failed(res, variables.ValidationError, "Report Manager Already Assigned to a department");
       // }
 
-      console.log("--------------- Already Assigned ------------------------------");
-      console.log("Department Id");
-      console.log(id);
-      console.log("reporting Manager Id");
-      console.log(reportManagerId);
       //* if the id has the same value in db
       const alreadySameReportManager = await department.findOne({
         where: { id: id, reportingManagerId: reportManagerId },
@@ -163,15 +163,6 @@ class reportingManagerController {
       });
       if (alreadySameReportManager) return helper.success(res, variables.Success, "Report Manager Re-Assigned Successfully!");
 
-      // // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      // if (updateFields.status !== 0 && updateFields.status !== 1) {
-      //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
-      // }
-      console.log("--------------- update ------------------------------");
-      console.log("Department Id");
-      console.log(id);
-      console.log("reporting Manager Id");
-      console.log(reportManagerId);
       const [updatedRows] = await department.update(
         {
           reportingManagerId: reportManagerId,

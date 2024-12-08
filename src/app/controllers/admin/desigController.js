@@ -3,6 +3,7 @@ import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
 import { Op } from "sequelize";
+import User from "../../../database/models/userModel.js";
 
 class desigController {
   //* API to get all the Designation data
@@ -210,6 +211,13 @@ class desigController {
         transaction: dbTransaction,
       });
       if (!existingDesig) return helper.failed(res, variables.NotFound, "Designation does not exists!");
+
+
+      // Check if the desgination used in other tables from db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const isUsedInUsers = await User.findOne({ where: { designationId: id } });
+      if(isUsedInUsers) 
+        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
+
 
       // Delete the desgination from db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const deleteDesig = await designation.destroy({

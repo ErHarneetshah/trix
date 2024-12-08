@@ -8,22 +8,43 @@ import variables from "../../config/variableConfig.js";
 class shiftController {
   getAllShift = async (req, res) => {
     try {
-      const alldata = await shift.findAll({
+      // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      let { searchParam, limit, page } = req.query;
+      let searchable = ["name", "status"];
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      let where = await helper.searchCondition(searchParam, searchable);
+
+      const alldata = await shift.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, "Unable to fetch data");
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   getShiftDropdown = async (req, res) => {
     try {
+      let { searchParam, limit, page } = req.query;
+      let searchable = ["name", "status"];
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      let where = await helper.searchCondition(searchParam, searchable);
+
+      where.status = true;
       const alldata = await shift.findAll({
-        where: {status: true},
-        attributes: { exclude: ['createdAt', 'updatedAt', 'status'] }
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
@@ -60,6 +81,9 @@ class shiftController {
     try {
       const requestData = req.body;
 
+      if (requestData.start_time == requestData.end_time) {
+        return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
+      }
       //Validating the request data
       const validationResult = await teamsValidationSchema.shiftValid(requestData, res);
 
@@ -119,7 +143,7 @@ class shiftController {
         transaction: dbTransaction,
       });
       if (alreadySameShift) return helper.success(res, variables.Success, "Shift Re-Updated Successfully!");
-  
+
       // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // if (updateFields.status !== 0 && updateFields.status !== 1) {
       //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");

@@ -10,7 +10,7 @@ import helper from "../../../utils/services/helper.js";
 const addEmailGateeways = async (req, res) => {
     try {
         const { protocol, host, username, password, port } = req.body;
-        let encryption = "tls";
+        let encryption = "tls"; // default option for encryption
         const rules = {
             protocol: 'required|string|min:2|max:50',
             host: 'required|string|min:2|max:50',
@@ -23,15 +23,16 @@ const addEmailGateeways = async (req, res) => {
         };
 
         const { status, message } = await validate(req.body, rules);
-
         if (status === 0) {
             return helper.failed(res, variables.ValidationError, message);
         }
 
+        // Destroys previous email credentials in order to use the latest one
         await emailGateway.destroy({
             where: {}
             });
            
+        // Alter the table autoincrement to 1
         await sequelize.query(`ALTER TABLE \`${emailGateway.getTableName()}\` AUTO_INCREMENT = 1;`);
         
         await emailGateway.create({ protocol, host, username, password, port, encryption });
@@ -58,7 +59,8 @@ const checkEmailServer = async (req, res) => {
         return helper.failed(res, variables.ValidationError, validationMessage);
     }
 
-    const sendmail = await H.sendEmail(to, subject, message);
+    // Sending mail using nodemailer
+    const sendmail = await H.sendMail(to, subject, message);
     if (sendmail.success) {
         return helper.success(res, variables.Success, sendmail.message);
     } else {
@@ -68,14 +70,15 @@ const checkEmailServer = async (req, res) => {
 
 const getEmailList = async (req, res) => {
     try {
-        const getBlockedSites = await emailGateway.findAll({
+        const getEmailGateway = await emailGateway.findAll({
             where: {
                 is_active: {
                     [Op.ne]: 0
                 }
-            }, attributes: ['id', 'protocol', 'host','username','port','encryption']
+            }, 
+            attributes: ['id', 'protocol', 'host','username','port','encryption']
         });
-        return helper.success(res, variables.Success, "Retrieved  Email Lists Successfully");
+        return helper.success(res, variables.Success, "Retrieved  Email Lists Successfully", getEmailGateway);
     } catch (error) {
         console.error('Error blocking website:', error);
         return helper.failed(res, variables.BadRequest, error.message);

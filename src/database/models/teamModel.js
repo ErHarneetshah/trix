@@ -41,7 +41,7 @@ const team = sequelize.define('teams', {
 });
 
 // Team belongs to Department
-team.belongsTo(department, { as: 'department', foreignKey: 'departmentId' });
+team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
 
 // Team belongs to Shift
 team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });

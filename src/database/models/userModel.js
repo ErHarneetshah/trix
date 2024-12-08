@@ -5,6 +5,8 @@ import department from "./departmentModel.js";
 import designation from "./designationModel.js";
 import role from "./roleModel.js";
 import team from "./teamModel.js";
+import helper from "../../utils/services/helper.js";
+import variables from "../../app/config/variableConfig.js";
 
 const User = sequelize.define(
   "users",
@@ -86,7 +88,7 @@ const User = sequelize.define(
     currentStatus: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      comment: "Daily Log Active/InActive Status (0 for absent, 1 for present)"
+      comment: "Daily Log Active/InActive Status (0 for absent, 1 for present)",
     },
     status: {
       type: DataTypes.BOOLEAN,
@@ -119,11 +121,7 @@ const User = sequelize.define(
             });
 
             if (!recordExists) {
-              throw new Error(
-                `${field.replace(/Id$/, "")} with ID ${
-                  user[field]
-                } does not exist.`
-              );
+              return helper.failed(res, variables.NotFound, `${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
             }
           }
         }
@@ -153,11 +151,8 @@ const User = sequelize.define(
             });
 
             if (!recordExists) {
-              throw new Error(
-                `${field.replace(/Id$/, "")} with ID ${
-                  user[field]
-                } does not exist.`
-              );
+              return helper.failed(res, variables.NotFound, `${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
+              // throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
             }
           }
         }
@@ -165,6 +160,5 @@ const User = sequelize.define(
     },
   }
 );
-
 
 export default User;
