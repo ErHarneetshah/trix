@@ -71,9 +71,11 @@ class authController extends jwtService {
         transaction: dbTransaction,
       });
 
-      // Password Matching
-      if (!user) {
+      // Password Matching if user exists
+      if (user) {
         if (await bcrypt.compare(requestData.password, user.password)) return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
+      }else{
+        return helper.sendResponse(res, variables.NotFound, 0, null, "Email Does not exists in system");
       }
 
       //Verifying Admin Account
