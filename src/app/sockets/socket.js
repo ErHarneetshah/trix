@@ -191,13 +191,13 @@ const getUserReport = async (data, io , socket) => {
     let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${data.userId}`;
     let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
-    let productive_apps = await ProductiveApp.findAndCountAll({where:{company_id:user?.company_id}});
-    let app_array = []
-    for (let i = 0; i < productive_apps.rows.length; i++) {
-      if(!app_array.includes(array[i])){
-        app_array.push(array[i])
-      }
-    }
+    // let productive_apps = await ProductiveApp.findAndCountAll({where:{company_id:user?.company_id}});
+    // let app_array = []
+    // for (let i = 0; i < productive_apps.rows.length; i++) {
+    //   if(!app_array.includes(array[i])){
+    //     app_array.push(array[i])
+    //   }
+    // }
     // let app_history = await AppHistoryEntry.findAndCountAll({where:{userId:data.userId,date:today}});
     // let app_history_array = []
 
