@@ -10,7 +10,7 @@ import userSetting from "./userSettingModel.js";
 import blockedWebsites from "./blockedWebsitesModel.js";
 import blockedWebsites from './src/database/models/blockedWebsitesModel.js';
 import reportSettings from './src/database/models/reportSettingsModel.js';
-import ProductiveApp from "./ProductiveApp.js";
+import { ProductiveApp }from "./ProductiveApp.js";
 
 const exportModels = [User, role, reportingManager, department, designation, shift, team, userSetting, blockedWebsites, ProductiveApp, reportSettings];
 

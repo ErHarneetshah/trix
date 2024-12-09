@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
 
-export const AppHistoryEntry = sequelize.define(
+const AppHistoryEntry = sequelize.define(
   "app_history",
   {
     userId: {
@@ -36,3 +36,4 @@ export const AppHistoryEntry = sequelize.define(
 );
 
 await AppHistoryEntry.sync({ alter: 1 });
+export default AppHistoryEntry;

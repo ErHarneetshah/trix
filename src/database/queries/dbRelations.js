@@ -8,7 +8,7 @@ import TimeLog from "../models/teamLogsModel.js";
 import shift from "../models/shiftModel.js";
 import rolePermission from "../models/rolePermissionModel.js";
 import { BlockedWebsites } from "../models/BlockedWebsite.js";
-import ProductiveApp from "../models/ProductiveApp.js";
+import { ProductiveApp }from "../models/ProductiveApp.js";
 import { UserHistory } from "../models/UserHistory.js";
 import { AppHistoryEntry } from "../models/AppHistoryEntry.js";
 
