@@ -6,7 +6,7 @@ import { Op } from "sequelize";
 import User from "../../../database/models/userModel.js";
 import team from "../../../database/models/teamModel.js";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
-import ProductiveApp from "../../../database/models/ProductiveApp.js";
+import { ProductiveApp }from "../../../database/models/ProductiveApp.js";
 
 class deptController {
   //* Using this just for testing purposes of role permission middleware

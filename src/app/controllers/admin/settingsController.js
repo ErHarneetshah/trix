@@ -7,7 +7,7 @@ import variables from "../../config/variableConfig.js";
 import department from "../../../database/models/departmentModel.js";
 import validate from "../../../utils/CustomValidation.js";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
-import ProductiveApp from "../../../database/models/ProductiveApp.js";
+import { ProductiveApp }from "../../../database/models/ProductiveApp.js";
 
 const getAdminDetails = async (req, res) => {
   try {
