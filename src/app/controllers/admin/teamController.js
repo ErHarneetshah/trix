@@ -1,277 +1,231 @@
+import { Op } from "sequelize";
+import department from "../../../database/models/departmentModel.js";
+import shift from "../../../database/models/shiftModel.js";
 import team from "../../../database/models/teamModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import helper from "../../../utils/services/helper.js";
+import teamsValidationSchema from "../../../utils/validations/teamsValidation.js";
 import variables from "../../config/variableConfig.js";
 
 class teamController {
   getAllTeam = async (req, res) => {
     try {
-      const alldata = await team.findAll();
-      if (!alldata)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "No Data is available!"
-        );
+      let { searchParam, limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
 
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        { data:alldata },
-        "All Data fetched Successfully!"
-      );
+      let where = {};
+      let search = [];
+
+      let searchable = ["name", "$department.name$", "$shift.name$"];
+
+      if (searchParam) {
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+      }
+
+      const alldata = await team.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
+        include: [
+          {
+            model: department,
+            as: "department",
+            attributes: ["name"],
+          },
+          {
+            model: shift,
+            as: "shift",
+            attributes: ["name"],
+          },
+        ],
+      });
+
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        "All Data fetched Successfully!"
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getTeamDropdown = async (req, res) => {
+    try {
+      const alldata = await team.findAll({
+        where: { status: true },
+        attributes: { exclude: ["createdAt", "updatedAt", "status", "departmentId", "shiftId"] },
+      });
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getSpecificTeam = async (req, res) => {
+    try {
+      const requestData = req.body;
+      if (!requestData.departmentId) return helper.failed(res, variables.NotFound, "Department Id is required");
+
+      const specificData = await team.findOne({
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+        where: requestData,
+      });
+      if (!specificData) return helper.failed(res, variables.NotFound, `Data not Found of matching attributes `);
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   addTeam = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, departmentId, shiftId } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
-      if (!departmentId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Department Id is Required!"
-        );
-      if (!shiftId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Shift Id is Required!"
-        );
+      const requestData = req.body;
+
+      await teamsValidationSchema.teamsValid(requestData, res);
 
       const existingTeam = await team.findOne({
-        where: { name, departmentId, shiftId },
+        where: {
+          name: requestData.name,
+          departmentId: requestData.departmentId,
+          shiftId: requestData.shiftId,
+        },
         transaction: dbTransaction,
       });
-      if (existingTeam)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "Team Already Exists!"
-        );
+
+      const existingTeamWithSameParam = await team.findOne({
+        where: {
+          departmentId: requestData.departmentId,
+          shiftId: requestData.shiftId,
+        },
+        transaction: dbTransaction,
+      });
+      if (existingTeamWithSameParam) return helper.failed(res, variables.ValidationError, "Team Already Exists under different name!");
+
+      const existingTeamWithSameName = await team.findOne({
+        where: {
+          name: requestData.name,
+        },
+        transaction: dbTransaction,
+      });
+      if (existingTeamWithSameName) return helper.failed(res, variables.ValidationError, "Team with same Name Already Exists!");
 
       // Create and save the new user
-      const addNewTeam = await team.create(
-        { name, departmentId, shiftId },
-        { transaction: dbTransaction }
-      );
+      const addNewTeam = await team.create(requestData, { transaction: dbTransaction });
       await dbTransaction.commit();
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        null,
-        "Team Added Successfully!"
-      );
+      return helper.success(res, variables.Created, "Team Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   updateTeam = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, departmentId, shiftId, newTeamName, newDepartId, newShiftId } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
-      if (!departmentId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Department Id is Required!"
-        );
-      if (!shiftId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Shift Id is Required!"
-        );
+      const { id, ...updateFields } = req.body;
+      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
-      const existingReportManager = await team.findOne({
-        where: { name, departmentId, shiftId },
+      //* Check if there is a dept already exists
+      const existingTeam = await team.findOne({
+        where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingReportManager)
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Team does not exists"
-        );
+      if (!existingTeam) return helper.failed(res, variables.ValidationError, "Team does not exists!");
 
-      const updateData = {};
-      if (newTeamName) updateData.name = newTeamName;
-      if (newDepartId) updateData.departmentId = newDepartId;
-      if (newShiftId) updateData.shiftId = newShiftId;
-
-      // Check if there's anything to update
-      if (Object.keys(updateData).length === 0) {
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "No Updating values provided to update"
-        );
+      //* Check if there is a dept with a name in a different id
+      const existingTeamWithName = await team.findOne({
+        where: {
+          name: updateFields.name,
+          id: { [Op.ne]: id }, // Exclude the current record by id
+        },
+        transaction: dbTransaction,
+      });
+      if (existingTeamWithName) {
+        return helper.failed(res, variables.ValidationError, "Team name already exists in different record!");
       }
 
-      // Perform the update operation
-      const [updatedRows] = await team.update(updateData, {
-        where: { name, departmentId, shiftId },
+      if (updateFields.departmentId && updateFields.shiftId) {
+        const alreadySameTeam = await team.findOne({
+          where: { id: id, name: updateFields.name, departmentId: updateFields.departmentId, shiftId: updateFields.shiftId },
+          transaction: dbTransaction,
+        });
+        if (alreadySameTeam) return helper.success(res, variables.Success, "Team Re-Updated Successfully!");
+
+        const existingTeamWithSameParam = await team.findOne({
+          where: { departmentId: updateFields.departmentId, shiftId: updateFields.shiftId },
+          transaction: dbTransaction,
+        });
+        if (existingTeamWithSameParam) return helper.success(res, variables.Success, "Team With Same Specs already exists!");
+      }
+
+      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      // if (updateFields.status !== 0 && updateFields.status !== 1) {
+      //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
+      // }
+
+      const [updatedRows] = await team.update(updateFields, {
+        where: { id: id },
         transaction: dbTransaction,
+        individualHooks: true,
       });
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Tea, Updated Successfully"
-        );
+        return helper.success(res, variables.Success, "Team Updated Successfully");
       } else {
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to update the team"
-        );
+        return helper.failed(res, variables.UnknownError, "Unable to update the team");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   deleteTeam = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, departmentId, shiftId } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
-      if (!departmentId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Department Id is Required!"
-        );
-      if (!shiftId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Shift Id is Required!"
-        );
+      const { id } = req.body;
+      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
       const existingTeam = await team.findOne({
-        where: { name, departmentId, shiftId },
+        where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingTeam)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "Team does not exists!"
-        );
+      if (!existingTeam) return helper.success(res, variables.ValidationError, "Team does not exists!");
 
       // Create and save the new user
       const deleteTeam = await team.destroy({
-        where: { name, departmentId, shiftId },
+        where: { id: id },
         transaction: dbTransaction,
       });
 
       if (deleteTeam) {
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Team deleted Successfully!"
-        );
+        return helper.success(res, variables.Success, "Team deleted Successfully!");
       } else {
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to delete the Team!"
-        );
+        return helper.failed(res, variables.UnknownError, "Unable to delete the Team!");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 }

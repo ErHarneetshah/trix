@@ -3,6 +3,8 @@ import User from "../../database/models/userModel.js";
 import accessToken from "../../database/models/accessTokenModel.js";
 import variables from "../config/variableConfig.js";
 import appConfig from "../config/appConfig.js";
+import helper from "../../utils/services/helper.js";
+import { decode } from "punycode";
 
 const jwtConfig = new appConfig().getJwtConfig();
 
@@ -10,23 +12,18 @@ const authMiddleware = async (req, res, next) => {
   try {
     console.log("Auth Middleware -----------------------------");
     const authHeader = req.header("Authorization");
-
+    console.log(authHeader);
     if (!authHeader)
-      return res.json({
-        status: variables.BadRequest,
-        message: "Access denied. No token provided.",
-      });
+      return helper.failed(res, variables.Unauthorized, "Access Denied. No Token Provided");
 
     const token = authHeader.replace("Bearer ", "");
 
-    const access_token = await accessToken.findOne({ where: { token } });
+    const access_token = await accessToken.findOne({ where: {token: token } });
+    console.log(access_token);
     if (access_token) {
       if (new Date() > access_token.expiry_time) {
-        await accessToken.destroy({ where: { token } });
-        return res.json({
-          status: variables.Unauthorized,
-          message: "Token expired. Please log in again.",
-        });
+        await accessToken.destroy({ where: { token: token } });
+        return helper.failed(res, variables.Unauthorized, "Token Expired. Please log in again");
       }
     }
 
@@ -38,22 +35,14 @@ const authMiddleware = async (req, res, next) => {
       where: { id: decoded.userId },
       attributes: { exclude: ["password"] }, // Exclude password from result
     });
-    if (!user)
-      return res.json({
-        status: variables.NotFound,
-        message: "User not found.",
-      });
+    if (!user) return helper.failed(res, variables.NotFound, "User not found in system!");
     req.user = user;
-    // return res.json({ status: variables.SuccessStatus, message: 'verify done', user: req.user });
     next();
   } catch (e) {
     if (e.name === "TokenExpiredError") {
-      return res.json({
-        status: variables.Unauthorized,
-        message: "Token expired. Please log in again.",
-      });
+      return helper.failed(res, variables.Unauthorized, e.message);
     }
-    res.json({ status: variables.Unauthorized, message: "Invalid token." });
+    return helper.failed(res, variables.Unauthorized, e.message);
   }
 };
 

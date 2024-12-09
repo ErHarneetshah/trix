@@ -11,8 +11,6 @@ import { BlockedWebsites } from "../../database/models/BlockedWebsite.js";
 import TimeLog from "../../database/models/TimeLog.js";
 import { ProductiveApp } from "../../database/models/ProductiveApp.js";
 
-User.hasMany(UserHistory, { foreignKey: "userId", as: "web" });
-User.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "app" });
 
 const setupSocketIO = (io) => {
   // Middleware for Socket.IO authentication:

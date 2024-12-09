@@ -10,7 +10,7 @@ export const ImageUpload = sequelize.define(
       allowNull: false,
     },
 
-    companyId:{
+    company_id:{
       type: DataTypes.INTEGER,
       allowNull:false
     },
@@ -27,6 +27,8 @@ export const ImageUpload = sequelize.define(
   },
   {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
     // hooks: {
     //   afterCreate: (imageUpload, options) => {
     //     getUserStats();

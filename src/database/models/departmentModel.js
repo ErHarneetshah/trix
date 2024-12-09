@@ -1,27 +1,50 @@
-import { DataTypes } from 'sequelize';
-import sequelize  from '../queries/dbConnection.js';
+import { DataTypes } from "sequelize";
+import sequelize from "../queries/dbConnection.js";
 
-const department = sequelize.define('departments', {
-  id: {
-    type: DataTypes.INTEGER,
+const department = sequelize.define(
+  "departments",
+  {
+    id: {
+      type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
+    },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    parentDeptId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reportingManagerId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    isRootId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue : 0,
+      comment: "0 for not root, 1 for root"
+    },
+    status: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: 1,
+    },
   },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-        notEmpty: true, // Prevents empty string
-      },
-  },
-  status:{
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: 1,
-  },
-}, {
-  timestamps: true, // Adds createdAt and updatedAt columns
-});
+  {
+    timestamps: true, // Adds createdAt and updatedAt columns
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
+  }
+);
+
+await department.sync({alter:1});
 
 export default department;

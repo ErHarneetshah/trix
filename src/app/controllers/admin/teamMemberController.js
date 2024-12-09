@@ -3,43 +3,87 @@ import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import User from "../../../database/models/userModel.js";
 import teamsValidationSchema from "../../../utils/validations/teamsValidation.js";
+import { createUserSetting } from "../../../database/models/userSettingModel.js";
+import department from "../../../database/models/departmentModel.js";
+import designation from "../../../database/models/designationModel.js";
+import role from "../../../database/models/roleModel.js";
+import team from "../../../database/models/teamModel.js";
+import { Op } from "sequelize";
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
     try {
-      const alldata = await User.findAll({
-        where: { isAdmin: 0 },
-        attributes: { exclude: ['password', 'mobile', 'country', 'isAdmin', 'workstationId', 'createdAt', 'updatedAt'] }, // Exclude the password field
-      });
-      ;
-      if (!alldata)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "No Data is available!"
-        );
+      let { searchParam, limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
 
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        { data: alldata },
-        "All Data fetched Successfully!"
-      );
+      let where = {};
+      let search = [];
+
+      let searchable = [
+        "fullname",
+        "email",
+        "mobile",
+        "country",
+        "$department.name$",
+        "$designation.name$",
+        "$role.name$",
+        "$team.name$",
+      ];
+
+      if (searchParam) {
+        //searchable filter
+        searchable.forEach((key) => {
+          search.push({
+            [key]: {
+              [Op.substring]: searchParam,
+            },
+          });
+        });
+
+        where = {
+          [Op.or]: search,
+        };
+      }
+
+      where.isAdmin = 0;
+      const alldata = await User.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt", "status"] }, // Exclude fields
+        include: [
+          {
+            model: department,
+            as: "department",
+            attributes: ["name"],
+          },
+          {
+            model: designation,
+            as: "designation",
+            attributes: ["name"],
+          },
+          {
+            model: role,
+            as: "role",
+            attributes: ["name"],
+          },
+          {
+            model: team,
+            as: "team",
+            attributes: ["name"],
+          },
+        ],
+        
+      });
+
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        "All Data fetched Successfully!"
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
-
-
 
   addTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
@@ -47,10 +91,7 @@ class teamMemberController {
       const requestData = req.body;
 
       // Validating request body
-      const validationResult = await teamsValidationSchema.teamMemberValid(
-        requestData,
-        res
-      );
+      const validationResult = await teamsValidationSchema.teamMemberValid(requestData, res);
 
       // Check if the user already exists
       const existingUser = await User.findOne({
@@ -59,111 +100,78 @@ class teamMemberController {
       });
 
       if (existingUser) {
-        if (existingUser.email === email) {
-          throw new Error("Email already in use");
-        }
-        if (existingUser.status) {
-          throw new Error("This account has been deactivated");
-        }
+        return helper.failed(res, variables.Unauthorized, "User already exists with this mail!");
       }
 
+      const password = await helper.generatePass();
+      if (!password) return helper.failed(res, variables.UnknownError, "User already exists with this mail!");
+      requestData.password = password;
+      console.log(requestData);
       // Create and save the new user
+      requestData.screenshot_time =  300;
+      requestData.app_history_time = 300;
+      requestData.browser_history_time = 300;
+
       const teamMember = await User.create(requestData, {
         transaction: dbTransaction,
       });
 
       // Create user settings
-      await createUserSetting(teamMember.id, dbTransaction);
+      // const userSetting = await createUserSetting(teamMember.id, dbTransaction, res);
 
-      // Generate JWT token
-      const token = this.generateToken(teamMember.id.toString(), teamMember.isAdmin, "1d");
-
-      // Save token to the database
-      const expireTime = this.calculateTime();
-      await createAccessToken(
-        teamMember.id,
-        teamMember.isAdmin,
-        token,
-        expireTime,
-        dbTransaction
-      );
-
-      await dbTransaction.commit();
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        { token: token },
-        "Team Member Added Successfully"
-      );
+      if (teamMember) {
+        await dbTransaction.commit();
+        return helper.success(res, variables.Success, "Team Member Added Successfully", {
+          note: "This response is just for testing purposes for now",
+          requestData: requestData,
+          addedMember: teamMember,
+        });
+      } else {
+        await dbTransaction.rollback();
+        return helper.failed(res, variables.UnknownError, "Unknow Error Occured While creating User Setting");
+      }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       console.log(error.message);
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   updateTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const requestData = req.body;
 
+      const { id, ...updateFields } = req.body;
       const existingTeamMember = await User.findOne({
-        where: {id: requestData.id},
+        where: { id: id },
         transaction: dbTransaction,
       });
 
-      if (!existingTeamMember)
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Shift does not exists"
-        );
-      const { id, ...updateFields } = requestData;
-        
+      if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists");
+      if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
+     
+      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      // if (updateFields.status !== 0 && updateFields.status !== 1) {
+      //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
+      // }
+
       // Perform the update operation
       const [updatedRows] = await User.update(updateFields, {
-        where: { id },
+        where: { id: id },
         transaction: dbTransaction,
         individualHooks: true,
       });
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Shift Updated Successfully"
-        );
+        return helper.success(res, variables.Success, "User Updated Successfully");
       } else {
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to update the shift"
-        );
+        return helper.failed(res, variables.UnknownError, "Unable to update the shift");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 

@@ -3,7 +3,6 @@ import appConfig from '../../app/config/appConfig.js';
 
 const dbConfig = new appConfig().getConfig();
 
-
 const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.password, {
   host: dbConfig.host,
   dialect: 'mysql',

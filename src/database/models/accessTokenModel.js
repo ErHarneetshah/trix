@@ -10,6 +10,14 @@ const accessToken = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -34,6 +42,8 @@ const accessToken = sequelize.define(
   },
   {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
   }
 );
 

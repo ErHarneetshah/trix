@@ -4,6 +4,7 @@ import appConfiguration from "./src/app/config/appConfig.js";
 import routes from "./src/routes/routes.js";
 import cors from "cors";
 import corsMiddleware from "./src/app/middlewares/corsMiddleware.js";
+import dbRelations from "./src/database/queries/dbRelations.js";
 import { createServer } from "http";
 import setupSocketIO from "./src/app/sockets/socket.js";
 import { Server } from "socket.io";
@@ -23,7 +24,6 @@ export const io = new Server(httpServer, {
 setupSocketIO(io);
 app.use(express.json());
 app.use(cors(corsMiddleware));
-
 app.use(routes);
 
 // Start the Express server

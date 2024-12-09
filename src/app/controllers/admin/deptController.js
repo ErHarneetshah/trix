@@ -2,226 +2,236 @@ import department from "../../../database/models/departmentModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
+import { Op } from "sequelize";
+import User from "../../../database/models/userModel.js";
+import team from "../../../database/models/teamModel.js";
+import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
+import ProductiveApp from "../../../database/models/ProductiveApp.js";
 
 class deptController {
+  //* Using this just for testing purposes of role permission middleware
+  getTestData = async (req, res) => {
+    return helper.success(res, variables.Success, "Permission Middleware Worked Successfully Succesfully");
+  };
+
+  //* API to get all the Department data
   getAllDept = async (req, res) => {
     try {
-      const allData = await department.findAll();
-      if (!allData)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          error.message
-        );
+      // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      let { searchParam, limit, page } = req.query;
+      let searchable = ["name", "status"];
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      let where = await helper.searchCondition(searchParam, searchable);
 
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        { data: allData },
-        "Data Fetched Succesfully"
-      );
+      // Getting all the departments based on seacrh parameters with total count >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const allData = await department.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: ["id", "name", "parentDeptId", "status"],
+      });
+      if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
+  //* API to get all the Department data who's status is 1 (active)
+  getDeptDropdown = async (req, res) => {
+    try {
+  
+      const allData = await department.findAll({
+        where: {status : 1},
+        attributes: ["id", "name"],
+      });
+      if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  //* API to get only a specific department data
+  getSpecificDept = async (req, res) => {
+    try {
+      const { id } = req.body;
+      if (!id) return helper.failed(res, variables.NotFound, "Id is required");
+
+      // Retrieving the specific department data from table >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const deptData = await department.findOne({
+        where: { id: id },
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
+      if (!deptData) return helper.failed(res, variables.NotFound, "Data Not Found");
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", deptData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  //* API to add new department in the department table
   addDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
+      const { name, parentDeptId } = req.body;
+      if (!name || !parentDeptId) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
 
+      // checking whether department name requested by used already exists or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
-        where: { name },
+        where: { name: name },
         transaction: dbTransaction,
       });
-      if (existingDept)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "Department Already Exists in our system"
-        );
+      if (existingDept) return helper.failed(res, variables.ValidationError, "Department Already Exists in our system");
 
-      const addNewDept = await department.create(
-        { name },
-        { transaction: dbTransaction }
-      );
+      const existingParentDept = await department.findOne({
+        where: { id: parentDeptId },
+        transaction: dbTransaction,
+      });
+      if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Department does not exists in our system");
+
+      // Adding new department in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const addNewDept = await department.create({ name: name, parentDeptId: parentDeptId }, { transaction: dbTransaction });
+
+      // Committing db enteries if passes every code correctly >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       await dbTransaction.commit();
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        null,
-        "Department Added Successfully!"
-      );
+      return helper.success(res, variables.Created, "Department Added Successfully!");
     } catch (error) {
+      // Revert db entereis if error occured >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   updateDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, newName, newStatus } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
+      const { id, name, parentDeptId } = req.body;
+      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
+      console.log("------------ 1 ------------------------------")
+      if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
+
+      console.log("-------------- 2 ----------------------------")
+      // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
-        where: { name },
+        where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingDept)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Department does not found in our system"
-        );
+      if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
 
-      const updateData = {};
-      if (newName) updateData.name = newName;
-      if (newStatus) updateData.status = newStatus;
-
-      // Check if there's anything to update
-      if (Object.keys(updateData).length === 0) {
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "No Updation Data is Provided"
-        );
+      console.log("-------------- 3 ----------------------------")
+      // Check if there is a dept with a name in a different id >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      if (name) {
+        const existingDeptWithName = await department.findOne({
+          where: {
+            name: name,
+            id: { [Op.ne]: id }, // Exclude the current record by id
+          },
+          transaction: dbTransaction,
+        });
+        if (existingDeptWithName) {
+          return helper.failed(res, variables.ValidationError, "Department name already exists in different record!");
+        }
+      }
+      console.log("--------------- 4 ---------------------------")
+      // Check if parent dept id exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      if (parentDeptId) {
+        const existingDeptWithName = await department.findOne({
+          where: {
+            id: parentDeptId,
+          },
+          transaction: dbTransaction,
+        });
+        if (!existingDeptWithName) {
+          return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
+        }
       }
 
-      // Perform the update operation
-      const [updatedRows] = await department.update(updateData, {
-        where: { name },
-        transaction: dbTransaction,
-      });
+      //! (HOLD) Check if the id has the same value in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      // const alreadySameDept = await department.findOne({
+      //   where: { id: id, name: name, parentDeptId: parentDeptId },
+      //   transaction: dbTransaction,
+      // });
+      // if (alreadySameDept) return helper.success(res, variables.Success, "Department Re-Updated Successfully!");
 
-      if (updatedRows > 0) {
-        await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Data Updated Succesfully"
-        );
-      } else {
-        await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.InternalServerError,
-          0,
-          null,
-          "Unable to update the deppartment"
-        );
+      const updateFields = {};
+
+      // Only include the fields if they are provided (not undefined or null)
+      if (name !== undefined && !name) {
+        updateFields.name = name;
       }
+
+      if (parentDeptId !== undefined && !parentDeptId) {
+        updateFields.parentDeptId = parentDeptId;
+      }
+
+      // Update the db entry >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      if (Object.keys(updateFields).length > 0) {
+        await department.update(updateFields, {
+          where: {
+            id: id, // Ensure this condition identifies the correct record
+          },
+          transaction: dbTransaction,
+          individualHooks: true,
+        });
+      }
+      await dbTransaction.commit();
+      return helper.success(res, variables.Success, "Data Updated Succesfully");
     } catch (error) {
+      // Rolback enteries from db if error occured >>>>>>>>>>>>>>>>>>>>>>>>>>>>
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   deleteDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
+      const { id } = req.body;
+      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
+      // Check if the department already exists in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
-        where: { name },
+        where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingDept)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Department does not found in our system"
-        );
+      if (!existingDept) return helper.failed(res, variables.NotFound, "Department does not found in our system");
 
-      // Create and save the new user
+      // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const isUsedInUsers = await User.findOne({ where: { departmentId: id } });
+      const isUsedInBlockedWebsites = await BlockedWebsites.findOne({ where: { departmentId: id } });
+      const isUsedInProductiveAndNonApps = await ProductiveApp.findOne({ where: { departmentId: id } });
+      const isUsedInTeams = await team.findOne({ where: { departmentId: id } });
+
+      if (isUsedInTeams || isUsedInBlockedWebsites || isUsedInProductiveAndNonApps || isUsedInUsers) {
+        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
+      }
+
+      // Delete the department from table >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const deleteDept = await department.destroy({
-        where: { name },
+        where: { id: id },
         transaction: dbTransaction,
       });
 
       if (deleteDept) {
+        // Commits db enteries if passes everything >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Department Successfully Deleted"
-        );
+        return helper.success(res, variables.Success, "Department Successfully Deleted");
       } else {
+        // Rollback db enteries if error occured >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to delete department"
-        );
+        return helper.failed(res, variables.UnknownError, "Unable to delete department");
       }
     } catch (error) {
+      // Rollback db enteries if error occured >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 }

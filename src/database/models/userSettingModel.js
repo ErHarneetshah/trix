@@ -1,52 +1,71 @@
-import { DataTypes } from 'sequelize';
-import sequelize  from '../queries/dbConnection.js';
+import { DataTypes } from "sequelize";
+import sequelize from "../queries/dbConnection.js";
+import helper from "../../utils/services/helper.js";
+import User from "./userModel.js";
 
-const userSetting = sequelize.define('users_settings', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-    allowNull: false,
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    validate: {
+const userSetting = sequelize.define(
+  "users_settings",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
         notEmpty: true, // Prevents empty string
       },
-  },
-  screenshot_time: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    validate: {
+    },
+    screenshot_time: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
         notEmpty: true, // Prevents empty string
       },
-  },
-  app_history_time: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    validate: {
+    },
+    app_history_time: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
         notEmpty: true, // Prevents empty string
       },
-  },
-  browser_history_time: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    validate: {
+    },
+    browser_history_time: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
         notEmpty: true, // Prevents empty string
       },
+    },
+    status: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: 1,
+    },
   },
-  status:{
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: 1,
-  },
-}, {
-  timestamps: true, // Adds createdAt and updatedAt columns
-});
+  {
+    timestamps: true, // Adds createdAt and updatedAt columns
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
+  }
+);
 
-export const createUserSetting = async (userId, dbTransaction) => {
+export const createUserSetting = async (userId, dbTransaction, res) => {
   try {
+    const existingUserSetting = await User.findOne({ where: { id: userId }, transaction: dbTransaction });
+    if (existingUserSetting) {
+      return helper.failed(res, variables.ValidationError, "User settings already exist for this user.");
+    }
     const userSettingData = await userSetting.create(
       {
         userId,
@@ -59,8 +78,8 @@ export const createUserSetting = async (userId, dbTransaction) => {
     );
     return userSettingData;
   } catch (error) {
-    console.error('Error creating user setting:', error.message);
-    throw error;
+    console.error("Error creating user setting:", error.message);
+    return helper.failed(res, variables.UnknownError, error.message);
   }
 };
 

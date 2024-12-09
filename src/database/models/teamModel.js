@@ -1,5 +1,7 @@
 import { DataTypes } from 'sequelize';
 import sequelize  from '../queries/dbConnection.js';
+import shift from './shiftModel.js';
+import department from './departmentModel.js';
 
 const team = sequelize.define('teams', {
   id: {
@@ -7,6 +9,13 @@ const team = sequelize.define('teams', {
     primaryKey: true,
     autoIncrement: true,
     allowNull: false,
+  },
+  company_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+    },
   },
   name: {
     type: DataTypes.STRING,
@@ -36,6 +45,10 @@ const team = sequelize.define('teams', {
   },
 }, {
   timestamps: true, // Adds createdAt and updatedAt columns
+  // Prevent Sequelize from auto-creating foreign keys
+  underscored: false,
 });
+
+await team.sync({alter:1});
 
 export default team;

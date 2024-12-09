@@ -7,8 +7,10 @@ const router = express.Router();
 const shiftInstance = new shiftController();
 
 router.get("/getAllShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getAllShift);
+router.get("/getShiftDropdown",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getShiftDropdown);
+router.get("/getSpecificShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getSpecificShift);
 router.post("/addShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.addShift);
-router.post("/updateShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.updateShift);
-router.post("/deleteShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.deleteShift);
+router.put("/updateShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.updateShift);
+router.delete("/deleteShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.deleteShift);
 
 export default router;

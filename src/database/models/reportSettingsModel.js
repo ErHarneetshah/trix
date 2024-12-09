@@ -8,6 +8,13 @@ const reportSettings = sequelize.define('report_settings', {
         autoIncrement: true,
         allowNull: false,
     },
+    company_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+            notEmpty: true,
+        },
+    },
     name: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -15,7 +22,7 @@ const reportSettings = sequelize.define('report_settings', {
             notEmpty: true,
         },
     },
-    is_active: {
+    status: {
         type: DataTypes.TINYINT,
         allowNull: false,
         defaultValue: 1,
@@ -23,6 +30,10 @@ const reportSettings = sequelize.define('report_settings', {
     }
 }, {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
 });
+
+await reportSettings.sync({alter:1});
 
 export default reportSettings;

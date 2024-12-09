@@ -1,334 +1,246 @@
-import { start } from "repl";
+import { Op } from "sequelize";
 import shift from "../../../database/models/shiftModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import helper from "../../../utils/services/helper.js";
+import teamsValidationSchema from "../../../utils/validations/teamsValidation.js";
 import variables from "../../config/variableConfig.js";
+import team from "../../../database/models/teamModel.js";
 
 class shiftController {
   getAllShift = async (req, res) => {
     try {
-      const alldata = await shift.findAll();
-      if (!alldata)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "No Data is available!"
-        );
+      // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      let { searchParam, limit, page } = req.query;
+      let searchable = ["name", "status"];
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      let where = await helper.searchCondition(searchParam, searchable);
 
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        { data: alldata },
-        "All Data fetched Successfully!"
-      );
+      const alldata = await shift.findAndCountAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        "All Data fetched Successfully!"
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getShiftDropdown = async (req, res) => {
+    try {
+      const alldata = await shift.findAll({
+        where: { status: true },
+        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
+      });
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, "Unable to fetch data");
+    }
+  };
+
+  getSpecificShift = async (req, res) => {
+    try {
+      const requestData = req.body;
+
+      const specificData = await shift.findOne({
+        where: {
+          name: requestData.name,
+          start_time: requestData.start_time,
+          end_time: requestData.end_time,
+          days: JSON.stringify(requestData.days), // Ensure days are correctly formatted for comparison
+        },
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
+
+      if (!specificData) return helper.failed(res, variables.NotFound, `Data not Found of matching attributes `);
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   addShift = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, start_time, end_time, days } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
-      if (!start_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Start Time is Required!"
-        );
-      if (!end_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "End Time is Required!"
-        );
-      if (!days)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Days is Required!"
-        );
+      const requestData = req.body;
 
+      // Validation of start_time in 24 hr and HH:MM format only
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestData.start_time)) {
+        return helper.failed(res, variables.ValidationError, "Start Time must be in HH:MM 24-hour format.");
+      }
+
+      // Validation of end_time in 24 hr and HH:MM format only
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestData.end_time)) {
+        return helper.failed(res, variables.ValidationError, "End Time must be in HH:MM 24-hour format.");
+      }
+
+      // validating that both times cannot be same
+      if (requestData.start_time == requestData.end_time) {
+        return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
+      }
+      //Validating the request data
+      const validationResult = await teamsValidationSchema.shiftValid(requestData, res);
+
+      //checkecing existing shift
       const existingShift = await shift.findOne({
-        where: { name, start_time, end_time, days },
+        where: {
+          name: requestData.name,
+          start_time: requestData.start_time,
+          end_time: requestData.end_time,
+          days: JSON.stringify(requestData.days), // Ensure days are correctly formatted for comparison
+        },
         transaction: dbTransaction,
       });
-      if (existingShift)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "Shift Already Exists!"
-        );
+      if (existingShift) return helper.failed(res, variables.ValidationError, "Shift Already Exists!");
 
-      let total_hours = await this.calTotalHr(start_time, end_time);
+      //* Check if there is a dept with a name in a different id
+      const existingShiftWithName = await shift.findOne({
+        where: {
+          name: requestData.name,
+          // id: { [Op.ne]: id }, // Exclude the current record by id
+        },
+        transaction: dbTransaction,
+      });
+      if (existingShiftWithName) {
+        return helper.failed(res, variables.ValidationError, "Shift name already exists in different record!");
+      }
+
+      const existingSameShift = await shift.findOne({
+        where: {
+          start_time: requestData.start_time,
+          end_time: requestData.end_time,
+          days: JSON.stringify(requestData.days), // Ensure days are correctly formatted for comparison
+        },
+        transaction: dbTransaction,
+      });
+      if (existingSameShift) return helper.failed(res, variables.ValidationError, "Shift Already Exists with same parameters but different name!");
 
       // Create and save the new user
-      const addNewShift = await shift.create(
-        { name, start_time, end_time, days, total_hours },
-        { transaction: dbTransaction }
-      );
+      const newShift = await shift.create(requestData, { transaction: dbTransaction });
       await dbTransaction.commit();
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        null,
-        "Shift Added Successfully!"
-      );
+      return helper.success(res, variables.Success, "Shift Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   updateShift = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const {
-        name,
-        start_time,
-        end_time,
-        days,
-        newShiftName,
-        newStart_time,
-        newEnd_time,
-        newDays,
-      } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
-      if (!start_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Start Time is Required!"
-        );
-      if (!end_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "End Time is Required!"
-        );
-      if (!days)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Days is Required!"
-        );
+      const { id, days, ...updateFields } = req.body;
+      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
+      // Validation of start_time in 24 hr and HH:MM format only
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(updateFields.start_time)) {
+        return helper.failed(res, variables.ValidationError, "Start Time must be in HH:MM 24-hour format.");
+      }
+
+      // Validation of end_time in 24 hr and HH:MM format only
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(updateFields.end_time)) {
+        return helper.failed(res, variables.ValidationError, "End Time must be in HH:MM 24-hour format.");
+      }
+      
+      // validating that both times cannot be same
+      if (updateFields.start_time == updateFields.end_time) {
+        return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
+      }
+
+      //* Check if there is a dept already exists
       const existingShift = await shift.findOne({
-        where: { name: name, start_time: start_time, end_time: end_time },
+        where: { id: id },
         transaction: dbTransaction,
       });
+      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists!");
 
-      if (!existingShift)
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Shift does not exists"
-        );
-
-      const updateData = {};
-      if (newShiftName) updateData.name = newShiftName;
-      if (newStart_time) updateData.start_time = newStart_time;
-      if (newEnd_time) updateData.end_time = newEnd_time;
-      if (newDays) updateData.days = newDays;
-
-      // Check if there's anything to update
-      if (Object.keys(updateData).length === 0) {
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "No Updating values provided to update"
-        );
-      }
-
-      if (newStart_time && newEnd_time) {
-        updateData.total_hours = await this.calTotalHr(
-          newStart_time,
-          newEnd_time
-        );
-      }
-
-      console.log(updateData);
-      // Perform the update operation
-      const [updatedRows] = await shift.update(updateData, {
-        where: { name: name, start_time: start_time, end_time: end_time },
+      //* Check if there is a dept with a name in a different id
+      const existingShiftWithName = await shift.findOne({
+        where: {
+          name: updateFields.name,
+          id: { [Op.ne]: id }, // Exclude the current record by id
+        },
         transaction: dbTransaction,
       });
+      if (existingShiftWithName) {
+        return helper.failed(res, variables.ValidationError, "Shift name already exists in different record!");
+      }
+
+      //* if the id has the same value in db
+      const alreadySameShift = await shift.findOne({
+        where: { id: id, name: updateFields.name, start_time: updateFields.start_time, end_time: updateFields.end_time, days: JSON.stringify(days) },
+        transaction: dbTransaction,
+      });
+      if (alreadySameShift) return helper.success(res, variables.Success, "Shift Re-Updated Successfully!");
+
+      const [updatedRows] = await shift.update(
+        {
+          ...updateFields,
+          days: JSON.stringify(days),
+        },
+        {
+          where: { id: id },
+          transaction: dbTransaction,
+          individualHooks: true,
+        }
+      );
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Shift Updated Successfully"
-        );
+        return helper.success(res, variables.Success, "Shift Updated Successfully");
       } else {
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to update the shift"
-        );
+        return helper.failed(res, variables.UnknownError, "Unable to update the shift");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   deleteShift = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, start_time, end_time } = req.body;
-      if (!name)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Name is Required!"
-        );
-      if (!start_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Start Time is Required!"
-        );
-      if (!end_time)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "End Time is Required!"
-        );
+      const { id } = req.body;
+      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
       const existingShift = await shift.findOne({
-        where: { name: name, start_time: start_time, end_time: end_time },
+        where: { id: id },
         transaction: dbTransaction,
       });
-      if (!existingShift)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "Shift does not exists!"
-        );
+      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists!");
+
+      // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const isUsedInTeams = await team.findOne({ where: { shiftId: id } });
+
+      if (isUsedInTeams) {
+        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
+      }
 
       // Create and save the new user
       const deleteShift = await shift.destroy({
-        where: { name: name, start_time: start_time, end_time: end_time },
+        where: { id: id },
         transaction: dbTransaction,
       });
 
       if (deleteShift) {
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Shift deleted Successfully!"
-        );
+        return helper.success(res, variables.Success, "Shift deleted Successfully!");
       } else {
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to delete the Shift!"
-        );
+        return helper.failed(res, variables.UnknownError, "Unable to delete the Shift!");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
-  };
-
-  calTotalHr = async (start_time, end_time) => {
-    const [startHour, startMinute] = start_time.split(":").map(Number);
-    const [endHour, endMinute] = end_time.split(":").map(Number);
-
-    const startTotalMinutes = startHour * 60 + startMinute;
-    const endTotalMinutes = endHour * 60 + endMinute;
-
-    let totalMinutes;
-    if (endTotalMinutes >= startTotalMinutes) {
-      totalMinutes = endTotalMinutes - startTotalMinutes;
-    } else {
-      totalMinutes = 24 * 60 - startTotalMinutes + endTotalMinutes;
-    }
-
-    const totalHours = totalMinutes / 60;
-    return totalHours;
   };
 }
 

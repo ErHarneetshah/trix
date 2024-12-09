@@ -1,280 +1,222 @@
-import reportingManager from "../../../database/models/reportingManagerModel.js";
-import team from "../../../database/models/teamModel.js";
+// import reportingManager from "../../../database/models/reportingManagerModel.js";
 import User from "../../../database/models/userModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
+import department from "../../../database/models/departmentModel.js";
+import { Op } from "sequelize";
 
 class reportingManagerController {
   getAllReportManager = async (req, res) => {
     try {
-      const allData = await reportingManager.findAll();
-      if (!allData)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          error.message
-        );
+      let { searchParam, limit, page } = req.query;
+      let searchable = ["name", `$reportingManager.fullname$`];
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      let where = await helper.searchCondition(searchParam, searchable);
 
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        { data: allData },
-        "Data Fetched Succesfully"
-      );
-    } catch (error) {
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
-    }
-  };
-
-  addReportManager = async (req, res) => {
-    const dbTransaction = await sequelize.transaction();
-    try {
-      const { userId, teamId } = req.body;
-
-      if (!userId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "User Id is Required!"
-        );
-      if (!teamId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Team Id is Required!"
-        );
-
-      const userExists = await User.findOne({ where: { id: userId } });
-      const teamExists = await team.findOne({ where: { id: teamId } });
-
-      if (!userExists)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "User does not exists in system!"
-        );
-      if (!teamExists)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Team does not exists in system!"
-        );
-
-      
-      const existingReportManager = await reportingManager.findOne({
-        where: { userId, teamId },
-        transaction: dbTransaction,
+      const allData = await department.findAll({
+        where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: ["id", "name", "reportingManagerId"],
+        include: [
+          {
+            model: User,
+            as: "reportingManager",
+            attributes: ["fullname"],
+          },
+        ],
       });
-      if (existingReportManager)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "Report Manager Already Exists in our system"
-        );
+      if (!allData) return helper.failed(res, variables.NotFound, "Data not Found");
 
-      // Create and save the new user
-      const addNewReportManager = await reportingManager.create(
-        { userId, teamId },
-        { transaction: dbTransaction }
-      );
-      await dbTransaction.commit();
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        null,
-        "Reporting Manager Added Successfully!"
-      );
+      //! Adjust data in such a way that is changes null value to  {}
+      // const modifiedData = allData.map((item) => {
+      //   // Ensure reportingManager is not null, replace with {} if it is
+      //   if (!item.reportingManager) {
+      //     item.reportingManager = {};
+      //   }
+      //   return item;
+      // });
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
+
+  getReportManagerDropdown = async (req, res) => {
+    try {
+      const allData = await User.findAll({
+        where: {
+          status: true,
+          isAdmin: 0,
+          // id: {
+          //   [Op.notIn]: sequelize.literal(`(SELECT DISTINCT reportingManagerId FROM departments WHERE reportingManagerId IS NOT NULL)`),
+          // },
+        },
+        attributes: ["id", "fullname"],
+      });
+
+      if (!allData) return helper.failed(res, variables.NotFound, "Data not Found");
+
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  // getSpecificReportManager = async (req, res) => {
+  //   try {
+  //     const requestData = req.body;
+
+  //     const specificData = await reportingManager.findOne({
+  //       attributes: { exclude: ["createdAt", "updatedAt"] },
+  //       where: requestData,
+  //     });
+  //     if (!specificData) return helper.failed(res, variables.NotFound, "Data not Found");
+
+  //     return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
+  //   } catch (error) {
+  //     return helper.failed(res, variables.BadRequest, error.message);
+  //   }
+  // };
+
+  //* Add Report Manager API Code
+  // addReportManager = async (req, res) => {
+  //   const dbTransaction = await sequelize.transaction();
+  //   try {
+  //     const { id, reportManagerId } = req.body;
+
+  //     if (!id || !reportManagerId) {
+  //       return helper.failed(res, variables.ValidationError, `Both Id and reportManagerId field is required`);
+  //     }
+
+  //     const userExists = await User.findOne({ where: { id: reportManagerId } });
+  //     const departmentExists = await department.findOne({ where: { id: id } });
+
+  //     if (!userExists) return helper.failed(res, variables.NotFound, "User does not exists in system!");
+  //     if (!departmentExists) return helper.failed(res, variables.NotFound, "Department does not exists in system!");
+
+  //     const existingReportManager = await department.findOne({
+  //       where: { reportingManagerId: reportManagerId },
+  //       transaction: dbTransaction,
+  //     });
+  //     if (existingReportManager) return helper.failed(res, variables.ValidationError, "Report Manager Already assigned to a department");
+
+  //     const existingReportManagerRecord = await department.findOne({
+  //       where: { id: id, reportingManagerId: reportManagerId },
+  //       transaction: dbTransaction,
+  //     });
+  //     if (existingReportManagerRecord) return helper.failed(res, variables.ValidationError, "Report Manager Record Already Exists in our system");
+
+  //     // Create and save the new user
+  //     const addNewReportManager = await reportingManager.create({ userId, departmentId }, { transaction: dbTransaction });
+  //     await dbTransaction.commit();
+  //     return helper.success(res, variables.Created, "Reporting Manager Added Successfully!");
+  //   } catch (error) {
+  //     if (dbTransaction) await dbTransaction.rollback();
+  //     return helper.failed(res, variables.BadRequest, error.message);
+  //   }
+  // };
 
   updateReportManager = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { userId, teamId, newUserId, newTeamId } = req.body;
-      if (!userId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "User Id is Required!"
-        );
-      if (!teamId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Team Id is Required!"
-        );
-
-      
-      const existingReportManager = await reportingManager.findOne({
-        where: { userId, teamId },
-        transaction: dbTransaction,
-      });
-      if (!existingReportManager)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Reporting Manager does not exists"
-        );
-
-      const updateData = {};
-      if (newUserId) updateData.userId = newUserId;
-      if (newTeamId) updateData.teamId = newTeamId;
-
-      //   Check if there's anything to update
-      if (Object.keys(updateData).length === 0) {
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          error.message
-        );
+      const { id, reportManagerId } = req.body;
+      if (!id || !reportManagerId) {
+        return helper.failed(res, variables.NotFound, "Id and reportManagerId both are Required!");
       }
 
-      // Perform the update operation
-      const [updatedRows] = await reportingManager.update(updateData, {
-        where: { userId, teamId },
+      //* Check if there is a dept already exists
+      const existingDept = await department.findOne({
+        where: { id: id },
         transaction: dbTransaction,
       });
+      if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
+     
+      //* Check if there is a user already exists
+      const existingUser = await User.findOne({
+        where: { id: reportManagerId },
+        transaction: dbTransaction,
+      });
+      if (!existingUser) return helper.failed(res, variables.ValidationError, "User does not exists in system!");
+      if(existingUser.isAdmin) return helper.failed(res, variables.Unauthorized, "Not allowed to assign to this Id");
+
+      //* Check if there is a dept with a name in a different id
+      // const existingReportManager = await department.findOne({
+      //   where: {
+      //     reportingManagerId: reportManagerId,
+      //     id: { [Op.ne]: id }, // Exclude the current record by id
+      //   },
+      //   transaction: dbTransaction,
+      // });
+      // if (existingReportManager) {
+      //   return helper.failed(res, variables.ValidationError, "Report Manager Already Assigned to a department");
+      // }
+
+      //* if the id has the same value in db
+      const alreadySameReportManager = await department.findOne({
+        where: { id: id, reportingManagerId: reportManagerId },
+        transaction: dbTransaction,
+      });
+      if (alreadySameReportManager) return helper.success(res, variables.Success, "Report Manager Re-Assigned Successfully!");
+
+      const [updatedRows] = await department.update(
+        {
+          reportingManagerId: reportManagerId,
+        },
+        {
+          where: { id: id },
+          transaction: dbTransaction,
+          individualHooks: true,
+        }
+      );
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Reporting Manager updated successfully!"
-        );
+        return helper.success(res, variables.Success, "Reporting Manager updated successfully!");
       } else {
         await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Unable to update reporting manager!"
-        );
+        return helper.failed(res, variables.BadRequest, "Unable to update reporting manager!");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
-  deleteReportManager = async (req, res) => {
-    const dbTransaction = await sequelize.transaction();
-    try {
-      const { userId, teamId } = req.body;
-      if (!userId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "User Id is Required!"
-        );
-      if (!teamId)
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "Team Id is Required!"
-        );
+  // deleteReportManager = async (req, res) => {
+  //   const dbTransaction = await sequelize.transaction();
+  //   try {
+  //     const { id } = req.body;
+  //     if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
-      const existingReportManager = await reportingManager.findOne({
-        where: { userId, teamId },
-        transaction: dbTransaction,
-      });
-      if (!existingReportManager)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          null,
-          "Report Manager does not exists"
-        );
+  //     const existingReportManager = await reportingManager.findOne({
+  //       where: { id: id },
+  //       transaction: dbTransaction,
+  //     });
+  //     if (!existingReportManager) return helper.failed(res, variables.ValidationError, "Report Manager does not exists");
 
-      // Create and save the new user
-      const deleteRole = await reportingManager.destroy({
-        where: { userId, teamId },
-        transaction: dbTransaction,
-      });
+  //     // Create and save the new user
+  //     const deleteRole = await reportingManager.destroy({
+  //       where: { id: id },
+  //       transaction: dbTransaction,
+  //     });
 
-      if (deleteRole) {
-        await dbTransaction.commit();
-        return helper.sendResponse(
-          res,
-          variables.Success,
-          1,
-          null,
-          "Report Manager deleted Successfully!"
-        );
-      } else {
-        await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.UnknownError,
-          0,
-          null,
-          "Unable to delete reporting Manager!"
-        );
-      }
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
-
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
-    }
-  };
+  //     if (deleteRole) {
+  //       await dbTransaction.commit();
+  //       return helper.success(res, variables.Success, "Report Manager deleted Successfully!");
+  //     } else {
+  //       await dbTransaction.rollback();
+  //       return helper.failed(res, variables.UnknownError, "Unable to delete reporting Manager!");
+  //     }
+  //   } catch (error) {
+  //     if (dbTransaction) await dbTransaction.rollback();
+  //     return helper.failed(res, variables.BadRequest, error.message);
+  //   }
+  // };
 }
 
 export default reportingManagerController;

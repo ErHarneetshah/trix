@@ -8,7 +8,10 @@ import teamRouter from './admin/teamRoutes.js';
 import shiftRouter from './admin/shiftRoutes.js';
 import teamMemberRouter from './admin/teamMembersRoutes.js';
 import settingRouter from './admin/settingRoutes.js';
-
+import rolePermissionRouter from './admin/rolePermissionRoutes.js';
+import reportRouter from './admin/reportRoutes.js';
+import teamTimeLogRouter from './admin/teamMemberTimeLogRoutes.js';
+import userReportRouter from './client/dailyReportRoutes.js';
 const router = express.Router();
 
 router.get('/', (req, res) => {
@@ -17,7 +20,7 @@ router.get('/', (req, res) => {
         success: true,
     });
 });
-router.use('/api/auth', authRouter);
+router.use('/auth', authRouter);
 router.use('/admin/dept', deptRouter);
 router.use('/admin/desig', desigRouter);
 router.use('/admin/role', roleRouter);
@@ -26,6 +29,8 @@ router.use('/admin/team', teamRouter);
 router.use('/admin/shift', shiftRouter);
 router.use('/admin/teamMember', teamMemberRouter);
 router.use('/admin/settings', settingRouter);
-
-
+router.use('/admin/rolePermission', rolePermissionRouter);
+router.use('/admin/workReports', reportRouter);
+router.use('/admin/teamTimeLog', teamTimeLogRouter);
+router.use('/client/reports', userReportRouter);
 export default router;

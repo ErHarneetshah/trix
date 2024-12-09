@@ -7,8 +7,10 @@ const router = express.Router();
 const teamInstance = new teamController();
 
 router.get("/getAllTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.getAllTeam);
+router.get("/getTeamDropdown",  authMiddleware,verifyAdminMiddleware,   teamInstance.getTeamDropdown);
+router.get("/getSpecificTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.getSpecificTeam);
 router.post("/addTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.addTeam);
-router.post("/updateTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.updateTeam);
-router.post("/deleteTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.deleteTeam);
+router.put("/updateTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.updateTeam);
+router.delete("/deleteTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.deleteTeam);
 
 export default router;
