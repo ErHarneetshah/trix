@@ -35,27 +35,50 @@ class rolePermissionController {
           return helper.failed(res, variables.NotFound, "No Data is available!");
       }
 
+        // const transformedData = alldata.reduce((acc, item) => {
+        //     const { id, modules, permissions, role, roleId } = item;
+        //     const roleName = role?.name;
+
+        //     if (!roleName) return acc;
+
+        //     let existingModule = acc.find((data) => data.roleId === roleId);
+
+        //     if (!existingModule) {
+        //         existingModule = {
+        //             id,
+        //             roleId,
+        //             roleName,
+        //             moduleDetails: {}
+        //         };
+        //         acc.push(existingModule);
+        //     }
+
+        //     existingModule.moduleDetails[`${modules}-Module`] = permissions;
+
+        //     return acc;
+        // }, []);
+
+
         const transformedData = alldata.reduce((acc, item) => {
-            const { id, modules, permissions, role, roleId } = item;
-            const roleName = role?.name;
+          const { id, modules, permissions, role, roleId } = item;
+          const roleName = role?.name;
 
-            if (!roleName) return acc;
+          if (!roleName) return acc;
 
-            let existingModule = acc.find((data) => data.roleId === roleId);
+          let existingModule = acc.find((data) => data.modules === modules);
 
-            if (!existingModule) {
-                existingModule = {
-                    id,
-                    roleId,
-                    roleName
-                };
-                acc.push(existingModule);
-            }
+          if (!existingModule) {
+              existingModule = {
+                  id,
+                  modules,
+              };
+              acc.push(existingModule);
+          }
 
-            existingModule[`${modules}-Module`] = permissions;
+          existingModule.moduleDetails[`${roleName}`] = {roleId: roleId, permissions:permissions};
 
-            return acc;
-        }, []);
+          return acc;
+      }, []);
 
         return helper.success(res, variables.Success, "All Data Fetched Successfully!", transformedData);
     } catch (error) {
