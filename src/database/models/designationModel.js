@@ -21,7 +21,7 @@ const designation = sequelize.define('designations', {
     defaultValue: 1,
   },
 }, {
-  timestamps: true, // Adds createdAt and updatedAt columns
+  timestamps: true, 
 });
 
 export default designation;

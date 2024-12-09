@@ -17,6 +17,11 @@ const User = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+
+    companyId: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+    },
     fullname: {
       type: DataTypes.STRING,
       allowNull: false,

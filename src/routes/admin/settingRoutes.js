@@ -11,10 +11,9 @@ router.put('/update-admin-details',    authMiddleware,verifyAdminMiddleware,    
 
 router.post('/add-blocked-websites',    authMiddleware,verifyAdminMiddleware,    settingsController.addBlockWebsites);
 router.get('/get-blocked-websites',    authMiddleware,verifyAdminMiddleware,    settingsController.getBlockedWebsites);
-router.put('/update-sites-status',    authMiddleware,verifyAdminMiddleware,    settingsController.updateSitesStatus);
+router.post('/update-sites-status',    authMiddleware,verifyAdminMiddleware,    settingsController.updateSitesStatus);
 
-router.put('/update-sites-status/:id',    authMiddleware,verifyAdminMiddleware,    settingsController.updateSitesStatus);
-router.post('/add-productive-nonpro-websites',    authMiddleware,verifyAdminMiddleware,    settingsController.addProductiveNonProductiveApps);
+router.post('/add-productive-nonpro-websites',    authMiddleware,verifyAdminMiddleware,    settingsController.addProductiveApps);
 router.get('/get-app-info',    authMiddleware,verifyAdminMiddleware,    settingsController.getAppInfo);
 router.put('/update-report-status/:id',    authMiddleware,verifyAdminMiddleware,    settingsController.updateReportSettings);
 
