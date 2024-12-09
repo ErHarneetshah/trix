@@ -19,9 +19,10 @@ const authMiddleware = async (req, res, next) => {
     const token = authHeader.replace("Bearer ", "");
 
     const access_token = await accessToken.findOne({ where: {token: token } });
+    console.log(access_token);
     if (access_token) {
       if (new Date() > access_token.expiry_time) {
-        await accessToken.destroy({ where: { token } });
+        await accessToken.destroy({ where: { token: token } });
         return helper.failed(res, variables.Unauthorized, "Token Expired. Please log in again");
       }
     }
@@ -39,9 +40,9 @@ const authMiddleware = async (req, res, next) => {
     next();
   } catch (e) {
     if (e.name === "TokenExpiredError") {
-      return helper.failed(res, variables.Unauthorized, "Token Expired. Please log in again!");
+      return helper.failed(res, variables.Unauthorized, e.message);
     }
-    return helper.failed(res, variables.Unauthorized, "Invalid Token!");
+    return helper.failed(res, variables.Unauthorized, e.message);
   }
 };
 
