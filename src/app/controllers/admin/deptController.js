@@ -4,9 +4,9 @@ import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
 import { Op } from "sequelize";
 import User from "../../../database/models/userModel.js";
-import blockedWebsites from "../../../database/models/blockedWebsitesModel.js";
-import appInfo from "../../../database/models/productiveAppsModel.js";
 import team from "../../../database/models/teamModel.js";
+import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
+import ProductiveApp from "../../../database/models/ProductiveApp.js";
 
 class deptController {
   //* Using this just for testing purposes of role permission middleware
@@ -205,8 +205,8 @@ class deptController {
 
       // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const isUsedInUsers = await User.findOne({ where: { departmentId: id } });
-      const isUsedInBlockedWebsites = await blockedWebsites.findOne({ where: { departmentId: id } });
-      const isUsedInProductiveAndNonApps = await appInfo.findOne({ where: { departmentId: id } });
+      const isUsedInBlockedWebsites = await BlockedWebsites.findOne({ where: { departmentId: id } });
+      const isUsedInProductiveAndNonApps = await ProductiveApp.findOne({ where: { departmentId: id } });
       const isUsedInTeams = await team.findOne({ where: { departmentId: id } });
 
       if (isUsedInTeams || isUsedInBlockedWebsites || isUsedInProductiveAndNonApps || isUsedInUsers) {

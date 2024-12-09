@@ -80,6 +80,4 @@ TimeLog.afterUpdate(async (timeLog) => {
 });
 
 
-
-
 export default TimeLog;

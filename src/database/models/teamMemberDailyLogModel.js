@@ -47,5 +47,6 @@ const teamMemberDailyLog = sequelize.define(
   }
 );
 
+await teamMemberDailyLog.sync({alter:1});
 
 export default teamMemberDailyLog;

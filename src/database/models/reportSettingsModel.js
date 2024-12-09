@@ -25,4 +25,6 @@ const reportSettings = sequelize.define('report_settings', {
     timestamps: true,
 });
 
+await reportSettings.sync({alter:1});
+
 export default reportSettings;

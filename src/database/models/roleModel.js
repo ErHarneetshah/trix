@@ -24,4 +24,6 @@ const role = sequelize.define('roles', {
   timestamps: true, // Adds createdAt and updatedAt columns
 });
 
+await role.sync({alter:1});
+
 export default role;

@@ -37,4 +37,6 @@ const workReports = sequelize.define('work_reports', {
     timestamps: true,
 });
 
+await workReports.sync({alter:1});
+
 export default workReports;

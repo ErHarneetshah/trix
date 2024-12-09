@@ -62,4 +62,6 @@ const emailGateway = sequelize.define('email_gateways', {
     timestamps: true,
 });
 
+await emailGateway.sync({alter:1});
+
 export default emailGateway;

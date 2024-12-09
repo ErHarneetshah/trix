@@ -24,4 +24,6 @@ const designation = sequelize.define('designations', {
   timestamps: true, 
 });
 
+await designation.sync({alter:1});
+
 export default designation;

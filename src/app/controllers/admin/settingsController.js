@@ -1,13 +1,13 @@
 import User from "../../../database/models/userModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import { Op, QueryTypes } from "sequelize";
-import blockedWebsites from "../../../database/models/blockedWebsitesModel.js";
-import appInfo from "../../../database/models/productiveAppsModel.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import department from "../../../database/models/departmentModel.js";
 import validate from "../../../utils/CustomValidation.js";
+import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
+import ProductiveApp from "../../../database/models/ProductiveApp.js";
 
 const getAdminDetails = async (req, res) => {
   try {
@@ -133,7 +133,7 @@ const getBlockedWebsites = async (req, res) => {
       where.departmentId = departmentId;
     }
 
-    const blockedWebsite = await blockedWebsites.findAndCountAll({
+    const blockedWebsite = await BlockedWebsites.findAndCountAll({
       where,
       offset: offset,
       limit: limit,
@@ -188,7 +188,7 @@ const addBlockWebsites = async (req, res) => {
       return helper.failed(res, variables.ValidationError, message);
     }
 
-    const existingApp = await blockedWebsites.findOne({
+    const existingApp = await BlockedWebsites.findOne({
       where: { website },
     });
 
@@ -203,7 +203,7 @@ const addBlockWebsites = async (req, res) => {
       newWebsiteData.logo_image = storedImagePath;
     }
 
-    const newAppInfo = await blockedWebsites.create(newWebsiteData);
+    const newAppInfo = await BlockedWebsites.create(newWebsiteData);
 
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
@@ -215,7 +215,7 @@ const addBlockWebsites = async (req, res) => {
 const updateSitesStatus = async (req, res) => {
   try {
     const { id,status} = req.body;
-    const website = await blockedWebsites.findByPk(id);
+    const website = await BlockedWebsites.findByPk(id);
     if (!website) {
       return helper.failed(res, variables.NotFound, "Id not exists in our system.");
     }
@@ -223,7 +223,7 @@ const updateSitesStatus = async (req, res) => {
     if(status < 0 || status > 1){
       return helper.failed(res, variables.ValidationError, "Status value must be 0 or 1");
     }
-    const [updatedRows] = await blockedWebsites.update({ status: status }, { where: { id: id } });
+    const [updatedRows] = await BlockedWebsites.update({ status: status }, { where: { id: id } });
 
     if (updatedRows === 0) {
       return helper.failed(res, variables.NotFound, "Site not found or status not changed");
@@ -251,7 +251,7 @@ const addProductiveApps = async (req, res) => {
 
     }
     const company_id = 101;
-    const existingApp = await appInfo.findOne({
+    const existingApp = await ProductiveApp.findOne({
       where: { app_name }
     });
 
@@ -259,7 +259,7 @@ const addProductiveApps = async (req, res) => {
       return helper.failed(res, variables.NotFound, "App with this name already exists");
     }
 
-    const newAppInfo = await appInfo.create({ company_id, department_id, app_name });
+    const newAppInfo = await ProductiveApp.create({ company_id, department_id, app_name });
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
 
   } catch (error) {
@@ -310,7 +310,7 @@ const getAppInfo = async (req, res) => {
     }
 
     // Fetch productive apps
-    const productiveApps = await appInfo.findAndCountAll({
+    const productiveApps = await ProductiveApp.findAndCountAll({
       where,
       attributes: ["id", "app_name"],
       offset: offset,

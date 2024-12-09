@@ -86,4 +86,6 @@ const calTotalHr = async (start_time, end_time) => {
   return totalMinutes / 60;
 };
 
+await shift.sync({alter:1});
+
 export default shift;

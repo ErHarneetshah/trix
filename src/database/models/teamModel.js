@@ -40,10 +40,6 @@ const team = sequelize.define('teams', {
   timestamps: true, // Adds createdAt and updatedAt columns
 });
 
-// Team belongs to Department
-team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
-
-// Team belongs to Shift
-team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
+await team.sync({alter:1});
 
 export default team;

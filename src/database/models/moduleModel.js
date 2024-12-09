@@ -16,4 +16,6 @@ const module = sequelize.define('modules', {
   timestamps: true,
 });
 
+await module.sync({alter:1});
+
 export default module;

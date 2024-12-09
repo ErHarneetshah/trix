@@ -7,8 +7,9 @@ import workReports from "../models/workReportsModel.js";
 import TimeLog from "../models/teamLogsModel.js";
 import shift from "../models/shiftModel.js";
 import rolePermission from "../models/rolePermissionModel.js";
-import blockedWebsites from "../models/blockedWebsitesModel.js";
-import appInfo from "../models/productiveAppsModel.js";
+// import blockedWebsites from "../models/blockedWebsitesModel.js";
+import { BlockedWebsites } from "../models/BlockedWebsite.js";
+import ProductiveApp from "../models/ProductiveApp.js";
 
 // User Relationships here
 User.belongsTo(department, { as: "department", foreignKey: "departmentId" });
@@ -28,8 +29,12 @@ TimeLog.belongsTo(shift, { as: "shift", foreignKey: "shift_id" });
 
 // Role Permissions relationships here
 rolePermission.belongsTo(role, { as: "role", foreignKey: "roleId" });
-blockedWebsites.belongsTo(department, { as: "department", foreignKey: "departmentId" });
-appInfo.belongsTo(department, { as: "department", foreignKey: "department_id" });
+BlockedWebsites.belongsTo(department, { as: "department", foreignKey: "departmentId" });
+ProductiveApp.belongsTo(department, { as: "department", foreignKey: "department_id" });
+
+// Team Relations here
+team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
+team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
 
 
 export default {}

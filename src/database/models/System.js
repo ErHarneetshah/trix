@@ -28,4 +28,6 @@ export const System = sequelize.define("system", {
   }
 });
 
+await System.sync({alter:1});
+
 await System.sync({ alter: 1 });
