@@ -19,21 +19,21 @@ class teamMemberTimeLogController {
       const logWhere = {};
 
       // Add date range filter to `reportWhere`
-      // if (startDate && endDate) {
-      //   logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
-      // } else if (startDate) {
-      //   logWhere.createdAt = { [Op.gte]: new Date(startDate) };
-      // } else if (endDate) {
-      //   logWhere.createdAt = { [Op.lte]: new Date(endDate) };
-      // }
       if (startDate && endDate) {
-        logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Greater than or equal to startDate
-        logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Less than or equal to endDate
+        logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
       } else if (startDate) {
-        logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Only filter by startDate
+        logWhere.createdAt = { [Op.gte]: new Date(startDate) };
       } else if (endDate) {
-        logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Only filter by endDate
+        logWhere.createdAt = { [Op.lte]: new Date(endDate) };
       }
+      // if (startDate && endDate) {
+      //   logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Greater than or equal to startDate
+      //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Less than or equal to endDate
+      // } else if (startDate) {
+      //   logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Only filter by startDate
+      // } else if (endDate) {
+      //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Only filter by endDate
+      // }
 
       const alldata = await TimeLog.findAndCountAll({
         where: logWhere, // Filters for `workReports`
@@ -67,7 +67,7 @@ class teamMemberTimeLogController {
   getTeamMemberLogFiltered = async (req, res) => {
     try {
       // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      let { searchParam, limit, page, startDate, endDate, filter } = req.query;
+      let { searchParam, limit, page, startDate, endDate, tab } = req.query;
       let searchable = ["name", "status"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
@@ -76,29 +76,29 @@ class teamMemberTimeLogController {
       const logWhere = {};
       const userWhere = {};
 
-      console.log(filter);
-      // Add date range filter to `reportWhere`
-      // if (startDate && endDate) {
-      //   logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
-      // } else if (startDate) {
-      //   logWhere.createdAt = { [Op.gte]: new Date(startDate) };
-      // } else if (endDate) {
-      //   logWhere.createdAt = { [Op.lte]: new Date(endDate) };
-      // }
+      console.log(tab);
+      // Add date range tab to `reportWhere`
       if (startDate && endDate) {
-        logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Greater than or equal to startDate
-        logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Less than or equal to endDate
+        logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
       } else if (startDate) {
-        logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Only filter by startDate
+        logWhere.createdAt = { [Op.gte]: new Date(startDate) };
       } else if (endDate) {
-        logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Only filter by endDate
+        logWhere.createdAt = { [Op.lte]: new Date(endDate) };
       }
-      if (filter) {
-        if (filter.toLowerCase() === "working") {
+      // if (startDate && endDate) {
+      //   logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Greater than or equal to startDate
+      //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Less than or equal to endDate
+      // } else if (startDate) {
+      //   logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Only tab by startDate
+      // } else if (endDate) {
+      //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Only tab by endDate
+      // }
+      if (tab) {
+        if (tab.toLowerCase() === "working") {
           userWhere.currentStatus = 1;
-        } else if (filter.toLowerCase() === "absent") {
+        } else if (tab.toLowerCase() === "absent") {
           userWhere.currentStatus = 0;
-        } else if (filter.toLowerCase() === "late") {
+        } else if (tab.toLowerCase() === "late") {
           logWhere.late_coming = true;
         }
       }
