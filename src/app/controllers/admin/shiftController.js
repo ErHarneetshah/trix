@@ -140,17 +140,17 @@ class shiftController {
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
       // Validation of start_time in 24 hr and HH:MM format only
-      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestData.start_time)) {
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(updateFields.start_time)) {
         return helper.failed(res, variables.ValidationError, "Start Time must be in HH:MM 24-hour format.");
       }
 
       // Validation of end_time in 24 hr and HH:MM format only
-      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestData.end_time)) {
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(updateFields.end_time)) {
         return helper.failed(res, variables.ValidationError, "End Time must be in HH:MM 24-hour format.");
       }
       
       // validating that both times cannot be same
-      if (requestData.start_time == requestData.end_time) {
+      if (updateFields.start_time == updateFields.end_time) {
         return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
       }
 
