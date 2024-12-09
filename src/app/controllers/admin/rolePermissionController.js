@@ -8,61 +8,78 @@ import role from "../../../database/models/roleModel.js";
 class rolePermissionController {
   getAllRolePermissions = async (req, res) => {
     try {
-        let { searchParam, limit, page } = req.query;
+      let { searchParam, limit, page } = req.query;
+      // let permissionSearchable = ["modules"];
+      // let roleSearchable = ["name"];
 
-        limit = parseInt(limit) || 10;
-        let offset = (page - 1) * limit || 0;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      // let permissionWhere = await helper.searchCondition(searchParam, permissionSearchable);
+      // let roleWhere = await helper.searchCondition(searchParam, roleSearchable);
 
-        const alldata = await rolePermission.findAll({
-            attributes: { exclude: ["createdAt", "updatedAt"] },
-            groupBy: ["roleId"],
-            // offset: offset,
-            // limit: limit,
-            // order: [["id", "DESC"]],
-            include: [
-                {
-                    model: role,
-                    as: "role",
-                    attributes: ["name"],
-                },
-            ],
-        });
+      const alldata = await rolePermission.findAndCountAll({
+        // where: permissionWhere,
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+        // offset: offset,
+        // limit: limit,
+        // order: [["id", "DESC"]],
+        include: [
+          {
+            model: role,
+            // where: roleWhere,
+            as: "role",
+            attributes: ["name"],
+          },
+        ],
+      });
+      if (!alldata || alldata.length === 0) return helper.failed(res, variables.NotFound, "No Data is available!");
 
-        // if (!alldata || alldata.rows.length === 0) {
-        //     return helper.failed(res, variables.NotFound, "No Data is available!");
-        // }
-        if (!alldata) {
-          return helper.failed(res, variables.NotFound, "No Data is available!");
-      }
+      // Restructure the data to match the desired response
+      const transformedData = alldata.rows.reduce((acc, item) => {
+        const { id, modules, permissions, role, roleId } = item;
 
-        const transformedData = alldata.reduce((acc, item) => {
-            const { id, modules, permissions, role, roleId } = item;
-            const roleName = role?.name;
+        // Ensure role and role.name exist
+        const roleName = role?.name;
+        if (!roleName) {
+          // Skip if role or role.name is not available
+          console.warn(`Role name is missing for module ${modules}`);
+          return acc;
+        }
 
-            if (!roleName) return acc;
-
-            let existingModule = acc.find((data) => data.roleId === roleId);
+        let existingModule = acc.find((data) => data.modules === modules);
 
             if (!existingModule) {
                 existingModule = {
                     id,
-                    roleId,
-                    roleName
+                    modules,
+                    roleDetails: []
                 };
                 acc.push(existingModule);
             }
 
-            existingModule[`${modules}-Module`] = permissions;
+            // existingModule.roleDetails[`roleName`] = roleName;
+            // existingModule.roleDetails[`permissions`] = permissions;
+            let i = 0;
+          //   [roleName].forEach((name) => {
+          //     existingModule.roleDetails[name] = {
+          //         roleName: name,
+          //         permissions: permissions
+          //     };
+          // });
+          existingModule.roleDetails.push({
+            roleName: roleName,
+            permissions: permissions
+        });
 
             return acc;
-        }, []);
 
-        return helper.success(res, variables.Success, "All Data Fetched Successfully!", transformedData);
+      }, []);
+
+      return helper.success(res, variables.Success, "All Data Fetched Successfully!", transformedData);
     } catch (error) {
-        return helper.failed(res, variables.BadRequest, error.message);
+      return helper.failed(res, variables.BadRequest, error.message);
     }
-};
-
+  };
 
   getSpecificRolePermissions = async (roleId, moduleName) => {
     try {
