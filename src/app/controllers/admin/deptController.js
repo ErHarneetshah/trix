@@ -114,7 +114,7 @@ class deptController {
       const { id, name, parentDeptId } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
-      if (!name || !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
+      if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
 
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
