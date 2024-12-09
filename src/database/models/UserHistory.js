@@ -34,11 +34,10 @@ export const UserHistory = sequelize.define("user_history", {
 
 await UserHistory.sync({ alter: 1 });
 
-UserHistory.afterCreate(async (data) => {
+UserHistory.beforeCreate(async (data) => {
   try {
     let parsed = new URL(data.url);
     data.website_name = parsed.hostname;
-    await data.save();
   } catch (error) {
     console.error("Error setting website_name:", error.message);
   }

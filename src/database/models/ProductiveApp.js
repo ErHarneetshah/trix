@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
 
-const ProductiveApp = sequelize.define("productive_app",
+export const ProductiveApp = sequelize.define("productive_app",
   {
     id: {
       type: DataTypes.INTEGER,
@@ -36,5 +36,3 @@ const ProductiveApp = sequelize.define("productive_app",
 
 
 await ProductiveApp.sync({ alter: 1 });
-export default ProductiveApp;
-
