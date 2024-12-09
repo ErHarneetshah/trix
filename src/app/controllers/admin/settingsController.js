@@ -138,7 +138,7 @@ const getBlockedWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name"],
+      attributes: ["id", "website", "website_name","status"],
       include: [
         {
           model: department,
@@ -214,12 +214,16 @@ const addBlockWebsites = async (req, res) => {
 
 const updateSitesStatus = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id,status} = req.body;
     const website = await blockedWebsites.findByPk(id);
     if (!website) {
       return helper.failed(res, variables.NotFound, "Id not exists in our system.");
     }
-    const [updatedRows] = await blockedWebsites.update({ status: 0 }, { where: { id: id } });
+
+    if(status < 0 || status > 1){
+      return helper.failed(res, variables.ValidationError, "Status value must be 0 or 1");
+    }
+    const [updatedRows] = await blockedWebsites.update({ status: status }, { where: { id: id } });
 
     if (updatedRows === 0) {
       return helper.failed(res, variables.NotFound, "Site not found or status not changed");
