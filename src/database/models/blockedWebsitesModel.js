@@ -10,6 +10,11 @@ const blockedWebsites = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    companyId: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+      defaultValue: 101,
+    },
     departmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -17,12 +22,25 @@ const blockedWebsites = sequelize.define(
         notEmpty: true,
       },
     },
-    sites: {
+    website_name: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
         notEmpty: true, 
       },
+      defaultValue: "Facebook",
+    },
+    website: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: true, 
+      },
+    
+    },
+    logo: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     status: {
       type: DataTypes.TINYINT,

@@ -1,6 +1,6 @@
 import User from "../../../database/models/userModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
-import { Op,QueryTypes } from "sequelize";
+import { Op, QueryTypes } from "sequelize";
 import blockedWebsites from "../../../database/models/blockedWebsitesModel.js";
 import appInfo from "../../../database/models/productiveAppsModel.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
@@ -51,179 +51,352 @@ const updateAdminDetails = async (req, res) => {
   }
 };
 
+// const getBlockedWebsites = async (req, res) => {
+//   try {
+//     const { departmentId, limit, page } = req.query;
+//     const companyId = 101;
+//     const itemsPerPage = parseInt(limit) || 10;
+//     const currentPage = parseInt(page) || 1;
+//     const offset = (currentPage - 1) * itemsPerPage;
+
+//     let query = `
+//       SELECT 
+//         bw.id, 
+//         bw.website, 
+//         bw.website_name, 
+//         d.name AS department_name 
+//       FROM 
+//         blockedWebsites AS bw 
+//       JOIN 
+//         departments AS d 
+//       ON 
+//         bw.departmentId = d.id
+//     `;
+
+//     const replacements = {
+//       limit: itemsPerPage,
+//       companyId: companyId,
+//       offset,
+//     };
+
+//     query += `WHERE companyId=:companyId`;
+
+
+//     if (departmentId && departmentId != 0) {
+//       query += `
+//        AND
+//           bw.departmentId = :departmentId
+//       `;
+//       replacements.departmentId = departmentId;
+//     }
+
+//     query += ` ORDER BY bw.createdAt DESC LIMIT :limit OFFSET :offset`;
+
+//     const blockedWebsites = await sequelize.query(query, {
+//       replacements,
+//       type: sequelize.QueryTypes.SELECT,
+//     });
+
+//     if (blockedWebsites.length === 0) {
+//       return helper.success(
+//         res,
+//         variables.Success,
+//         "No blocked websites found.",
+//         blockedWebsites
+//       );
+//     }
+
+//     return helper.success(
+//       res,
+//       variables.Success,
+//       "Blocked websites retrieved successfully.",
+//       blockedWebsites
+//     );
+//   } catch (error) {
+//     console.error("Error fetching blocked websites:", error);
+//     return helper.failed(res, variables.BadRequest, error.message);
+//   }
+// };
+
+
+
 const getBlockedWebsites = async (req, res) => {
   try {
-    console.log("-------------------------------------");
-    const getBlockedSites = await blockedWebsites.findAll({
-      // where: {
-      //   status: {
-      //     [Op.ne]: 0,
-      //   },
-      // },
-      attributes: ["id", "departmentId", "sites", "status"],
+    let { departmentId, limit, page } = req.query;
+
+    limit = parseInt(limit) || 10;
+    let offset = (page - 1) * limit || 0;
+
+    let where = { companyId: 101, status: 1 };
+
+    if (departmentId && departmentId != 0) {
+      where.departmentId = departmentId;
+    }
+
+    const blockedWebsite = await blockedWebsites.findAndCountAll({
+      where,
+      offset: offset,
+      limit: limit,
+      order: [["createdAt", "DESC"]],
+      attributes: ["id", "website", "website_name"],
+      include: [
+        {
+          model: department,
+          as: "department",
+          attributes: ["name"],
+        },
+      ],
     });
-    return helper.success(res, variables.Success, "Website Blocked successfully", getBlockedSites);
+
+    if (blockedWebsite.count === 0) {
+      return helper.success(
+        res,
+        variables.Success,
+        "No blocked websites found.",
+        blockedWebsite
+      );
+    }
+
+    return helper.success(
+      res,
+      variables.Success,
+      "Blocked websites retrieved successfully.",
+      blockedWebsite
+    );
   } catch (error) {
-    console.error("Error blocking website:", error);
+    console.error("Error fetching blocked websites:", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
 const addBlockWebsites = async (req, res) => {
   try {
-    const { departmentId, sites } = req.body;
-    if (!departmentId || !sites) {
-      return helper.failed(res, variables.ValidationError, "departmentId and sites are required");
+    const { departmentId, website, logo_image } = req.body;
+
+    const rules = {
+      departmentId: 'required|integer',
+      website: 'required|valid_url',
+    };
+
+    const { status, message } = await validate(req.body, rules);
+
+    if (req.body.departmentId == 0) {
+      return helper.failed(res, variables.ValidationError, 'The department ID must not be 0.');
     }
-    // // Optionally, validate the URL format
-    // const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
-    // if (!urlPattern.test(Sites)) {
-    //     return responseUtils.errorResponse(res, "Invalid URL format for Sites.", 400);
-    // }
-    const existingWebsite = await blockedWebsites.findOne({
-      where: { departmentId: departmentId, sites: sites },
-    });
-    if (existingWebsite) {
-      return helper.failed(res, variables.ValidationError, "Website is already added for this department");
+
+    if (status === 0) {
+      return helper.failed(res, variables.ValidationError, message);
     }
-    const newBlockedWebsite = await blockedWebsites.create({
-      departmentId,
-      sites,
+
+    const existingApp = await blockedWebsites.findOne({
+      where: { website },
     });
-    return helper.success(res, variables.Success, "New Block Website added successfully");
+
+    if (existingApp) {
+      return helper.failed(res, variables.NotFound, "Website with this name or website URL already exists");
+    }
+
+    const newWebsiteData = { departmentId, website };
+
+    if (logo_image) {
+      const storedImagePath = await processAndStoreImage(logo_image);
+      newWebsiteData.logo_image = storedImagePath;
+    }
+
+    const newAppInfo = await blockedWebsites.create(newWebsiteData);
+
+    return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
-    console.error("Error blocking website:", error);
+    console.error("Error creating app info:", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
 const updateSitesStatus = async (req, res) => {
   try {
-    const { id, status } = req.body;
-    if (!id || status === undefined) {
-      return helper.failed(res, variables.ValidationError, "ID and Status are required");
+    const { id } = req.body;
+    const website = await blockedWebsites.findByPk(id);
+    if (!website) {
+      return helper.failed(res, variables.NotFound, "Id not exists in our system.");
     }
-    if (status !== 0 && status !== 1) {
-      return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
-    }
-    const [updatedRows] = await blockedWebsites.update({ status: status }, { where: { id: id } });
+    const [updatedRows] = await blockedWebsites.update({ status: 0 }, { where: { id: id } });
 
     if (updatedRows === 0) {
       return helper.failed(res, variables.NotFound, "Site not found or status not changed");
     }
-    return helper.success(res, variables.Success, "Site status updated successfully", updatedRows);
+    return helper.success(res, variables.Success, "Site status updated successfully");
   } catch (error) {
     console.error("Error updating site status:", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
-const addProductiveNonProductiveApps = async (req, res) => {
-    try {
-        const { departmentId, app_logo, appname, website_url, is_productive } = req.body;
+const addProductiveApps = async (req, res) => {
+  try {
+    const { department_id, app_name } = req.body;
 
-        const rules = {
-            departmentId: 'required|integer|min:1', 
-            // app_logo: 'required|string|min:1', 
-            // appname: 'required|string|min:3|max:50',
-            website_url: 'required|valid_url'
-            // is_productive: 'required|boolean'
-        };
+    const rules = {
+      department_id: 'required|integer|min:1',
+      app_name: 'required|string|min:3|max:50',
+    };
 
-        const { status, message } = await validate(req.body, rules);
+    const { status, message } = await validate(req.body, rules);
 
-        if (status === 0) {
-          return helper.failed(res, variables.ValidationError, message);
+    if (status === 0) {
+      return helper.failed(res, variables.ValidationError, message);
 
-        }
-
-        const existingApp = await appInfo.findOne({
-            where: { appname, website_url }
-        });
-
-        if (existingApp) {
-          return helper.failed(res, variables.NotFound, "App with this name or website URL already exists");
-        }
-
-        const newAppInfo = await appInfo.create({ departmentId, app_logo, appname, website_url, is_productive });
-        return helper.success(res, variables.Success, "App added successfully", newAppInfo);
-
-    } catch (error) {
-        console.error("Error creating app info:", error);
-      return helper.failed(res, variables.BadRequest, error.message);
     }
+    const company_id = 101;
+    const existingApp = await appInfo.findOne({
+      where: { app_name }
+    });
+
+    if (existingApp) {
+      return helper.failed(res, variables.NotFound, "App with this name already exists");
+    }
+
+    const newAppInfo = await appInfo.create({ company_id, department_id, app_name });
+    return helper.success(res, variables.Success, "App added successfully", newAppInfo);
+
+  } catch (error) {
+    console.error("Error creating app info:", error);
+    return helper.failed(res, variables.BadRequest, error.message);
+  }
 };
+
+
+
+
+// const getAppInfo = async (req, res) => {
+//   try {
+//     const productiveApps = await appInfo.findAll({
+//       where: { is_productive: 1 },
+//       attributes: ["appname", "app_logo"],
+//     });
+
+//     const nonProductiveApps = await appInfo.findAll({
+//       where: { is_productive: 0 },
+//       attributes: ["appname", "app_logo"],
+//     });
+
+//     return helper.success(res, variables.Success, "Apps retrieved successfully", { productiveApps: productiveApps, nonProductiveApps: nonProductiveApps });
+//   } catch (error) {
+//     console.error("Error fetching app info:", error);
+//     return helper.failed(res, variables.BadRequest, error.message);
+//   }
+// };
+
+
 
 const getAppInfo = async (req, res) => {
   try {
-    const productiveApps = await appInfo.findAll({
-      where: { is_productive: 1 },
-      attributes: ["appname", "app_logo"],
+    // Extract query parameters
+    let { departmentId, limit, page } = req.query;
+
+    // Set pagination defaults
+    limit = parseInt(limit) || 10;
+    let offset = (page - 1) * limit || 0;
+
+    // Prepare base filters
+    let where = {company_id: 101};
+
+    // Apply department filter if provided
+    if (departmentId && departmentId != 0) {
+      where.department_id = departmentId;
+    }
+
+    // Fetch productive apps
+    const productiveApps = await appInfo.findAndCountAll({
+      where,
+      attributes: ["id", "app_name"],
+      offset: offset,
+      limit: limit,
+      include: [
+        {
+          model: department,
+          as: "department",
+          attributes: ["name"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
     });
 
-    const nonProductiveApps = await appInfo.findAll({
-      where: { is_productive: 0 },
-      attributes: ["appname", "app_logo"],
-    });
+   
+    // Handle case when no apps found
+    if (productiveApps.count === 0 ) {
+      return helper.success(
+        res,
+        variables.Success,
+        "No apps found.",
+        {productiveApps }
+      );
+    }
 
-    return helper.success(res, variables.Success, "Apps retrieved successfully", { productiveApps: productiveApps, nonProductiveApps: nonProductiveApps });
+    // Success response
+    return helper.success(
+      res,
+      variables.Success,
+      "Apps retrieved successfully",
+      { productiveApps}
+    );
   } catch (error) {
+    // Handle errors
     console.error("Error fetching app info:", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
 const updateReportSettings = async (req, res) => {
-    try {
-        const { exportType } = req.body;
+  try {
+    const { exportType } = req.body;
 
-        const rules = {
-            exportType: 'required|string|min:2|max:50',   
-        };
+    const rules = {
+      exportType: 'required|string|min:2|max:50',
+    };
 
-        const { status, message } = await validate(req.body, rules);
+    const { status, message } = await validate(req.body, rules);
 
-        if (status === 0) {
-          return helper.failed(res, variables.ValidationError, "Status is required");
+    if (status === 0) {
+      return helper.failed(res, variables.ValidationError, "Status is required");
 
-        }
-
-        const getPreviousStatus = await reportSettings.findOne({
-            where: { is_active: 1 },
-            attributes: ['id']
-        });
-        const previousId = getPreviousStatus ? getPreviousStatus.id : 1;
-
-        const [updatedPreviousStatus] = await reportSettings.update(
-            { is_active: 0 },
-            { where: { id: previousId } }
-        );
-
-        const currentStatus = await reportSettings.findOne({
-            where: { name: exportType },
-            attributes: ['id']
-        });
-        const currentId = currentStatus ? currentStatus.id : 1;
-
-        const [updateCurrentStatus] = await reportSettings.update(
-            { is_active: 1 },
-            { where: { id: currentId } }
-        );
-
-        if (updateCurrentStatus > 0) {
-            return helper.success(res, variables.Success, "Report Status Updated Successfully", updateReportStatus);
-
-        } else {
-            return helper.failed(res, variables.BadRequest, "Something went wrong");
-
-        }
-
-    } catch (error) {
-        console.error("Error updating report settings:", error);
-        return helper.failed(res, variables.BadRequest, error.message);
     }
+
+    const getPreviousStatus = await reportSettings.findOne({
+      where: { is_active: 1 },
+      attributes: ['id']
+    });
+    const previousId = getPreviousStatus ? getPreviousStatus.id : 1;
+
+    const [updatedPreviousStatus] = await reportSettings.update(
+      { is_active: 0 },
+      { where: { id: previousId } }
+    );
+
+    const currentStatus = await reportSettings.findOne({
+      where: { name: exportType },
+      attributes: ['id']
+    });
+    const currentId = currentStatus ? currentStatus.id : 1;
+
+    const [updateCurrentStatus] = await reportSettings.update(
+      { is_active: 1 },
+      { where: { id: currentId } }
+    );
+
+    if (updateCurrentStatus > 0) {
+      return helper.success(res, variables.Success, "Report Status Updated Successfully", updateReportStatus);
+
+    } else {
+      return helper.failed(res, variables.BadRequest, "Something went wrong");
+
+    }
+
+  } catch (error) {
+    console.error("Error updating report settings:", error);
+    return helper.failed(res, variables.BadRequest, error.message);
+  }
 };
 
 
 
-export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveNonProductiveApps, getAppInfo, updateReportSettings };
+export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveApps, getAppInfo, updateReportSettings };

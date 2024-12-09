@@ -12,7 +12,7 @@ const authMiddleware = async (req, res, next) => {
   try {
     console.log("Auth Middleware -----------------------------");
     const authHeader = req.header("Authorization");
-    
+    console.log(authHeader);
     if (!authHeader)
       return helper.failed(res, variables.Unauthorized, "Access Denied. No Token Provided");
 
