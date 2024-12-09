@@ -1,23 +1,22 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
 
-
 export const UserHistory = sequelize.define("user_history", {
   userId: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  companyId:{
+  companyId: {
     type: DataTypes.INTEGER,
-    allowNull:false
+    allowNull: false,
   },
   date: {
     type: DataTypes.DATEONLY,
     allowNull: false,
   },
-  website_name:{
+  website_name: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   url: {
     type: DataTypes.TEXT,
@@ -33,100 +32,14 @@ export const UserHistory = sequelize.define("user_history", {
   },
 });
 
-await UserHistory.sync({alter:1})
+await UserHistory.sync({ alter: 1 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import { DataTypes } from "sequelize";
-// import sequelize from "../queries/dbConnection.js";
-// import adminController from "../../sockets/adminSocket.js"; 
-
-// // Define the HistoryEntry Model
-// const HistoryEntry = sequelize.define("HistoryEntry",
-//   {
-//     url: {
-//       type: DataTypes.STRING,
-//       allowNull: false,
-//     },
-//     title: {
-//       type: DataTypes.STRING,
-//       allowNull: false,
-//     },
-//     visitTime: {
-//       type: DataTypes.DATE,
-//       allowNull: false,
-//     },
-//   },
-//   {
-//     timestamps: false, 
-//   }
-// );
-
-// // Define the UserHistory Model
-// const UserHistory = sequelize.define(
-//   "UserHistory",
-//   {
-//     user: {
-//       type: DataTypes.INTEGER,
-//       allowNull: false,
-//       references: { model: "Users", key: "id" }, 
-//     },
-//     date: {
-//       type: DataTypes.STRING, 
-//       allowNull: false,
-//     },
-//   },
-//   {
-//     timestamps: true, 
-//   }
-// );
-
-
-// // Middleware Equivalent: Sequelize Hooks
-// UserHistory.addHook("afterSave", async () => {
-//   try {
-//     await adminController.updateURLHostStats(); // Emit stats update after saving
-//   } catch (error) {
-//     console.error("Error in afterSave hook:", error.message);
-//   }
-// });
-
-// UserHistory.addHook("afterUpdate", async () => {
-//   try {
-//     await adminController.updateURLHostStats(); // Emit stats update after updating
-//   } catch (error) {
-//     console.error("Error in afterUpdate hook:", error.message);
-//   }
-// });
-
-// export { sequelize, UserHistory, HistoryEntry };
+UserHistory.afterCreate(async (data) => {
+  try {
+    let parsed = new URL(data.url);
+    data.website_name = parsed.hostname;
+    await data.save();
+  } catch (error) {
+    console.error("Error setting website_name:", error.message);
+  }
+});

@@ -2,10 +2,9 @@ import User from "../../../database/models/userModel.js";
 // import responseUtils from "../../../utils/common/responseUtils.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import { Op } from "sequelize";
-import {blockedWebsites} from "../../../database/models/BlockedWebsite.js";
 import appInfo from "../../../database/models/productiveAppsModel.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
-
+import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 
 
 const getAdminDetails = async (req, res) => {
@@ -54,13 +53,13 @@ const addBlockWebsites = async (req, res) => {
         // if (!urlPattern.test(Sites)) {
         //     return responseUtils.errorResponse(res, "Invalid URL format for Sites.", 400);
         // }
-        const existingWebsite = await blockedWebsites.findOne({
+        const existingWebsite = await BlockedWebsites.findOne({
             where: { Sites }
         });
         if (existingWebsite) {
             // return responseUtils.errorResponse(res, { message: "Website is already blocked" }, 400);
         }
-        const newBlockedWebsite = await blockedWebsites.create({
+        const newBlockedWebsite = await BlockedWebsites.create({
             Department_id,
             Sites
         });
@@ -75,7 +74,7 @@ const addBlockWebsites = async (req, res) => {
 
 const getBlockedWebsites = async (req, res) => {
     try {
-        const getBlockedSites = await blockedWebsites.findAll({
+        const getBlockedSites = await BlockedWebsites.findAll({
             where: {
                 Status: {
                     [Op.ne]: 0
@@ -100,7 +99,7 @@ const updateSitesStatus = async (req, res) => {
         if (status !== 0 && status !== 1) {
             // return responseUtils.errorResponse(res, "Status must be either 0 or 1.", 400);
         }
-        const [updatedRows] = await blockedWebsites.update(
+        const [updatedRows] = await BlockedWebsites.update(
             { Status: status },
             { where: { id } }
         );

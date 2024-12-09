@@ -16,13 +16,6 @@ export default {
             data: data || null,
         });
     },   
-    // jwtToken: (id) => {
-    //     return JWT.sign({
-    //         userInfo: {
-    //             id: id
-    //         },
-    //     }, ACCESS_TOKEN, { expiresIn: "1m" })
-    // },
     
     deleteFile: (filePath)=> {
         try {

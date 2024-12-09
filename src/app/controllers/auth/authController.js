@@ -111,96 +111,113 @@ class authController extends jwtService {
           "Your Account has been De-Activated. Contact Support"
         );
       }
+      let token;
 
-      // Ensure the user isn't logging in after shift end time
-
-      let now = new Date();
-      let currentHours = now.getHours();
-      let currentMinutes = now.getMinutes();
-
-      let shiftData = await getShiftData(user.teamId);
-
-      let [shiftHours, shiftMinutes] = shiftData.start_time
-        .split(":")
-        .map(Number);
-      let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
-      if (
-        currentHours > endHours ||
-        (currentHours === endHours && currentMinutes > endMinutes)
-      ) {
-        return helper.sendResponse(
-          res,
-          variables.Forbidden,
-          0,
-          {},
-          "Your shift is over. You cannot log in at this time."
+      if (user.isAdmin) {
+        token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
+        let expireTime = this.calculateTime();
+        await createAccessToken(
+          user.id,
+          user.isAdmin,
+          token,
+          expireTime,
+          dbTransaction
         );
-      }
-
-      let token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
-      let expireTime = this.calculateTime();
-      await createAccessToken(
-        user.id,
-        user.isAdmin,
-        token,
-        expireTime,
-        dbTransaction
-      );
-
-      let timeLog = await TimeLog.findOne({
-        where: {
-          user_id: user.id,
-          date: today
-        },
-        order: [["createdAt", "DESC"]],
-      });
-      let lateComing = 0;
-      let lateComingDuration = "00:00";
-      let lateMinutes = 0;
-
-      if (timeLog && timeLog.logged_out_time != null) {
-        const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
-        let logoutTime = new Date();
-        logoutTime.setHours(hours, mins, 0, 0);
-        let spareMinutes = Math.floor((now - logoutTime) / 60000);
-        timeLog.spare_time =
-          parseInt(timeLog.spare_time) + parseInt(spareMinutes);
-        timeLog.logged_out_time = null;
-        timeLog.save();
         user.current_status = 1;
         user.save();
       } else {
+        // Ensure the user isn't logging in after shift end time
+
+        let now = new Date();
+        let currentHours = now.getHours();
+        let currentMinutes = now.getMinutes();
+
+        let shiftData = await getShiftData(user.teamId);
+
+        let [shiftHours, shiftMinutes] = shiftData.start_time
+          .split(":")
+          .map(Number);
+        let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
         if (
-          currentHours > shiftHours ||
-          (currentHours === shiftHours && currentMinutes > shiftMinutes)
+          currentHours > endHours ||
+          (currentHours === endHours && currentMinutes > endMinutes)
         ) {
-          lateMinutes =
-            (currentHours - shiftHours) * 60 + (currentMinutes - shiftMinutes);
-          lateComing = 1;
-          lateComingDuration = `${Math.floor(lateMinutes / 60)}:${
-            lateMinutes % 60
-          }`;
+          return helper.sendResponse(
+            res,
+            variables.Forbidden,
+            0,
+            {},
+            "Your shift is over. You cannot log in at this time."
+          );
         }
-        const [lateHours, lateMins] = lateComingDuration.split(":").map(Number);
-        lateMinutes = lateHours * 60 + lateMins;
 
-        user.current_status = 1;
-        user.save();
-  
-        // Create a new TimeLog entry
-        await TimeLog.create({
-          user_id: user.id,
-          shift_id: shiftData.id,
-          company_id: user.company_id,
-          logged_in_time: `${currentHours}:${currentMinutes}`,
-          late_coming: lateComing,
-          late_coming_duration: lateMinutes,
-          spare_time: 0,
-          active_time: 0,
-          date:today
+        token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
+        let expireTime = this.calculateTime();
+        await createAccessToken(
+          user.id,
+          user.isAdmin,
+          token,
+          expireTime,
+          dbTransaction
+        );
+
+        let timeLog = await TimeLog.findOne({
+          where: {
+            user_id: user.id,
+            date: today,
+          },
+          order: [["createdAt", "DESC"]],
         });
-      }
+        let lateComing = 0;
+        let lateComingDuration = "00:00";
+        let lateMinutes = 0;
 
+        if (timeLog && timeLog.logged_out_time != null) {
+          const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
+          let logoutTime = new Date();
+          logoutTime.setHours(hours, mins, 0, 0);
+          let spareMinutes = Math.floor((now - logoutTime) / 60000);
+          timeLog.spare_time =
+            parseInt(timeLog.spare_time) + parseInt(spareMinutes);
+          timeLog.logged_out_time = null;
+          timeLog.save();
+          user.current_status = 1;
+          user.save();
+        } else {
+          if (
+            currentHours > shiftHours ||
+            (currentHours === shiftHours && currentMinutes > shiftMinutes)
+          ) {
+            lateMinutes =
+              (currentHours - shiftHours) * 60 +
+              (currentMinutes - shiftMinutes);
+            lateComing = 1;
+            lateComingDuration = `${Math.floor(lateMinutes / 60)}:${
+              lateMinutes % 60
+            }`;
+          }
+          const [lateHours, lateMins] = lateComingDuration
+            .split(":")
+            .map(Number);
+          lateMinutes = lateHours * 60 + lateMins;
+
+          user.current_status = 1;
+          user.save();
+
+          // Create a new TimeLog entry
+          await TimeLog.create({
+            user_id: user.id,
+            shift_id: shiftData.id,
+            company_id: user.company_id,
+            logged_in_time: `${currentHours}:${currentMinutes}`,
+            late_coming: lateComing,
+            late_coming_duration: lateMinutes,
+            spare_time: 0,
+            active_time: 0,
+            date: today,
+          });
+        }
+      }
       await dbTransaction.commit();
       return helper.sendResponse(
         res,
@@ -228,32 +245,40 @@ class authController extends jwtService {
       let userData = await User.findOne({ where: { id: req.user.id } });
       let token = await accessToken.findOne({ where: { userId: req.user.id } });
 
-      if (token) {
-        let time_data = await TimeLog.findOne({
-          where: { user_id: req.user.id },
-          order: [["createdAt", "DESC"]],
-        });
+      if (!userData.isAdmin) {
+        if (token) {
+          let time_data = await TimeLog.findOne({
+            where: { user_id: req.user.id },
+            order: [["createdAt", "DESC"]],
+          });
 
+          userData.current_status = 0;
+          userData.socket_id = null;
+          await userData.save();
+
+          let logged_out_time = new Date();
+          let [loginHours, loginMinutes] = time_data?.logged_in_time
+            .split(":")
+            .map(Number);
+          let loginTimeInMinutes = loginHours * 60 + loginMinutes;
+          let logoutHours = logged_out_time.getHours();
+          let logoutMinutes = logged_out_time.getMinutes();
+          let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
+
+          let duration = logoutTimeInMinutes - loginTimeInMinutes;
+          let active_time =
+            parseInt(parseInt(duration) - parseInt(time_data?.spare_time)) -
+            parseInt(time_data?.idle_time);
+
+          await time_data.update({
+            logged_out_time: `${logoutHours}:${logoutMinutes}`,
+            active_time,
+          });
+        }
+      } else {
         userData.current_status = 0;
         userData.socket_id = null;
         await userData.save();
-
-        let logged_out_time = new Date();
-        let [loginHours, loginMinutes] = time_data?.logged_in_time
-          .split(":")
-          .map(Number);
-        let loginTimeInMinutes = loginHours * 60 + loginMinutes;
-        let logoutHours = logged_out_time.getHours();
-        let logoutMinutes = logged_out_time.getMinutes();
-        let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
-
-        let duration = logoutTimeInMinutes - loginTimeInMinutes;
-        let active_time =parseInt(parseInt(duration)-parseInt(time_data?.spare_time))-parseInt(time_data?.idle_time);
-
-        await time_data.update({
-          logged_out_time: `${logoutHours}:${logoutMinutes}`,
-          active_time,
-        });
       }
       await token.destroy();
 

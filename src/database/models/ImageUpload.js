@@ -1,6 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
-import { getUserStats } from "../../app/sockets/socket.js";
+// import { getUserStats } from "../../app/sockets/socket.js";
 
 export const ImageUpload = sequelize.define(
   "image_upload",
@@ -27,11 +27,11 @@ export const ImageUpload = sequelize.define(
   },
   {
     timestamps: true,
-    hooks: {
-      afterCreate: (imageUpload, options) => {
-        getUserStats();
-      },
-    },
+    // hooks: {
+    //   afterCreate: (imageUpload, options) => {
+    //     getUserStats();
+    //   },
+    // },
   }
 );
 

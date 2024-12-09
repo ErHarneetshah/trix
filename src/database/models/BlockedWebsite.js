@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
 
-export const blockedWebsites = sequelize.define(
+export const BlockedWebsites = sequelize.define(
   "blocked_websites",
   {
     id: {
@@ -10,24 +10,39 @@ export const blockedWebsites = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    
     company_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    Sites: {
-      type: DataTypes.JSON,
+
+    website_name:{
+      type: DataTypes.STRING,
       allowNull: false,
-    }
+    },
+    
+    website: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
+    hooks: {
+        async afterUpdate(user, options) {
+          io.to('Admin').emit("getBlockedWebsites", {
+            message: "Blocked website updated",
+          });
+          
+        },
+      },
   }
 );
 
 
-await blockedWebsites.sync({alter:1}); 
+await BlockedWebsites.sync({alter:1}); 
 
 
-blockedWebsites.afterUpdate(()=>{
+// BlockedWebsites.afterUpdate(()=>{
   
-})
+// })

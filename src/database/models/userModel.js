@@ -147,14 +147,15 @@ const User = sequelize.define(
         }
       },
       async afterUpdate(user, options) {
-        io.to(user.socket_id).emit("getUserSettings", {
-          message: "User settings have been updated",
-          userSettings: {
-            screen_capture_time: user.screen_capture_time,
-            broswer_capture_time: user.broswer_capture_time,
-            app_capture_time : user.app_capture_time
-          },
-        });
+        let monitoredFields = ["screen_capture_time", "broswer_capture_time", "app_capture_time"];
+        let fieldsChanged = options.fields.some((field) => monitoredFields.includes(field));
+        if (fieldsChanged) {
+          io.to(user.socket_id).emit("getUserSettings", {
+              screen_capture_time: user.screen_capture_time,
+              broswer_capture_time: user.broswer_capture_time,
+              app_capture_time: user.app_capture_time,
+          });
+        }
         
       },
     },

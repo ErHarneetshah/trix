@@ -41,7 +41,7 @@ const TimeLog = sequelize.define('timelogs',{
     },
     idle_time:{
       type: DataTypes.INTEGER,
-      allowNull: true
+      defaultValue: 0,
     },
     date: {
       type: DataTypes.DATEONLY,
