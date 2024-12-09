@@ -60,9 +60,9 @@ class rolePermissionController {
 
         // Add a dynamic permission object for the role
         existingModule["roleId"] = roleId;
-        existingModule["roleName"] = roleName;
-        // existingModule[`${roleName}`] = permissions;
-        existingModule["permissions"] = permissions;
+        // existingModule["roleName"] = roleName;
+        existingModule[`${roleName}`] = permissions;
+        // existingModule["permissions"] = permissions;
 
         return acc;
       }, []);

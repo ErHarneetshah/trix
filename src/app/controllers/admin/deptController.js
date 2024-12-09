@@ -114,8 +114,10 @@ class deptController {
       const { id, name, parentDeptId } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
-      if (!name || !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
+      console.log("------------ 1 ------------------------------")
+      if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
 
+      console.log("-------------- 2 ----------------------------")
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
         where: { id: id },
@@ -123,6 +125,7 @@ class deptController {
       });
       if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
 
+      console.log("-------------- 3 ----------------------------")
       // Check if there is a dept with a name in a different id >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       if (name) {
         const existingDeptWithName = await department.findOne({
@@ -136,7 +139,7 @@ class deptController {
           return helper.failed(res, variables.ValidationError, "Department name already exists in different record!");
         }
       }
-
+      console.log("--------------- 4 ---------------------------")
       // Check if parent dept id exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       if (parentDeptId) {
         const existingDeptWithName = await department.findOne({
@@ -160,11 +163,11 @@ class deptController {
       const updateFields = {};
 
       // Only include the fields if they are provided (not undefined or null)
-      if (name !== undefined && name !== null) {
+      if (name !== undefined && !name) {
         updateFields.name = name;
       }
 
-      if (parentDeptId !== undefined && parentDeptId !== null) {
+      if (parentDeptId !== undefined && !parentDeptId) {
         updateFields.parentDeptId = parentDeptId;
       }
 
