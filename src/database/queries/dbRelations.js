@@ -6,6 +6,7 @@ import team from "../models/teamModel.js";
 import workReports from "../models/workReportsModel.js";
 import TimeLog from "../models/teamLogsModel.js";
 import shift from "../models/shiftModel.js";
+import rolePermission from "../models/rolePermissionModel.js";
 
 // User Relationships here
 User.belongsTo(department, { as: "department", foreignKey: "departmentId" });
@@ -22,5 +23,9 @@ workReports.belongsTo(User, { as: "user", foreignKey: "user_id" });
 // Time Log relationships here
 TimeLog.belongsTo(User, { as: "user", foreignKey: "user_id" });
 TimeLog.belongsTo(shift, { as: "shift", foreignKey: "shift_id" });
+
+// Role Permissions relationships here
+rolePermission.belongsTo(role, { as: "role", foreignKey: "roleId" });
+
 
 export default {}
