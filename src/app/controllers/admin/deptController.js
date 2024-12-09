@@ -30,7 +30,7 @@ class deptController {
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
-        attributes: ["id", "name", "status"],
+        attributes: ["id", "name", "parentDeptId", "status"],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
