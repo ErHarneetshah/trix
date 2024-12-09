@@ -8,11 +8,25 @@ import role from "../../../database/models/roleModel.js";
 class rolePermissionController {
   getAllRolePermissions = async (req, res) => {
     try {
-      const alldata = await rolePermission.findAll({
+      let { searchParam, limit, page } = req.query;
+      // let permissionSearchable = ["modules"];
+      // let roleSearchable = ["name"];
+
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      // let permissionWhere = await helper.searchCondition(searchParam, permissionSearchable);
+      // let roleWhere = await helper.searchCondition(searchParam, roleSearchable);
+
+      const alldata = await rolePermission.findAndCountAll({
+        // where: permissionWhere,
         attributes: { exclude: ["createdAt", "updatedAt"] },
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
         include: [
           {
             model: role,
+            // where: roleWhere,
             as: "role",
             attributes: ["name"],
           },
@@ -21,8 +35,8 @@ class rolePermissionController {
       if (!alldata || alldata.length === 0) return helper.failed(res, variables.NotFound, "No Data is available!");
 
       // Restructure the data to match the desired response
-      const transformedData = alldata.reduce((acc, item) => {
-        const { id, modules, permissions, role } = item;
+      const transformedData = alldata.rows.reduce((acc, item) => {
+        const { id, modules, permissions, role, roleId } = item;
 
         // Ensure role and role.name exist
         const roleName = role?.name;
@@ -45,7 +59,10 @@ class rolePermissionController {
         }
 
         // Add a dynamic permission object for the role
-        existingModule[`${roleName}`] = permissions;
+        existingModule["roleId"] = roleId;
+        existingModule["roleName"] = roleName;
+        // existingModule[`${roleName}`] = permissions;
+        existingModule["permissions"] = permissions;
 
         return acc;
       }, []);
