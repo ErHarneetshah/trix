@@ -34,13 +34,12 @@ class teamMemberTimeLogController {
       } else if (endDate) {
         logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Only filter by endDate
       }
-      
 
       const alldata = await TimeLog.findAndCountAll({
         where: logWhere, // Filters for `workReports`
         offset,
         limit,
-        group: ["user_id"],
+        // group: ["user_id"],
         attributes: ["id", "total_active_duration", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
         include: [
           {
@@ -77,7 +76,7 @@ class teamMemberTimeLogController {
       const logWhere = {};
       const userWhere = {};
 
-      console.log(filter)
+      console.log(filter);
       // Add date range filter to `reportWhere`
       // if (startDate && endDate) {
       //   logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
@@ -94,16 +93,14 @@ class teamMemberTimeLogController {
       } else if (endDate) {
         logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Only filter by endDate
       }
-      
-      if (filter.toLowerCase() === "working")
-      {
-        userWhere.currentStatus = 1;
-      }else if(filter.toLowerCase() === "absent")
-      {
-        userWhere.currentStatus = 0;
-      }else if(filter.toLowerCase() === "late")
-      {
-        logWhere.late_coming = true;
+      if (filter) {
+        if (filter.toLowerCase() === "working") {
+          userWhere.currentStatus = 1;
+        } else if (filter.toLowerCase() === "absent") {
+          userWhere.currentStatus = 0;
+        } else if (filter.toLowerCase() === "late") {
+          logWhere.late_coming = true;
+        }
       }
 
       console.log(userWhere);
@@ -111,7 +108,7 @@ class teamMemberTimeLogController {
         logWhere, // Filters for `workReports`
         offset,
         limit,
-        group: ["user_id"],
+        // group: ["user_id"],
         attributes: ["id", "total_active_duration", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
         include: [
           {
@@ -136,8 +133,6 @@ class teamMemberTimeLogController {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
-
-
 }
 
 export default teamMemberTimeLogController;
