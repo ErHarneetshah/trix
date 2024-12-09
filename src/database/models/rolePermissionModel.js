@@ -11,6 +11,13 @@ const rolePermission = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
     roleId: {
       type: DataTypes.INTEGER,
       allowNull: false,

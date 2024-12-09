@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import sequelize  from '../queries/dbConnection.js';
+import sequelize from '../queries/dbConnection.js';
 
 const role = sequelize.define('roles', {
   id: {
@@ -8,14 +8,21 @@ const role = sequelize.define('roles', {
     autoIncrement: true,
     allowNull: false,
   },
+  company_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+    },
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-        notEmpty: true, // Prevents empty string
-      },
+      notEmpty: true, // Prevents empty string
+    },
   },
-  status:{
+  status: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: 1,

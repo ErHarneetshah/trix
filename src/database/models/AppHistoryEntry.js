@@ -6,7 +6,7 @@ export const AppHistoryEntry = sequelize.define("app_history", {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  companyId:{
+  company_id:{
     type: DataTypes.INTEGER,
     allowNull:false
   },

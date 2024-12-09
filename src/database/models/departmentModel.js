@@ -10,6 +10,10 @@ const department = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,

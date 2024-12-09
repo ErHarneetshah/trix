@@ -12,6 +12,13 @@ const userSetting = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,

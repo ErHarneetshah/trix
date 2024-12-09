@@ -10,7 +10,7 @@ export const ImageUpload = sequelize.define(
       allowNull: false,
     },
 
-    companyId:{
+    company_id:{
       type: DataTypes.INTEGER,
       allowNull:false
     },

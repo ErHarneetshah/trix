@@ -9,6 +9,8 @@ import sequelize  from './src/database/queries/dbConnection.js';
 import { createServer } from "http";
 import setupSocketIO from "./src/app/sockets/socket.js";
 import { Server } from "socket.io";
+import ImportModels from './src/app/config/ImportDependencies/ImportModels.js';
+import sequelize from './src/database/queries/dbConnection.js';
 
 const app = express();
 const httpServer = createServer(app);

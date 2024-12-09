@@ -10,7 +10,8 @@
     "generateSecretKey": "node src/utils/common/generateSecretKey.js",
     "seedTeamMemberDailyLog": "node src/database/seeders/seedTeamMemberDailyLog.js",
     "seedModules": "node src/database/seeders/seedModules.js",
-    "deleteExpireToken": "node src/utils/services/scheduler.js"
+    "deleteExpireToken": "node src/utils/services/scheduler.js",
+    "database-seed":"node src/database/seeders/AllSeeder.js"
   },
   "author": "LBM Developers",
   "license": "ISC",

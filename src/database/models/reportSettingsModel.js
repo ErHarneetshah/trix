@@ -8,6 +8,13 @@ const reportSettings = sequelize.define('report_settings', {
         autoIncrement: true,
         allowNull: false,
     },
+    company_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+            notEmpty: true,
+        },
+    },
     name: {
         type: DataTypes.STRING,
         allowNull: true,
