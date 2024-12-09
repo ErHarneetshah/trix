@@ -35,6 +35,8 @@ const reportingManager = sequelize.define('reporting_managers', {
   },
 }, {
   timestamps: true, // Adds createdAt and updatedAt columns
+  // Prevent Sequelize from auto-creating foreign keys
+  underscored: false,
   hooks: {
     async beforeUpdate(user, options) {
       const validationMap = {

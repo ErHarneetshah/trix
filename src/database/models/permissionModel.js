@@ -41,6 +41,8 @@ const permission = sequelize.define(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt columns
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
   }
 );
 

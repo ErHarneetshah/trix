@@ -33,10 +33,12 @@ const Notification = sequelize.define("notification_log",
     },
   },
   {
-    timestamps: false, 
+    timestamps: false,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
   }
 );
 
-await Notification.sync({alter:1})
+await Notification.sync({alter:1});
 
 export { sequelize, Notification };

@@ -29,6 +29,8 @@ const role = sequelize.define('roles', {
   },
 }, {
   timestamps: true, // Adds createdAt and updatedAt columns
+  // Prevent Sequelize from auto-creating foreign keys
+  underscored: false,
 });
 
 await role.sync({alter:1});

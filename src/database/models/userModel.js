@@ -109,6 +109,8 @@ const User = sequelize.define(
   },
   {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
     hooks: {
       async beforeCreate(user, options) {
         if (user.password) {

@@ -5,12 +5,9 @@ import routes from "./src/routes/routes.js";
 import cors from "cors";
 import corsMiddleware from "./src/app/middlewares/corsMiddleware.js";
 import dbRelations from "./src/database/queries/dbRelations.js";
-import sequelize  from './src/database/queries/dbConnection.js';
 import { createServer } from "http";
 import setupSocketIO from "./src/app/sockets/socket.js";
 import { Server } from "socket.io";
-import ImportModels from './src/app/config/ImportDependencies/ImportModels.js';
-import sequelize from './src/database/queries/dbConnection.js';
 
 const app = express();
 const httpServer = createServer(app);

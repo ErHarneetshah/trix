@@ -28,7 +28,9 @@ const designation = sequelize.define('designations', {
     defaultValue: 1,
   },
 }, {
-  timestamps: true, 
+  timestamps: true,
+  // Prevent Sequelize from auto-creating foreign keys
+  underscored: false,
 });
 
 await designation.sync({alter:1});

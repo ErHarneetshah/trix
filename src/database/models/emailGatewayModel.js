@@ -60,6 +60,8 @@ const emailGateway = sequelize.define('email_gateways', {
     }
 }, {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
 });
 
 await emailGateway.sync({alter:1});

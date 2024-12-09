@@ -28,6 +28,8 @@ export const BlockedWebsites = sequelize.define(
   },
   {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
     hooks: {
         async afterUpdate(user, options) {
           io.to('Admin').emit("getBlockedWebsites", {

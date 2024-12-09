@@ -26,6 +26,9 @@ export const System = sequelize.define("system", {
     type: DataTypes.INTEGER,
     allowNull: false
   }
+},{
+  // Prevent Sequelize from auto-creating foreign keys
+  underscored: false,
 });
 
 await System.sync({alter:1});

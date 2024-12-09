@@ -30,6 +30,8 @@ const reportSettings = sequelize.define('report_settings', {
     }
 }, {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
 });
 
 await reportSettings.sync({alter:1});

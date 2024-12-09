@@ -30,6 +30,9 @@ export const UserHistory = sequelize.define("user_history", {
     type: DataTypes.DATE,
     allowNull: false,
   },
+},{
+  // Prevent Sequelize from auto-creating foreign keys
+  underscored: false,
 });
 
 await UserHistory.sync({ alter: 1 });

@@ -42,6 +42,8 @@ const workReports = sequelize.define(
   },
   {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
   }
 );
 

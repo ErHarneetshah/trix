@@ -40,7 +40,9 @@ const blockedWebsites = sequelize.define(
     },
   },
   {
-    timestamps: true
+    timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
   }
 );
 
