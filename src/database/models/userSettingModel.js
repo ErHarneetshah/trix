@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
 import helper from "../../utils/services/helper.js";
+import User from "./userModel.js";
 
 const userSetting = sequelize.define(
   "users_settings",
@@ -52,7 +53,7 @@ const userSetting = sequelize.define(
 
 export const createUserSetting = async (userId, dbTransaction, res) => {
   try {
-    const existingUserSetting = await userSetting.findOne({ where: { userid: userId }, transaction: dbTransaction });
+    const existingUserSetting = await User.findOne({ where: { id: userId }, transaction: dbTransaction });
     if (existingUserSetting) {
       return helper.failed(res, variables.ValidationError, "User settings already exist for this user.");
     }

@@ -7,6 +7,7 @@ import role from "./roleModel.js";
 import team from "./teamModel.js";
 import helper from "../../utils/services/helper.js";
 import variables from "../../app/config/variableConfig.js";
+import { io } from "../../../app.js";
 
 const User = sequelize.define(
   "users",
@@ -17,17 +18,17 @@ const User = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
-
-    companyId: {
-      type: DataTypes.BIGINT,
-      allowNull: false,
+    socket_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     fullname: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
+    },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
     email: {
       type: DataTypes.STRING,
@@ -39,47 +40,35 @@ const User = sequelize.define(
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: true,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
+      allowNull: false,
+      // validate: {
+      //   notEmpty: true, // Prevents empty string
+      // },
     },
     mobile: {
       type: DataTypes.STRING,
       allowNull: true,
-      validate: {
-        notEmpty: true, // Prevents empty string
-        isNumeric: true,
-        len: [1, 10],
-      },
+      // validate: {
+      //   notEmpty: true, // Prevents empty string
+      //   isNumeric: true,
+      //   len: [1, 10],
+      // },
     },
     country: {
       type: DataTypes.STRING,
       allowNull: true,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     departmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     designationId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     roleId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     teamId: {
       type: DataTypes.INTEGER,
@@ -94,11 +83,24 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       allowNull: true,
       comment: "Daily Log Active/InActive Status (0 for absent, 1 for present)",
+      defaultValue: 0,
     },
     status: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: 1,
+    },
+    screen_capture_time: {
+      type: DataTypes.INTEGER,
+      defaultValue: 60, // default value is 60 seconds
+    },
+    broswer_capture_time: {
+      type: DataTypes.INTEGER,
+      defaultValue: 60, // default value is 60 seconds
+    },
+    app_capture_time: {
+      type: DataTypes.INTEGER,
+      defaultValue: 60, // default value is 60 seconds
     },
   },
   {
@@ -126,7 +128,7 @@ const User = sequelize.define(
             });
 
             if (!recordExists) {
-              return helper.failed(res, variables.NotFound, `${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
+              throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
             }
           }
         }
@@ -160,6 +162,17 @@ const User = sequelize.define(
               // throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
             }
           }
+        }
+      },
+      async afterUpdate(user, options) {
+        let monitoredFields = ["screen_capture_time", "broswer_capture_time", "app_capture_time"];
+        let fieldsChanged = options.fields.some((field) => monitoredFields.includes(field));
+        if (fieldsChanged) {
+          io.to(user.socket_id).emit("getUserSettings", {
+            screen_capture_time: user.screen_capture_time,
+            broswer_capture_time: user.broswer_capture_time,
+            app_capture_time: user.app_capture_time,
+          });
         }
       },
     },

@@ -6,27 +6,28 @@ import cors from "cors";
 import corsMiddleware from "./src/app/middlewares/corsMiddleware.js";
 import dbRelations from "./src/database/queries/dbRelations.js";
 import sequelize  from './src/database/queries/dbConnection.js';
-
-//models
-// import blockedWebsites from './src/database/models/blockedWebsitesModel.js';
-// import appInfo from './src/database/models/blockedWebsitesModel.js';
-// import reportSettings from './src/database/models/reportSettingsModel.js';
-// import emailGateway from './src/database/models/emailGatewayModel.js';
-// import userReports from './src/database/models/workReportsModel.js';
-
+import { createServer } from "http";
+import setupSocketIO from "./src/app/sockets/socket.js";
+import { Server } from "socket.io";
 
 const app = express();
+const httpServer = createServer(app);
+// const io = new Server(httpServer);
 const appConfig = new appConfiguration();
 const dbConfig = appConfig.getConfig();
 const PORT = dbConfig.port;
-
+export const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+setupSocketIO(io);
 app.use(express.json());
 app.use(cors(corsMiddleware));
 app.use(routes);
 
-// sequelize.sync();
-app.listen(PORT, () =>
-  console.log(
-    `Server up and Running on http://${ip.address()}:${PORT} --------------------------`
-  )
+// Start the Express server
+httpServer.listen(PORT, "0.0.0.0", () =>
+  console.log(`Server up and Running on http://${ip.address()}:${PORT}`)
 );

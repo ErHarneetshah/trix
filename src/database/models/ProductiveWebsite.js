@@ -1,13 +1,15 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
 
-const blockedWebsites = sequelize.define(
-  "blockedWebsites",
+const ProductiveWebsite = sequelize.define("productive_website",
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
+    },
+    company_id: {
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     companyId: {
@@ -18,25 +20,15 @@ const blockedWebsites = sequelize.define(
     departmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
     },
     website_name: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, 
-      },
       defaultValue: "Facebook",
     },
     website: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, 
-      },
-    
     },
     logo: {
       type: DataTypes.STRING,
@@ -45,14 +37,13 @@ const blockedWebsites = sequelize.define(
     status: {
       type: DataTypes.TINYINT,
       allowNull: false,
-      defaultValue: 1,
-      comment: '1 => Blocked Websites,0=>Unblock Websites'
     },
   },
   {
-    timestamps: true
+    timestamps: true,
+   
   }
 );
 
-
-export default blockedWebsites;
+await ProductiveWebsite.sync({ alter: 1 });
+export default ProductiveWebsite;
