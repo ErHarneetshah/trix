@@ -20,7 +20,7 @@ const User = sequelize.define(
 
     companyId: {
       type: DataTypes.BIGINT,
-      allowNull: false,
+      allowNull: true,
     },
     fullname: {
       type: DataTypes.STRING,
