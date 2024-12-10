@@ -6,6 +6,7 @@ import logs from '../../storage/logs/logs.js';
 // dotenv.config();
 
 const verifyUser = async (req, res, next) => {
+  console.log("tesla");
   const logger = new logs();
   const authHeader = req.header('Authorization');
 

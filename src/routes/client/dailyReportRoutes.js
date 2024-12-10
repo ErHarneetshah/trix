@@ -9,7 +9,7 @@ import verifyUser from "../../app/middlewares/verifyUser.js";
 
 
 router.post('/add-user-report', verifyUser, workReportsController.createReport);
-router.get('/get-self-report',  verifyUser, workReportsController.getSelfReport);
+router.get('/get-self-report',   workReportsController.getSelfReport);
 
 export default router;
 

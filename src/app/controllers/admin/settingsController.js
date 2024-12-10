@@ -7,7 +7,8 @@ import variables from "../../config/variableConfig.js";
 import department from "../../../database/models/departmentModel.js";
 import validate from "../../../utils/CustomValidation.js";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
-import { ProductiveApp }from "../../../database/models/ProductiveApp.js";
+
+import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 
 const getAdminDetails = async (req, res) => {
   try {
@@ -138,7 +139,7 @@ const getBlockedWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name","status"],
+      attributes: ["id", "website", "website_name", "status"],
       include: [
         {
           model: department,
@@ -172,7 +173,7 @@ const getBlockedWebsites = async (req, res) => {
 const addBlockWebsites = async (req, res) => {
   try {
     const { departmentId, website, logo_image } = req.body;
-
+    let companyId = 101;
     const rules = {
       departmentId: 'required|integer',
       website: 'required|valid_url',
@@ -196,15 +197,10 @@ const addBlockWebsites = async (req, res) => {
       return helper.failed(res, variables.NotFound, "Website with this name or website URL already exists");
     }
 
-    const newWebsiteData = { departmentId, website };
-
-    if (logo_image) {
-      const storedImagePath = await processAndStoreImage(logo_image);
-      newWebsiteData.logo_image = storedImagePath;
-    }
-
+    let parsed = new URL(website);
+    const website_name = parsed.hostname;
+    const newWebsiteData = { departmentId, website, website_name, companyId };
     const newAppInfo = await BlockedWebsites.create(newWebsiteData);
-
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
     console.error("Error creating app info:", error);
@@ -214,13 +210,13 @@ const addBlockWebsites = async (req, res) => {
 
 const updateSitesStatus = async (req, res) => {
   try {
-    const { id,status} = req.body;
+    const { id, status } = req.body;
     const website = await BlockedWebsites.findByPk(id);
     if (!website) {
       return helper.failed(res, variables.NotFound, "Id not exists in our system.");
     }
 
-    if(status < 0 || status > 1){
+    if (status < 0 || status > 1) {
       return helper.failed(res, variables.ValidationError, "Status value must be 0 or 1");
     }
     const [updatedRows] = await BlockedWebsites.update({ status: status }, { where: { id: id } });
@@ -238,7 +234,6 @@ const updateSitesStatus = async (req, res) => {
 const addProductiveApps = async (req, res) => {
   try {
     const { department_id, app_name } = req.body;
-
     const rules = {
       department_id: 'required|integer|min:1',
       app_name: 'required|string|min:3|max:50',
@@ -261,7 +256,6 @@ const addProductiveApps = async (req, res) => {
 
     const newAppInfo = await ProductiveApp.create({ company_id, department_id, app_name });
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
-
   } catch (error) {
     console.error("Error creating app info:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -302,7 +296,7 @@ const getAppInfo = async (req, res) => {
     let offset = (page - 1) * limit || 0;
 
     // Prepare base filters
-    let where = {company_id: 101};
+    let where = { company_id: 101 };
 
     // Apply department filter if provided
     if (departmentId && departmentId != 0) {
@@ -325,14 +319,14 @@ const getAppInfo = async (req, res) => {
       order: [["createdAt", "DESC"]],
     });
 
-   
+
     // Handle case when no apps found
-    if (productiveApps.count === 0 ) {
+    if (productiveApps.count === 0) {
       return helper.success(
         res,
         variables.Success,
         "No apps found.",
-        {productiveApps }
+        { productiveApps }
       );
     }
 
@@ -341,7 +335,7 @@ const getAppInfo = async (req, res) => {
       res,
       variables.Success,
       "Apps retrieved successfully",
-      { productiveApps}
+      { productiveApps }
     );
   } catch (error) {
     // Handle errors

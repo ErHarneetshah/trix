@@ -5,7 +5,7 @@ import helper from "../../../utils/services/helper.js";
 import { Op } from "sequelize";
 import User from "../../../database/models/userModel.js";
 import team from "../../../database/models/teamModel.js";
-import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
+import {BlockedWebsites}  from "../../../database/models/BlockedWebsite.js";
 import { ProductiveApp }from "../../../database/models/ProductiveApp.js";
 
 class deptController {
