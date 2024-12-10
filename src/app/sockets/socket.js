@@ -2,7 +2,7 @@ import { verifyToken } from "../../utils/validations/socketValidation.js";
 import { Notification } from "../../database/models/Notification.js";
 import { UserHistory } from "../../database/models/UserHistory.js";
 import User from "../../database/models/userModel.js";
-import { AppHistoryEntry } from "../../database/models/AppHistoryEntry.js";
+ import  AppHistoryEntry  from "../../database/models/AppHistoryEntry.js";
 import { ImageUpload } from "../../database/models/ImageUpload.js";
 import { Op, Sequelize } from "sequelize";
 import Model from "../../database/queries/dbConnection.js";
