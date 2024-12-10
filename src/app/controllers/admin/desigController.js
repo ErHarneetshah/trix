@@ -56,6 +56,7 @@ class desigController {
     try {
      let where  = {};
       where.status = 1;
+      where.company_id = req.user.company_id;
 
       // Getting all the designations with status condtion to be 1 (active) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const allData = await designation.findAll({
@@ -152,7 +153,7 @@ class desigController {
 
       // update the designation if passes everything >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const [updatedRows] = await designation.update({
-        name:name
+        name:name,
       }, {
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
@@ -193,7 +194,7 @@ class desigController {
       // Check if the desgination used in other tables from db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const isUsedInUsers = await User.findOne({ where: { designationId: id } });
       if(isUsedInUsers) 
-        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
+        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Designation as it is referred in other tables");
 
 
       // Delete the desgination from db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

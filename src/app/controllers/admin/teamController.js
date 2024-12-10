@@ -6,6 +6,7 @@ import sequelize from "../../../database/queries/dbConnection.js";
 import helper from "../../../utils/services/helper.js";
 import teamsValidationSchema from "../../../utils/validations/teamsValidation.js";
 import variables from "../../config/variableConfig.js";
+import User from "../../../database/models/userModel.js";
 
 class teamController {
   getAllTeam = async (req, res) => {
@@ -33,8 +34,10 @@ class teamController {
         };
       }
 
+      where.company_id = req.user.company_id;
+
       const alldata = await team.findAndCountAll({
-        where,
+        where: where,
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
@@ -64,7 +67,7 @@ class teamController {
   getTeamDropdown = async (req, res) => {
     try {
       const alldata = await team.findAll({
-        where: { status: true },
+        where: { status: true, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt", "status", "departmentId", "shiftId"] },
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
@@ -79,6 +82,8 @@ class teamController {
     try {
       const requestData = req.body;
       if (!requestData.departmentId) return helper.failed(res, variables.NotFound, "Department Id is required");
+
+      requestData.company_id = req.user.company_id;
 
       const specificData = await team.findOne({
         attributes: { exclude: ["createdAt", "updatedAt"] },
@@ -101,6 +106,7 @@ class teamController {
 
       const existingTeam = await team.findOne({
         where: {
+          company_id: req.user.company_id,
           name: requestData.name,
           departmentId: requestData.departmentId,
           shiftId: requestData.shiftId,
@@ -110,6 +116,7 @@ class teamController {
 
       const existingTeamWithSameParam = await team.findOne({
         where: {
+          company_id: req.user.company_id,
           departmentId: requestData.departmentId,
           shiftId: requestData.shiftId,
         },
@@ -119,11 +126,15 @@ class teamController {
 
       const existingTeamWithSameName = await team.findOne({
         where: {
+          company_id: req.user.company_id,
           name: requestData.name,
         },
         transaction: dbTransaction,
       });
       if (existingTeamWithSameName) return helper.failed(res, variables.ValidationError, "Team with same Name Already Exists!");
+
+
+      requestData.company_id = req.user.company_id;
 
       // Create and save the new user
       const addNewTeam = await team.create(requestData, { transaction: dbTransaction });
@@ -143,7 +154,7 @@ class teamController {
 
       //* Check if there is a dept already exists
       const existingTeam = await team.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingTeam) return helper.failed(res, variables.ValidationError, "Team does not exists!");
@@ -152,6 +163,7 @@ class teamController {
       const existingTeamWithName = await team.findOne({
         where: {
           name: updateFields.name,
+          company_id: req.user.company_id,
           id: { [Op.ne]: id }, // Exclude the current record by id
         },
         transaction: dbTransaction,
@@ -162,13 +174,13 @@ class teamController {
 
       if (updateFields.departmentId && updateFields.shiftId) {
         const alreadySameTeam = await team.findOne({
-          where: { id: id, name: updateFields.name, departmentId: updateFields.departmentId, shiftId: updateFields.shiftId },
+          where: { id: id, name: updateFields.name, company_id: req.user.company_id, departmentId: updateFields.departmentId, shiftId: updateFields.shiftId },
           transaction: dbTransaction,
         });
         if (alreadySameTeam) return helper.success(res, variables.Success, "Team Re-Updated Successfully!");
 
         const existingTeamWithSameParam = await team.findOne({
-          where: { departmentId: updateFields.departmentId, shiftId: updateFields.shiftId },
+          where: { company_id: req.user.company_id,departmentId: updateFields.departmentId, shiftId: updateFields.shiftId },
           transaction: dbTransaction,
         });
         if (existingTeamWithSameParam) return helper.success(res, variables.Success, "Team With Same Specs already exists!");
@@ -180,7 +192,7 @@ class teamController {
       // }
 
       const [updatedRows] = await team.update(updateFields, {
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
         individualHooks: true,
       });
@@ -205,14 +217,19 @@ class teamController {
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
       const existingTeam = await team.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingTeam) return helper.success(res, variables.ValidationError, "Team does not exists!");
 
+      const isUsedInUsers = await User.findOne({ where: { teamId: id } });
+      if (isUsedInUsers) {
+        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Team as it is referred in other tables");
+      }
+
       // Create and save the new user
       const deleteTeam = await team.destroy({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 

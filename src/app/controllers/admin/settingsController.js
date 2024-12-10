@@ -6,13 +6,14 @@ import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import department from "../../../database/models/departmentModel.js";
 import validate from "../../../utils/CustomValidation.js";
-import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
+// import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
+import blockedWebsites from "../../../database/models/blockedWebsitesModel.js";
 import { ProductiveApp }from "../../../database/models/ProductiveApp.js";
 
 const getAdminDetails = async (req, res) => {
   try {
     const alldata = await User.findOne({
-      where: { isAdmin: 1 },
+      where: { isAdmin: 1, company_id: req.user.company_id },
       attributes: ["fullname", "email", "mobile"],
       include: [
         {
@@ -37,13 +38,13 @@ const updateAdminDetails = async (req, res) => {
       return helper.failed(res, variables.BadRequest, "All fields (fullname, email, mobile) are required");
     }
     const user = await User.findOne({
-      where: { id: req.user.id },
+      where: { id: req.user.id, company_id:req.user.company_id },
     });
     if (!user) {
       return helper.failed(res, variables.BadRequest, "User not exists");
     }
 
-    await User.update({ fullname, email, mobile }, { where: { id: req.user.id } });
+    await User.update({ fullname, email, mobile }, { where: { id: req.user.id, company_id:req.user.company_id } });
     return helper.success(res, variables.Success, "Admin Profile Updated Successfully");
   } catch (error) {
     console.error("Error updating admin details:", error);
@@ -133,8 +134,10 @@ const getBlockedWebsites = async (req, res) => {
       where.departmentId = departmentId;
     }
 
+    where.companyId = req.user.company_id;
+
     const blockedWebsite = await BlockedWebsites.findAndCountAll({
-      where,
+      where: where,
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
@@ -189,14 +192,15 @@ const addBlockWebsites = async (req, res) => {
     }
 
     const existingApp = await BlockedWebsites.findOne({
-      where: { website },
+      where: { website:website, companyId: req.user.company_id },
     });
 
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "Website with this name or website URL already exists");
     }
 
-    const newWebsiteData = { departmentId, website };
+    let company_id = req.user.company_id;
+    const newWebsiteData = { departmentId, website, company_id };
 
     if (logo_image) {
       const storedImagePath = await processAndStoreImage(logo_image);

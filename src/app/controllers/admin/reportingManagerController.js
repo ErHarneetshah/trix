@@ -54,6 +54,7 @@ class reportingManagerController {
         where: {
           status: true,
           isAdmin: 0,
+          company_id: req.user.company_id,
           // id: {
           //   [Op.notIn]: sequelize.literal(`(SELECT DISTINCT reportingManagerId FROM departments WHERE reportingManagerId IS NOT NULL)`),
           // },
@@ -133,14 +134,14 @@ class reportingManagerController {
 
       //* Check if there is a dept already exists
       const existingDept = await department.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
      
       //* Check if there is a user already exists
       const existingUser = await User.findOne({
-        where: { id: reportManagerId },
+        where: { id: reportManagerId, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingUser) return helper.failed(res, variables.ValidationError, "User does not exists in system!");
@@ -160,7 +161,7 @@ class reportingManagerController {
 
       //* if the id has the same value in db
       const alreadySameReportManager = await department.findOne({
-        where: { id: id, reportingManagerId: reportManagerId },
+        where: { id: id, reportingManagerId: reportManagerId, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (alreadySameReportManager) return helper.success(res, variables.Success, "Report Manager Re-Assigned Successfully!");
@@ -170,7 +171,7 @@ class reportingManagerController {
           reportingManagerId: reportManagerId,
         },
         {
-          where: { id: id },
+          where: { id: id, company_id: req.user.company_id },
           transaction: dbTransaction,
           individualHooks: true,
         }

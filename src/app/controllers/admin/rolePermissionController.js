@@ -19,10 +19,11 @@ class rolePermissionController {
 
       const alldata = await rolePermission.findAndCountAll({
         // where: permissionWhere,
+        where: {company_id: req.user.company_id},
         attributes: { exclude: ["createdAt", "updatedAt"] },
-        // offset: offset,
-        // limit: limit,
-        // order: [["id", "DESC"]],
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
         include: [
           {
             model: role,
@@ -84,7 +85,7 @@ class rolePermissionController {
   getSpecificRolePermissions = async (roleId, moduleName) => {
     try {
       const roleModuledata = await rolePermission.findOne({
-        where: { roleId: roleId, modules: moduleName },
+        where: { roleId: roleId, modules: moduleName, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!roleModuledata) return helper.failed(res, variables.NotFound, "No Data is available!");
@@ -96,11 +97,12 @@ class rolePermissionController {
     }
   };
 
-  addRolePermissions = async (module, roleId, transaction) => {
+  addRolePermissions = async (module, roleId, company_id, transaction) => {
     try {
       const permissionData = {
         roleId,
         modules: module.name,
+        company_id: company_id,
         permissions: {
           POST: false,
           GET: false,
@@ -152,7 +154,7 @@ class rolePermissionController {
       }
 
       const existRole = await role.findOne({
-        where: { name: roleName },
+        where: { name: roleName, company_id: req.user.company_id },
         attributes: ["id"],
         transaction: dbTransaction,
       });
@@ -162,7 +164,7 @@ class rolePermissionController {
 
       // Checking whether the role id exists in system or not
       const existingRolePermission = await rolePermission.findOne({
-        where: { roleId: existRole.id, modules: moduleName },
+        where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingRolePermission) return helper.failed(res, variables.ValidationError, "Role Permission does not exists!");
@@ -173,7 +175,7 @@ class rolePermissionController {
           permissions: permissions,
         },
         {
-          where: { roleId: existRole.id, modules: moduleName },
+          where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
           transaction: dbTransaction,
         }
       );

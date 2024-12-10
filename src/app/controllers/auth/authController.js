@@ -9,54 +9,154 @@ import variables from "../../config/variableConfig.js";
 import TimeLog from "../../../database/models/TimeLog.js";
 import { getShiftData } from "../../../utils/validations/socketValidation.js";
 import bcrypt from "bcrypt";
+import company from "../../../database/models/companyModel.js";
+import department from "../../../database/models/departmentModel.js";
+import designation from "../../../database/models/designationModel.js";
+import role from "../../../database/models/roleModel.js";
+import team from "../../../database/models/teamModel.js";
+import shift from "../../../database/models/shiftModel.js";
+import module from "../../../database/models/moduleModel.js";
+import rolePermissionController from "../admin/rolePermissionController.js";
 
 class authController extends jwtService {
-  // register = async (req, res) => {
-  //   const dbTransaction = await sequelize.transaction();
-  //   try {
-  //     const requestData = req.body;
+  companyRegister = async (req, res) => {
+    const dbTransaction = await sequelize.transaction();
+    try {
+      // const {fullname, companyName, email, mobile, employeeNumber, password, confirmPassword, companyAddress } = req.body;
+      const requestData = req.body;
 
-  //     // Validating request body
-  //     const validationResult = await authValidation.registerValid(requestData, res);
+      // Validating request body
+      const validationResult = await authValidation.companyRegisterValid(requestData, res);
 
-  //     // Check if the user already exists
-  //     const existingUser = await User.findOne({
-  //       where: { email: requestData.email },
-  //       transaction: dbTransaction,
-  //     });
+      // Check if the user already exists
+      const existingUser = await company.findOne({
+        where: { name: requestData.name },
+        transaction: dbTransaction,
+      });
+      if (existingUser) {
+        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Company already exists with this Name!");
+      }
 
-  //     if (existingUser) {
-  //       return helper.sendResponse(res, variables.Unauthorized, 0, null, "User already exists with this mail!");
-  //     }
+      //* Step1
+      const createCompany = await company.create(requestData, {
+        transaction: dbTransaction,
+      });
 
-  //     // Create and save the new user
-  //     const user = await User.create(requestData, {
-  //       transaction: dbTransaction,
-  //     });
+      //* Step2
+      const createDepartment = await department.create(
+        {
+          name: "Director",
+          isRootId: 1,
+          company_id: createCompany.id,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
 
-  //     // Create user settings
-  //     const userSetting = await createUserSetting(teamMember.id, dbTransaction, res);
+      //* Step3
+      const createDesignation = await designation.create(
+        {
+          name: "Director",
+          company_id: createCompany.id,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
 
-  //     if(!userSetting){
-  //       await dbTransaction.rollback();
-  //       return helper.failed(res, variables.UnknownError, "Unknow Error Occured While creating User Setting");
-  //     }
+      //* Step4
+      const createRole = await role.create(
+        {
+          name: "Admin",
+          company_id: createCompany.id,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
 
-  //     // Generate JWT token
-  //     const token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
+      //* Step4 Part II
+      const permissionInstance = new rolePermissionController();
+      const createPermissionModules = await module.findAll({
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      })
+      for (const module of createPermissionModules) {
+        await permissionInstance.addRolePermissions(module, createRole.id, createCompany.id, dbTransaction);
+      }
 
-  //     // Save token to the database
-  //     const expireTime = this.calculateTime();
-  //     await createAccessToken(user.id, user.isAdmin, token, expireTime, dbTransaction);
+      //* Step5
+      const createShift = await shift.create(
+        {
+          company_id: createCompany.id,
+          name: "Admin Morning Shift",
+          start_time: "09:00",
+          end_time: "18:00",
+          total_hours: 9,
+          days: JSON.stringify(["mon", "tue", "wed", "thu", "fri"]),
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
 
-  //     await dbTransaction.commit();
-  //     return helper.sendResponse(res, variables.Success, 1, { token: token }, "Register Successfully");
-  //   } catch (error) {
-  //     if (dbTransaction) await dbTransaction.rollback();
-  //     console.log(error.message);
-  //     return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
-  //   }
-  // };
+      //* Step6
+      const createTeam = await team.create(
+        {
+          name: "Head Management",
+          company_id: createCompany.id,
+          departmentId: createDepartment.id,
+          shiftId: createShift.id,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
+
+      //* Step7
+      const createUser = await User.create(
+        {
+          company_id: createCompany.id,
+          fullname: createCompany.name,
+          email: requestData.email,
+          password: await bcrypt.hash(requestData.password, 10),
+          mobile: requestData.mobile,
+          departmentId: createDepartment.id,
+          designationId: createDesignation.id,
+          roleId: createRole.id,
+          teamId: createTeam.id,
+          isAdmin: 1,
+          screenshot_time: 60,
+          app_history_time: 60,
+          browser_history_time: 60,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
+
+      if (!createCompany || !createDepartment || !createDesignation || !createRole || !createShift || !createTeam || !createUser) {
+        await dbTransaction.rollback();
+        return helper.failed(res, variables.NoContent, "Unable to create enteries in db");
+      }
+
+      // Generate JWT token
+      const token = this.generateToken(createUser.id.toString(), createUser.isAdmin, createUser.company_id, "1d");
+      if(!token) 
+        return helper.failed(res, variables.serviceUnavailabe, "Unable to create access token");
+
+      // Save token to the database
+      const expireTime = this.calculateTime();
+      await createAccessToken(createUser.id, createUser.isAdmin, createUser.company_id, token, expireTime, dbTransaction);
+
+      await dbTransaction.commit();
+      return helper.sendResponse(res, variables.Success, 1, { token: token }, "Register Successfully");
+    } catch (error) {
+      console.log(error.message);
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
+    }
+  };
 
   //* Previous Login Function Harneet ------------------------------------------------------------
   // login = async (req, res) => {
@@ -128,18 +228,18 @@ class authController extends jwtService {
     try {
       let today = new Date().toISOString().split("T")[0];
       let requestData = req.body;
-      
+
       let validationResult = await authValidation.loginValid(requestData, res); // validation done here
-      
+
       //* Request parameters
       let email = requestData.email;
       let password = requestData.password;
-      
+
       let user = await User.findOne({ where: { email: email } }); // checking whether user exists
-      if(!user){
+      if (!user) {
         return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
       }
-      
+
       let comparePwd = await bcrypt.compare(password, user.password); // comparing passwords
       if (!comparePwd) {
         return helper.sendResponse(res, variables.Unauthorized, 0, null, "Incorrect Password!!!");
@@ -170,8 +270,8 @@ class authController extends jwtService {
 
         let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
         let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
-        
-        if (currentHours > endHours && (currentHours === endHours && currentMinutes > endMinutes)) {
+
+        if (currentHours > endHours && currentHours === endHours && currentMinutes > endMinutes) {
           return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
         }
 
@@ -237,7 +337,6 @@ class authController extends jwtService {
       return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
     }
   };
-
 
   //* Logout Function -----------------------------------------------------------------
   logout = async (req, res) => {

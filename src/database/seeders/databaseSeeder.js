@@ -5,9 +5,22 @@ import designation from "../models/designationModel.js";
 import shift from "../models/shiftModel.js";
 import team from "../models/teamModel.js";
 import User from "../models/userModel.js";
+import company from "../models/companyModel.js";
 
 export default async function seedDatabase() {
     try {
+
+        //__________________________________----------------------------COMPANIES START------------------------------------------------------
+
+        await company.destroy({
+            where: {}
+        });
+
+        await sequelize.query(`ALTER TABLE ${company.getTableName()} AUTO_INCREMENT=1`);
+
+        //__________________________________----------------------------COMPANIES END------------------------------------------------------
+
+
         //__________________________________----------------------------ROLE START------------------------------------------------------
 
         await role.destroy({

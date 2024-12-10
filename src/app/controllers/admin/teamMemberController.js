@@ -47,8 +47,10 @@ class teamMemberController {
       }
 
       where.isAdmin = 0;
+      where.company_id = req.user.company_id;
+
       const alldata = await User.findAndCountAll({
-        where,
+        where: where,
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
@@ -95,7 +97,7 @@ class teamMemberController {
 
       // Check if the user already exists
       const existingUser = await User.findOne({
-        where: { email: requestData.email },
+        where: { email: requestData.email, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 
@@ -108,9 +110,9 @@ class teamMemberController {
       requestData.password = password;
       console.log(requestData);
       // Create and save the new user
-      requestData.screenshot_time =  300;
-      requestData.app_history_time = 300;
-      requestData.browser_history_time = 300;
+      requestData.screenshot_time =  60;
+      requestData.app_history_time = 60;
+      requestData.browser_history_time = 60;
 
       const teamMember = await User.create(requestData, {
         transaction: dbTransaction,
@@ -143,7 +145,7 @@ class teamMemberController {
 
       const { id, ...updateFields } = req.body;
       const existingTeamMember = await User.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 
@@ -157,7 +159,7 @@ class teamMemberController {
 
       // Perform the update operation
       const [updatedRows] = await User.update(updateFields, {
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
         individualHooks: true,
       });

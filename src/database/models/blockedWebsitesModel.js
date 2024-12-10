@@ -10,12 +10,10 @@ const blockedWebsites = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
-    company_id: {
-      type: DataTypes.INTEGER,
+    companyId: {
+      type: DataTypes.BIGINT,
       allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
+      defaultValue: 101,
     },
     departmentId: {
       type: DataTypes.INTEGER,
@@ -24,27 +22,35 @@ const blockedWebsites = sequelize.define(
         notEmpty: true,
       },
     },
-    sites: {
+    website_name: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        isEmail: true,
-        notEmpty: true, 
+        notEmpty: true,
       },
+      defaultValue: "Facebook",
+    },
+    website: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
+    logo: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     status: {
       type: DataTypes.TINYINT,
       allowNull: false,
       defaultValue: 1,
-      comment: '1 => Blocked Websites,0=>Unblock Websites'
+      comment: "1 => Blocked Websites,0=>Unblock Websites",
     },
   },
   {
     timestamps: true,
-    // Prevent Sequelize from auto-creating foreign keys
-    underscored: false,
   }
 );
-
 
 export default blockedWebsites;

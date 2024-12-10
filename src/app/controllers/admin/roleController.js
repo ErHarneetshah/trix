@@ -32,8 +32,11 @@ class roleController {
           [Op.or]: search,
         };
       }
+
+      where.company_id = req.user.company_id;
+
       const allData = await role.findAndCountAll({
-        where,
+        where: where,
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
@@ -50,6 +53,7 @@ class roleController {
   getRoleDropdown = async (req, res) => {
     try {
       const allData = await role.findAll({
+        where: {company_id:req.user.company_id},
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
@@ -66,7 +70,7 @@ class roleController {
       if (!id) return helper.failed(res, variables.NotFound, "Id is required");
 
       const roleData = await role.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!roleData) return helper.failed(res, variables.NotFound, "Data Not Found");
@@ -85,19 +89,19 @@ class roleController {
       if (!name) return helper.failed(res, variables.NotFound, "Name is required!");
 
       const existingRole = await role.findOne({
-        where: { name: name },
+        where: { name: name, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (existingRole) return helper.failed(res, variables.ValidationError, "Role Already Exists!");
 
       // Create and save the new user
-      const addNewRole = await role.create({ name }, { transaction: dbTransaction });
+      const addNewRole = await role.create({ name:name, company_id:req.user.company_id }, { transaction: dbTransaction });
 
       const permissionModules = await module.findAll({
         attributes: { exclude: ["createdAt", "updatedAt"] },
       })
       for (const module of permissionModules) {
-        await permissionInstance.addRolePermissions(module, addNewRole.id, dbTransaction);
+        await permissionInstance.addRolePermissions(module, addNewRole.id, req.user.company_id, dbTransaction);
       }
 
       await dbTransaction.commit();
@@ -117,7 +121,7 @@ class roleController {
 
       //* Checking whether the role id exists in system or not
       const existingRole = await role.findOne({
-        where: { id: id },
+        where: { id: id, company_id:req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingRole) return helper.failed(res, variables.ValidationError, "Role does not exists!");
@@ -126,6 +130,7 @@ class roleController {
       const existingRoleWithName = await role.findOne({
         where: {
           name: name,
+          company_id:req.user.company_id,
           id: { [Op.ne]: id }, // Exclude the current record by id
         },
         transaction: dbTransaction,
@@ -136,7 +141,7 @@ class roleController {
 
       //* if updating name for the role id is already the same value that exists in system with same id
       const alreadySameRole = await role.findOne({
-        where: { id: id, name: name },
+        where: { id: id, name: name, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (alreadySameRole) return helper.success(res, variables.Success, "Role Re-Updated Successfully!");
@@ -152,7 +157,7 @@ class roleController {
           name: name,
         },
         {
-          where: { id: id },
+          where: { id: id, company_id: req.user.company_id },
           transaction: dbTransaction,
           // individualHooks: true,
         }
@@ -178,7 +183,7 @@ class roleController {
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
       const existingRole = await role.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingRole) return helper.failed(res, variables.ValidationError, "Role does not exists!");
@@ -188,12 +193,12 @@ class roleController {
       const isUsedInRolePermission = await rolePermission.findOne({ where: { roleId: id } });
 
       if (isUsedInTeams || isUsedInRolePermission || isUsedInProductiveAndNonApps || isUsedInUsers) {
-        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
+        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Role as it is referred in other tables");
       }
       
       // Create and save the new user
       const deleteRole = await role.destroy({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 

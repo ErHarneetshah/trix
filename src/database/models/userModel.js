@@ -45,18 +45,10 @@ const User = sequelize.define(
     password: {
       type: DataTypes.STRING,
       allowNull: false,
-      // validate: {
-      //   notEmpty: true, // Prevents empty string
-      // },
     },
     mobile: {
       type: DataTypes.STRING,
       allowNull: true,
-      // validate: {
-      //   notEmpty: true, // Prevents empty string
-      //   isNumeric: true,
-      //   len: [1, 10],
-      // },
     },
     country: {
       type: DataTypes.STRING,
@@ -109,7 +101,6 @@ const User = sequelize.define(
   },
   {
     timestamps: true,
-    // Prevent Sequelize from auto-creating foreign keys
     underscored: false,
     hooks: {
       async beforeCreate(user, options) {
