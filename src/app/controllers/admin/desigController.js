@@ -54,39 +54,12 @@ class desigController {
   //* API to get all the Designation data who's status is 1 (active)
   getDesigDropdown = async (req, res) => {
     try {
-      // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      let { searchParam, limit, page } = req.query;
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
-
-      let where = {};
-      let search = [];
-
-      let searchable = ["name"];
-
-      if (searchParam) {
-        searchable.forEach((key) => {
-          search.push({
-            [key]: {
-              [Op.substring]: searchParam,
-            },
-          });
-        });
-
-        where = {
-          [Op.or]: search,
-        };
-      }
-
-      where.company_id = req.user.company_id;
+     let where  = {};
       where.status = 1;
 
       // Getting all the designations with status condtion to be 1 (active) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const allData = await designation.findAll({
-        where: where,
-        offset: offset,
-        limit: limit,
-        order: [["id", "DESC"]],
+        where,
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");

@@ -32,7 +32,7 @@ class deptController {
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
-        attributes: ["id", "name", "parentDeptId", "status"],
+        attributes: ["id", "name", "status"],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
@@ -80,8 +80,12 @@ class deptController {
   addDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, parentDeptId } = req.body;
-      if (!name || !parentDeptId) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
+      // const { name, parentDeptId } = req.body;
+      const { name } = req.body;
+
+      // if (!name || !parentDeptId) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
+      if (!name) return helper.failed(res, variables.NotFound, "Name field is Required!");
+
 
       // checking whether department name requested by used already exists or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
@@ -96,7 +100,7 @@ class deptController {
         transaction: dbTransaction,
       });
       if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Department does not exists in our system");
-
+      
       let addNewDept;
       
       //* checking whether isRootId is passed or not and if there is already a root dept or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -127,6 +131,7 @@ class deptController {
   updateDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
+      // const { id, name, parentDeptId } = req.body;
       const { id, name, parentDeptId } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
@@ -208,6 +213,7 @@ class deptController {
   deleteDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
+      return helper.failed(res, variables.Blocked, "This Route is in hold for now");
       const { id } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
