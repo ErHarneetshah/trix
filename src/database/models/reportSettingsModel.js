@@ -34,6 +34,6 @@ const reportSettings = sequelize.define('report_settings', {
     underscored: false,
 });
 
-await reportSettings.sync({alter:1});
+// await reportSettings.sync({alter:1});
 
 export default reportSettings;

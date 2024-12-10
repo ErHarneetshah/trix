@@ -31,8 +31,6 @@ export const ProductiveApp = sequelize.define("productive_app",
   },
   {
     timestamps: true,
-    // Prevent Sequelize from auto-creating foreign keys
-    underscored: false,
   }
 );
 

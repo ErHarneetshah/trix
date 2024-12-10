@@ -38,6 +38,6 @@ const rolePermission = sequelize.define(
   }
 );
 
-await rolePermission.sync({alter:1});
+// await rolePermission.sync({alter:1});
 
 export default rolePermission;

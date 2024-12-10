@@ -7,30 +7,31 @@ export const System = sequelize.define("system", {
     allowNull: false,
   },
 
-  fan_speed: {
+  company_id:{
     type: DataTypes.INTEGER,
     allowNull: false,
   },
 
   rom: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     allowNull: false,
   },
 
   ram: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     allowNull: false,
   },
 
   memory:{
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     allowNull: false
   }
 },{
-  // Prevent Sequelize from auto-creating foreign keys
   underscored: false,
 });
 
-await System.sync({alter:1});
-
 await System.sync({ alter: 1 });
+
+System.afterCreate(()=>{
+  
+})

@@ -47,12 +47,14 @@ const accessToken = sequelize.define(
   }
 );
 
-export const createAccessToken = async (userId, isUserAdmin, token, expireTime, dbTransaction) => {
+export const createAccessToken = async (userId, isUserAdmin, company_id, token, expireTime, dbTransaction) => {
   try {
+    
     const accessTokenData = await accessToken.create(
       {
         userId: userId,
         isUserAdmin: isUserAdmin,
+        company_id: company_id,
         token,
         expiry_time: expireTime,
       },
@@ -65,6 +67,6 @@ export const createAccessToken = async (userId, isUserAdmin, token, expireTime, 
   }
 };
 
-await accessToken.sync({alter:1})
+// await accessToken.sync({alter:1})
 
 export default accessToken;

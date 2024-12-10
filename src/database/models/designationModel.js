@@ -33,6 +33,6 @@ const designation = sequelize.define('designations', {
   underscored: false,
 });
 
-await designation.sync({alter:1});
+// await designation.sync({alter:1});
 
 export default designation;

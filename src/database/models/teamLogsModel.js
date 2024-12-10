@@ -73,6 +73,6 @@ TimeLog.afterUpdate(async (timeLog) => {
  }
 });
 
-await TimeLog.sync({alter:1});
+// await TimeLog.sync({alter:1});
 
 export default TimeLog;
