@@ -2,7 +2,7 @@ import { verifyToken } from "../../utils/validations/socketValidation.js";
 import { Notification } from "../../database/models/Notification.js";
 import { UserHistory } from "../../database/models/UserHistory.js";
 import User from "../../database/models/userModel.js";
- import  AppHistoryEntry  from "../../database/models/AppHistoryEntry.js";
+import AppHistoryEntry from "../../database/models/AppHistoryEntry.js";
 import { ImageUpload } from "../../database/models/ImageUpload.js";
 import { Op, Sequelize } from "sequelize";
 import Model from "../../database/queries/dbConnection.js";
@@ -10,7 +10,7 @@ import { QueryTypes } from "@sequelize/core";
 import { BlockedWebsites } from "../../database/models/BlockedWebsite.js";
 import TimeLog from "../../database/models/TimeLog.js";
 import { ProductiveApp } from "../../database/models/ProductiveApp.js";
-
+import { System } from "../../database/models/System.js";
 
 const setupSocketIO = (io) => {
   // Middleware for Socket.IO authentication:
@@ -88,7 +88,7 @@ const handleAdminSocket = async (socket, io) => {
   });
 
   socket.on("getUserReport", async (data) => {
-    let result1 = await getUserReport(data, io , socket);
+    let result1 = await getUserReport(data, io, socket);
     if (result1.error) {
       socket.emit("getUserReport", { message: result1.error });
     } else {
@@ -99,7 +99,6 @@ const handleAdminSocket = async (socket, io) => {
   socket.on("disconnect", () => {
     console.log(`Admin ID ${socket.user.userId} disconnected `);
   });
-  
 };
 
 // // Admin specific function
@@ -163,7 +162,7 @@ const isRead = async (data, io) => {
   }
 };
 
-const getUserReport = async (data, io , socket) => {
+const getUserReport = async (data, io, socket) => {
   try {
     let user = await User.findOne({ where: { id: data.userId } });
     socket.join("privateRoom_" + data.userId);
@@ -189,23 +188,19 @@ const getUserReport = async (data, io , socket) => {
     let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${data.userId}`;
     let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
-    let productive_apps = await ProductiveApp.findAndCountAll({where:{company_id:user?.company_id}});
-    let app_array = []
-    for (let i = 0; i < productive_apps.rows.length; i++) {
-      if(!app_array.includes(array[i])){
-        app_array.push(array[i])
-      }
-    }
+    // let productive_apps = await ProductiveApp.findAndCountAll({where:{company_id:user?.company_id}});
+    // let app_array = []
+    // for (let i = 0; i < productive_apps.rows.length; i++) {
+    //   if(!app_array.includes(array[i])){
+    //     app_array.push(array[i])
+    //   }
+    // }
     // let app_history = await AppHistoryEntry.findAndCountAll({where:{userId:data.userId,date:today}});
     // let app_history_array = []
-
-
 
     // let app_percent = async(productive_apps)=>{
 
     // }
-
-    
 
     if (!user) {
       return socket.emit("error", {
@@ -250,7 +245,7 @@ export const adminController = {
         where: { company_id: user.company_id, isAdmin: 0 },
       });
       let totalUsers = users.length;
-      let activeUsers = users.filter((user) => user.current_status == 1).length;
+      let activeUsers = users.filter((user) => user.currentStatus == 1).length;
       let inactiveUsers = users.filter(
         (user) => user.current_status == 0
       ).length;
@@ -414,15 +409,14 @@ const handleUserSocket = async (socket, io) => {
         ? new Date()
         : new Date(visitTime);
 
-      let companyId = user?.company_id;
+      let company_id = user?.company_id;
 
       await UserHistory.create({
         userId,
         date: today,
-        // website_name,
         url,
         title,
-        companyId,
+        company_id,
         visitTime: parsedVisitTime,
       });
       socket.emit("historySuccess", {
@@ -437,8 +431,6 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("uploadImage", async (data) => {
     try {
-      console.log("uploadImage");
-
       let today = new Date().toISOString().split("T")[0];
       let userId = socket.user.userId;
 
@@ -447,7 +439,7 @@ const handleUserSocket = async (socket, io) => {
         socket.emit("imageError", { message: "Unauthorized access" });
         return;
       }
-      let companyId = user?.company_id;
+      let company_id = user?.company_id;
 
       if (!data.images || data.images.length === 0) {
         socket.emit("imageError", { message: "Invalid data" });
@@ -459,8 +451,7 @@ const handleUserSocket = async (socket, io) => {
           ImageUpload.create({
             userId,
             date: today,
-            companyId,
-            // content: `${image.data}`,
+            company_id,
             content: `data:image/png;base64,${image.data}`,
           })
         )
@@ -476,7 +467,6 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("uploadAppHistory", async (data) => {
     try {
-      console.log("uploadAppHistory");
       let { histories } = data;
       let userId = socket.user.userId;
 
@@ -492,7 +482,7 @@ const handleUserSocket = async (socket, io) => {
       }
 
       let today = new Date().toISOString().split("T")[0];
-      let companyId = user?.company_id;
+      let company_id = user?.company_id;
 
       for (let history of histories) {
         let { appName, startTime, endTime } = history;
@@ -504,7 +494,7 @@ const handleUserSocket = async (socket, io) => {
         let existingEntry = await AppHistoryEntry.findOne({
           where: {
             userId: user.id,
-            companyId,
+            company_id,
             date: today,
             appName,
             startTime: new Date(startTime),
@@ -518,7 +508,7 @@ const handleUserSocket = async (socket, io) => {
           await AppHistoryEntry.create({
             userId: user.id,
             appName,
-            companyId,
+            company_id,
             date: today,
             startTime: new Date(startTime),
             endTime: new Date(endTime),
@@ -535,6 +525,41 @@ const handleUserSocket = async (socket, io) => {
       socket.emit("appHistoryError", {
         message: "Failed to upload app history",
       });
+    }
+  });
+
+  socket.on("systemConfig", async (data) => {
+    try {
+      let { ram, rom, memory } = data;
+      let userId = socket.user.userId;
+      let user = await User.findOne({ where: { id: userId } });
+      if (!user) {
+        socket.emit("systemConfigError", { message: "Unauthorized access" });
+        return;
+      }
+      if (!ram || !rom || !memory) {
+        socket.emit("systemConfigError", { message: "Invalid data" });
+        return;
+      }
+      let sys_data = await System.findOne({
+        where: { user_id: userId, company_id: user?.company_id },
+      });
+      if (!sys_data) {
+        sys_data = await System.create({
+          user_id: userId,
+          company_id: user?.company_id,
+          ram,
+          rom,
+          memory,
+        });
+      } else {
+        sys_data.update(data);
+      }
+      socket.emit("systemConfigSuccess", {
+        message: "system configration add successfully",
+      });
+    } catch (error) {
+      socket.emit("systemConfigError", { message: error.message });
     }
   });
 
@@ -648,11 +673,6 @@ const notifyAdmin = async (id, type, time) => {
 };
 
 export default setupSocketIO;
-
-
-
-
-
 
 ///////////////////////////////////
 

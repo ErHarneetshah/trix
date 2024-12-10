@@ -35,7 +35,7 @@ export const UserHistory = sequelize.define("user_history", {
   underscored: false,
 });
 
-await UserHistory.sync({ alter: 1 });
+// await UserHistory.sync({ alter: 1 });
 
 UserHistory.beforeCreate(async (data) => {
   try {

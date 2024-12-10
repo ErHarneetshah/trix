@@ -18,6 +18,6 @@ const module = sequelize.define('modules', {
   underscored: false,
 });
 
-await module.sync({alter:1});
+// await module.sync({alter:1});
 
 export default module;

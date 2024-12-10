@@ -35,5 +35,5 @@ const AppHistoryEntry = sequelize.define(
   }
 );
 
-await AppHistoryEntry.sync({ alter: 1 });
+// await AppHistoryEntry.sync({ alter: 1 });
 export default AppHistoryEntry;

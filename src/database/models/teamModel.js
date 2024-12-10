@@ -49,6 +49,6 @@ const team = sequelize.define('teams', {
   underscored: false,
 });
 
-await team.sync({alter:1});
+// await team.sync({alter:1});
 
 export default team;

@@ -33,9 +33,11 @@ class desigController {
         };
       }
 
+      where.company_id = req.user.company_id;
+
       // Getting all the designation based on seacrh parameters with total count >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const allData = await designation.findAndCountAll({
-        where,
+        where: where,
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
@@ -76,11 +78,12 @@ class desigController {
         };
       }
 
+      where.company_id = req.user.company_id;
       where.status = 1;
 
       // Getting all the designations with status condtion to be 1 (active) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const allData = await designation.findAll({
-        where,
+        where: where,
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
@@ -102,7 +105,7 @@ class desigController {
 
       // Retrieve specific designation data from db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const desigData = await designation.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!desigData) return helper.failed(res, variables.NotFound, "Data Not Found");
@@ -122,14 +125,14 @@ class desigController {
 
       // Check if the designation id exists in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesig = await designation.findOne({
-        where: { name: name },
+        where: { name: name, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 
       if (existingDesig) return helper.failed(res, variables.ValidationError, "Designation Already Exists");
 
       // Add new designation in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      const addNewDesig = await designation.create({ name }, { transaction: dbTransaction });
+      const addNewDesig = await designation.create({ name: name, compnay_id: req.user.company_id }, { transaction: dbTransaction });
       
       // Commits db enteries if passes everything >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       await dbTransaction.commit();
@@ -149,7 +152,7 @@ class desigController {
 
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesig = await designation.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingDesig) return helper.failed(res, variables.ValidationError, "Designation does not exists!");
@@ -158,6 +161,7 @@ class desigController {
       const existingDesigWithName = await designation.findOne({
         where: {
           name: name,
+          company_id: req.user.company_id,
           id: { [Op.ne]: id }, // Exclude the current record by id
         },
         transaction: dbTransaction,
@@ -168,7 +172,7 @@ class desigController {
 
       // check if the id has the same value in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const alreadySameDesign = await designation.findOne({
-        where: { id: id, name: name },
+        where: { id: id, name: name, company_id: req.user.company_id},
         transaction: dbTransaction,
       });
       if (alreadySameDesign) return helper.success(res, variables.Success, "Designation Re-Updated Successfully!");
@@ -177,7 +181,7 @@ class desigController {
       const [updatedRows] = await designation.update({
         name:name
       }, {
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
         individualHooks: true,
       });
@@ -207,7 +211,7 @@ class desigController {
 
       // Check if the designation exists in db or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesig = await designation.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingDesig) return helper.failed(res, variables.NotFound, "Designation does not exists!");
@@ -221,7 +225,7 @@ class desigController {
 
       // Delete the desgination from db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const deleteDesig = await designation.destroy({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 

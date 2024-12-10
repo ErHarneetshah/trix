@@ -47,7 +47,6 @@ const TimeLog = sequelize.define('timelogs',{
   }
 );
 
-await TimeLog.sync({ alter: 1 });
 
 TimeLog.afterUpdate(async (timeLog) => {
  if(timeLog){
@@ -73,6 +72,6 @@ TimeLog.afterUpdate(async (timeLog) => {
  }
 });
 
-await TimeLog.sync({alter:1});
+// await TimeLog.sync({alter:1});
 
 export default TimeLog;

@@ -15,8 +15,10 @@ class reportingManagerController {
       let offset = (page - 1) * limit || 0;
       let where = await helper.searchCondition(searchParam, searchable);
 
+      where.company_id = req.user.company_id;
+
       const allData = await department.findAll({
-        where,
+        where: where,
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],

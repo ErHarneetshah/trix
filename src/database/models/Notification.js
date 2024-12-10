@@ -39,6 +39,6 @@ const Notification = sequelize.define("notification_log",
   }
 );
 
-await Notification.sync({alter:1});
+// await Notification.sync({alter:1});
 
 export { sequelize, Notification };

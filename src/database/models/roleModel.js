@@ -33,6 +33,6 @@ const role = sequelize.define('roles', {
   underscored: false,
 });
 
-await role.sync({alter:1});
+// await role.sync({alter:1});
 
 export default role;

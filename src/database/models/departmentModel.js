@@ -45,6 +45,6 @@ const department = sequelize.define(
   }
 );
 
-await department.sync({alter:1});
+// await department.sync({alter:1});
 
 export default department;

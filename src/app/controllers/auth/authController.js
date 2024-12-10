@@ -128,16 +128,21 @@ class authController extends jwtService {
     try {
       let today = new Date().toISOString().split("T")[0];
       let requestData = req.body;
+      
       let validationResult = await authValidation.loginValid(requestData, res); // validation done here
       
       //* Request parameters
       let email = requestData.email;
       let password = requestData.password;
-
+      
       let user = await User.findOne({ where: { email: email } }); // checking whether user exists
+      if(!user){
+        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
+      }
+      
       let comparePwd = await bcrypt.compare(password, user.password); // comparing passwords
       if (!comparePwd) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
+        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Incorrect Password!!!");
       }
 
       // checking whether user is active or not
@@ -148,9 +153,9 @@ class authController extends jwtService {
 
       // Generate Token if user is Admin
       if (user.isAdmin) {
-        token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
+        token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
-        await createAccessToken(user.id, user.isAdmin, token, expireTime, dbTransaction);
+        await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
 
         // setting Admin attendence (currentStatus) to present(1)
         user.currentStatus = 1;
@@ -165,14 +170,15 @@ class authController extends jwtService {
 
         let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
         let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
-        if (currentHours > endHours || (currentHours === endHours && currentMinutes > endMinutes)) {
+        
+        if (currentHours > endHours && (currentHours === endHours && currentMinutes > endMinutes)) {
           return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
         }
 
         // Generating Token for user
-        token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
+        token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
-        await createAccessToken(user.id, user.isAdmin, token, expireTime, dbTransaction);
+        await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
 
         //* Time Log Management is done from here -----------------------------------------------
         let timeLog = await TimeLog.findOne({

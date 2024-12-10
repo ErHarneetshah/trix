@@ -8,10 +8,10 @@ const jwtConfig = new appConfig().getJwtConfig();
 
 class jwtService {
   constructor(){}
-  generateToken = (userId, isAdmin, expTime) => {
+  generateToken = (userId, isAdmin, company_id, expTime) => {
     // console.log("Jwt token generator --------------------------");
     // console.log(jwtConfig);
-    return jwt.sign({ userId, isAdmin }, jwtConfig, {
+    return jwt.sign({ userId, isAdmin, company_id }, jwtConfig, {
       expiresIn: expTime,
     });
   };

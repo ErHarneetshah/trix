@@ -89,8 +89,6 @@ export default {
     let where = {};
     let search = [];
 
-    // let searchable = ["name", "status"];
-
     if (searchParam) {
       searchable.forEach((key) => {
         search.push({
@@ -107,8 +105,8 @@ export default {
       if (otherParam) {
         where.otherField = otherParam; // Adds another filter
       }
-      return where;
     }
+    return where;
   },
 
   deleteFile: (filePath) => {
