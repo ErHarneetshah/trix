@@ -92,6 +92,7 @@ const calTotalHr = async (start_time, end_time) => {
     totalMinutes = 24 * 60 - startTotalMinutes + endTotalMinutes;
   }
 
+  console.log(totalMinutes/60);
   return totalMinutes / 60;
 };
 

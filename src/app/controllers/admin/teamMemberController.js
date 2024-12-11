@@ -9,6 +9,7 @@ import designation from "../../../database/models/designationModel.js";
 import role from "../../../database/models/roleModel.js";
 import team from "../../../database/models/teamModel.js";
 import { Op } from "sequelize";
+import company from "../../../database/models/companyModel.js";
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
@@ -20,16 +21,7 @@ class teamMemberController {
       let where = {};
       let search = [];
 
-      let searchable = [
-        "fullname",
-        "email",
-        "mobile",
-        "country",
-        "$department.name$",
-        "$designation.name$",
-        "$role.name$",
-        "$team.name$",
-      ];
+      let searchable = ["fullname", "email", "mobile", "country", "$department.name$", "$designation.name$", "$role.name$", "$team.name$"];
 
       if (searchParam) {
         //searchable filter
@@ -77,7 +69,6 @@ class teamMemberController {
             attributes: ["name"],
           },
         ],
-        
       });
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
@@ -110,9 +101,10 @@ class teamMemberController {
       requestData.password = password;
       console.log(requestData);
       // Create and save the new user
-      requestData.screenshot_time =  60;
+      requestData.screenshot_time = 60;
       requestData.app_history_time = 60;
       requestData.browser_history_time = 60;
+      requestData.company_id = req.user.company_id;
 
       const teamMember = await User.create(requestData, {
         transaction: dbTransaction,
@@ -142,16 +134,15 @@ class teamMemberController {
   updateTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-
       const { id, ...updateFields } = req.body;
       const existingTeamMember = await User.findOne({
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 
-      if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists");
+      if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists in your company data");
       if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
-     
+
       // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // if (updateFields.status !== 0 && updateFields.status !== 1) {
       //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
@@ -177,40 +168,30 @@ class teamMemberController {
     }
   };
 
-  updatesetting = async (req, res) => {
+  updateSettings = async (req, res) => {
     try {
-      let id = req.query.id; // Retrieve the user ID from the query parameters
+      let id = req.body; // Retrieve the user ID from the query parameters
       let { screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
-  
+
       // Update the user settings
-      const user = await User.findOne({ where: { id } });
+      const user = await User.findOne({ where: { id: id, company_id: req.user.company_id } });
       if (user) {
-        user.screen_capture_time = screen_capture_time; 
+        user.screen_capture_time = screen_capture_time;
         user.broswer_capture_time = broswer_capture_time;
-        user.app_capture_time = app_capture_time
-        await user.save(); 
+        user.app_capture_time = app_capture_time;
+        await user.save();
+      }else{
+        return helper.failed(res, variables.NotFound, error.message, "User does not exists in your company id");
+
       }
-  
+
       // Send a success response
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        null,
-        "Setting Updated Successfully"
-      );
+      return helper.success(res, variables.Success,"Setting Updated Successfully");
     } catch (error) {
       console.error("Error updating settings:", error);
-      return helper.sendResponse(
-        res,
-        variables.Failure,
-        0,
-        error.message,
-        "Failed to update settings"
-      );
+      return helper.failed(res, variables.BadRequest, error.message, "Failed to update settings");
     }
   };
-  
 }
 
 export default teamMemberController;

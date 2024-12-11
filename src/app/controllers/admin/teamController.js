@@ -51,7 +51,7 @@ class teamController {
           {
             model: shift,
             as: "shift",
-            attributes: ["name"],
+            attributes: ["id","name"],
           },
         ],
       });
@@ -69,6 +69,7 @@ class teamController {
       const alldata = await team.findAll({
         where: { status: true, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt", "status", "departmentId", "shiftId"] },
+        
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
@@ -81,13 +82,25 @@ class teamController {
   getSpecificTeam = async (req, res) => {
     try {
       const requestData = req.body;
-      if (!requestData.departmentId) return helper.failed(res, variables.NotFound, "Department Id is required");
+      if (!requestData.id) return helper.failed(res, variables.NotFound, "Id is required");
 
       requestData.company_id = req.user.company_id;
 
       const specificData = await team.findOne({
         attributes: { exclude: ["createdAt", "updatedAt"] },
         where: requestData,
+        include: [
+          {
+            model: department,
+            as: "department",
+            attributes: ["name"],
+          },
+          {
+            model: shift,
+            as: "shift",
+            attributes: ["id","name"],
+          },
+        ],
       });
       if (!specificData) return helper.failed(res, variables.NotFound, `Data not Found of matching attributes `);
 
@@ -132,6 +145,19 @@ class teamController {
         transaction: dbTransaction,
       });
       if (existingTeamWithSameName) return helper.failed(res, variables.ValidationError, "Team with same Name Already Exists!");
+
+
+      const existingDept = await department.findOne({
+        where: { id: requestData.departmentId, company_id: req.user.company_id },
+        transaction: dbTransaction,
+      });
+      if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists in your company data");
+
+      const existingShift = await shift.findOne({
+        where: { id: requestData.shiftId, company_id: req.user.company_id },
+        transaction: dbTransaction,
+      });
+      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in your company data");
 
 
       requestData.company_id = req.user.company_id;
@@ -184,12 +210,19 @@ class teamController {
           transaction: dbTransaction,
         });
         if (existingTeamWithSameParam) return helper.success(res, variables.Success, "Team With Same Specs already exists!");
+        
+        const existingDept = await department.findOne({
+          where: { id: updateFields.departmentId, company_id: req.user.company_id },
+          transaction: dbTransaction,
+        });
+        if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists in your company data");
+  
+        const existingShift = await shift.findOne({
+          where: { id: updateFields.shiftId, company_id: req.user.company_id },
+          transaction: dbTransaction,
+        });
+        if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in your company data");
       }
-
-      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      // if (updateFields.status !== 0 && updateFields.status !== 1) {
-      //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
-      // }
 
       const [updatedRows] = await team.update(updateFields, {
         where: { id: id, company_id: req.user.company_id },
@@ -220,7 +253,7 @@ class teamController {
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingTeam) return helper.success(res, variables.ValidationError, "Team does not exists!");
+      if (!existingTeam) return helper.failed(res, variables.ValidationError, "Team does not exists in your company data!");
 
       const isUsedInUsers = await User.findOne({ where: { teamId: id } });
       if (isUsedInUsers) {

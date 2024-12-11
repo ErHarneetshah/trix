@@ -93,7 +93,9 @@ class authController extends jwtService {
           start_time: "09:00",
           end_time: "18:00",
           total_hours: 9,
-          days: JSON.stringify(["mon", "tue", "wed", "thu", "fri"]),
+          // days: JSON.stringify(["mon", "tue", "wed", "thu", "fri"]),
+          days: ["mon", "tue", "wed", "thu", "fri"],
+
         },
         {
           transaction: dbTransaction,

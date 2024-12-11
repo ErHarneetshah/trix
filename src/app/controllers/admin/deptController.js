@@ -6,7 +6,7 @@ import { Op } from "sequelize";
 import User from "../../../database/models/userModel.js";
 import team from "../../../database/models/teamModel.js";
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
-import blockedWebsites from "../../../database/models/blockedWebsitesModel.js";
+import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 
 class deptController {
   //* Using this just for testing purposes of role permission middleware
@@ -32,7 +32,7 @@ class deptController {
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
-        attributes: ["id", "name", "status"],
+        attributes: ["id", "name", "parentDeptId", "status"],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
@@ -68,7 +68,7 @@ class deptController {
         where: { id: id, company_id:req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!deptData) return helper.failed(res, variables.NotFound, "Data Not Found");
+      if (!deptData) return helper.failed(res, variables.NotFound, "Department Not Found in your company data");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", deptData);
     } catch (error) {
@@ -80,11 +80,11 @@ class deptController {
   addDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      // const { name, parentDeptId } = req.body;
-      const { name } = req.body;
+      const { name, parentDeptId } = req.body;
+      // const { name } = req.body;
 
-      // if (!name || !parentDeptId) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
-      if (!name) return helper.failed(res, variables.NotFound, "Name field is Required!");
+      if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
+      // if (!name) return helper.failed(res, variables.NotFound, "Name field is Required!");
 
 
       // checking whether department name requested by used already exists or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -99,7 +99,7 @@ class deptController {
         where: { id: parentDeptId, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Department does not exists in our system");
+      if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Parent Department does not exists in our system");
       
       let addNewDept;
       
@@ -182,11 +182,11 @@ class deptController {
       const updateFields = {};
 
       // Only include the fields if they are provided (not undefined or null)
-      if (name !== undefined && !name) {
+      if (name !== undefined || !name) {
         updateFields.name = name;
       }
 
-      if (parentDeptId !== undefined && !parentDeptId) {
+      if (parentDeptId !== undefined || !parentDeptId) {
         updateFields.parentDeptId = parentDeptId;
       }
 
@@ -213,7 +213,6 @@ class deptController {
   deleteDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      return helper.failed(res, variables.Blocked, "This Route is in hold for now");
       const { id } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
@@ -226,11 +225,10 @@ class deptController {
 
       // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const isUsedInUsers = await User.findOne({ where: { departmentId: id } });
-      const isUsedInBlockedWebsites = await blockedWebsites.findOne({ where: { departmentId: id } });
-      const isUsedInProductiveAndNonApps = await ProductiveApp.findOne({ where: { departmentId: id } });
+      const isUsedInProductiveAndNonApps = await ProductiveApp.findOne({ where: { department_id: id } });
       const isUsedInTeams = await team.findOne({ where: { departmentId: id } });
 
-      if (isUsedInTeams || isUsedInBlockedWebsites || isUsedInProductiveAndNonApps || isUsedInUsers) {
+      if (isUsedInTeams || isUsedInProductiveAndNonApps || isUsedInUsers) {
         return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
       }
 

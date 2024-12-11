@@ -57,8 +57,8 @@ class teamsValidationSchema {
       console.log("Teams Validation -------------------------");
       const { status, message } = await CValidator(data, {
         name: "required|string",
-        departmentId: "required",
-        shiftId: "required"
+        departmentId: "required|integer",
+        shiftId: "required|integer"
       });
 
       console.log(status);

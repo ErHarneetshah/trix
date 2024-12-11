@@ -6,6 +6,7 @@ import module from "../../../database/models/moduleModel.js";
 import { Op } from "sequelize";
 import rolePermissionController from "./rolePermissionController.js";
 import rolePermission from "../../../database/models/rolePermissionModel.js";
+import User from "../../../database/models/userModel.js";
 
 class roleController {
   getAllRole = async (req, res) => {
@@ -54,7 +55,7 @@ class roleController {
     try {
       const allData = await role.findAll({
         where: {company_id:req.user.company_id},
-        attributes: { exclude: ["createdAt", "updatedAt"] },
+        attributes: ["id", "company_id", "name"],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
@@ -71,9 +72,9 @@ class roleController {
 
       const roleData = await role.findOne({
         where: { id: id, company_id: req.user.company_id },
-        attributes: { exclude: ["createdAt", "updatedAt"] },
+        attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
-      if (!roleData) return helper.failed(res, variables.NotFound, "Data Not Found");
+      if (!roleData) return helper.failed(res, variables.NotFound, "Role Data Not Found in your company data");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", roleData);
     } catch (error) {
@@ -190,9 +191,8 @@ class roleController {
 
       // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const isUsedInUsers = await User.findOne({ where: { roleId: id } });
-      const isUsedInRolePermission = await rolePermission.findOne({ where: { roleId: id } });
 
-      if (isUsedInTeams || isUsedInRolePermission || isUsedInProductiveAndNonApps || isUsedInUsers) {
+      if (isUsedInUsers) {
         return helper.failed(res, variables.Unauthorized, "Cannot Delete this Role as it is referred in other tables");
       }
       
@@ -202,9 +202,14 @@ class roleController {
         transaction: dbTransaction,
       });
 
-      if (deleteRole) {
+      const deleteRolePermission = await rolePermission.destroy({
+        where: { roleId: id, company_id: req.user.company_id },
+        transaction: dbTransaction,
+      });
+
+      if (deleteRolePermission) {
         await dbTransaction.commit();
-        return helper.success(res, variables.Created, "Role deleted successfully");
+        return helper.success(res, variables.Created, "Role and Role Permissions deleted successfully");
       } else {
         await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to delete the role");

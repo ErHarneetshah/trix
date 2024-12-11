@@ -275,7 +275,7 @@ export default async function seedDatabase() {
                 designationId: 5, // Software Developer
                 roleId: 3, // User
                 teamId: 1, // Team associated with Engineering
-                password: "$2a$10$abcdefghijklmnopqrstuv12345" // Placeholder hashed password
+                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa" // Placeholder hashed password //aBcD1234
             },
             {
                 company_id:101,
@@ -286,7 +286,7 @@ export default async function seedDatabase() {
                 designationId: 6, // Team Leader
                 roleId: 2, // Team Leader
                 teamId: 2, // Team associated with Marketing
-                password: "$2a$10$abcdefghijklmnopqrstuv12345"
+                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
             },
             {
                 company_id:101,
@@ -297,7 +297,7 @@ export default async function seedDatabase() {
                 designationId: 8, // HR Manager
                 roleId: 3, // User
                 teamId: 3, // Team associated with HR
-                password: "$2a$10$abcdefghijklmnopqrstuv12345"
+                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
             },
             {
                 company_id:101,
@@ -308,7 +308,7 @@ export default async function seedDatabase() {
                 designationId: 7, // Project Manager
                 roleId: 1, // Admin
                 teamId: 4, // Team associated with Finance
-                password: "$2a$10$abcdefghijklmnopqrstuv12345"
+                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
             },
             {
                 company_id:101,
@@ -319,7 +319,7 @@ export default async function seedDatabase() {
                 designationId: 9, // Sales Executive
                 roleId: 3, // User
                 teamId: 5, // Team associated with Sales
-                password: "$2a$10$abcdefghijklmnopqrstuv12345"
+                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
             },
             {
                 company_id:101,
@@ -330,7 +330,7 @@ export default async function seedDatabase() {
                 designationId: 5, // Software Developer
                 roleId: 3, // User
                 teamId: 1, // Team associated with Engineering
-                password: "$2a$10$abcdefghijklmnopqrstuv12345"
+                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
             },
             {
                 company_id:101,
@@ -341,7 +341,7 @@ export default async function seedDatabase() {
                 designationId: 10, // Marketing Coordinator
                 roleId: 3, // User
                 teamId: 2, // Team associated with Marketing
-                password: "$2a$10$abcdefghijklmnopqrstuv12345"
+                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
             },
             {
                 company_id:101,
@@ -352,7 +352,7 @@ export default async function seedDatabase() {
                 designationId: 8, // HR Manager
                 roleId: 2, // Team Leader
                 teamId: 3, // Team associated with HR
-                password: "$2a$10$abcdefghijklmnopqrstuv12345"
+                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
             },
             {
                 company_id:101,
@@ -363,7 +363,7 @@ export default async function seedDatabase() {
                 designationId: 11, // Financial Analyst
                 roleId: 3, // User
                 teamId: 4, // Team associated with Finance
-                password: "$2a$10$abcdefghijklmnopqrstuv12345"
+                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
             },
             {
                 company_id:101,
@@ -374,7 +374,7 @@ export default async function seedDatabase() {
                 designationId: 5, // Software Developer
                 roleId: 3, // User
                 teamId: 1, // Team associated with Engineering
-                password: "$2a$10$abcdefghijklmnopqrstuv12345"
+                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
             }
         ]);
 
