@@ -18,9 +18,10 @@ const User = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
-    company_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+
+    companyId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
     },
     socket_id: {
       type: DataTypes.STRING,

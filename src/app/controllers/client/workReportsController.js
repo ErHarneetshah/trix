@@ -2,6 +2,8 @@ import workReports from "../../../database/models/workReportsModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import { Op } from "sequelize";
 import validate from '../../../utils/CustomValidation.js';
+import helper from "../../../utils/services/helper.js";
+import variables from "../../config/variableConfig.js";
 
 
 const createReport = async (req, res) => {
@@ -15,15 +17,15 @@ const createReport = async (req, res) => {
         const { status, message } = await validate(req.body, rules);
 
         if (status === 0) {
-            return responseUtils.errorResponse(res, message, 400);
+            return helper.failed(res, variables.ValidationError, message);
         }
 
         await workReports.create({ user_id, description });
-        return responseUtils.successResponse(res, { message: "Your report submitted successfully." }, 200);
+        return helper.success(res, variables.Success, "Your Report Submitted Successfully");
 
     } catch (error) {
         console.error('Error while creating the user report ', error);
-        return responseUtils.errorResponse(res, "Error while creating the user report", 400);
+        return helper.failed(res, variables.BadRequest, error.message);
     }
 };
 
@@ -35,10 +37,10 @@ const getSelfReport = async (req, res) => {
             type: userReports.sequelize.QueryTypes.SELECT}
         );
 
-        return responseUtils.successResponse(res, { selfReport, message: "Retrieved User Report Successfully." }, 200);
+        return helper.success(res, variables.Success, "Retrieved User Report Successfully", selfReport);
     } catch (error) {
         console.error('Error fetching reports:', error);
-        return responseUtils.errorResponse(res, error.message, 400);
+        return helper.failed(res, variables.BadRequest, error.message);
     }
 };
 

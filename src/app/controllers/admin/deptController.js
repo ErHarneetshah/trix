@@ -30,7 +30,7 @@ class deptController {
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
-        attributes: ["id", "name", "parentDeptId", "status"],
+        attributes: ["id", "name", "status"],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
@@ -43,7 +43,7 @@ class deptController {
   //* API to get all the Department data who's status is 1 (active)
   getDeptDropdown = async (req, res) => {
     try {
-  
+
       const allData = await department.findAll({
         where: {status : 1},
         attributes: ["id", "name"],
@@ -79,8 +79,12 @@ class deptController {
   addDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { name, parentDeptId } = req.body;
-      if (!name || !parentDeptId) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
+      // const { name, parentDeptId } = req.body;
+      const { name } = req.body;
+
+      // if (!name || !parentDeptId) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
+      if (!name) return helper.failed(res, variables.NotFound, "Name field is Required!");
+
 
       // checking whether department name requested by used already exists or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
@@ -89,14 +93,16 @@ class deptController {
       });
       if (existingDept) return helper.failed(res, variables.ValidationError, "Department Already Exists in our system");
 
-      const existingParentDept = await department.findOne({
-        where: { id: parentDeptId },
-        transaction: dbTransaction,
-      });
-      if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Department does not exists in our system");
+      // const existingParentDept = await department.findOne({
+      //   where: { id: parentDeptId },
+      //   transaction: dbTransaction,
+      // });
+      // if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Department does not exists in our system");
 
       // Adding new department in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      const addNewDept = await department.create({ name: name, parentDeptId: parentDeptId }, { transaction: dbTransaction });
+      // const addNewDept = await department.create({ name: name, parentDeptId: parentDeptId }, { transaction: dbTransaction });
+      const addNewDept = await department.create({ name: name}, { transaction: dbTransaction });
+
 
       // Committing db enteries if passes every code correctly >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       await dbTransaction.commit();
@@ -111,13 +117,13 @@ class deptController {
   updateDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { id, name, parentDeptId } = req.body;
+      // const { id, name, parentDeptId } = req.body;
+      const { id, name } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
-      console.log("------------ 1 ------------------------------")
-      if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
+      // if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
+      if (!name) return helper.failed(res, variables.NotFound, "Name fiedl is Required in order to update the table!");
 
-      console.log("-------------- 2 ----------------------------")
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
         where: { id: id },
@@ -125,7 +131,6 @@ class deptController {
       });
       if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
 
-      console.log("-------------- 3 ----------------------------")
       // Check if there is a dept with a name in a different id >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       if (name) {
         const existingDeptWithName = await department.findOne({
@@ -139,19 +144,18 @@ class deptController {
           return helper.failed(res, variables.ValidationError, "Department name already exists in different record!");
         }
       }
-      console.log("--------------- 4 ---------------------------")
       // Check if parent dept id exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      if (parentDeptId) {
-        const existingDeptWithName = await department.findOne({
-          where: {
-            id: parentDeptId,
-          },
-          transaction: dbTransaction,
-        });
-        if (!existingDeptWithName) {
-          return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
-        }
-      }
+      // if (parentDeptId) {
+      //   const existingDeptWithName = await department.findOne({
+      //     where: {
+      //       id: parentDeptId,
+      //     },
+      //     transaction: dbTransaction,
+      //   });
+      //   if (!existingDeptWithName) {
+      //     return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
+      //   }
+      // }
 
       //! (HOLD) Check if the id has the same value in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // const alreadySameDept = await department.findOne({
@@ -167,9 +171,9 @@ class deptController {
         updateFields.name = name;
       }
 
-      if (parentDeptId !== undefined && !parentDeptId) {
-        updateFields.parentDeptId = parentDeptId;
-      }
+      // if (parentDeptId !== undefined && !parentDeptId) {
+      //   updateFields.parentDeptId = parentDeptId;
+      // }
 
       // Update the db entry >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       if (Object.keys(updateFields).length > 0) {
@@ -193,6 +197,7 @@ class deptController {
   deleteDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
+      return helper.failed(res, variables.Blocked, "This Route is in hold for now");
       const { id } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 

@@ -49,33 +49,7 @@ class roleController {
 
   getRoleDropdown = async (req, res) => {
     try {
-      let { searchParam, limit, page } = req.query;
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
-
-      let where = {};
-      let search = [];
-
-      let searchable = ["name"];
-
-      if (searchParam) {
-        searchable.forEach((key) => {
-          search.push({
-            [key]: {
-              [Op.substring]: searchParam,
-            },
-          });
-        });
-
-        where = {
-          [Op.or]: search,
-        };
-      }
-      const allData = await role.findAndCountAll({
-        where,
-        offset: offset,
-        limit: limit,
-        order: [["id", "DESC"]],
+      const allData = await role.findAll({
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
