@@ -26,7 +26,7 @@ export const ProductiveApp = sequelize.define("productive_app",
 
     app_logo:{
         type: DataTypes.STRING,
-        allowNull: true
+        allowNull: true,
     }
   },
   {

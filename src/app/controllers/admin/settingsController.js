@@ -172,6 +172,8 @@ const updateSitesStatus = async (req, res) => {
 
 const addProductiveApps = async (req, res) => {
   try {
+    console.log("addProdcutiveApps Reuquest ------------------------")
+    console.log(req.body);
     const { department_id, app_name } = req.body;
     const rules = {
       department_id: 'required|integer|min:1',
@@ -196,7 +198,7 @@ const addProductiveApps = async (req, res) => {
     const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id, app_name: app_name });
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
-      console.error("Error creating app info:", error);
+      console.error("Error creating app info:", error.message);
       return helper.failed(res, variables.BadRequest, error.message);
   }
   };
