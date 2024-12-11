@@ -58,7 +58,7 @@ const checkEmailServer = async (req, res) => {
     }
 
     // Sending mail using nodemailer
-    const sendmail = await H.sendM(to,message,subject);
+    const sendmail = await H.sendM(to,subject,message);
     if (sendmail.success) {
         return helper.success(res, variables.Success, sendmail.message);
     } else {

@@ -2,7 +2,7 @@ import nodeMailer from 'nodemailer'
 import emailGateway from "../database/models/emailGatewayModel.js";
 
 
-const sendM = async (to, message, subject,cc = '',  from = "") => {
+const sendM = async (to,subject,message,cc = '',  from = "") => {
     try {
         const activeEmailServer = await emailGateway.findOne({
             where: { is_active : 1 }

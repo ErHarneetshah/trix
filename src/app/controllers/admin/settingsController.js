@@ -9,6 +9,9 @@ import validate from "../../../utils/CustomValidation.js";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
+import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
+
+
 
 const getAdminDetails = async (req, res) => {
   try {
@@ -52,75 +55,6 @@ const updateAdminDetails = async (req, res) => {
   }
 };
 
-// const getBlockedWebsites = async (req, res) => {
-//   try {
-//     const { departmentId, limit, page } = req.query;
-//     const companyId = 101;
-//     const itemsPerPage = parseInt(limit) || 10;
-//     const currentPage = parseInt(page) || 1;
-//     const offset = (currentPage - 1) * itemsPerPage;
-
-//     let query = `
-//       SELECT 
-//         bw.id, 
-//         bw.website, 
-//         bw.website_name, 
-//         d.name AS department_name 
-//       FROM 
-//         blockedWebsites AS bw 
-//       JOIN 
-//         departments AS d 
-//       ON 
-//         bw.departmentId = d.id
-//     `;
-
-//     const replacements = {
-//       limit: itemsPerPage,
-//       companyId: companyId,
-//       offset,
-//     };
-
-//     query += `WHERE companyId=:companyId`;
-
-
-//     if (departmentId && departmentId != 0) {
-//       query += `
-//        AND
-//           bw.departmentId = :departmentId
-//       `;
-//       replacements.departmentId = departmentId;
-//     }
-
-//     query += ` ORDER BY bw.createdAt DESC LIMIT :limit OFFSET :offset`;
-
-//     const blockedWebsites = await sequelize.query(query, {
-//       replacements,
-//       type: sequelize.QueryTypes.SELECT,
-//     });
-
-//     if (blockedWebsites.length === 0) {
-//       return helper.success(
-//         res,
-//         variables.Success,
-//         "No blocked websites found.",
-//         blockedWebsites
-//       );
-//     }
-
-//     return helper.success(
-//       res,
-//       variables.Success,
-//       "Blocked websites retrieved successfully.",
-//       blockedWebsites
-//     );
-//   } catch (error) {
-//     console.error("Error fetching blocked websites:", error);
-//     return helper.failed(res, variables.BadRequest, error.message);
-//   }
-// };
-
-
-
 const getBlockedWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
@@ -139,7 +73,7 @@ const getBlockedWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name", "status"],
+      attributes: ["id", "website", "website_name", "status","logo"],
       include: [
         {
           model: department,
@@ -172,8 +106,7 @@ const getBlockedWebsites = async (req, res) => {
 
 const addBlockWebsites = async (req, res) => {
   try {
-    const { departmentId, website, logo_image } = req.body;
-    let companyId = 101;
+    const { departmentId, website } = req.body;
     const rules = {
       departmentId: 'required|integer',
       website: 'required|valid_url',
@@ -196,12 +129,15 @@ const addBlockWebsites = async (req, res) => {
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "Website with this name or website URL already exists");
     }
+    const faviconUrl = await fetchFaviconUrl(website);
 
-    let parsed = new URL(website);
-    const website_name = parsed.hostname;
-    const newWebsiteData = { departmentId, website, website_name, companyId };
+    const companyId = 101; 
+    const websiteName = new URL(website).hostname;
+
+    const newWebsiteData = { departmentId, website, website_name:websiteName, companyId,logo:faviconUrl };
     const newAppInfo = await BlockedWebsites.create(newWebsiteData);
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
+    
   } catch (error) {
     console.error("Error creating app info:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -263,47 +199,19 @@ const addProductiveApps = async (req, res) => {
 };
 
 
-
-
-// const getAppInfo = async (req, res) => {
-//   try {
-//     const productiveApps = await appInfo.findAll({
-//       where: { is_productive: 1 },
-//       attributes: ["appname", "app_logo"],
-//     });
-
-//     const nonProductiveApps = await appInfo.findAll({
-//       where: { is_productive: 0 },
-//       attributes: ["appname", "app_logo"],
-//     });
-
-//     return helper.success(res, variables.Success, "Apps retrieved successfully", { productiveApps: productiveApps, nonProductiveApps: nonProductiveApps });
-//   } catch (error) {
-//     console.error("Error fetching app info:", error);
-//     return helper.failed(res, variables.BadRequest, error.message);
-//   }
-// };
-
-
-
 const getAppInfo = async (req, res) => {
   try {
-    // Extract query parameters
     let { departmentId, limit, page } = req.query;
-
-    // Set pagination defaults
     limit = parseInt(limit) || 10;
+
     let offset = (page - 1) * limit || 0;
 
-    // Prepare base filters
     let where = { company_id: 101 };
 
-    // Apply department filter if provided
     if (departmentId && departmentId != 0) {
       where.department_id = departmentId;
     }
 
-    // Fetch productive apps
     const productiveApps = await ProductiveApp.findAndCountAll({
       where,
       attributes: ["id", "app_name"],
@@ -319,23 +227,15 @@ const getAppInfo = async (req, res) => {
       order: [["createdAt", "DESC"]],
     });
 
-
-    // Handle case when no apps found
     if (productiveApps.count === 0) {
       return helper.success(
-        res,
-        variables.Success,
-        "No apps found.",
-        { productiveApps }
+        res, variables.Success, "No apps found.", productiveApps
       );
     }
 
     // Success response
     return helper.success(
-      res,
-      variables.Success,
-      "Apps retrieved successfully",
-      { productiveApps }
+      res, variables.Success, "Apps retrieved successfully", productiveApps
     );
   } catch (error) {
     // Handle errors
@@ -395,6 +295,92 @@ const updateReportSettings = async (req, res) => {
   }
 };
 
+// add productive websites
+
+const fetchFaviconUrl = async (website) => {
+  try {
+    const response = await fetch(website);
+    const html = await response.text();
+    const faviconRegex = /<link[^>]+rel=["']?(?:icon|shortcut icon)["']?[^>]*href=["']([^"']+)["']/i;
+    const match = html.match(faviconRegex);
+    return match ? new URL(match[1], website).href : `${new URL(website).origin}/favicon.ico`;
+  } catch (error) {
+    console.warn("Could not fetch favicon, using default:", error.message);
+    return `${new URL(website).origin}/favicon.ico`;
+  }
+};
+
+const addProductiveWebsites = async (req, res) => {
+  try {
+    const { departmentId, website } = req.body;
+    const rules = {
+      departmentId: 'required|integer',
+      website: 'required|valid_url',
+    };
+
+    const { status, message } = await validate(req.body, rules);
+    if (status === 0 || departmentId === 0) {
+      const errorMessage = status === 0 ? message : 'The department ID must not be 0.';
+      return helper.failed(res, variables.ValidationError, errorMessage);
+    }
+
+    const existingApp = await ProductiveWebsite.findOne({ where: { website } });
+    if (existingApp) {
+      return helper.failed(res, variables.NotFound, "Website with this name or URL already exists");
+    }
+    const faviconUrl = await fetchFaviconUrl(website);
+
+    const companyId = 101; 
+    const websiteName = new URL(website).hostname;
+
+    const newWebsiteData = {department_id: departmentId,website,website_name: websiteName,company_id: companyId,logo: faviconUrl};
+
+    // Store productive website data
+    const newAppInfo = await ProductiveWebsite.create(newWebsiteData);
+    return helper.success(res, variables.Success, "Productive website added successfully", newAppInfo);
+  } catch (error) {
+    console.error("Error creating productive website:", error);
+    return helper.failed(res, variables.BadRequest, error.message);
+  }
+};
+
+const getProductiveWebsites = async (req, res) => {
+  try {
+    let { departmentId, limit, page } = req.query;
+
+    limit = parseInt(limit) || 10;
+    let offset = (page - 1) * limit || 0;
+
+    let where = { company_id: 101 };
+
+    if (departmentId && departmentId != 0) {
+      where.department_id = departmentId;
+    }
+
+    const productiveWebsite = await ProductiveWebsite.findAndCountAll({
+      where,
+      offset: offset,
+      limit: limit,
+      order: [["createdAt", "DESC"]],
+      attributes: ["id", "website", "website_name","logo"],
+      include: [
+        {
+          model: department,
+          as: "department",
+          attributes: ["name"],
+        },
+      ],
+    });
+
+    if (productiveWebsite.count === 0) {
+      return helper.success(res, variables.Success, "No productive websites found.", productiveWebsite);
+    }
+    return helper.success(res, variables.Success, "Productive websites retrieved successfully.", productiveWebsite);
+  } catch (error) {
+    console.error("Error fetching productive websites:", error);
+    return helper.failed(res, variables.BadRequest, error.message);
+  }
+};
 
 
-export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveApps, getAppInfo, updateReportSettings };
+export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveApps, getAppInfo, updateReportSettings, addProductiveWebsites, getProductiveWebsites };

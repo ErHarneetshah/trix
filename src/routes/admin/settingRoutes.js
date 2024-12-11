@@ -23,6 +23,10 @@ router.post('/check-email-server', authMiddleware,verifyAdminMiddleware,  emailG
 router.get('/get-email-list', authMiddleware,verifyAdminMiddleware,  emailGatewayController.getEmailList);
 
 
+//add productive websites
+router.post('/add-productive-websites', authMiddleware,verifyAdminMiddleware,  settingsController.addProductiveWebsites);
+router.get('/get-productive-websites',    authMiddleware,verifyAdminMiddleware,    settingsController.getProductiveWebsites);
+
 
 export default router;
 

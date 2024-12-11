@@ -121,7 +121,7 @@ const approveDisaproveReport = async (req, res) => {
     };
 
     if (!["1", "2"].includes(String(report_status))) {
-      return helper.failed(res, variables.ValidationError, "Invalid report_status. Only values 1 and 2 are allowed");
+      return helper.failed(res, variables.ValidationError, "Invalid report status. Only values 1 and 2 are allowed");
     }
   
     const { status, message } = await validate(req.body, rules);
