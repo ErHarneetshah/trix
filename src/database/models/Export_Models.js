@@ -8,10 +8,9 @@ import shift from "./shiftModel.js"
 import team from "./teamModel.js"
 import userSetting from "./userSettingModel.js";
 import blockedWebsites from "./blockedWebsitesModel.js";
-import blockedWebsites from './src/database/models/blockedWebsitesModel.js';
-import reportSettings from './src/database/models/reportSettingsModel.js';
+import reportSettings from "./reportSettingsModel.js";
 import { ProductiveApp }from "./ProductiveApp.js";
-
-const exportModels = [User, role, reportingManager, department, designation, shift, team, userSetting, blockedWebsites, ProductiveApp, reportSettings];
+import ProductiveWebsite from "./ProductiveWebsite.js";
+const exportModels = [User, role, reportingManager, department, designation, shift, team, userSetting, blockedWebsites, ProductiveApp, reportSettings,ProductiveWebsite];
 
 export default exportModels;

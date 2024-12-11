@@ -9,6 +9,7 @@ import exportModels from '../models/Export_Models.js'
 
     // Synchronize models
     for (const model of exportModels) {
+      console.log(model);
       await model.sync(); // Sync each model
       console.log(`Table for model ${model.name} created or already exists.`);
     }
