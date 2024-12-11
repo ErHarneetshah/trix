@@ -7,10 +7,11 @@ import workReports from "../models/workReportsModel.js";
 import TimeLog from "../models/teamLogsModel.js";
 import shift from "../models/shiftModel.js";
 import rolePermission from "../models/rolePermissionModel.js";
-import { BlockedWebsites } from "../models/BlockedWebsite.js";
+import {BlockedWebsites} from "../models/BlockedWebsite.js";
 import { ProductiveApp }from "../models/ProductiveApp.js";
 import { UserHistory } from "../models/UserHistory.js";
-import AppHistoryEntry from "../models/AppHistoryEntry.js";
+ import AppHistoryEntry  from "../models/AppHistoryEntry.js";
+import ProductiveWebsite from "../models/ProductiveWebsite.js";
 
 // User Relationships here
 User.belongsTo(department, { as: "department", foreignKey: "departmentId" });
@@ -34,6 +35,7 @@ TimeLog.belongsTo(shift, { as: "shift", foreignKey: "shift_id" });
 rolePermission.belongsTo(role, { as: "role", foreignKey: "roleId" });
 BlockedWebsites.belongsTo(department, { as: "department", foreignKey: "departmentId" });
 ProductiveApp.belongsTo(department, { as: "department", foreignKey: "department_id" });
+ProductiveWebsite.belongsTo(department, { as: "department", foreignKey: "department_id" });
 
 // Team Relations here
 team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
