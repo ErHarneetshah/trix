@@ -10,12 +10,13 @@ const teamMemberDailyLog = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     empId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     empName: {
       type: DataTypes.STRING,
@@ -44,8 +45,11 @@ const teamMemberDailyLog = sequelize.define(
   },
   {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
   }
 );
 
+// await teamMemberDailyLog.sync({alter:1});
 
 export default teamMemberDailyLog;

@@ -4,7 +4,10 @@ import fs from "fs";
 import generator from "generate-password";
 import variables from "../../app/config/variableConfig.js";
 import { Op } from "sequelize";
-
+// import { ACCESS_TOKEN } from "../config.js";
+import appConfig from "../../app/config/appConfig.js";
+import JWT from "jsonwebtoken";
+import { parse } from "tldts";
 
 // const ACCESS_TOKEN = new appConfig().getJwtConfig();
 
@@ -65,7 +68,7 @@ export default {
     }
   },
 
-  generatePass: async() => {
+  generatePass: async () => {
     try {
       const generatedPass = generator.generate({
         length: 10,
@@ -83,28 +86,51 @@ export default {
   },
 
   searchCondition: async (searchParam, searchable, otherField = null, otherParam = null) => {
-      let where = {};
-      let search = [];
+    let where = {};
+    let search = [];
 
-      // let searchable = ["name", "status"];
-
-      if (searchParam) {
-        searchable.forEach((key) => {
-          search.push({
-            [key]: {
-              [Op.substring]: searchParam,
-            },
-          });
+    if (searchParam) {
+      searchable.forEach((key) => {
+        search.push({
+          [key]: {
+            [Op.substring]: searchParam,
+          },
         });
+      });
 
-        where = {
-          [Op.or]: search,
-        };
+      where = {
+        [Op.or]: search,
+      };
 
-        if (otherParam) {
-          where.otherField = otherParam; // Adds another filter
-        }
-        return where;
+      if (otherParam) {
+        where.otherField = otherParam; // Adds another filter
       }
-  }
+    }
+    return where;
+  },
+
+  deleteFile: (filePath) => {
+    try {
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error("Failed to delete file", err);
+        } else {
+          console.log("File deleted successfully.");
+        }
+      });
+    } catch (error) {
+      console.log({ del_file_error: error });
+      return { message: `Unable to delete file at this moment`, status: 0 };
+    }
+  },
+
+  extractWebsiteName: (url) => {
+    try {
+      const parsed = parse(url);
+      return parsed.domain;
+    } catch (error) {
+      console.error("Invalid URL:", url);
+      return null;
+    }
+  },
 };

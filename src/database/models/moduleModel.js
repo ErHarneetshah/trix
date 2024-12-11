@@ -14,6 +14,10 @@ const module = sequelize.define('modules', {
   }
 }, {
   timestamps: true,
+  // Prevent Sequelize from auto-creating foreign keys
+  underscored: false,
 });
+
+// await module.sync({alter:1});
 
 export default module;

@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
 import helper from "../../utils/services/helper.js";
+import User from "./userModel.js";
 
 const userSetting = sequelize.define(
   "users_settings",
@@ -10,6 +11,13 @@ const userSetting = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
+    },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
     },
     userId: {
       type: DataTypes.INTEGER,
@@ -47,12 +55,14 @@ const userSetting = sequelize.define(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt columns
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
   }
 );
 
 export const createUserSetting = async (userId, dbTransaction, res) => {
   try {
-    const existingUserSetting = await userSetting.findOne({ where: { userid: userId }, transaction: dbTransaction });
+    const existingUserSetting = await User.findOne({ where: { id: userId }, transaction: dbTransaction });
     if (existingUserSetting) {
       return helper.failed(res, variables.ValidationError, "User settings already exist for this user.");
     }

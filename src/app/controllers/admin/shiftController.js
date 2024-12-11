@@ -16,8 +16,10 @@ class shiftController {
       let offset = (page - 1) * limit || 0;
       let where = await helper.searchCondition(searchParam, searchable);
 
+      where.company_id = req.user.company_id;
+
       const alldata = await shift.findAndCountAll({
-        where,
+        where: where,
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
@@ -34,7 +36,7 @@ class shiftController {
   getShiftDropdown = async (req, res) => {
     try {
       const alldata = await shift.findAll({
-        where: { status: true },
+        where: { status: true, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
@@ -47,14 +49,12 @@ class shiftController {
 
   getSpecificShift = async (req, res) => {
     try {
-      const requestData = req.body;
+      const {id} = req.body;
 
       const specificData = await shift.findOne({
         where: {
-          name: requestData.name,
-          start_time: requestData.start_time,
-          end_time: requestData.end_time,
-          days: JSON.stringify(requestData.days), // Ensure days are correctly formatted for comparison
+          company_id: req.user.company_id,
+          id: id
         },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
@@ -92,6 +92,7 @@ class shiftController {
       //checkecing existing shift
       const existingShift = await shift.findOne({
         where: {
+          company_id: req.user.company_id,
           name: requestData.name,
           start_time: requestData.start_time,
           end_time: requestData.end_time,
@@ -105,6 +106,7 @@ class shiftController {
       const existingShiftWithName = await shift.findOne({
         where: {
           name: requestData.name,
+          company_id: req.user.company_id,
           // id: { [Op.ne]: id }, // Exclude the current record by id
         },
         transaction: dbTransaction,
@@ -115,6 +117,7 @@ class shiftController {
 
       const existingSameShift = await shift.findOne({
         where: {
+          company_id: req.user.company_id,
           start_time: requestData.start_time,
           end_time: requestData.end_time,
           days: JSON.stringify(requestData.days), // Ensure days are correctly formatted for comparison
@@ -122,6 +125,8 @@ class shiftController {
         transaction: dbTransaction,
       });
       if (existingSameShift) return helper.failed(res, variables.ValidationError, "Shift Already Exists with same parameters but different name!");
+
+      requestData.company_id = req.user.company_id;
 
       // Create and save the new user
       const newShift = await shift.create(requestData, { transaction: dbTransaction });
@@ -156,15 +161,16 @@ class shiftController {
 
       //* Check if there is a dept already exists
       const existingShift = await shift.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists!");
+      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in your company!");
 
       //* Check if there is a dept with a name in a different id
       const existingShiftWithName = await shift.findOne({
         where: {
           name: updateFields.name,
+          company_id: req.user.company_id,
           id: { [Op.ne]: id }, // Exclude the current record by id
         },
         transaction: dbTransaction,
@@ -175,7 +181,7 @@ class shiftController {
 
       //* if the id has the same value in db
       const alreadySameShift = await shift.findOne({
-        where: { id: id, name: updateFields.name, start_time: updateFields.start_time, end_time: updateFields.end_time, days: JSON.stringify(days) },
+        where: { id: id, company_id: req.user.company_id, name: updateFields.name, start_time: updateFields.start_time, end_time: updateFields.end_time, days: JSON.stringify(days) },
         transaction: dbTransaction,
       });
       if (alreadySameShift) return helper.success(res, variables.Success, "Shift Re-Updated Successfully!");
@@ -186,7 +192,7 @@ class shiftController {
           days: JSON.stringify(days),
         },
         {
-          where: { id: id },
+          where: { id: id, company_id: req.user.company_id },
           transaction: dbTransaction,
           individualHooks: true,
         }
@@ -212,21 +218,21 @@ class shiftController {
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
       const existingShift = await shift.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists!");
+      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in your company id!");
 
       // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const isUsedInTeams = await team.findOne({ where: { shiftId: id } });
 
       if (isUsedInTeams) {
-        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
+        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Shift as it is referred in other tables");
       }
 
       // Create and save the new user
       const deleteShift = await shift.destroy({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 

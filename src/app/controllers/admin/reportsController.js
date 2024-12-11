@@ -13,7 +13,6 @@ const retrieveAllReport = async (req, res) => {
     let { searchParam, limit, page, startDate, endDate } = req.query;
 
     // Fields for searching in workReports and User models
-    const reportSearchable = ["date", "status"];
     const userSearchable = ["fullname", "$department.name$", "$designation.name$"];
 
     // Pagination setup
@@ -23,7 +22,7 @@ const retrieveAllReport = async (req, res) => {
 
     // Generate search conditions
     const userWhere = (await helper.searchCondition(searchParam, userSearchable)) || {};
-    const reportWhere = (await helper.searchCondition(searchParam, reportSearchable)) || {};
+    const reportWhere = {};
 
     // Add date range filter to `reportWhere`
     if (startDate && endDate) {
@@ -33,6 +32,8 @@ const retrieveAllReport = async (req, res) => {
     } else if (endDate) {
       reportWhere.createdAt = { [Op.lte]: new Date(endDate) };
     }
+
+    reportWhere.company_id = req.user.company_id;
 
     // Query data using Sequelize
     const allReportData = await workReports.findAndCountAll({
@@ -90,13 +91,13 @@ const retrieveUserReport = async (req, res) => {
   try {
     let { id } = req.query;
     const user = await User.findOne({
-      where: { id: id },
+      where: { id: id, company_id:req.user.company_id },
     });
     if (!user) {
       return helper.failed(res, variables.NotFound, "User not exists");
     }
 
-    const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.id = ${id};`;
+    const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.id = ${id} AND wr.company_id = ${req.user.company_id};`;
     const userReport = await workReports.sequelize.query(query, {
       // replacements: { userId: id },
       type: workReports.sequelize.QueryTypes.SELECT,
@@ -121,7 +122,7 @@ const approveDisaproveReport = async (req, res) => {
     };
 
     if (!["1", "2"].includes(String(report_status))) {
-      return helper.failed(res, variables.ValidationError, "Invalid report_status. Only values 1 and 2 are allowed");
+      return helper.failed(res, variables.ValidationError, "Invalid report status. Only values 1 and 2 are allowed");
     }
   
     const { status, message } = await validate(req.body, rules);

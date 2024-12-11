@@ -8,26 +8,14 @@ import role from "../../../database/models/roleModel.js";
 class rolePermissionController {
   getAllRolePermissions = async (req, res) => {
     try {
-      let { searchParam, limit, page } = req.query;
-      // let permissionSearchable = ["modules"];
-      // let roleSearchable = ["name"];
-
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
-      // let permissionWhere = await helper.searchCondition(searchParam, permissionSearchable);
-      // let roleWhere = await helper.searchCondition(searchParam, roleSearchable);
-
       const alldata = await rolePermission.findAndCountAll({
-        // where: permissionWhere,
+        where: { company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
-        // offset: offset,
-        // limit: limit,
-        // order: [["id", "DESC"]],
+        order: [["id", "DESC"]],
         include: [
           {
             model: role,
-            // where: roleWhere,
-            as: "role",
+            as: "role", 
             attributes: ["name"],
           },
         ],
@@ -48,31 +36,30 @@ class rolePermissionController {
 
         let existingModule = acc.find((data) => data.modules === modules);
 
-            if (!existingModule) {
-                existingModule = {
-                    id,
-                    modules,
-                    roleDetails: []
-                };
-                acc.push(existingModule);
-            }
+        if (!existingModule) {
+          existingModule = {
+            id,
+            modules,
+            roleDetails: [],
+          };
+          acc.push(existingModule);
+        }
 
-            // existingModule.roleDetails[`roleName`] = roleName;
-            // existingModule.roleDetails[`permissions`] = permissions;
-            let i = 0;
-          //   [roleName].forEach((name) => {
-          //     existingModule.roleDetails[name] = {
-          //         roleName: name,
-          //         permissions: permissions
-          //     };
-          // });
-          existingModule.roleDetails.push({
-            roleName: roleName,
-            permissions: permissions
+        // existingModule.roleDetails[`roleName`] = roleName;
+        // existingModule.roleDetails[`permissions`] = permissions;
+        let i = 0;
+        //   [roleName].forEach((name) => {
+        //     existingModule.roleDetails[name] = {
+        //         roleName: name,
+        //         permissions: permissions
+        //     };
+        // });
+        existingModule.roleDetails.push({
+          roleName: roleName,
+          permissions: permissions,
         });
 
-            return acc;
-
+        return acc;
       }, []);
 
       return helper.success(res, variables.Success, "All Data Fetched Successfully!", transformedData);
@@ -84,7 +71,7 @@ class rolePermissionController {
   getSpecificRolePermissions = async (roleId, moduleName) => {
     try {
       const roleModuledata = await rolePermission.findOne({
-        where: { roleId: roleId, modules: moduleName },
+        where: { roleId: roleId, modules: moduleName, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!roleModuledata) return helper.failed(res, variables.NotFound, "No Data is available!");
@@ -96,11 +83,12 @@ class rolePermissionController {
     }
   };
 
-  addRolePermissions = async (module, roleId, transaction) => {
+  addRolePermissions = async (module, roleId, company_id, transaction) => {
     try {
       const permissionData = {
         roleId,
         modules: module.name,
+        company_id: company_id,
         permissions: {
           POST: false,
           GET: false,
@@ -152,7 +140,7 @@ class rolePermissionController {
       }
 
       const existRole = await role.findOne({
-        where: { name: roleName },
+        where: { name: roleName, company_id: req.user.company_id },
         attributes: ["id"],
         transaction: dbTransaction,
       });
@@ -162,7 +150,7 @@ class rolePermissionController {
 
       // Checking whether the role id exists in system or not
       const existingRolePermission = await rolePermission.findOne({
-        where: { roleId: existRole.id, modules: moduleName },
+        where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingRolePermission) return helper.failed(res, variables.ValidationError, "Role Permission does not exists!");
@@ -173,7 +161,7 @@ class rolePermissionController {
           permissions: permissions,
         },
         {
-          where: { roleId: existRole.id, modules: moduleName },
+          where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
           transaction: dbTransaction,
         }
       );

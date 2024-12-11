@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
 
-const blockedWebsites = sequelize.define(
+const BlockedWebsites = sequelize.define(
   "blockedWebsites",
   {
     id: {
@@ -55,4 +55,4 @@ const blockedWebsites = sequelize.define(
 );
 
 
-export default blockedWebsites;
+export default BlockedWebsites;

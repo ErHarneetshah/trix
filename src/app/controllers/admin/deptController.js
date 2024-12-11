@@ -4,9 +4,9 @@ import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
 import { Op } from "sequelize";
 import User from "../../../database/models/userModel.js";
-import blockedWebsites from "../../../database/models/blockedWebsitesModel.js";
-import appInfo from "../../../database/models/productiveAppsModel.js";
 import team from "../../../database/models/teamModel.js";
+import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
+import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 
 class deptController {
   //* Using this just for testing purposes of role permission middleware
@@ -19,18 +19,20 @@ class deptController {
     try {
       // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       let { searchParam, limit, page } = req.query;
-      let searchable = ["name", "status"];
+      let searchable = ["name"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
       let where = await helper.searchCondition(searchParam, searchable);
+      
+      where.company_id = req.user.company_id;
 
       // Getting all the departments based on seacrh parameters with total count >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const allData = await department.findAndCountAll({
-        where,
+        where: where,
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
-        attributes: ["id", "name", "status"],
+        attributes: ["id", "name", "parentDeptId", "status"],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
@@ -43,9 +45,8 @@ class deptController {
   //* API to get all the Department data who's status is 1 (active)
   getDeptDropdown = async (req, res) => {
     try {
-
       const allData = await department.findAll({
-        where: {status : 1},
+        where: { company_id: req.user.company_id, status: 1 },
         attributes: ["id", "name"],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
@@ -64,10 +65,10 @@ class deptController {
 
       // Retrieving the specific department data from table >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const deptData = await department.findOne({
-        where: { id: id },
+        where: { id: id, company_id:req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!deptData) return helper.failed(res, variables.NotFound, "Data Not Found");
+      if (!deptData) return helper.failed(res, variables.NotFound, "Department Not Found in your company data");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", deptData);
     } catch (error) {
@@ -79,30 +80,43 @@ class deptController {
   addDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      // const { name, parentDeptId } = req.body;
-      const { name } = req.body;
+      const { name, parentDeptId } = req.body;
+      // const { name } = req.body;
 
-      // if (!name || !parentDeptId) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
-      if (!name) return helper.failed(res, variables.NotFound, "Name field is Required!");
+      if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
+      // if (!name) return helper.failed(res, variables.NotFound, "Name field is Required!");
 
 
       // checking whether department name requested by used already exists or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
-        where: { name: name },
+        where: { name: name, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (existingDept) return helper.failed(res, variables.ValidationError, "Department Already Exists in our system");
 
-      // const existingParentDept = await department.findOne({
-      //   where: { id: parentDeptId },
-      //   transaction: dbTransaction,
-      // });
-      // if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Department does not exists in our system");
+      // checking whether parentDept Id requested by used already exists or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const existingParentDept = await department.findOne({
+        where: { id: parentDeptId, company_id: req.user.company_id },
+        transaction: dbTransaction,
+      });
+      if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Parent Department does not exists in our system");
+      
+      let addNewDept;
+      
+      //* checking whether isRootId is passed or not and if there is already a root dept or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      // if (isRootId) {
+      //   if (isRootId != 1 || isRootId != 0) return helper.failed(res, variables.ValidationError, "isRootId can only be either 1 or 0");
+      //   const existingRootDept = await department.findOne({
+      //     where: { isRootId: 1, company_id: req.user.company_id },
+      //     transaction: dbTransaction,
+      //   });
+      //   if (existingRootDept) return helper.failed(res, variables.ValidationError, "There can be only one root deparment");
+
+      //   addNewDept = await department.create({ name: name, parentDeptId: parentDeptId, isRootid: isRootId }, { transaction: dbTransaction });
+      // } else {
 
       // Adding new department in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      // const addNewDept = await department.create({ name: name, parentDeptId: parentDeptId }, { transaction: dbTransaction });
-      const addNewDept = await department.create({ name: name}, { transaction: dbTransaction });
-
+      addNewDept = await department.create({ name: name, parentDeptId: parentDeptId, company_id: req.user.company_id }, { transaction: dbTransaction });
 
       // Committing db enteries if passes every code correctly >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       await dbTransaction.commit();
@@ -118,15 +132,14 @@ class deptController {
     const dbTransaction = await sequelize.transaction();
     try {
       // const { id, name, parentDeptId } = req.body;
-      const { id, name } = req.body;
+      const { id, name, parentDeptId } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
-      // if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
-      if (!name) return helper.failed(res, variables.NotFound, "Name fiedl is Required in order to update the table!");
+      if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
 
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
@@ -136,6 +149,7 @@ class deptController {
         const existingDeptWithName = await department.findOne({
           where: {
             name: name,
+            company_id: req.user.company_id,
             id: { [Op.ne]: id }, // Exclude the current record by id
           },
           transaction: dbTransaction,
@@ -145,17 +159,18 @@ class deptController {
         }
       }
       // Check if parent dept id exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      // if (parentDeptId) {
-      //   const existingDeptWithName = await department.findOne({
-      //     where: {
-      //       id: parentDeptId,
-      //     },
-      //     transaction: dbTransaction,
-      //   });
-      //   if (!existingDeptWithName) {
-      //     return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
-      //   }
-      // }
+      if (parentDeptId) {
+        const existingDeptWithName = await department.findOne({
+          where: {
+            id: parentDeptId,
+            company_id: req.user.company_id,
+          },
+          transaction: dbTransaction,
+        });
+        if (!existingDeptWithName) {
+          return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
+        }
+      }
 
       //! (HOLD) Check if the id has the same value in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // const alreadySameDept = await department.findOne({
@@ -167,19 +182,20 @@ class deptController {
       const updateFields = {};
 
       // Only include the fields if they are provided (not undefined or null)
-      if (name !== undefined && !name) {
+      if (name !== undefined || !name) {
         updateFields.name = name;
       }
 
-      // if (parentDeptId !== undefined && !parentDeptId) {
-      //   updateFields.parentDeptId = parentDeptId;
-      // }
+      if (parentDeptId !== undefined || !parentDeptId) {
+        updateFields.parentDeptId = parentDeptId;
+      }
 
       // Update the db entry >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       if (Object.keys(updateFields).length > 0) {
         await department.update(updateFields, {
           where: {
             id: id, // Ensure this condition identifies the correct record
+            company_id: req.user.company_id,
           },
           transaction: dbTransaction,
           individualHooks: true,
@@ -197,30 +213,28 @@ class deptController {
   deleteDept = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      return helper.failed(res, variables.Blocked, "This Route is in hold for now");
       const { id } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
 
       // Check if the department already exists in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingDept) return helper.failed(res, variables.NotFound, "Department does not found in our system");
 
       // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const isUsedInUsers = await User.findOne({ where: { departmentId: id } });
-      const isUsedInBlockedWebsites = await blockedWebsites.findOne({ where: { departmentId: id } });
-      const isUsedInProductiveAndNonApps = await appInfo.findOne({ where: { departmentId: id } });
+      const isUsedInProductiveAndNonApps = await ProductiveApp.findOne({ where: { department_id: id } });
       const isUsedInTeams = await team.findOne({ where: { departmentId: id } });
 
-      if (isUsedInTeams || isUsedInBlockedWebsites || isUsedInProductiveAndNonApps || isUsedInUsers) {
+      if (isUsedInTeams || isUsedInProductiveAndNonApps || isUsedInUsers) {
         return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
       }
 
       // Delete the department from table >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const deleteDept = await department.destroy({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 

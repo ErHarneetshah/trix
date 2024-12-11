@@ -10,6 +10,13 @@ const permission = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
     roleId: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -34,8 +41,11 @@ const permission = sequelize.define(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt columns
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
   }
 );
 
+// await permission.sync({alter:1});
 
 export default permission;

@@ -9,5 +9,6 @@ const teamMemberInstance = new teamMemberController();
 router.get("/getAllTeamMembers",  authMiddleware,verifyAdminMiddleware,   teamMemberInstance.getAllTeamMembers);
 router.post("/addTeamMembers",  authMiddleware,verifyAdminMiddleware,   teamMemberInstance.addTeamMembers);
 router.put("/updateTeamMembers", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updateTeamMembers);
-
+router.put("/updateTeamMembersSettings", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updateSettings);
+// router.put('/update',  authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updatesetting)
 export default router;

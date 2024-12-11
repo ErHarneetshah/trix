@@ -10,38 +10,27 @@ const accessToken = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+  
+    },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     isUserAdmin: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     token: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
-    },
-    features: {
-      type: DataTypes.JSON,
-      unique: true,
-      allowNull: true,
     },
     expiry_time: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true, // Prevents empty string
-      },
     },
     status: {
       type: DataTypes.BOOLEAN,
@@ -51,15 +40,19 @@ const accessToken = sequelize.define(
   },
   {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
   }
 );
 
-export const createAccessToken = async (userId, isUserAdmin, token, expireTime, dbTransaction) => {
+export const createAccessToken = async (userId, isUserAdmin, company_id, token, expireTime, dbTransaction) => {
   try {
+    
     const accessTokenData = await accessToken.create(
       {
         userId: userId,
         isUserAdmin: isUserAdmin,
+        company_id: company_id,
         token,
         expiry_time: expireTime,
       },
@@ -71,5 +64,7 @@ export const createAccessToken = async (userId, isUserAdmin, token, expireTime, 
     throw error;
   }
 };
+
+// await accessToken.sync({alter:1})
 
 export default accessToken;

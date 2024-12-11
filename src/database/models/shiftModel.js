@@ -12,6 +12,13 @@ const shift = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -41,6 +48,8 @@ const shift = sequelize.define(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt columns
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
     hooks: {
       async beforeCreate(shift) {
         try {
@@ -83,7 +92,10 @@ const calTotalHr = async (start_time, end_time) => {
     totalMinutes = 24 * 60 - startTotalMinutes + endTotalMinutes;
   }
 
+  console.log(totalMinutes/60);
   return totalMinutes / 60;
 };
+
+// await shift.sync({alter:1});
 
 export default shift;

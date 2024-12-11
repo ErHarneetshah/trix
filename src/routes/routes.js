@@ -14,7 +14,12 @@ import teamTimeLogRouter from './admin/teamMemberTimeLogRoutes.js';
 import userReportRouter from './client/dailyReportRoutes.js';
 const router = express.Router();
 
-//admin routes
+router.get('/', (req, res) => {
+    res.json({
+        message: 'CORS is working correctly for the /auth route!',
+        success: true,
+    });
+});
 router.use('/auth', authRouter);
 router.use('/admin/dept', deptRouter);
 router.use('/admin/desig', desigRouter);

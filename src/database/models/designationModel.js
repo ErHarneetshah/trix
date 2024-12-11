@@ -8,6 +8,13 @@ const designation = sequelize.define('designations', {
     autoIncrement: true,
     allowNull: false,
   },
+  company_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+    },
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -21,7 +28,11 @@ const designation = sequelize.define('designations', {
     defaultValue: 1,
   },
 }, {
-  timestamps: true, 
+  timestamps: true,
+  // Prevent Sequelize from auto-creating foreign keys
+  underscored: false,
 });
+
+// await designation.sync({alter:1});
 
 export default designation;

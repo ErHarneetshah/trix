@@ -47,6 +47,7 @@ class teamMemberTimeLogController {
       //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Only filter by endDate
       // }
 
+      logWhere.company_id = req.user.company_id;
       const alldata = await TimeLog.findAndCountAll({
         where: logWhere, // Filters for `workReports`
         offset,
@@ -123,8 +124,8 @@ class teamMemberTimeLogController {
           logWhere.late_coming = true;
         }
       }
-
-      console.log(logWhere);
+      logWhere.company_id = req.user.company_id;
+      
       const alldata = await TimeLog.findAndCountAll({
         where: logWhere, // Filters for `workReports`
         offset,
