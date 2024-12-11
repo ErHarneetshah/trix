@@ -13,7 +13,7 @@ router.post('/add-blocked-websites',    authMiddleware,verifyAdminMiddleware,   
 router.get('/get-blocked-websites',    authMiddleware,verifyAdminMiddleware,    settingsController.getBlockedWebsites);
 router.post('/update-sites-status',    authMiddleware,verifyAdminMiddleware,    settingsController.updateSitesStatus);
 
-router.post('/add-productive-nonpro-websites',    authMiddleware,verifyAdminMiddleware,    settingsController.addProductiveApps);
+router.post('/add-productive-apps',    authMiddleware,verifyAdminMiddleware,    settingsController.addProductiveApps);
 router.get('/get-app-info',    authMiddleware,verifyAdminMiddleware,    settingsController.getAppInfo);
 router.put('/update-report-status/:id',    authMiddleware,verifyAdminMiddleware,    settingsController.updateReportSettings);
 

@@ -185,14 +185,14 @@ const addProductiveApps = async (req, res) => {
     }
     const company_id = req.user.company_id;
     const existingApp = await ProductiveApp.findOne({
-      where: { app_name }
+      where: { app_name:app_name, company_id: company_id }
     });
 
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "App with this name already exists");
     }
 
-    const newAppInfo = await ProductiveApp.create({ company_id, department_id, app_name });
+    const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id, app_name: app_name });
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
     console.error("Error creating app info:", error);
