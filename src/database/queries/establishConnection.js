@@ -1,5 +1,5 @@
 import sequelize from './dbConnection.js';
-import exportModels from '../models/Export_Models.js'
+// import exportModels from '../models/Export_Models.js'
 
 (async () => {
   try {

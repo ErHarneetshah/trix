@@ -10,16 +10,13 @@ const jwtConfig = new appConfig().getJwtConfig();
 
 const authMiddleware = async (req, res, next) => {
   try {
-    console.log("Auth Middleware -----------------------------");
     const authHeader = req.header("Authorization");
-    console.log(authHeader);
     if (!authHeader)
       return helper.failed(res, variables.Unauthorized, "Access Denied. No Token Provided");
 
     const token = authHeader.replace("Bearer ", "");
 
     const access_token = await accessToken.findOne({ where: {token: token } });
-    console.log(access_token);
     if (access_token) {
       if (new Date() > access_token.expiry_time) {
         await accessToken.destroy({ where: { token: token } });

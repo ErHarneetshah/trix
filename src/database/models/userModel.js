@@ -139,37 +139,37 @@ const User = sequelize.define(
           }
         }
       },
-      async beforeUpdate(user, options) {
-        // Hash the password if it's being updated
-        if (user.password) {
-          user.password = await bcrypt.hash(user.password, 10);
-        }
+      // async beforeUpdate(user, options) {
+      //   // Hash the password if it's being updated
+      //   if (user.password) {
+      //     user.password = await bcrypt.hash(user.password, 10);
+      //   }
 
-        // Define a mapping of fields to their respective models
-        const validationMap = {
-          departmentId: department,
-          designationId: designation,
-          roleId: role,
-          teamId: team,
-        };
+      //   // Define a mapping of fields to their respective models
+      //   const validationMap = {
+      //     departmentId: department,
+      //     designationId: designation,
+      //     roleId: role,
+      //     teamId: team,
+      //   };
 
-        // Iterate through the fields to validate
-        for (const [field, model] of Object.entries(validationMap)) {
-          if (user[field]) {
-            console.log("------------------------");
-            console.log(model);
-            const recordExists = await model.findOne({
-              where: { id: user[field] },
-              transaction: options.transaction,
-            });
+      //   // Iterate through the fields to validate
+      //   for (const [field, model] of Object.entries(validationMap)) {
+      //     if (user[field]) {
+      //       console.log("------------------------");
+      //       console.log(model);
+      //       const recordExists = await model.findOne({
+      //         where: { id: user[field] },
+      //         transaction: options.transaction,
+      //       });
 
-            if (!recordExists) {
-              return helper.failed(res, variables.NotFound, `${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
-              // throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
-            }
-          }
-        }
-      },
+      //       if (!recordExists) {
+      //         return helper.failed(res, variables.NotFound, `${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
+      //         // throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
+      //       }
+      //     }
+      //   }
+      // },
       async afterUpdate(user, options) {
         let monitoredFields = ["screen_capture_time", "broswer_capture_time", "app_capture_time"];
         let fieldsChanged = options.fields.some((field) => monitoredFields.includes(field));
@@ -185,5 +185,5 @@ const User = sequelize.define(
   }
 );
 
-// await User.sync({alter:1});
+await User.sync({alter:1});
 export default User;

@@ -8,6 +8,8 @@ import dbRelations from "./src/database/queries/dbRelations.js";
 import { createServer } from "http";
 import setupSocketIO from "./src/app/sockets/socket.js";
 import { Server } from "socket.io";
+import importAndSyncAllModels from "./src/app/config/ImportDependencies/ImportModels.js";
+import sequelize from "./src/database/queries/dbConnection.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -25,7 +27,8 @@ setupSocketIO(io);
 app.use(express.json());
 app.use(cors(corsMiddleware));
 app.use(routes);
-
+importAndSyncAllModels();
+sequelize.sync();
 // Start the Express server
 httpServer.listen(PORT, "0.0.0.0", () =>
   console.log(`Server up and Running on http://${ip.address()}:${PORT}`)
