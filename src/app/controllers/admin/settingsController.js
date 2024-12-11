@@ -172,31 +172,29 @@ const updateSitesStatus = async (req, res) => {
 
 const addProductiveApps = async (req, res) => {
   try {
-      const { department_id, app_name } = req.body;
-      const rules = {
-       department_id: 'required|integer',
-       app_name: 'required|string|min:3|max:50',
-      };
-  
-      const { status, message } = await validate(req.body, rules);
-  
-      if (status === 0) {
-       return helper.failed(res, variables.ValidationError, message);
-  
-      }
-      const company_id = req.user.company_id;
-      const existingApp = await ProductiveApp.findOne({
-       where: { app_name: app_name }
-      });
-  
-      if (existingApp) {
-       return helper.failed(res, variables.NotFound, "App with this name already exists");
-      }
-  
-      // const imagespaths = await uploadPhotos(req, res, 'app_logo', imageArr);
-  
-      const newAppInfo = await ProductiveApp.create({ company_id, department_id, app_name, app_logo: req.filedata.data });
-      return helper.success(res, variables.Success, "App added successfully", newAppInfo);
+    const { department_id, app_name } = req.body;
+    const rules = {
+      department_id: 'required|integer|min:1',
+      app_name: 'required|string|min:3|max:50',
+    };
+
+    const { status, message } = await validate(req.body, rules);
+
+    if (status === 0) {
+      return helper.failed(res, variables.ValidationError, message);
+
+    }
+    const company_id = req.user.company_id;
+    const existingApp = await ProductiveApp.findOne({
+      where: { app_name:app_name, company_id: company_id }
+    });
+
+    if (existingApp) {
+      return helper.failed(res, variables.NotFound, "App with this name already exists");
+    }
+
+    const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id, app_name: app_name });
+    return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
       console.error("Error creating app info:", error);
       return helper.failed(res, variables.BadRequest, error.message);
