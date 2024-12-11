@@ -38,7 +38,10 @@ class authController extends jwtService {
       }
 
       //* Step1
-      const createCompany = await company.create(requestData, {
+      const createCompany = await company.create({
+        name: requestData.name,
+        employeeNumber: requestData.employeeNumber
+      }, {
         transaction: dbTransaction,
       });
 
@@ -237,7 +240,30 @@ class authController extends jwtService {
       let email = requestData.email;
       let password = requestData.password;
 
-      let user = await User.findOne({ where: { email: email } }); // checking whether user exists
+      let user = await User.findOne({ where: { email: email },
+        include: [
+          {
+            model: department,
+            as: "department",
+            attributes: ["name"],
+          },
+          {
+            model: designation,
+            as: "designation",
+            attributes: ["name"],
+          },
+          {
+            model: role,
+            as: "role",
+            attributes: ["name"],
+          },
+          {
+            model: team,
+            as: "team",
+            attributes: ["name"],
+          },
+        ], }
+      ); // checking whether user exists
       if (!user) {
         return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
       }
