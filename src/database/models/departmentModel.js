@@ -27,7 +27,7 @@ const department = sequelize.define(
       allowNull: true,
     },
     isRootId: {
-      type: DataTypes.STRING,
+      type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue : 0,
       comment: "0 for not root, 1 for root"
