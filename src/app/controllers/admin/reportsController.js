@@ -1,6 +1,6 @@
 import User from "../../../database/models/userModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
-import { Op } from "sequelize";
+import { Op, where } from "sequelize";
 import validate from "../../../utils/CustomValidation.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
@@ -13,9 +13,7 @@ const retrieveAllReport = async (req, res) => {
     let { searchParam, limit, page, startDate, endDate } = req.query;
 
     // Fields for searching in workReports and User models
-    const userSearchable = ["fullname"];
-    const deptSearchable = ["name"];
-    const desigSearchable = ["name"];
+    const searchable = ["$user.fullname$", "$user.department.name$", "$user.designation.name$"];
 
     // Pagination setup
     limit = parseInt(limit) || 10;
@@ -23,10 +21,7 @@ const retrieveAllReport = async (req, res) => {
     const offset = (page - 1) * limit;
 
     // Generate search conditions
-    const userWhere = (await helper.searchCondition(searchParam, userSearchable)) || {};
-    const deptWhere = (await helper.searchCondition(searchParam, deptSearchable)) || {};
-    const desigWhere = (await helper.searchCondition(searchParam, desigSearchable)) || {};
-    const reportWhere = {};
+    const reportWhere = (await helper.searchCondition(searchParam, searchable)) || {};
 
     // Add date range filter to `reportWhere`
     if (startDate && endDate) {
@@ -50,18 +45,15 @@ const retrieveAllReport = async (req, res) => {
           model: User,
           as: "user", // Alias for the associated `User` model
           required: true, // Ensures only records with matching `user_id` are included
-          where: userWhere, // Filters for the `User` model
           attributes: ["id", "fullname"], // Select necessary fields
           include: [
             {
               model: department,
-              where: deptSearchable,
               as: "department", // Alias for the associated `department` model
               attributes: ["name"], // Select specific fields
             },
             {
               model: designation,
-              where: desigSearchable,
               as: "designation", // Alias for the associated `designation` model
               attributes: ["name"], // Select specific fields
             },
@@ -92,6 +84,70 @@ const retrieveAllReport = async (req, res) => {
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
+
+
+// const retrieveAllReport = async (req, res) => {
+//   try {
+//     let { searchParam, limit, page, startDate, endDate } = req.query;
+
+//     // Set pagination and default values
+//     limit = parseInt(limit) || 10;
+//     page = parseInt(page) || 1;
+//     const offset = (page - 1) * limit;
+
+//     // Build the where conditions
+//     const whereConditions = [
+//       `work_reports.company_id = ${req.user.company_id}`
+//     ];
+
+//     if (startDate && endDate) {
+//       whereConditions.push(`work_reports.createdAt BETWEEN '${new Date(startDate)}' AND '${new Date(endDate)}'`);
+//     } else if (startDate) {
+//       whereConditions.push(`work_reports.createdAt >= '${new Date(startDate)}'`);
+//     } else if (endDate) {
+//       whereConditions.push(`work_reports.createdAt <= '${new Date(endDate)}'`);
+//     }
+
+//     // Construct the raw SQL query
+//     const query = `
+//       SELECT 
+//         work_reports.id,
+//         work_reports.user_id,
+//         work_reports.date,
+//         work_reports.status,
+//         work_reports.createdAt,
+//         user.id AS user_id,
+//         user.fullname AS user_fullname,
+//         department.name AS department_name,
+//         designation.name AS designation_name
+//       FROM 
+//         work_reports
+//       INNER JOIN 
+//         users AS user ON work_reports.user_id = user.id
+//       LEFT JOIN 
+//         departments AS department ON user.departmentId = department.id
+//       LEFT JOIN 
+//         designations AS designation ON user.designationId = designation.id
+//       WHERE 
+//         ${whereConditions.join(' AND ')}
+//       ORDER BY 
+//         work_reports.createdAt DESC
+//       LIMIT ${offset}, ${limit};
+//     `;
+
+//     // Run the query using sequelize.query
+//     const [results, metadata] = await sequelize.query(query);
+
+//     // Respond with success and data
+//     return helper.success(res, variables.Success, "Retrieved User Report Successfully", {
+//       count: metadata.rowCount, // Count of total rows matching the criteria
+//       rows: results, // Formatted result rows
+//     });
+//   } catch (error) {
+//     console.error("Error fetching reports:", error);
+//     return helper.failed(res, variables.BadRequest, error.message);
+//   }
+// };
 
 const retrieveUserReport = async (req, res) => {
   try {

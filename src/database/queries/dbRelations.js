@@ -42,4 +42,6 @@ team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
 team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
 
 
+//added
+
 export default {}
