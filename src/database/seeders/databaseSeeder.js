@@ -10,15 +10,26 @@ import company from "../models/companyModel.js";
 export default async function seedDatabase() {
     try {
 
-        //__________________________________----------------------------COMPANIES START------------------------------------------------------
-
         await company.destroy({
             where: {}
         });
 
         await sequelize.query(`ALTER TABLE ${company.getTableName()} AUTO_INCREMENT=1`);
 
-        //__________________________________----------------------------COMPANIES END------------------------------------------------------
+        const createdCompanies = await company.bulkCreate(
+            [
+              { name: "LBM Solutions", employeeNumber: 120 },
+              { name: "ApniCars", employeeNumber: 160 },
+              { name: "Digimon", employeeNumber: 250 },
+              { name: "OceanWorks", employeeNumber: 50 },
+            ],
+            { returning: true }
+          ); // 'returning: true' ensures the inserted rows are returned
+      
+          let companyMapping = {};
+          for (const comp of createdCompanies) {
+            companyMapping[comp.name] = comp.id;
+          }
 
 
         //__________________________________----------------------------ROLE START------------------------------------------------------
@@ -127,64 +138,64 @@ export default async function seedDatabase() {
             {
                 name: "Morning Shift",
                 company_id:101,
-                start_time: "08:00 AM",
-                end_time: "04:00 PM",
+                start_time: "08:00",
+                end_time: "16:00",
                 days: ['mon', 'tue', 'wed', 'thu', 'fri'],
                 total_hours: 8
             },
             {
                 name: "Evening Shift",
                 company_id:101,
-                start_time: "04:00 PM",
-                end_time: "12:00 AM",
+                start_time: "16:00",
+                end_time: "00:00",
                 days: ['mon', 'tue', 'wed', 'thu', 'fri'],
                 total_hours: 8
             },
             {
                 name: "Night Shift",
                 company_id:101,
-                start_time: "12:00 AM",
-                end_time: "08:00 AM",
+                start_time: "00:00",
+                end_time: "08:00",
                 days: ['mon', 'tue', 'wed', 'thu', 'fri'],
                 total_hours: 8
             },
             {
                 name: "Weekend Shift",
                 company_id:101,
-                start_time: "10:00 AM",
-                end_time: "06:00 PM",
+                start_time: "10:00",
+                end_time: "18:00",
                 days: ['sat', 'sun'],
                 total_hours: 8
             },
             {
                 name: "Split Shift",
                 company_id:101,
-                start_time: "09:00 AM",
-                end_time: "01:00 PM",
+                start_time: "09:00",
+                end_time: "13:00",
                 days: ['mon', 'tue', 'wed', 'thu', 'fri'],
                 total_hours: 4
             },
             {
                 name: "Flexible Shift",
                 company_id:101,
-                start_time: "10:00 AM",
-                end_time: "04:00 PM",
+                start_time: "10:00",
+                end_time: "16:00",
                 days: ['mon', 'tue', 'wed', 'fri'],
                 total_hours: 6
             },
             {
                 name: "Part-Time Shift",
                 company_id:101,
-                start_time: "02:00 PM",
-                end_time: "06:00 PM",
+                start_time: "14:00",
+                end_time: "20:00",
                 days: ['mon', 'tue', 'wed', 'thu', 'fri'],
                 total_hours: 4
             },
             {
                 name: "24/7 Support Shift",
                 company_id:101,
-                start_time: "06:00 AM",
-                end_time: "02:00 PM",
+                start_time: "06:00",
+                end_time: "14:00",
                 days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
                 total_hours: 8
             }

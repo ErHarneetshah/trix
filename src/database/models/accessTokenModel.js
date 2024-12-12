@@ -10,13 +10,9 @@ const accessToken = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
-
     company_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
+      allowNull: true,
     },
     userId: {
       type: DataTypes.INTEGER,
@@ -57,6 +53,7 @@ export const createAccessToken = async (userId, isUserAdmin, company_id, token, 
         company_id: company_id,
         token,
         expiry_time: expireTime,
+        company_id
       },
       { transaction: dbTransaction }
     );

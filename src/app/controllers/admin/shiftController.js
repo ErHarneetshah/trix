@@ -49,15 +49,12 @@ class shiftController {
 
   getSpecificShift = async (req, res) => {
     try {
-      const requestData = req.body;
+      const {id} = req.body;
 
       const specificData = await shift.findOne({
         where: {
           company_id: req.user.company_id,
-          name: requestData.name,
-          start_time: requestData.start_time,
-          end_time: requestData.end_time,
-          days: JSON.stringify(requestData.days), // Ensure days are correctly formatted for comparison
+          id: id
         },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
@@ -167,7 +164,7 @@ class shiftController {
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists!");
+      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in your company!");
 
       //* Check if there is a dept with a name in a different id
       const existingShiftWithName = await shift.findOne({
@@ -224,7 +221,7 @@ class shiftController {
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists!");
+      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in your company id!");
 
       // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const isUsedInTeams = await team.findOne({ where: { shiftId: id } });

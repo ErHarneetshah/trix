@@ -82,7 +82,7 @@ class desigController {
         where: { id: id, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!desigData) return helper.failed(res, variables.NotFound, "Data Not Found");
+      if (!desigData) return helper.failed(res, variables.NotFound, "Designation Data Not Found in your company data");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", desigData);
     } catch (error) {
@@ -103,10 +103,10 @@ class desigController {
         transaction: dbTransaction,
       });
 
-      if (existingDesig) return helper.failed(res, variables.ValidationError, "Designation Already Exists");
+      if (existingDesig) return helper.failed(res, variables.ValidationError, "Designation Already Exists in your company");
 
       // Add new designation in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      const addNewDesig = await designation.create({ name: name, compnay_id: req.user.company_id }, { transaction: dbTransaction });
+      const addNewDesig = await designation.create({ name: name, company_id: req.user.company_id }, { transaction: dbTransaction });
       
       // Commits db enteries if passes everything >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       await dbTransaction.commit();

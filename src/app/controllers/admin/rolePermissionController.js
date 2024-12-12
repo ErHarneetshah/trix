@@ -8,27 +8,14 @@ import role from "../../../database/models/roleModel.js";
 class rolePermissionController {
   getAllRolePermissions = async (req, res) => {
     try {
-      let { searchParam, limit, page } = req.query;
-      // let permissionSearchable = ["modules"];
-      // let roleSearchable = ["name"];
-
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
-      // let permissionWhere = await helper.searchCondition(searchParam, permissionSearchable);
-      // let roleWhere = await helper.searchCondition(searchParam, roleSearchable);
-
       const alldata = await rolePermission.findAndCountAll({
-        // where: permissionWhere,
-        where: {company_id: req.user.company_id},
+        where: { company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
-        offset: offset,
-        limit: limit,
         order: [["id", "DESC"]],
         include: [
           {
             model: role,
-            // where: roleWhere,
-            as: "role",
+            as: "role", 
             attributes: ["name"],
           },
         ],
@@ -49,31 +36,30 @@ class rolePermissionController {
 
         let existingModule = acc.find((data) => data.modules === modules);
 
-            if (!existingModule) {
-                existingModule = {
-                    id,
-                    modules,
-                    roleDetails: []
-                };
-                acc.push(existingModule);
-            }
+        if (!existingModule) {
+          existingModule = {
+            id,
+            modules,
+            roleDetails: [],
+          };
+          acc.push(existingModule);
+        }
 
-            // existingModule.roleDetails[`roleName`] = roleName;
-            // existingModule.roleDetails[`permissions`] = permissions;
-            let i = 0;
-          //   [roleName].forEach((name) => {
-          //     existingModule.roleDetails[name] = {
-          //         roleName: name,
-          //         permissions: permissions
-          //     };
-          // });
-          existingModule.roleDetails.push({
-            roleName: roleName,
-            permissions: permissions
+        // existingModule.roleDetails[`roleName`] = roleName;
+        // existingModule.roleDetails[`permissions`] = permissions;
+        let i = 0;
+        //   [roleName].forEach((name) => {
+        //     existingModule.roleDetails[name] = {
+        //         roleName: name,
+        //         permissions: permissions
+        //     };
+        // });
+        existingModule.roleDetails.push({
+          roleName: roleName,
+          permissions: permissions,
         });
 
-            return acc;
-
+        return acc;
       }, []);
 
       return helper.success(res, variables.Success, "All Data Fetched Successfully!", transformedData);
@@ -110,7 +96,7 @@ class rolePermissionController {
           DELETE: false,
         },
       };
-      console.log(permissionData);
+      // console.log(permissionData);
 
       await rolePermission.create(permissionData, { transaction });
       return true;
@@ -160,7 +146,7 @@ class rolePermissionController {
       });
       if (!existRole) return helper.failed(res, variables.ValidationError, "Role Name Does not exists in Roles!");
 
-      console.log(existRole.id);
+      // console.log(existRole.id);
 
       // Checking whether the role id exists in system or not
       const existingRolePermission = await rolePermission.findOne({
