@@ -1,11 +1,13 @@
+import { log } from "console";
 import multer from "multer";
 import path from "path";
-import helper from "./services/helper.js";
+import helper from "../utils/services/helper.js";
 import variables from "../app/config/variableConfig.js";
-
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
+
+            console.log({'pathnameeeeeeeeee':req.headers.mypath})
         cb(null, `./assets/${req.headers.mypath}`);
     },
     filename: function (req, file, cb) {
@@ -29,10 +31,16 @@ const upload = multer({
     storage: storage, fileFilter: (req, file, cb) => { checkFileType(file, cb) }
 }).single("file");
 
-const fileUpload = (req, res, next) => {
+const fileUpload = async (req, res, next) => {
+ try {
+   
+ 
     upload(req, res, (err) => {
+   
 
         if (err) {
+
+            console.log('inside errrrr')
             // let result = helper.failed(res , variables.InternalServerError , err);
             let result =  {
                 status: 0,
@@ -42,7 +50,9 @@ const fileUpload = (req, res, next) => {
             next();
         }
 
+      
         if (req.file == undefined) {
+            console.log('inside undefined')
             req.filedata = {
                 status: 0,
                 message: "Invalid Data!!",
@@ -51,14 +61,21 @@ const fileUpload = (req, res, next) => {
             next();
         }
 
+
+        console.log('inside elseeeeeeeeeee')
+
         req.filedata = {
             status: 1,
             message: "success",
             data: req.file?.filename
           };
         // req.filedata = reply.success(req.file?.filename);
+        console.log("nextData");
         next();
     });
+ } catch (error) {
+    console.log(error)
+ }
 }
 
 
