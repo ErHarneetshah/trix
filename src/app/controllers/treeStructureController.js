@@ -18,7 +18,7 @@ async function buildUserTree(parentDept, companyId, level = 0) {
                     as: "department",
                     include: {
                         model: User,
-                        as: "members",
+                        as: "children",
                     },
                 },
                 {
@@ -41,8 +41,8 @@ async function buildUserTree(parentDept, companyId, level = 0) {
             // Exclude the reportingManager from the members
             if (child.department) {
                 for (const team of child.department) {
-                    team.members = team.members.filter(
-                        (member) => member.id !== child.reportingManagerId
+                    team.children = team.children.filter(
+                        (children) => children.id !== child.reportingManagerId
                     );
                 }
             }

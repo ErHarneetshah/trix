@@ -43,7 +43,7 @@ ProductiveWebsite.belongsTo(department, { as: "department", foreignKey: "departm
 // Team Relations here
 team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
 team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
-team.hasMany(User, { as: 'members', foreignKey: 'teamId' });
+team.hasMany(User, { as: 'children', foreignKey: 'teamId' });
 
 
 
