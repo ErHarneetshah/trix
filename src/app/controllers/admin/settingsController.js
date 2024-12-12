@@ -173,8 +173,7 @@ const updateSitesStatus = async (req, res) => {
 
 const addProductiveApps = async (req, res) => {
   try {
-    console.log("addProdcutiveApps Reuquest ------------------------")
-    console.log(req.body);
+  
     const { department_id, app_name } = req.body;
     const rules = {
       department_id: 'required|integer',
@@ -323,6 +322,7 @@ const fetchFaviconUrl = async (website) => {
 
 const addProductiveWebsites = async (req, res) => {
   try {
+    console.log(req.user);
     const { departmentId, website } = req.body;
     const rules = {
       departmentId: 'required|integer',
