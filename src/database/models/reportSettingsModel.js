@@ -26,7 +26,7 @@ const reportSettings = sequelize.define('report_settings', {
         type: DataTypes.TINYINT,
         allowNull: false,
         defaultValue: 1,
-        comment: '1 => Daily ,2=>Monthly,3=>Weekly'
+        comment: '1=>Monthly,2=>Weekly,3=>Daily'
     }
 }, {
     timestamps: true,
