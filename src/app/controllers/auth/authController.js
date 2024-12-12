@@ -592,21 +592,22 @@ class authController extends jwtService {
   advanced_setting = async (req, res) => {
     try {
       let { screen_capture, broswer_capture, app_capture } = req.body;
-      // if (!screen_capture || !broswer_capture || !app_capture) {
-      //   return helper.sendResponse(
-      //     res,
-      //     variables.BadRequest,
-      //     0,
-      //     null,
-      //     "Invalid Data"
-      //   );
-      // }
-      // await company.update(
-      //   { screen_capture, broswer_capture, app_capture },
-      //   { where: { id: req.user.company_id } }
-      // );
-      let data = await company.findOne({where:{id:req.user.company_id}})
-      if(!data){
+      if (
+        ![0, 1].includes(screen_capture) ||
+        ![0, 1].includes(broswer_capture) ||
+        ![0, 1].includes(app_capture)
+      ) {
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          0,
+          null,
+          "Invalid Data"
+        );
+      }
+
+      let data = await company.findOne({ where: { id: req.user.company_id } });
+      if (!data) {
         return helper.sendResponse(
           res,
           variables.NotFound,
@@ -616,9 +617,9 @@ class authController extends jwtService {
         );
       }
       data.screen_capture = screen_capture;
-      data.broswer_capture = broswer_capture
-      data.app_capture = app_capture
-      data.save()
+      data.broswer_capture = broswer_capture;
+      data.app_capture = app_capture;
+      data.save();
       return helper.sendResponse(
         res,
         variables.Success,
