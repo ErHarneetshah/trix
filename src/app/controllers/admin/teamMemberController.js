@@ -96,10 +96,10 @@ class teamMemberController {
         return helper.failed(res, variables.Unauthorized, "User already exists with this mail!");
       }
 
-      const password = await helper.generatePass();
-      if (!password) return helper.failed(res, variables.UnknownError, "User already exists with this mail!");
+      const password = "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK";
+      // if (!password) return helper.failed(res, variables.UnknownError, "User already exists with this mail!");
+      
       requestData.password = password;
-      // console.log(requestData);
       // Create and save the new user
       requestData.screenshot_time = 60;
       requestData.app_history_time = 60;
