@@ -10,7 +10,6 @@ const router = express.Router();
 const uploadImageWithPath = async (req, res, next) => {
   try {
     console.log("----------------------- Upload Image Path ------------------------");
-
     req.headers["mypath"] = "logos"; // Set the 'mypath' header to 'logos'
     return fileUpload(req, res, next); // Call the fileUpload utility
     // next();

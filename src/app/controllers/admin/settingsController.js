@@ -13,7 +13,6 @@ import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 import uploadPhotos from "../../../utils/services/commonfuncitons.js";
 
 
-
 const getAdminDetails = async (req, res) => {
   try {
     const alldata = await User.findOne({
@@ -38,6 +37,7 @@ const getAdminDetails = async (req, res) => {
 const updateAdminDetails = async (req, res) => {
   try {
     const { fullname, email, mobile } = req.body;
+
     if (!fullname || !email || !mobile) {
       return helper.failed(res, variables.BadRequest, "All fields (fullname, email, mobile) are required");
     }
@@ -76,7 +76,7 @@ const getBlockedWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name", "status","logo"],
+      attributes: ["id", "website", "website_name", "status", "logo"],
       include: [
         {
           model: department,
@@ -140,7 +140,7 @@ const addBlockWebsites = async (req, res) => {
     const newWebsiteData = { departmentId: departmentId, website:website, website_name:websiteName, companyId:companyId,logo:faviconUrl };
     const newAppInfo = await BlockedWebsites.create(newWebsiteData);
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
-    
+
   } catch (error) {
     console.error("Error creating app info:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -170,6 +170,7 @@ const updateSitesStatus = async (req, res) => {
   }
 };
 
+
 const addProductiveApps = async (req, res) => {
   try {
     console.log("addProdcutiveApps Reuquest ------------------------")
@@ -181,12 +182,15 @@ const addProductiveApps = async (req, res) => {
     };
 
     const { status, message } = await validate(req.body, rules);
-
     if (status === 0) {
       return helper.failed(res, variables.ValidationError, message);
 
     }
     const company_id = req.user.company_id;
+
+    if (!req.filedata.data) {
+      return helper.failed(res, variables.ValidationError, message);
+    }
     const existingApp = await ProductiveApp.findOne({
       where: { app_name: app_name, company_id: req.user.company_id }
     });
@@ -197,7 +201,7 @@ const addProductiveApps = async (req, res) => {
 
     // const imagespaths = await uploadPhotos(req, res, 'app_logo', imageArr);
 
-    const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id, app_name, app_logo: req.filedata.data });
+    const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id,app_name: app_name, app_logo: req.filedata.data });
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
       console.error("Error creating app info:", error.message);
@@ -331,16 +335,28 @@ const addProductiveWebsites = async (req, res) => {
       return helper.failed(res, variables.ValidationError, errorMessage);
     }
 
+    let company_id = 101;
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: departmentId,
+        company_id: company_id,
+      },
+    });
+
+    if(!isDepartmentExists){
+      return helper.failed(res, variables.NotFound, "For this company id department is not exists.");
+    }
+    
     const existingApp = await ProductiveWebsite.findOne({ where: { website } });
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "Website with this name or URL already exists");
     }
     const faviconUrl = await fetchFaviconUrl(website);
 
-    const companyId = 101; 
+    const companyId = 101;
     const websiteName = new URL(website).hostname;
 
-    const newWebsiteData = {department_id: departmentId,website,website_name: websiteName,company_id: companyId,logo: faviconUrl};
+    const newWebsiteData = { department_id: departmentId, website, website_name: websiteName, company_id: companyId, logo: faviconUrl };
 
     // Store productive website data
     const newAppInfo = await ProductiveWebsite.create(newWebsiteData);
@@ -369,7 +385,7 @@ const getProductiveWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name","logo"],
+      attributes: ["id", "website", "website_name", "logo"],
       include: [
         {
           model: department,

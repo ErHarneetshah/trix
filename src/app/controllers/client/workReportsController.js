@@ -6,35 +6,6 @@ import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import User from "../../../database/models/userModel.js";
 
-const createReport_old = async (req, res) => {
-  try {
-    const { description } = req.body;
-    const rules = {
-      // user_id: 'required|integer',
-      description: "required|string",
-    };
-    const { status, message } = await validate(req.body, rules);
-    let companyId = req.user.company_id;
-
-    if (status === 0) {
-      return helper.failed(res, variables.ValidationError, message);
-    }
-
-    // const isUserExists = await User.findOne({
-    //     where: { id: user_id, company_id: req.user.company_id },
-    //  });
-
-    //  if(!isUserExists){
-    //     return helper.failed(res, variables.NotFound, "User is not exists in our records.");
-    //  }
-    const report = await workReports.create({ company_id: companyId, user_id: req.user.id, description: description });
-    return helper.success(res, variables.Success, "Your report submitted successfully", report);
-  } catch (error) {
-    console.error("Error while creating the user report ", error);
-    return helper.failed(res, variables.BadRequest, error.message);
-  }
-};
-
 const createReport = async (req, res) => {
   try {
     const { description } = req.body;
