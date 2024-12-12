@@ -1,7 +1,7 @@
 import sequelize from "../../../database/queries/dbConnection.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
-import TimeLog from "../../../database/models/teamLogsModel.js";
+import TimeLog from "../../../database/models/timeLogsModel.js";
 import { group } from "console";
 import shift from "../../../database/models/shiftModel.js";
 import User from "../../../database/models/userModel.js";

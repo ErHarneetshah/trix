@@ -7,7 +7,7 @@ import { ImageUpload } from "../../database/models/ImageUpload.js";
 import { Op, Sequelize } from "sequelize";
 import Model from "../../database/queries/dbConnection.js";
 import { QueryTypes } from "@sequelize/core";
-import TimeLog from "../../database/models/TimeLog.js";
+import TimeLog from "../../database/models/timeLogsModel.js";
 import { Device } from "../../database/models/device.js";
 import company from "../../database/models/companyModel.js";
 

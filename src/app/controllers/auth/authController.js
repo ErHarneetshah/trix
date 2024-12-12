@@ -6,7 +6,7 @@ import jwtService from "../../../utils/services/jwtService.js";
 import accessToken, { createAccessToken } from "../../../database/models/accessTokenModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
-import TimeLog from "../../../database/models/TimeLog.js";
+import TimeLog from "../../../database/models/timeLogsModel.js";
 import { getShiftData } from "../../../utils/validations/socketValidation.js";
 import bcrypt from "bcrypt";
 import company from "../../../database/models/companyModel.js";
