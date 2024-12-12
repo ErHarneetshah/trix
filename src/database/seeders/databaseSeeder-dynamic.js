@@ -111,61 +111,62 @@ export default async function seedDatabase() {
     const shiftTemplates = [
       {
         name: "Morning Shift",
-        start_time: "08:00 AM",
-        end_time: "04:00 PM",
+        start_time: "08:00",
+        end_time: "16:00",
         days: ["mon", "tue", "wed", "thu", "fri"],
         total_hours: 8,
       },
       {
         name: "Evening Shift",
-        start_time: "04:00 PM",
-        end_time: "12:00 AM",
+        start_time: "16:00",
+        end_time: "00:00",
         days: ["mon", "tue", "wed", "thu", "fri"],
         total_hours: 8,
       },
       {
         name: "Night Shift",
-        start_time: "12:00 AM",
-        end_time: "08:00 AM",
+        start_time: "00:00",
+        end_time: "08:00",
         days: ["mon", "tue", "wed", "thu", "fri"],
         total_hours: 8,
       },
       {
         name: "Weekend Shift",
-        start_time: "10:00 AM",
-        end_time: "06:00 PM",
+        start_time: "10:00",
+        end_time: "18:00",
         days: ["sat", "sun"],
         total_hours: 8,
       },
       {
         name: "Split Shift",
-        start_time: "09:00 AM",
-        end_time: "01:00 PM",
+        start_time: "09:00",
+        end_time: "13:00",
         days: ["mon", "tue", "wed", "thu", "fri"],
         total_hours: 4,
       },
       {
         name: "Flexible Shift",
-        start_time: "10:00 AM",
-        end_time: "04:00 PM",
+        start_time: "10:00",
+        end_time: "16:00",
         days: ["mon", "tue", "wed", "fri"],
         total_hours: 6,
       },
       {
         name: "Part-Time Shift",
-        start_time: "02:00 PM",
-        end_time: "06:00 PM",
+        start_time: "14:00",
+        end_time: "18:00",
         days: ["mon", "tue", "wed", "thu", "fri"],
         total_hours: 4,
       },
       {
         name: "24/7 Support Shift",
-        start_time: "06:00 AM",
-        end_time: "02:00 PM",
+        start_time: "06:00",
+        end_time: "14:00",
         days: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
         total_hours: 8,
       },
     ];
+    
 
     for (const comp of createdCompanies) {
       companyMapping[comp.name] = comp.id; // Map company names to their IDs

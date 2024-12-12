@@ -19,6 +19,8 @@ import {
   startOfYear,
   addMonths
 } from 'date-fns';
+import team from "../../../../database/models/teamModel.js";
+import shift from "../../../../database/models/shiftModel.js";
 
 // Get weeks for a specific month
 function getWeeksInMonth(year = '2024', month = '12') {
@@ -776,6 +778,14 @@ const productiveAppAndNonproductiveApps = async (req, res, next) => {
   }
 };
 
+
+//helper function for transform data
+const transformData = (response, name) => {
+  return {
+    name: name,
+    data: response.map((item) => parseFloat(item.total_time)),
+  };
+};
 //function for activity type trends
 
 const activityData = async (req, res, next) => {
@@ -790,20 +800,429 @@ const activityData = async (req, res, next) => {
     const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption });
     const nonProductiveWebsiteData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
 
+    const periods = productiveAppsData.map((item) => item.period);
+    // Transform data for seriesData
+    const seriesData = [
+      transformData(productiveAppsData, "Productive Apps Data"),
+      transformData(productiveWebsiteData, "Productive Website Data"),
+      transformData(nonProductiveAppsData, "Non-Productive Apps Data"),
+      transformData(nonProductiveWebsiteData, "Non-Productive Website Data"),
+    ];
+
+    // return { periods, seriesData };
+
+    // Success response
+    return helper.success(res, variables.Success, "Data Fetched Successfully", { periods, seriesData });
+  } catch (error) {
+    console.error("Error in productiveAppsAndproductiveapps:", error);
+    return helper.failed(res, 500, "Internal Server Error", []);
+  }
+};
 
 
-    // if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
-    //   return helper.failed(res, 400, "Invalid data format", []);
-    // }
+//helper function for generate hour
+const generateHourRange = (start, end) => {
+  const startHour = parseInt(start.split(":")[0], 10);
+  const endHour = parseInt(end.split(":")[0], 10);
 
-    // const combinedData = nonProductiveAppsData.map(item1 => {
-    //   const item2 = productiveAppsData.find(item => item.period === item1.period); // Match by period
-    //   return {
-    //     period: item1.period,
-    //     non_productive_apps_total_time: parseFloat(item1.total_time || '0.0'),
-    //     productive_apps_total_time: parseFloat(item2?.total_time || '0.0')
-    //   };
-    // });
+  const hours = [];
+  for (let hour = startHour; hour <= endHour; hour++) {
+    hours.push(hour);
+  }
+
+  return hours;
+};
+
+
+const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
+  try {
+    // Extract `userId` and `date` based on the type of request
+    const { userId, date } = type === 'api' ? req.query : obj;
+    const companyId = 101;
+
+    // Validate required parameters
+    if (!userId || !date) {
+      const message = "userId and date are required.";
+      return type === 'api' ? helper.failed(res, 400, message) : false;
+    }
+
+    // Fetch user information
+    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch team information
+    const teamInfo = await team.findOne({
+      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+    });
+    if (!teamInfo) {
+      const message = "Team is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch shift information
+    const shiftInfo = await shift.findOne({
+      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+    });
+    if (!shiftInfo) {
+      const message = "Shift is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // SQL query to fetch productive app data grouped by hour
+    const query = `
+      SELECT
+          DATE_FORMAT(ah.startTime, '%H:00') AS hour,
+          SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_duration
+      FROM
+          app_histories AS ah
+      INNER JOIN
+          productive_apps ap ON ap.app_name = ah.appName
+      WHERE
+          DATE(ah.createdAt) = :date
+          AND ah.userId = :userId
+          AND ah.company_id = :companyId
+      GROUP BY
+          DATE_FORMAT(ah.startTime, '%H:00')
+      ORDER BY
+          hour;
+    `;
+
+    // Execute query with replacements
+    const results = await sequelize.query(query, {
+      replacements: { date, userId, companyId },
+      type: Sequelize.QueryTypes.SELECT,
+      logging: console.log
+    });
+
+    // Format results for pie chart data
+    const pieChartData = results.map((result) => ({
+      name: result.hour,
+      value: result.total_duration ? parseFloat((result.total_duration)) : 0, // Convert seconds to hours
+    }));
+
+    // Return success response
+    const successMessage = "Productive app data fetched successfully.";
+    return type === 'api'
+      ? helper.success(res, variables.Success, successMessage, pieChartData)
+      : pieChartData;
+  } catch (error) {
+    // Log error and return failure response
+    console.error("Error fetching productive app data:", error.message);
+    return type === 'api'
+      ? helper.failed(res, 500, error.message)
+      : false;
+  }
+};
+
+
+const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
+  try {
+    // Extract `userId` and `date` based on the type of request
+    const { userId, date } = type === 'api' ? req.query : obj;
+    const companyId = 101;
+
+    // Validate required parameters
+    if (!userId || !date) {
+      const message = "userId and date are required.";
+      return type === 'api' ? helper.failed(res, 400, message) : false;
+    }
+
+    // Fetch user information
+    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch team information
+    const teamInfo = await team.findOne({
+      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+    });
+    if (!teamInfo) {
+      const message = "Team is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch shift information
+    const shiftInfo = await shift.findOne({
+      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+    });
+    if (!shiftInfo) {
+      const message = "Shift is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // SQL query to fetch productive app data grouped by hour
+    const query = `
+    SELECT
+    DATE_FORMAT(ah.startTime, '%H:00') AS hour,
+    SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_duration
+FROM
+    app_histories AS ah
+WHERE
+    ah.appName NOT IN (
+        SELECT appName
+        FROM productive_apps
+        WHERE company_id = :companyId
+    )
+ AND date(createdAt)="2024-12-11"
+    AND ah.userId = 2
+    AND ah.company_id = :companyId
+GROUP BY
+    DATE_FORMAT(ah.startTime, '%H:00')
+ORDER BY
+    hour;
+    `;
+
+    // Execute query with replacements
+    const results = await sequelize.query(query, {
+      replacements: { date, userId, companyId },
+      type: Sequelize.QueryTypes.SELECT,
+      logging: console.log
+    });
+
+    // Format results for pie chart data
+    const pieChartData = results.map((result) => ({
+      name: result.hour,
+      value: result.total_duration ? parseFloat((result.total_duration)) : 0, // Convert seconds to hours
+    }));
+
+    // Return success response
+    const successMessage = "Non Productive app data fetched successfully.";
+    return type === 'api'
+      ? helper.success(res, variables.Success, successMessage, pieChartData)
+      : pieChartData;
+  } catch (error) {
+    // Log error and return failure response
+    console.error("Error fetching non productive app data:", error.message);
+    return type === 'api'
+      ? helper.failed(res, 500, error.message)
+      : false;
+  }
+};
+
+
+
+const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj = {}) => {
+  try {
+    const { userId, date } = type === 'api' ? req.query : obj;
+    const companyId = 101; // Use environment variable for flexibility
+
+    // Validate required parameters
+    if (!userId || !date) {
+      const message = "userId and date are required.";
+      return type === 'api' ? helper.failed(res, 400, message) : false;
+    }
+
+    // Fetch user information
+    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch team information
+    const teamInfo = await team.findOne({
+      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+    });
+    if (!teamInfo) {
+      const message = "Team is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch shift information
+    const shiftInfo = await shift.findOne({
+      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+    });
+    if (!shiftInfo) {
+      const message = "Shift is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // SQL query to fetch productive website data grouped by hour
+    const query = `
+      SELECT 
+        COUNT(uh.id) AS total_counts,
+        DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
+      FROM user_histories AS uh 
+      INNER JOIN productive_websites AS pw 
+        ON pw.website_name = uh.website_name 
+      WHERE 
+        uh.userId = :userId 
+        AND uh.company_id = :companyId 
+        AND DATE(uh.createdAt) = :date 
+      GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
+      ORDER BY hour;
+    `;
+
+    // Execute query with replacements
+    const results = await sequelize.query(query, {
+      replacements: { date, userId, companyId },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    // Format results for pie chart data
+    const pieChartData = results.map((result) => ({
+      name: result.hour,
+      value: result.total_counts ? parseInt(result.total_counts, 10) : 0,
+    }));
+
+    // Return success response
+    const successMessage = "Productive website data fetched successfully.";
+    return type === 'api'
+      ? helper.success(res, variables.Success, successMessage, pieChartData)
+      : pieChartData;
+  } catch (error) {
+    // Log error with context
+    console.error("Error fetching productive website data:", {
+      message: error.message,
+      date,
+    });
+    return type === 'api'
+      ? helper.failed(res, 500, "An error occurred while fetching data.")
+      : false;
+  }
+};
+
+
+
+const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', obj = {}) => {
+  try {
+    const { userId, date } = type === 'api' ? req.query : obj;
+    const companyId = 101; // Use environment variable for flexibility
+
+    // Validate required parameters
+    if (!userId || !date) {
+      const message = "userId and date are required.";
+      return type === 'api' ? helper.failed(res, 400, message) : false;
+    }
+
+    // Fetch user information
+    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch team information
+    const teamInfo = await team.findOne({
+      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+    });
+    if (!teamInfo) {
+      const message = "Team is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch shift information
+    const shiftInfo = await shift.findOne({
+      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+    });
+    if (!shiftInfo) {
+      const message = "Shift is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    const query = `
+    SELECT 
+    COUNT(uh.id) AS total_counts,
+    DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
+  FROM user_histories AS uh 
+   
+  WHERE uh.website_name not in(select website_name from productive_websites where company_id=:companyId) and
+    uh.userId = :userId
+    AND uh.company_id = :companyId
+    AND DATE(uh.createdAt) = :date
+  GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
+  ORDER BY hour;
+    `;
+
+    // Execute query with replacements
+    const results = await sequelize.query(query, {
+      replacements: { date, userId, companyId },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    // Format results for pie chart data
+    const pieChartData = results.map((result) => ({
+      name: result.hour,
+      value: result.total_counts ? parseInt(result.total_counts, 10) : 0,
+    }));
+
+    // Return success response
+    const successMessage = "Non Productive website data fetched successfully.";
+    return type === 'api'
+      ? helper.success(res, variables.Success, successMessage, pieChartData)
+      : pieChartData;
+  } catch (error) {
+    // Log error with context
+    console.error("Error fetching non productive website data:", {
+      message: error.message,
+      date,
+    });
+    return type === 'api'
+      ? helper.failed(res, 500, "An error occurred while fetching data.")
+      : false;
+  }
+};
+
+
+
+//function for productive apps and productive websites chart
+const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, next) => {
+  try {
+    const { userId, date } = req.query;
+
+    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date });
+    const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date });
+
+    console.log(nonProductiveWebsitesData);
+    console.log(productiveWebsitesData);
+    if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {
+      return helper.failed(res, 400, "Invalid data format", []);
+    }
+
+    const combinedData = nonProductiveWebsitesData.map(item1 => {
+      const item2 = productiveWebsitesData.find(item => item.period === item1.period); // Match by period
+      return {
+        period: item1.name,
+        non_productive_websites_total_time: parseFloat(item1.value || '0.0'),
+        productive_websites_value: parseFloat(item2?.value || '0.0')
+      };
+    });
+
+    // Success response
+    return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
+  } catch (error) {
+    console.error("Error in singleUserProductiveWebsitesAndNonproductiveWebsites:", error);
+    return helper.failed(res, 500, "Internal Server Error", []);
+  }
+};
+
+
+//function for productive apps and non productive apps chart
+const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
+  try {
+    const { userId, date } = req.query;
+
+    const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date });
+    const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date });
+
+    console.log(nonProductiveAppsData);
+    if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
+      return helper.failed(res, 400, "Invalid data format", []);
+    }
+
+    const combinedData = nonProductiveAppsData.map(item1 => {
+      const item2 = productiveAppsData.find(item => item.period === item1.period); // Match by period
+      return {
+        period: item1.name,
+        non_productive_apps_total_time: parseFloat(item1.value || '0.0'),
+        productive_apps_value: parseFloat(item2?.value || '0.0')
+      };
+    });
 
     // Success response
     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
@@ -815,8 +1234,4 @@ const activityData = async (req, res, next) => {
 
 
 
-
-
-
-
-export default { productiveChart, topApplicationChart, topWebsiteChart, productiveAppsChart, productiveWebsiteChart, NonProductiveWebsiteChart, nonProductiveAppsChart, productiveAppsAndproductiveWebsites, productiveWebsiteAndNonproductiveWebsites, productiveAppAndNonproductiveApps };
+export default { productiveChart, topApplicationChart, topWebsiteChart, productiveAppsChart, productiveWebsiteChart, NonProductiveWebsiteChart, nonProductiveAppsChart, productiveAppsAndproductiveWebsites, productiveWebsiteAndNonproductiveWebsites, productiveAppAndNonproductiveApps, activityData, singleUserProductiveAppData, singleUserNonProductiveAppData, singleUserProductiveWebsiteData, singleUserNonProductiveWebsiteData,singleUserProductiveAppAndNonproductiveApps,singleUserProductiveWebsitesAndNonproductiveWebsites };
