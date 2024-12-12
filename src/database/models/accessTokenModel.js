@@ -10,11 +10,9 @@ const accessToken = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
-
     company_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
-  
     },
     userId: {
       type: DataTypes.INTEGER,

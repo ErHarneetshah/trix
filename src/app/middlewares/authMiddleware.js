@@ -19,6 +19,7 @@ const authMiddleware = async (req, res, next) => {
     console.log(token);
 
     const access_token = await accessToken.findOne({ where: {token: token } });
+    console.log(access_token);
     console.log("------------1---------------------");
     if (access_token) {
       if (new Date() > access_token.expiry_time) {

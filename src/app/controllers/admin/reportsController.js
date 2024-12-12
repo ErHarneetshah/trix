@@ -97,7 +97,7 @@ const retrieveUserReport = async (req, res) => {
       return helper.failed(res, variables.NotFound, "User not exists");
     }
 
-    const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.id = ${id} AND wr.company_id = ${req.user.company_id};`;
+    const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.user_id = ${id} AND wr.company_id = ${req.user.company_id};`;
     const userReport = await workReports.sequelize.query(query, {
       // replacements: { userId: id },
       type: workReports.sequelize.QueryTypes.SELECT,
@@ -131,9 +131,11 @@ const approveDisaproveReport = async (req, res) => {
       return helper.failed(res, variables.ValidationError, message);
     }
 
-    const reportId = await workReports.findByPk(id);
+    const reportId = await workReports.findOne({
+      where: {id: id, company_id: req.user.company_id }
+    });
     if (!reportId) {
-      return helper.failed(res, variables.NotFound, "Id not exists");
+      return helper.failed(res, variables.NotFound, "Work Report does not exists");
     }
     await workReports.update({ status: report_status, remarks: remarks ?? null, date: new Date() }, { where: { id: id } });
     if (report_status == 2) {
