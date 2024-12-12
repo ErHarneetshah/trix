@@ -34,7 +34,7 @@ const ProductiveWebsite = sequelize.define("productive_website",
   {
     timestamps: true,
     // Prevent Sequelize from auto-creating foreign keys
-    underscored: false,
+    // underscored: false,
   }
 );
 

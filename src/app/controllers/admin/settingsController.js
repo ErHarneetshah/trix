@@ -266,11 +266,11 @@ const updateReportSettings = async (req, res) => {
     const { status, message } = await validate(req.body, rules);
 
     if (status === 0) {
-      return helper.failed(res, variables.ValidationError, "Status is required");
+      return helper.failed(res, variables.ValidationError, "Export Type can only be 1, 2 or 3");
 
     }
     if (exportType < 1 || exportType > 4) {
-      return helper.failed(res, variables.ValidationError, "Status value is not valid");
+      return helper.failed(res, variables.ValidationError, "Export Type can only be 1, 2 or 3");
     }
 
     const [updatedPreviousStatus] = await reportSettings.update(

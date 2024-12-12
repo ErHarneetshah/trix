@@ -15,4 +15,5 @@ router.post("/addDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.ad
 router.put("/updateDept", authMiddleware,verifyAdminMiddleware,   deptInstance.updateDept);
 router.delete("/deleteDept", authMiddleware,verifyAdminMiddleware,   deptInstance.deleteDept);
 
+
 export default router;

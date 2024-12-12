@@ -53,6 +53,7 @@ export const createAccessToken = async (userId, isUserAdmin, company_id, token, 
         company_id: company_id,
         token,
         expiry_time: expireTime,
+        company_id
       },
       { transaction: dbTransaction }
     );

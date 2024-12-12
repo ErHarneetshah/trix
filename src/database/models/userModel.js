@@ -18,8 +18,7 @@ const User = sequelize.define(
      autoIncrement: true,
      allowNull: false,
     },
-
-    companyId: {
+    company_id: {
      type: DataTypes.BIGINT,
      allowNull: true,
     },
@@ -29,10 +28,6 @@ const User = sequelize.define(
     },
     fullname: {
      type: DataTypes.STRING,
-     allowNull: false,
-    },
-    company_id: {
-     type: DataTypes.INTEGER,
      allowNull: false,
     },
     email: {
