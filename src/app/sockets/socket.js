@@ -85,8 +85,10 @@ const setupSocketIO = (io) => {
     }
     socket.join("Admin");
     if (socket.user.isAdmin) {
+      console.log(`Admin ID ${socket.user.userId} connected `);
       handleAdminSocket(socket, io);
     } else {
+      console.log(`User ID ${socket.user.userId} connected `);
       handleUserSocket(socket, io);
     }
   });
@@ -153,7 +155,7 @@ const handleAdminSocket = async (socket, io) => {
   });
 
   socket.on("disconnect", () => {
-    console.log(`Admin ID ${socket.user.userId} disconnected `, socket.id);
+    console.log(`Admin ID ${socket.user.userId} disconnected `);
   });
 };
 
@@ -328,7 +330,7 @@ export const adminController = {
       let totalUsers = users.length;
       let activeUsers = users.filter((user) => user.currentStatus == 1).length;
       let inactiveUsers = users.filter(
-        (user) => user.current_status == 0
+        (user) => user.currentStatus == 0
       ).length;
 
       io.to("Admin").emit("userCount", {

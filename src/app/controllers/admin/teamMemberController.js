@@ -179,6 +179,20 @@ class teamMemberController {
     try {
       let id = req.query.id; // Retrieve the user ID from the query parameters
       let { screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
+
+      if (
+        !Number.isInteger(screen_capture_time) ||
+        !Number.isInteger(broswer_capture_time) ||
+        !Number.isInteger(app_capture_time)
+      ) {
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          0,
+          null,
+          "Invalid Data: Only integer values are allowed"
+        );
+      }
   
       // Update the user settings
       const user = await User.findOne({ where: { id } });
@@ -194,7 +208,6 @@ class teamMemberController {
         res,
         variables.Success,
         1,
-        null,
         "Setting Updated Successfully"
       );
     } catch (error) {
