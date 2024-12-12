@@ -17,7 +17,7 @@ class reportingManagerController {
 
       where.company_id = req.user.company_id;
 
-      const allData = await department.findAll({
+      const allData = await department.findAndCountAll({
         where: where,
         offset: offset,
         limit: limit,
