@@ -17,11 +17,21 @@ class teamMemberTimeLogController {
       let offset = (page - 1) * limit || 0;
       let logWhere = await helper.searchCondition(searchParam, searchable);
 
+      let startOfDay;
+      let endOfDay;
+
       if (date) {
         const startOfDay = new Date(date);
         startOfDay.setHours(0, 0, 0, 0);
 
         const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+      } else {
+        startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
 
         logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
@@ -65,19 +75,20 @@ class teamMemberTimeLogController {
       let offset = (page - 1) * limit || 0;
       let logWhere = await helper.searchCondition(searchParam, searchable);
 
-      let startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-
-      let endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
-
-      logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+      let startOfDay;
+      let endOfDay;
 
       if (date) {
         startOfDay = new Date(date);
         startOfDay.setHours(0, 0, 0, 0);
-
         endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+      } else {
+        startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
 
         logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
@@ -123,11 +134,30 @@ class teamMemberTimeLogController {
   };
 
   getFilterCount = async (req, res) => {
-    const alldata = await TimeLog.findAndCountAll({
-      where: logWhere, // Filters for `workReports`
-      offset,
-      limit,
-      attributes: ["id", "total_active_duration", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
+    let logWhere = {};
+    let startOfDay;
+    let endOfDay;
+
+    startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+
+
+    if (tab) {
+      if (tab.toLowerCase() === "working") {
+        userWhere.currentStatus = 1;
+      } else if (tab.toLowerCase() === "absent") {
+        userWhere.currentStatus = 0;
+      } else if (tab.toLowerCase() === "late") {
+        logWhere.late_coming = true;
+      }
+    }
+
+    const alldata = await TimeLog.count({
+      where: logWhere,
       include: [
         {
           model: User,
