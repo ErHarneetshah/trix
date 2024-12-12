@@ -260,7 +260,7 @@ const updateReportSettings = async (req, res) => {
     const { exportType } = req.body;
 
     const rules = {
-      exportType: 'required|string|min:2|max:50',
+      exportType: 'required|integer|in:1,2,3',
     };
 
     const { status, message } = await validate(req.body, rules);
@@ -269,36 +269,16 @@ const updateReportSettings = async (req, res) => {
       return helper.failed(res, variables.ValidationError, "Status is required");
 
     }
-
-    const getPreviousStatus = await reportSettings.findOne({
-      where: { is_active: 1 },
-      attributes: ['id']
-    });
-    const previousId = getPreviousStatus ? getPreviousStatus.id : 1;
+    if (exportType < 1 || exportType > 4) {
+      return helper.failed(res, variables.ValidationError, "Status value is not valid");
+    }
 
     const [updatedPreviousStatus] = await reportSettings.update(
-      { is_active: 0 },
-      { where: { id: previousId } }
+      { status: exportType },
+      { where: { company_id: req.user.company_id } }
     );
 
-    const currentStatus = await reportSettings.findOne({
-      where: { name: exportType },
-      attributes: ['id']
-    });
-    const currentId = currentStatus ? currentStatus.id : 1;
-
-    const [updateCurrentStatus] = await reportSettings.update(
-      { is_active: 1 },
-      { where: { id: currentId } }
-    );
-
-    if (updateCurrentStatus > 0) {
-      return helper.success(res, variables.Success, "Report Status Updated Successfully", updateReportStatus);
-
-    } else {
-      return helper.failed(res, variables.BadRequest, "Something went wrong");
-
-    }
+      return helper.success(res, variables.Success, "Report Status Updated Successfully");
 
   } catch (error) {
     console.error("Error updating report settings:", error);
