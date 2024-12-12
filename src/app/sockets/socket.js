@@ -9,6 +9,7 @@ import Model from "../../database/queries/dbConnection.js";
 import { QueryTypes } from "@sequelize/core";
 import TimeLog from "../../database/models/TimeLog.js";
 import { Device } from "../../database/models/device.js";
+import company from "../../database/models/companyModel.js";
 
 const userData = async (id) => {
   let user = await User.findOne({ where: { id: id } });
@@ -112,7 +113,7 @@ const handleAdminSocket = async (socket, io) => {
   }
 
   socket.on("getSystemDetail", async (data) => {
-    let result2 = await getSystemDetail(socket,data);
+    let result2 = await getSystemDetail(socket, data);
     if (result2.error) {
       socket.emit("getSystemDetail", { message: result2.error });
     } else {
@@ -120,9 +121,9 @@ const handleAdminSocket = async (socket, io) => {
     }
   });
 
-  socket.on("updatedSystemConfig",async()=>{
+  socket.on("updatedSystemConfig", async () => {
     console.log("Data get successfully");
-  })
+  });
 
   socket.on("getRecentNotifications", async (data) => {
     let result1 = await getRecentNotifications(data);
@@ -146,6 +147,8 @@ const handleAdminSocket = async (socket, io) => {
     let result1 = await getUserReport(data, io, socket);
     if (result1.error) {
       socket.emit("getUserReport", { message: result1.error });
+    } else {
+      socket.emit("getUserReport", result1);
     }
   });
 
@@ -173,20 +176,26 @@ const sendAdminNotifications = async (id) => {
 
 const getRecentNotifications = async (data) => {
   try {
-    const limit = parseInt(data.limit) || 5;
-    const page = parseInt(data.page) || 1;
-    const { date } = data;
-    const offset = (page - 1) * limit;
-    const whereCondition = {};
-    if (date) {
-      whereCondition.date = date;
-    }
+    // const limit = parseInt(data.limit) || 5;
+    // const page = parseInt(data.page) || 1;
+    // const { date } = data;
+    // const offset = (page - 1) * limit;
+    // const whereCondition = {};
+    // if (date) {
+    //   whereCondition.date = date;
+    // }
 
+    // const notifications = await Notification.findAndCountAll({
+    //   where: whereCondition,
+    //   order: [["id", "DESC"]],
+    //   limit,
+    //   offset,
+    // });
     const notifications = await Notification.findAndCountAll({
-      where: whereCondition,
+      where: { is_read: 0 },
       order: [["id", "DESC"]],
-      limit,
-      offset,
+      limit: 5,
+      // offset,
     });
     return notifications;
   } catch (error) {
@@ -215,7 +224,7 @@ const isRead = async (data, io) => {
   }
 };
 
-const getSystemDetail = async (socket,data) => {
+const getSystemDetail = async (socket, data) => {
   try {
     const limit = parseInt(data.limit) || 9;
     const page = parseInt(data.page) || 1;
@@ -226,19 +235,19 @@ const getSystemDetail = async (socket,data) => {
       whereCondition.date = date;
     }
     let systemDetail;
-    if(data.id){
-      systemDetail = await Device.findAll({ 
-        where: {companyId:socket.user.company_id, departmentId: data.id},
+    if (data.id) {
+      systemDetail = await Device.findAll({
+        where: { companyId: socket.user.company_id, departmentId: data.id },
         order: [["id", "DESC"]],
         limit,
-        offset
+        offset,
       });
-    }else{
-      systemDetail = await Device.findAll({ 
-        where: {companyId:socket.user.company_id},
+    } else {
+      systemDetail = await Device.findAll({
+        where: { companyId: socket.user.company_id },
         order: [["id", "DESC"]],
         limit,
-        offset
+        offset,
       });
     }
     return systemDetail;
@@ -406,7 +415,7 @@ const handleUserSocket = async (socket, io) => {
     socket.emit("getStatus", result2);
   }
 
-  let result3 = await getUserSettings(socket.user.userId);
+  let result3 = await getUserSettings(socket);
   if (result3.error) {
     socket.emit("getUserSettings", { message: result3.error });
   } else {
@@ -592,10 +601,10 @@ const getStatus = async (userId) => {
   }
 };
 
-const getUserSettings = async (userId) => {
+const getUserSettings = async (socket) => {
   try {
     let user = await User.findOne({
-      where: { id: userId },
+      where: { id: socket.user.userId },
       attributes: [
         "screen_capture_time",
         "broswer_capture_time",
@@ -605,6 +614,20 @@ const getUserSettings = async (userId) => {
     if (!user) {
       return { error: "User not found" };
     }
+    
+    let data = await company.findOne({
+      where: { id: socket.user.company_id },
+      attributes: ["screen_capture", "broswer_capture", "app_capture"],
+    });
+    user = {
+      screen_capture_time: user.screen_capture_time,
+      broswer_capture_time: user.broswer_capture_time,
+      app_capture_time: user.app_capture_time,
+      screen_capture: data.screen_capture,
+      broswer_capture: data.broswer_capture,
+      app_capture: data.app_capture,
+    };
+
     return user;
   } catch (error) {
     console.error("Error fetching User Setting:", error);
@@ -648,8 +671,7 @@ const notifyAdmin = async (id, type, time, url) => {
       });
       timeLog.idle_time = parseInt(timeLog.idle_time) + parseInt(time);
       timeLog.save();
-    }
-    else if(type == 4){
+    } else if (type == 4) {
       if (!url) {
         return { error: "Invalid Data" };
       }
@@ -658,7 +680,7 @@ const notifyAdmin = async (id, type, time, url) => {
         title: "Alert! Blocked Website",
         company_id,
         date: today,
-        message:`${user?.fullname} attempted to access a blocked website ${url}`
+        message: `${user?.fullname} attempted to access a blocked website ${url}`,
       });
     }
     let notificationCount = await Notification.count({

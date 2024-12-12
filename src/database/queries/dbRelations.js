@@ -12,6 +12,7 @@ import { ProductiveApp }from "../models/ProductiveApp.js";
 import { UserHistory } from "../models/UserHistory.js";
  import AppHistoryEntry  from "../models/AppHistoryEntry.js";
 import ProductiveWebsite from "../models/ProductiveWebsite.js";
+import company from "../models/companyModel.js";
 
 // User Relationships here
 User.belongsTo(department, { as: "department", foreignKey: "departmentId" });
@@ -44,6 +45,7 @@ ProductiveWebsite.belongsTo(department, { as: "department", foreignKey: "departm
 team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
 team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
 team.hasMany(User, { as: 'children', foreignKey: 'teamId' });
+
 
 
 

@@ -22,6 +22,7 @@ import { io } from "../../../../app.js";
 import Model from "../../../database/queries/dbConnection.js";
 import { QueryTypes } from "@sequelize/core";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
+import { Notification } from "../../../database/models/Notification.js";
 
 class authController extends jwtService {
   companyRegister = async (req, res) => {
@@ -508,6 +509,131 @@ class authController extends jwtService {
       return helper.sendResponse(res, variables.Success, 1, Absent_data, "Absent Calender Data fetched successfully!!");
     } catch (error) {
       return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
+    }
+  };
+
+  markAsRead = async (req, res) => {
+    try {
+      let data = await Notification.findAll({ where: { is_read: 0 } });
+      if (!data || data.length == 0) {
+        return helper.sendResponse(
+          res,
+          variables.Success,
+          1,
+          {},
+          "No unread notifications found."
+        );
+      }
+      await Notification.update({ is_read: 1 }, { where: { is_read: 0 } });
+      io.to("Admin").emit("newNotification", { notificationCount: 0 });
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        1,
+        {},
+        "Notification Data cleared successfully"
+      );
+    } catch (error) {
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        0,
+        null,
+        error.message
+      );
+    }
+  };
+
+  notification_page = async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit) || 5;
+      const page = parseInt(req.query.page) || 1;
+      const offset = (page - 1) * limit;
+      const whereCondition = {};
+      if (req.query.date) {
+        whereCondition.date = req.query.date;
+      }
+
+      const data = await Notification.findAndCountAll({
+        where: whereCondition,
+        order: [["id", "DESC"]],
+        limit,
+        offset,
+      });
+
+      if (!data || data.length == 0) {
+        return helper.sendResponse(
+          res,
+          variables.Success,
+          1,
+          {},
+          "No notifications found."
+        );
+      }
+
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        1,
+        data,
+        "Notification Data fetched successfully"
+      );
+    } catch (error) {
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        0,
+        null,
+        error.message
+      );
+    }
+  };
+
+  advanced_setting = async (req, res) => {
+    try {
+      let { screen_capture, broswer_capture, app_capture } = req.body;
+      // if (!screen_capture || !broswer_capture || !app_capture) {
+      //   return helper.sendResponse(
+      //     res,
+      //     variables.BadRequest,
+      //     0,
+      //     null,
+      //     "Invalid Data"
+      //   );
+      // }
+      // await company.update(
+      //   { screen_capture, broswer_capture, app_capture },
+      //   { where: { id: req.user.company_id } }
+      // );
+      let data = await company.findOne({where:{id:req.user.company_id}})
+      if(!data){
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          0,
+          {},
+          "company not found!!"
+        );
+      }
+      data.screen_capture = screen_capture;
+      data.broswer_capture = broswer_capture
+      data.app_capture = app_capture
+      data.save()
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        0,
+        {},
+        "Advanced setting update successfully!"
+      );
+    } catch (error) {
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        0,
+        null,
+        error.message
+      );
     }
   };
 }
