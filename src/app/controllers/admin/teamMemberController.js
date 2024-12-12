@@ -52,7 +52,16 @@ class teamMemberController {
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
-        attributes: { exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt", "status"] }, // Exclude fields
+        attributes: {
+          exclude: [
+            "password",
+            "isAdmin",
+            "workstationId",
+            "createdAt",
+            "updatedAt",
+            "status",
+          ],
+        }, // Exclude fields
         include: [
           {
             model: department,
@@ -75,11 +84,16 @@ class teamMemberController {
             attributes: ["name"],
           },
         ],
-        
       });
 
-      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+      if (!alldata)
+        return helper.failed(res, variables.NotFound, "No Data is available!");
+      return helper.success(
+        res,
+        variables.Success,
+        "All Data fetched Successfully!",
+        alldata
+      );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -91,7 +105,10 @@ class teamMemberController {
       const requestData = req.body;
 
       // Validating request body
-      const validationResult = await teamsValidationSchema.teamMemberValid(requestData, res);
+      const validationResult = await teamsValidationSchema.teamMemberValid(
+        requestData,
+        res
+      );
 
       // Check if the user already exists
       const existingUser = await User.findOne({
@@ -100,15 +117,24 @@ class teamMemberController {
       });
 
       if (existingUser) {
-        return helper.failed(res, variables.Unauthorized, "User already exists with this mail!");
+        return helper.failed(
+          res,
+          variables.Unauthorized,
+          "User already exists with this mail!"
+        );
       }
 
       const password = await helper.generatePass();
-      if (!password) return helper.failed(res, variables.UnknownError, "User already exists with this mail!");
+      if (!password)
+        return helper.failed(
+          res,
+          variables.UnknownError,
+          "User already exists with this mail!"
+        );
       requestData.password = password;
       console.log(requestData);
       // Create and save the new user
-      requestData.screenshot_time =  300;
+      requestData.screenshot_time = 300;
       requestData.app_history_time = 300;
       requestData.browser_history_time = 300;
 
@@ -121,14 +147,23 @@ class teamMemberController {
 
       if (teamMember) {
         await dbTransaction.commit();
-        return helper.success(res, variables.Success, "Team Member Added Successfully", {
-          note: "This response is just for testing purposes for now",
-          requestData: requestData,
-          addedMember: teamMember,
-        });
+        return helper.success(
+          res,
+          variables.Success,
+          "Team Member Added Successfully",
+          {
+            note: "This response is just for testing purposes for now",
+            requestData: requestData,
+            addedMember: teamMember,
+          }
+        );
       } else {
         await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unknow Error Occured While creating User Setting");
+        return helper.failed(
+          res,
+          variables.UnknownError,
+          "Unknow Error Occured While creating User Setting"
+        );
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
@@ -140,16 +175,21 @@ class teamMemberController {
   updateTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-
       const { id, ...updateFields } = req.body;
       const existingTeamMember = await User.findOne({
         where: { id: id },
         transaction: dbTransaction,
       });
 
-      if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists");
-      if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
-     
+      if (!existingTeamMember)
+        return helper.failed(res, variables.BadRequest, "User does not exists");
+      if (existingTeamMember.isAdmin)
+        return helper.failed(
+          res,
+          variables.Unauthorized,
+          "You are not authorized to made this change"
+        );
+
       // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // if (updateFields.status !== 0 && updateFields.status !== 1) {
       //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
@@ -164,10 +204,18 @@ class teamMemberController {
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return helper.success(res, variables.Success, "User Updated Successfully");
+        return helper.success(
+          res,
+          variables.Success,
+          "User Updated Successfully"
+        );
       } else {
         await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unable to update the shift");
+        return helper.failed(
+          res,
+          variables.UnknownError,
+          "Unable to update the shift"
+        );
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
@@ -177,46 +225,63 @@ class teamMemberController {
 
   updatesetting = async (req, res) => {
     try {
-      let id = req.query.id; // Retrieve the user ID from the query parameters
+      let id = req.query.id;
       let { screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
-
+  
+      if (!id) {
+        return helper.sendResponse(
+          res,
+          variables.ValidationError,
+          0,
+          {},
+          "ID is Required"
+        );
+      }
+      
       if (
         !Number.isInteger(screen_capture_time) ||
         !Number.isInteger(broswer_capture_time) ||
         !Number.isInteger(app_capture_time)
-      ) {
+      ) {        
         return helper.sendResponse(
           res,
           variables.BadRequest,
           0,
-          null,
+          {},
           "Invalid Data: Only integer values are allowed"
         );
       }
   
-      // Update the user settings
       const user = await User.findOne({ where: { id } });
-      if (user) {
-        user.screen_capture_time = screen_capture_time; 
-        user.broswer_capture_time = broswer_capture_time;
-        user.app_capture_time = app_capture_time
-        await user.save(); 
+      if (!user) {
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          0,
+          null,
+          "User not found"
+        );
       }
   
-      // Send a success response
+      user.screen_capture_time = screen_capture_time;
+      user.broswer_capture_time = broswer_capture_time;
+      user.app_capture_time = app_capture_time;
+      await user.save();
+  
       return helper.sendResponse(
         res,
         variables.Success,
         1,
-        "Setting Updated Successfully"
+        {},
+        "Settings Updated Successfully",
       );
     } catch (error) {
-      console.error("Error updating settings:", error);
+      console.error("Error updating settings:", error.message);
       return helper.sendResponse(
         res,
         variables.Failure,
         0,
-        error.message,
+        {},
         "Failed to update settings"
       );
     }
