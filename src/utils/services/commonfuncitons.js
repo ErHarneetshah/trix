@@ -1,5 +1,5 @@
-import multer from "multer";
-import uploadImage from '../file-upload.js';
+import multer from 'multer';
+import  uploadImage from '../file-upload.js';
 
 async function uploadPhotos(req, res, folder, imageArr) {
     try {
@@ -12,15 +12,10 @@ async function uploadPhotos(req, res, folder, imageArr) {
                     return reject(err);
                 }
 
-
                 const imagePaths = [];
 
                 for (const image of imageArr) {
-        console.log("here");
-        console.log(req.files);
-
                     if (req.files && req.files[image.name]) {
-
                         for (const file of req.files[image.name]) {
                             const imagePath = await uploadImage(req, folder, file);
                             if (imagePath) {
@@ -39,5 +34,4 @@ async function uploadPhotos(req, res, folder, imageArr) {
         throw new Error('Upload failed: ' + error.message);
     }
 }
-
-export default  uploadPhotos;
+export default { uploadPhotos }

@@ -12,7 +12,6 @@ import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 
 
-
 const getAdminDetails = async (req, res) => {
   try {
     const alldata = await User.findOne({
@@ -62,7 +61,7 @@ const getBlockedWebsites = async (req, res) => {
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
 
-    let where = { companyId: 101, status: 1 };
+    let where = { companyId: 101 };
 
     if (departmentId && departmentId != 0) {
       where.departmentId = departmentId;
@@ -73,7 +72,7 @@ const getBlockedWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name", "status","logo"],
+      attributes: ["id", "website", "website_name", "status", "logo"],
       include: [
         {
           model: department,
@@ -131,13 +130,13 @@ const addBlockWebsites = async (req, res) => {
     }
     const faviconUrl = await fetchFaviconUrl(website);
 
-    const companyId = 101; 
+    const companyId = 101;
     const websiteName = new URL(website).hostname;
 
-    const newWebsiteData = { departmentId, website, website_name:websiteName, companyId,logo:faviconUrl };
+    const newWebsiteData = { departmentId, website, website_name: websiteName, companyId, logo: faviconUrl };
     const newAppInfo = await BlockedWebsites.create(newWebsiteData);
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
-    
+
   } catch (error) {
     console.error("Error creating app info:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -167,19 +166,25 @@ const updateSitesStatus = async (req, res) => {
   }
 };
 
+
 const addProductiveApps = async (req, res) => {
   try {
+    console.log(req.body, req.file);
     const { department_id, app_name } = req.body;
     const rules = {
-      department_id: 'required|integer|min:1',
+      department_id: 'required|integer',
       app_name: 'required|string|min:3|max:50',
     };
 
     const { status, message } = await validate(req.body, rules);
-
+    console.log('webt here as there is an ei')
     if (status === 0) {
       return helper.failed(res, variables.ValidationError, message);
 
+    }
+
+    if (!req.file) {
+      return helper.failed(res, variables.ValidationError, message);
     }
     const company_id = 101;
     const existingApp = await ProductiveApp.findOne({
@@ -190,7 +195,9 @@ const addProductiveApps = async (req, res) => {
       return helper.failed(res, variables.NotFound, "App with this name already exists");
     }
 
-    const newAppInfo = await ProductiveApp.create({ company_id, department_id, app_name });
+    // const imagespaths = await uploadPhotos(req, res, 'app_logo', imageArr);
+
+    const newAppInfo = await ProductiveApp.create({ company_id, department_id, app_name, app_logo: req.filedata.data });
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
     console.error("Error creating app info:", error);
@@ -214,7 +221,7 @@ const getAppInfo = async (req, res) => {
 
     const productiveApps = await ProductiveApp.findAndCountAll({
       where,
-      attributes: ["id", "app_name"],
+      attributes: ["id", "app_name", "app_logo"],
       offset: offset,
       limit: limit,
       include: [
@@ -324,16 +331,28 @@ const addProductiveWebsites = async (req, res) => {
       return helper.failed(res, variables.ValidationError, errorMessage);
     }
 
+    let company_id = 101;
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: departmentId,
+        company_id: company_id,
+      },
+    });
+
+    if(!isDepartmentExists){
+      return helper.failed(res, variables.NotFound, "For this company id department is not exists.");
+    }
+    
     const existingApp = await ProductiveWebsite.findOne({ where: { website } });
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "Website with this name or URL already exists");
     }
     const faviconUrl = await fetchFaviconUrl(website);
 
-    const companyId = 101; 
+    const companyId = 101;
     const websiteName = new URL(website).hostname;
 
-    const newWebsiteData = {department_id: departmentId,website,website_name: websiteName,company_id: companyId,logo: faviconUrl};
+    const newWebsiteData = { department_id: departmentId, website, website_name: websiteName, company_id: companyId, logo: faviconUrl };
 
     // Store productive website data
     const newAppInfo = await ProductiveWebsite.create(newWebsiteData);
@@ -362,7 +381,7 @@ const getProductiveWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name","logo"],
+      attributes: ["id", "website", "website_name", "logo"],
       include: [
         {
           model: department,

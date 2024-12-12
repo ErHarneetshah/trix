@@ -8,7 +8,7 @@ import workReportsController from "../../app/controllers/client/workReportsContr
 import verifyUser from "../../app/middlewares/verifyUser.js";
 
 
-router.post('/add-user-report', verifyUser, workReportsController.createReport);
+router.post('/add-user-report', workReportsController.createReport);
 router.get('/get-self-report',   workReportsController.getSelfReport);
 
 export default router;

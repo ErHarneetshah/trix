@@ -1,36 +1,69 @@
-import path from 'path';
-import fs from 'fs';
+import multer from "multer";
+import path from "path";
+import helper from "./services/helper.js";
+import variables from "../app/config/variableConfig.js";
 
-const uploadImage = (req, folder, file) => {
-    return new Promise((resolve, reject) => {
-        try {
-            // Define the folder path where the file will be stored
-            const uploadPath = path.join(__dirname, `../uploads/${folder}`);
 
-            // Check if the folder exists, if not, create it
-            if (!fs.existsSync(uploadPath)) {
-                fs.mkdirSync(uploadPath, { recursive: true });
-            }
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, `./assets/${req.headers.mypath}`);
+    },
+    filename: function (req, file, cb) {
+        let extensionFile = path.extname(file.originalname);
+        
+        let saveFileName = `${Date.now()}${extensionFile}`;
+        cb(null, saveFileName);                                         
+    }
+});
 
-            // Define the file path
-            const filename = file.fieldname + '-' + Date.now() + '-' + Math.floor(Math.random() * 9999999) + path.extname(file.originalname);
-            const filePath = path.join(uploadPath, filename);
+const checkFileType = (file, cb) => {
+    var ext = path.extname(file.originalname);
+    if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg' && ext !== '.pdf' && ext !== '.xlsx' && ext !== '.svg') {
+        return cb(new Error('Only png, jpg , jpeg , svg and pdf are allowed'));
+    }
 
-            // Save the file to the folder
-            fs.writeFile(filePath, file.buffer, (err) => {
-                if (err) {
-                    return reject("Error uploading file: " + err.message);
-                }
+    return cb(null, true);
+}
 
-                // Return the URL or path to the uploaded file
-                const fileUrl = `/uploads/${folder}/${filename}`;
-                resolve(fileUrl);
-            });
-        } catch (error) {
-            console.log(error.message);
-            reject("Error in uploadImage: " + error.message);
+const upload = multer({
+    storage: storage, fileFilter: (req, file, cb) => { checkFileType(file, cb) }
+}).single("file");
+
+const fileUpload = (req, res, next) => {
+    upload(req, res, (err) => {
+
+        if (err) {
+            // let result = helper.failed(res , variables.InternalServerError , err);
+            let result =  {
+                status: 0,
+                message: err,
+              };
+            req.filedata = result;
+            next();
         }
-    });
-};
 
-export default { uploadImage }
+        if (req.file == undefined) {
+            req.filedata = {
+                status: 0,
+                message: "Invalid Data!!",
+              }
+            // req.filedata = reply.failed("Invalid Data!!");
+            next();
+        }
+
+        req.filedata = {
+            status: 1,
+            message: "success",
+            data: req.file?.filename
+          };
+        // req.filedata = reply.success(req.file?.filename);
+        next();
+    });
+}
+
+
+
+
+
+export default fileUpload;
+

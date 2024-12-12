@@ -4,6 +4,7 @@ import { Op } from "sequelize";
 import validate from '../../../utils/CustomValidation.js';
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
+import User from "../../../database/models/userModel.js";
 
 const createReport = async (req, res) => {
     try {
@@ -18,6 +19,13 @@ const createReport = async (req, res) => {
             return helper.failed(res, variables.ValidationError, message);
         }
 
+        const isUserExists = await User.findOne({
+            where: { id: user_id },
+          });
+
+          if(!isUserExists){
+            return helper.failed(res, variables.NotFound, "User is not exists in our records.");
+          }
         const report = await workReports.create({ company_id, user_id, description });
         return helper.success(res, variables.Success, "Your report submitted successfully", report);
     } catch (error) {
