@@ -3,7 +3,6 @@ import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import User from "../../../database/models/userModel.js";
 import teamsValidationSchema from "../../../utils/validations/teamsValidation.js";
-import { createUserSetting } from "../../../database/models/userSettingModel.js";
 import department from "../../../database/models/departmentModel.js";
 import designation from "../../../database/models/designationModel.js";
 import role from "../../../database/models/roleModel.js";
@@ -252,22 +251,23 @@ class teamMemberController {
         );
       }
   
-      const user = await User.findOne({ where: { id } });
-      if (!user) {
+      const u = await User.findOne({ where: { id } });
+      if (!u) {
         return helper.sendResponse(
           res,
           variables.NotFound,
           0,
           null,
-          "User not found"
+          "user not found"
         );
       }
   
-      user.screen_capture_time = screen_capture_time;
-      user.broswer_capture_time = broswer_capture_time;
-      user.app_capture_time = app_capture_time;
-      await user.save();
-  
+      // u.screen_capture_time = screen_capture_time;
+      // u.broswer_capture_time = broswer_capture_time;
+      // u.app_capture_time = app_capture_time;
+      // await u.save();
+      
+      await u.update({screen_capture_time,broswer_capture_time,app_capture_time},{where:{id:u?.id}});
       return helper.sendResponse(
         res,
         variables.Success,

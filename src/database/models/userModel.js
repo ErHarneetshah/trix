@@ -9,6 +9,7 @@ import helper from "../../utils/services/helper.js";
 import variables from "../../app/config/variableConfig.js";
 import { io } from "../../../app.js";
 import company from "./company.js";
+import { Device } from "./device.js";
 
 const User = sequelize.define(
   "users",
@@ -144,17 +145,19 @@ const User = sequelize.define(
           }
         }
       },
+
       async afterUpdate(user, options) {
-        let monitoredFields = [
+
+        let monitoredFieldss = [
           "screen_capture_time",
           "broswer_capture_time",
           "app_capture_time",
         ];
-        let fieldsChanged = options.fields.some((field) =>
-          monitoredFields.includes(field)
+        let fieldsChangeds = options.fields.some((field) =>
+          monitoredFieldss.includes(field)
         );
         let comp = await company.findOne({ where: { id: user.company_id } });
-        if (fieldsChanged) {
+        if (fieldsChangeds) {
           io.to(user.socket_id).emit("getUserSettings", {
             screen_capture_time: user.screen_capture_time,
             broswer_capture_time: user.broswer_capture_time,
@@ -164,6 +167,63 @@ const User = sequelize.define(
             app_capture: comp.app_capture,
           });
         }
+
+
+
+        let monitoredFields = ["currentStatus"];
+        let fieldsChanged = options.fields.some((field) =>
+          monitoredFields.includes(field)
+        );
+
+        // console.log({options , fieldsChanged , monitoredFields})
+
+        if (fieldsChanged) {
+          const whereCondition = { companyId: user.company_id };
+          const page = 1;
+          const limit = 10;
+          const offset = (page - 1) * limit;
+
+          const totalCount = await Device.count({
+            where: whereCondition,
+            include: [
+              {
+                model: User,
+                where: { currentStatus: 1 },
+                // required: true,
+              },
+            ],
+          });
+
+          const systemDetail = await Device.findAll({
+            where: whereCondition,
+            include: [
+              {
+                model: User,
+                where: {
+                  currentStatus: 1,
+                },
+                attributes: ["id", "fullname"],
+                required: true,
+              },
+            ],
+            order: [["id", "DESC"]],
+            limit,
+            offset,
+          });
+
+          const responseData = {
+            totalCount,
+            page,
+            limit,
+            data: systemDetail,
+          };
+
+          io.to(`Admin_${user.company_id}`).emit(
+            "getSystemDetail",
+            responseData
+          );
+        }
+
       },
     },
   }

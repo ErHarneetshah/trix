@@ -1,7 +1,6 @@
 import authValidation from "../../../utils/validations/authValidation.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import User from "../../../database/models/userModel.js";
-import { createUserSetting } from "../../../database/models/userSettingModel.js";
 import jwtService from "../../../utils/services/jwtService.js";
 import accessToken, {
   createAccessToken,
