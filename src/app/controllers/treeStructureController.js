@@ -26,11 +26,12 @@ async function buildUserTree(parentDept, companyId, level = 0) {
                     as: "reportingManager",
                 },
             ],
-            atreeributes: ["id", "name", "reportingManagerId"],
+            attributes: ["id", "name", "reportingManagerId"],
         });
 
         // Convert Sequelize object to plain JSON
         children = JSON.parse(JSON.stringify(children));
+        console.log({children});
 
         // Add children to parent department
         Object.assign(parentDept, { level });

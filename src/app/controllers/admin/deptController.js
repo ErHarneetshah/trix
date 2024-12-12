@@ -23,7 +23,7 @@ class deptController {
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
       let where = await helper.searchCondition(searchParam, searchable);
-      
+
       where.company_id = req.user.company_id;
 
       // Getting all the departments based on seacrh parameters with total count >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -72,7 +72,7 @@ class deptController {
 
       // Retrieving the specific department data from table >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const deptData = await department.findOne({
-        where: { id: id, company_id:req.user.company_id },
+        where: { id: id, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!deptData) return helper.failed(res, variables.NotFound, "Department Not Found in your company data");
@@ -93,7 +93,6 @@ class deptController {
       if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
       // if (!name) return helper.failed(res, variables.NotFound, "Name field is Required!");
 
-
       // checking whether department name requested by used already exists or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
         where: { name: name, company_id: req.user.company_id },
@@ -107,9 +106,9 @@ class deptController {
         transaction: dbTransaction,
       });
       if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Parent Department does not exists in our system");
-      
+
       let addNewDept;
-      
+
       //* checking whether isRootId is passed or not and if there is already a root dept or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // if (isRootId) {
       //   if (isRootId != 1 || isRootId != 0) return helper.failed(res, variables.ValidationError, "isRootId can only be either 1 or 0");
@@ -142,7 +141,7 @@ class deptController {
       const { id, name, parentDeptId } = req.body;
       if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
       if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
-      if(id == parentDeptId) return helper.failed(res, variables.Unauthorized, "Both Id and ParentDeptId cannot be same");
+      if (id == parentDeptId) return helper.failed(res, variables.Unauthorized, "Both Id and ParentDeptId cannot be same");
 
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
@@ -167,6 +166,8 @@ class deptController {
       }
       // Check if parent dept id exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       if (parentDeptId) {
+        if (existingDept.isRootId) return helper.failed(res, variables.ValidationError, "Cannot update the Parent Department of Root Department!");
+
         const existingDeptWithName = await department.findOne({
           where: {
             id: parentDeptId,

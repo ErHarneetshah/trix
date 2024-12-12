@@ -38,7 +38,7 @@ router.use('/admin/workReports', reportRouter);
 router.use('/admin/teamTimeLog', teamTimeLogRouter);
 // router.use('/admin/dashboard',dashboardRoutes)
 router.use('/client/reports', userReportRouter);
-router.use('/tree', teamStructure);
+router.use('/admin/tree', teamStructure);
 router.use('/charts', chartRouter);
 router.use('/dashboard', dashboardDataRouter);
 
