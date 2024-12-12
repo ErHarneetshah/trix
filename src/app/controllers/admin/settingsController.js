@@ -71,7 +71,7 @@ const getBlockedWebsites = async (req, res) => {
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
 
-    let where = { companyId: req.user.company_id, status: 1 };
+    let where = { companyId: req.user.company_id };
 
     if (departmentId && departmentId != 0) {
       where.departmentId = departmentId;
@@ -133,6 +133,17 @@ const addBlockWebsites = async (req, res) => {
       return helper.failed(res, variables.ValidationError, message);
     }
 
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: departmentId,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if (!isDepartmentExists) {
+      return helper.failed(res, variables.NotFound, "Department is not exist.");
+    }
+    
     const existingApp = await BlockedWebsites.findOne({
       where: { website: website, companyId: req.user.company_id },
     });
