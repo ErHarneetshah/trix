@@ -1,0 +1,89 @@
+#Shift Names
+Morning Shift
+Evening Shift
+Night Shift
+Weekend Shift
+Split Shift
+Flexible Shift
+Part-Time Shift
+24/7 Support Shift
+
+#Department Names
+Development Department
+HR Department
+Marketing Department
+Sales Department
+Server & Hardware Department
+
+#Designation Name
+MD (Managing Director)
+CEO (Chief Executive Officer)
+CTO (Chief Technical Officer)
+CIO (Chief Information Officer)
+TL (Team Leader)
+PC (Project Coordinator)
+SD (Software Developer)
+QA Engineer (Quality Assurance)
+Employee
+System Analyst
+UI/UX Designer
+Web Designer (WD)
+Database Administrator (DBA)
+Network Engineer
+Technical Writer
+Product Manager
+Project Manager
+Scrum Master
+AI/ML Engineer
+Security Analyst
+Cloud Engineer
+IT Support Specialist
+Intern
+
+#Team Names
+Upper Management Team
+Development Team
+QA Team
+Support Team
+Design Team
+Ops Team
+Research Team
+Part-Time Support Team
+24/7 Support Team
+
+#Role Names
+Admin
+Super Admin
+Team Leader
+Manager
+User
+Project Manager
+Product Manager
+HR Manager
+Technical Lead
+QA Lead
+Developer
+Tester
+UI/UX Designer
+DevOps Engineer
+Database Administrator
+System Analyst
+Network Engineer
+IT Support
+Intern
+
+#Modules
+role
+reportingManager
+team
+shifts
+teamMembers
+department
+designation
+adminAuth
+userSettings
+permissions
+blockedWebsite
+productiveApp
+reportSettings
+user
