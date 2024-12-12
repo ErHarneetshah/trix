@@ -13,7 +13,9 @@ const retrieveAllReport = async (req, res) => {
     let { searchParam, limit, page, startDate, endDate } = req.query;
 
     // Fields for searching in workReports and User models
-    const userSearchable = ["fullname", "$department.name$", "$designation.name$"];
+    const userSearchable = ["fullname"];
+    const deptSearchable = ["name"];
+    const desigSearchable = ["name"];
 
     // Pagination setup
     limit = parseInt(limit) || 10;
@@ -22,6 +24,8 @@ const retrieveAllReport = async (req, res) => {
 
     // Generate search conditions
     const userWhere = (await helper.searchCondition(searchParam, userSearchable)) || {};
+    const deptWhere = (await helper.searchCondition(searchParam, deptSearchable)) || {};
+    const desigWhere = (await helper.searchCondition(searchParam, desigSearchable)) || {};
     const reportWhere = {};
 
     // Add date range filter to `reportWhere`
@@ -51,11 +55,13 @@ const retrieveAllReport = async (req, res) => {
           include: [
             {
               model: department,
+              where: deptSearchable,
               as: "department", // Alias for the associated `department` model
               attributes: ["name"], // Select specific fields
             },
             {
               model: designation,
+              where: desigSearchable,
               as: "designation", // Alias for the associated `designation` model
               attributes: ["name"], // Select specific fields
             },

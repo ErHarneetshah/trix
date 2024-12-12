@@ -335,7 +335,7 @@ const addProductiveWebsites = async (req, res) => {
       return helper.failed(res, variables.ValidationError, errorMessage);
     }
 
-    let company_id = 101;
+    let company_id = req.user.company_id;
     const isDepartmentExists = await department.findOne({
       where: {
         id: departmentId,
@@ -353,7 +353,7 @@ const addProductiveWebsites = async (req, res) => {
     }
     const faviconUrl = await fetchFaviconUrl(website);
 
-    const companyId = 101;
+    let companyId = req.user.company_id;
     const websiteName = new URL(website).hostname;
 
     const newWebsiteData = { department_id: departmentId, website, website_name: websiteName, company_id: companyId, logo: faviconUrl };
