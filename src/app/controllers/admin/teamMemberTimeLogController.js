@@ -46,8 +46,6 @@ class teamMemberTimeLogController {
       //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Only filter by endDate
       // }
 
-      console.log(logWhere);
-
       logWhere.company_id = req.user.company_id;
       const alldata = await TimeLog.findAndCountAll({
         where: logWhere, // Filters for `workReports`
@@ -73,13 +71,13 @@ class teamMemberTimeLogController {
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
       
-      // const workingEmpCount = await TimeLog.count({
-      //   where: {
-      //     // Your conditions go here, for example:
-      //     status: 'working',
-      //     shift_id: 1, // Example condition
-      //   },
-      // });
+      const workingEmpCount = await User.count({
+        where: {
+          // Your conditions go here, for example:
+          currentStatus: 1,
+          shift_id: 1, // Example condition
+        },
+      });
 
       
 
