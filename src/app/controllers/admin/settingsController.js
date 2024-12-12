@@ -173,8 +173,6 @@ const updateSitesStatus = async (req, res) => {
 
 const addProductiveApps = async (req, res) => {
   try {
-    console.log("addProdcutiveApps Reuquest ------------------------")
-    console.log(req.body);
     const { department_id, app_name } = req.body;
     const rules = {
       department_id: 'required|integer',
@@ -199,6 +197,17 @@ const addProductiveApps = async (req, res) => {
       return helper.failed(res, variables.NotFound, "App with this name already exists");
     }
 
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: department_id,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if(!isDepartmentExists){
+      return helper.failed(res, variables.NotFound, "Department is not exist.");
+    }
+    
     // const imagespaths = await uploadPhotos(req, res, 'app_logo', imageArr);
 
     const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id,app_name: app_name, app_logo: req.filedata.data });
@@ -313,16 +322,15 @@ const addProductiveWebsites = async (req, res) => {
       return helper.failed(res, variables.ValidationError, errorMessage);
     }
 
-    let company_id = 101;
     const isDepartmentExists = await department.findOne({
       where: {
         id: departmentId,
-        company_id: company_id,
+        company_id: req.user.company_id,
       },
     });
 
     if(!isDepartmentExists){
-      return helper.failed(res, variables.NotFound, "For this company id department is not exists.");
+      return helper.failed(res, variables.NotFound, "Department is not exist.");
     }
     
     const existingApp = await ProductiveWebsite.findOne({ where: { website } });
@@ -331,10 +339,9 @@ const addProductiveWebsites = async (req, res) => {
     }
     const faviconUrl = await fetchFaviconUrl(website);
 
-    const companyId = 101;
     const websiteName = new URL(website).hostname;
 
-    const newWebsiteData = { department_id: departmentId, website, website_name: websiteName, company_id: companyId, logo: faviconUrl };
+    const newWebsiteData = { department_id: departmentId, website, website_name: websiteName, company_id: req.user.company_id, logo: faviconUrl };
 
     // Store productive website data
     const newAppInfo = await ProductiveWebsite.create(newWebsiteData);
