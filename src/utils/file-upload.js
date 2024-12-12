@@ -38,7 +38,6 @@ const fileUpload = async (req, res, next) => {
 
         if (err) {
 
-            console.log('inside errrrr')
             // let result = helper.failed(res , variables.InternalServerError , err);
             let result =  {
                 status: 0,
@@ -63,7 +62,6 @@ const fileUpload = async (req, res, next) => {
             data: req.file?.filename
           };
 
-        console.log("nextData");
         next();
     });
  } catch (error) {

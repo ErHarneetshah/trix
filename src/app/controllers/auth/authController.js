@@ -315,7 +315,7 @@ class authController extends jwtService {
         // Generating Token for user
         token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
-        console.log(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
+        // console.log(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
 
         const generatedToken = await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
 
@@ -372,7 +372,7 @@ class authController extends jwtService {
       await dbTransaction.commit();
       return helper.sendResponse(res, variables.Success, 1, { token: token, user: user }, "Login Successfully");
     } catch (error) {
-      console.log(error);
+      // console.log(error);
 
       await dbTransaction.rollback();
       return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
