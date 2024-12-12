@@ -137,7 +137,7 @@ const addBlockWebsites = async (req, res) => {
     let companyId = req.user.company_id;
     const websiteName = new URL(website).hostname;
 
-    const newWebsiteData = { departmentId, website, website_name:websiteName, companyId,logo:faviconUrl };
+    const newWebsiteData = { departmentId: departmentId, website:website, website_name:websiteName, companyId:companyId,logo:faviconUrl };
     const newAppInfo = await BlockedWebsites.create(newWebsiteData);
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
     
@@ -158,7 +158,7 @@ const updateSitesStatus = async (req, res) => {
     if (status < 0 || status > 1) {
       return helper.failed(res, variables.ValidationError, "Status value must be 0 or 1");
     }
-    const [updatedRows] = await BlockedWebsites.update({ status: status }, { where: { id: id } });
+    const [updatedRows] = await BlockedWebsites.update({ status: status }, { where: { id: id, companyId: req.user.company_id } });
 
     if (updatedRows === 0) {
       return helper.failed(res, variables.NotFound, "Site not found or status not changed");
@@ -186,9 +186,9 @@ const addProductiveApps = async (req, res) => {
       return helper.failed(res, variables.ValidationError, message);
 
     }
-    const company_id = 101;
+    const company_id = req.user.company_id;
     const existingApp = await ProductiveApp.findOne({
-      where: { app_name }
+      where: { app_name: app_name, company_id: req.user.company_id }
     });
 
     if (existingApp) {
@@ -197,7 +197,7 @@ const addProductiveApps = async (req, res) => {
 
     // const imagespaths = await uploadPhotos(req, res, 'app_logo', imageArr);
 
-    const newAppInfo = await ProductiveApp.create({ company_id, department_id, app_name, app_logo: req.filedata.data });
+    const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id, app_name, app_logo: req.filedata.data });
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
       console.error("Error creating app info:", error.message);

@@ -59,7 +59,7 @@ export const BlockedWebsites = sequelize.define(
 );
 
 
-await BlockedWebsites.sync({alter:1}); 
+// await BlockedWebsites.sync({alter:1}); 
 
 // BlockedWebsites.afterUpdate(()=>{
   

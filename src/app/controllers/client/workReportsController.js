@@ -7,18 +7,25 @@ import variables from "../../config/variableConfig.js";
 
 const createReport = async (req, res) => {
     try {
-        const { user_id, description } = req.body;
+        const {description } = req.body;
         const rules = {
-            user_id: 'required|integer',
+            // user_id: 'required|integer',
             description: 'required|string',
         };
         const { status, message } = await validate(req.body, rules);
-        let company_id = req.user.company_id;
+        let companyId = req.user.company_id;
         if (status === 0) {
             return helper.failed(res, variables.ValidationError, message);
         }
 
-        const report = await workReports.create({ company_id, user_id, description });
+        // const isUserExists = await User.findOne({
+        //     where: { id: user_id, company_id: req.user.company_id },
+        //  });
+
+        //  if(!isUserExists){
+        //     return helper.failed(res, variables.NotFound, "User is not exists in our records.");
+        //  }
+        const report = await workReports.create({ company_id:companyId, user_id: req.user.id, description: description });
         return helper.success(res, variables.Success, "Your report submitted successfully", report);
     } catch (error) {
         console.error('Error while creating the user report ', error);
@@ -26,9 +33,10 @@ const createReport = async (req, res) => {
     }
 };
 
+
 const getSelfReport = async (req, res) => {
     try {
-        const query = `SELECT wr.description, CASE  WHEN wr.status = 0 THEN 'Pending' WHEN wr.status = 1 THEN 'Approved' WHEN wr.status = 2 THEN 'Disapproved' ELSE 'Unknown' END AS status FROM work_reports As wr WHERE wr.user_id = 1`;
+        const query = `SELECT wr.description, CASE  WHEN wr.status = 0 THEN 'Pending' WHEN wr.status = 1 THEN 'Approved' WHEN wr.status = 2 THEN 'Disapproved' ELSE 'Unknown' END AS status FROM work_reports As wr WHERE wr.user_id = ${req.user.id}`;
 
         const selfReport = await workReports.sequelize.query(query, {
             type: workReports.sequelize.QueryTypes.SELECT
