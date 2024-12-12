@@ -10,9 +10,9 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
         let extensionFile = path.extname(file.originalname);
-        
+
         let saveFileName = `${Date.now()}${extensionFile}`;
-        cb(null, saveFileName);                                         
+        cb(null, saveFileName);
     }
 });
 
@@ -30,14 +30,15 @@ const upload = multer({
 }).single("file");
 
 const fileUpload = (req, res, next) => {
+
     upload(req, res, (err) => {
 
         if (err) {
             // let result = helper.failed(res , variables.InternalServerError , err);
-            let result =  {
+            let result = {
                 status: 0,
                 message: err,
-              };
+            };
             req.filedata = result;
             next();
         }
@@ -46,7 +47,9 @@ const fileUpload = (req, res, next) => {
             req.filedata = {
                 status: 0,
                 message: "Invalid Data!!",
-              }
+            }
+            return helper.failed(res, variables.ValidationError, "image is required !!!!");
+
             // req.filedata = reply.failed("Invalid Data!!");
             next();
         }
@@ -55,7 +58,7 @@ const fileUpload = (req, res, next) => {
             status: 1,
             message: "success",
             data: req.file?.filename
-          };
+        };
         // req.filedata = reply.success(req.file?.filename);
         next();
     });

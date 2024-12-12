@@ -36,6 +36,7 @@ const getAdminDetails = async (req, res) => {
 const updateAdminDetails = async (req, res) => {
   try {
     const { fullname, email, mobile } = req.body;
+
     if (!fullname || !email || !mobile) {
       return helper.failed(res, variables.BadRequest, "All fields (fullname, email, mobile) are required");
     }
@@ -169,7 +170,13 @@ const updateSitesStatus = async (req, res) => {
 
 const addProductiveApps = async (req, res) => {
   try {
-    console.log(req.body, req.file);
+    console.log(req.body);
+
+    console.log(req.filedata.data);
+    
+    // console.log("llll");
+    // return
+    
     const { department_id, app_name } = req.body;
     const rules = {
       department_id: 'required|integer',
@@ -177,13 +184,12 @@ const addProductiveApps = async (req, res) => {
     };
 
     const { status, message } = await validate(req.body, rules);
-    console.log('webt here as there is an ei')
     if (status === 0) {
       return helper.failed(res, variables.ValidationError, message);
 
     }
 
-    if (!req.file) {
+    if (!req.filedata.data) {
       return helper.failed(res, variables.ValidationError, message);
     }
     const company_id = 101;

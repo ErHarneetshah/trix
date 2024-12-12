@@ -1,15 +1,11 @@
 import express from "express";
-const router = express.Router();
 import authMiddleware from "../../app/middlewares/authMiddleware.js";
-import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.js";
-
-//client routes
 import workReportsController from "../../app/controllers/client/workReportsController.js";
-import verifyUser from "../../app/middlewares/verifyUser.js";
+import verifyUserMiddleware from "../../app/middlewares/verifyUserMiddleware.js";
 
+const router = express.Router();
 
-router.post('/add-user-report', workReportsController.createReport);
-router.get('/get-self-report',   workReportsController.getSelfReport);
+router.post('/add-user-report', authMiddleware,verifyUserMiddleware, workReportsController.createReport);
+router.get('/get-self-report', authMiddleware,verifyUserMiddleware, workReportsController.getSelfReport);
 
 export default router;
-
