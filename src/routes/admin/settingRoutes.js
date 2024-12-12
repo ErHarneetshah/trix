@@ -34,6 +34,8 @@ router.post('/update-sites-status',    authMiddleware,verifyAdminMiddleware,    
 
 router.post('/add-productive-apps',    authMiddleware,verifyAdminMiddleware,uploadImageWithPath,    settingsController.addProductiveApps);
 router.get('/get-app-info',    authMiddleware,verifyAdminMiddleware,    settingsController.getAppInfo);
+
+router.get('/get-report-status',    authMiddleware,verifyAdminMiddleware,    settingsController.getReportStatus);
 router.put('/update-report-status',    authMiddleware,verifyAdminMiddleware,    settingsController.updateReportSettings);
 
 //email gateway routes

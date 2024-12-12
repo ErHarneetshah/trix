@@ -173,8 +173,6 @@ const updateSitesStatus = async (req, res) => {
 
 const addProductiveApps = async (req, res) => {
   try {
-    // console.log("addProdcutiveApps Reuquest ------------------------")
-    // console.log(req.body);
     const { department_id, app_name } = req.body;
     const rules = {
       department_id: 'required|integer',
@@ -264,6 +262,22 @@ const getAppInfo = async (req, res) => {
     console.error("Error fetching app info:", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
+};
+
+const getReportStatus = async(req,res) => {
+
+ const getStatus = await reportSettings.findOne({
+    where: { company_id: req.user.company_id },
+    attributes: ["status"],
+  });
+
+  if (!getStatus) {
+    return helper.failed(res, variables.NotFound, "Report status not found.");
+  }
+
+  const statusMapping = {1:"Monthly",2:"Weekly",3:"Daily"};
+const statusType =  statusMapping[getStatus.status] || "unknown"
+  return helper.success(res, variables.Success, "Report settings retrieved successfully.", getStatus,{statusType});
 };
 
 const updateReportSettings = async (req, res) => {
@@ -393,4 +407,4 @@ const getProductiveWebsites = async (req, res) => {
 };
 
 
-export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveApps, getAppInfo, updateReportSettings, addProductiveWebsites, getProductiveWebsites };
+export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveApps, getAppInfo,getReportStatus, updateReportSettings, addProductiveWebsites, getProductiveWebsites };
