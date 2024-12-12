@@ -99,33 +99,33 @@ const User = sequelize.define(
     timestamps: true,
     underscored: false,
     hooks: {
-      async beforeCreate(user, options) {
-        // if (user.password) {
-        //   user.password = await bcrypt.hash(user.password, 10);
-        // }
+      // async beforeCreate(user, options) {
+      //   // if (user.password) {
+      //   //   user.password = await bcrypt.hash(user.password, 10);
+      //   // }
 
-        const validationMap = {
-         departmentId: department,
-         designationId: designation,
-         roleId: role,
-         teamId: team,
-        };
+      //   const validationMap = {
+      //    departmentId: department,
+      //    designationId: designation,
+      //    roleId: role,
+      //    teamId: team,
+      //   };
 
-        // Iterate through the fields to validate
-        for (const [field, model] of Object.entries(validationMap)) {
-         if (user[field]) {
-            console.log(model);
-            const recordExists = await model.findOne({
-             where: { id: user[field] },
-             transaction: options.transaction,
-            });
+      //   // Iterate through the fields to validate
+      //   for (const [field, model] of Object.entries(validationMap)) {
+      //    if (user[field]) {
+      //       console.log(model);
+      //       const recordExists = await model.findOne({
+      //        where: { id: user[field] },
+      //        transaction: options.transaction,
+      //       });
 
-            if (!recordExists) {
-             throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
-            }
-         }
-        }
-      },
+      //       if (!recordExists) {
+      //        throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
+      //       }
+      //    }
+      //   }
+      // },
       // async beforeUpdate(user, options) {
       //   // Hash the password if it's being updated
       //   if (user.password) {

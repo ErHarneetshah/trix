@@ -4,6 +4,7 @@ import team from "../../database/models/teamModel.js";
 import { myCache } from "../../utils/cache.js";
 import helper from "../../utils/services/helper.js";
 import variables from "../config/variableConfig.js";
+import role from "../../database/models/roleModel.js"
 
 async function buildUserTree(parentDept, companyId, level = 0) {
   try {
@@ -19,6 +20,12 @@ async function buildUserTree(parentDept, companyId, level = 0) {
           include: {
             model: User,
             as: "children",
+            include: [
+              {
+                model: role,
+                as: "role"
+              },
+            ],
           },
         },
         {
@@ -27,6 +34,7 @@ async function buildUserTree(parentDept, companyId, level = 0) {
           include: [
             {
               model: role,
+              as: "role"
             },
           ],
         },
@@ -87,6 +95,12 @@ const viewTreeStructure = async (req, res, next) => {
           {
             model: User,
             as: "reportingManager",
+            include: [
+              {
+                model: role,
+                as: "role"
+              },
+            ],
           },
         ],
         //   raw: true,
