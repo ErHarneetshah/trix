@@ -136,7 +136,7 @@ const productiveChart = async (req, res) => {
         query = `
                 SELECT 
                   ah.appName, 
-                  SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)) AS total_time_minutes
+                  SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_time_seconds
                 FROM 
                   app_histories AS ah
                 INNER JOIN 
@@ -153,7 +153,7 @@ const productiveChart = async (req, res) => {
         query = `
                 SELECT 
                   ah.appName, 
-                  SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)) AS total_time_minutes
+                  SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_time_seconds
                 FROM 
                   app_histories AS ah
                 INNER JOIN 
@@ -171,7 +171,7 @@ const productiveChart = async (req, res) => {
         query = `
                 SELECT 
                   ah.appName, 
-                  SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)) AS total_time_minutes
+                  SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_time_seconds
                 FROM 
                   app_histories AS ah
                 INNER JOIN 
@@ -306,7 +306,6 @@ const topWebsiteChart = async (req, res, next) => {
 const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
     let filterType, dateOption;
-
     if (type === 'api') {
       ({ filterType, dateOption } = req.query); // Destructure from req.query
     } else {
@@ -347,7 +346,7 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
         queryParams.date = item.date;
         query = `
           SELECT 
-            COALESCE(SUM(TIMESTAMPDIFF(SECONDS, ah.startTime, ah.endTime)), 0) AS total_time_seconds
+            COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0) AS total_time_seconds
           FROM 
             app_histories AS ah
           INNER JOIN 
@@ -361,7 +360,7 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
         queryParams.end = item.end;
         query = `
           SELECT 
-            COALESCE(SUM(TIMESTAMPDIFF(SECONDS, ah.startTime, ah.endTime)), 0) AS total_time_seconds
+            COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0) AS total_time_seconds
           FROM 
             app_histories AS ah
           INNER JOIN 
@@ -376,7 +375,7 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
         queryParams.year = year;
         query = `
           SELECT 
-            COALESCE(SUM(TIMESTAMPDIFF(SECONDS, ah.startTime, ah.endTime)), 0) AS total_time_seconds
+            COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0) AS total_time_seconds
           FROM 
             app_histories AS ah
           INNER JOIN 
@@ -692,6 +691,8 @@ const productiveAppsAndproductiveWebsites = async (req, res, next) => {
 
     const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
     const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
+    console.log(productiveAppsData);
+    console.log(productiveWebsiteData);
 
     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
       return helper.failed(res, 400, "Invalid data format", []);
