@@ -205,11 +205,6 @@ class teamController {
         });
         if (alreadySameTeam) return helper.success(res, variables.Success, "Team Re-Updated Successfully!");
 
-        const existingTeamWithSameParam = await team.findOne({
-          where: { company_id: req.user.company_id,departmentId: updateFields.departmentId, shiftId: updateFields.shiftId },
-          transaction: dbTransaction,
-        });
-        if (existingTeamWithSameParam) return helper.success(res, variables.Success, "Team With Same Specs already exists!");
         
         const existingDept = await department.findOne({
           where: { id: updateFields.departmentId, company_id: req.user.company_id },
