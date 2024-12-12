@@ -150,7 +150,7 @@ class authController extends jwtService {
       if (user.isAdmin) {
         token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
         let expireTime = this.calculateTime();
-        await createAccessToken(user.id, user.isAdmin, token, expireTime, dbTransaction);
+        await createAccessToken(user.id, user.isAdmin, token, expireTime,user.company_id ,  dbTransaction);
 
         // setting Admin attendence (currentStatus) to present(1)
         user.currentStatus = 1;
