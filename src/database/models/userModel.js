@@ -8,6 +8,7 @@ import team from "./teamModel.js";
 import helper from "../../utils/services/helper.js";
 import variables from "../../app/config/variableConfig.js";
 import { io } from "../../../app.js";
+import company from "./company.js";
 
 const User = sequelize.define(
   "users",
@@ -134,7 +135,11 @@ const User = sequelize.define(
             });
 
             if (!recordExists) {
-              throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
+              throw new Error(
+                `${field.replace(/Id$/, "")} with ID ${
+                  user[field]
+                } does not exist.`
+              );
             }
           }
         }
@@ -171,13 +176,23 @@ const User = sequelize.define(
       //   }
       // },
       async afterUpdate(user, options) {
-        let monitoredFields = ["screen_capture_time", "broswer_capture_time", "app_capture_time"];
-        let fieldsChanged = options.fields.some((field) => monitoredFields.includes(field));
+        let monitoredFields = [
+          "screen_capture_time",
+          "broswer_capture_time",
+          "app_capture_time",
+        ];
+        let fieldsChanged = options.fields.some((field) =>
+          monitoredFields.includes(field)
+        );
+        let comp = await company.findOne({ where: { id: user.company_id } });
         if (fieldsChanged) {
           io.to(user.socket_id).emit("getUserSettings", {
             screen_capture_time: user.screen_capture_time,
             broswer_capture_time: user.broswer_capture_time,
             app_capture_time: user.app_capture_time,
+            screen_capture: comp.screen_capture,
+            broswer_capture: comp.broswer_capture,
+            app_capture: comp.app_capture,
           });
         }
       },
@@ -185,5 +200,5 @@ const User = sequelize.define(
   }
 );
 
-await User.sync({alter:1});
+await User.sync({ alter: 1 });
 export default User;

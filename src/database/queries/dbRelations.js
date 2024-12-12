@@ -11,6 +11,7 @@ import { BlockedWebsites } from "../models/BlockedWebsite.js";
 import { ProductiveApp }from "../models/ProductiveApp.js";
 import { UserHistory } from "../models/UserHistory.js";
 import AppHistoryEntry from "../models/AppHistoryEntry.js";
+import company from "../models/company.js";
 
 // // User Relationships here
 // User.belongsTo(department, { as: "department", foreignKey: "departmentId" });
@@ -38,6 +39,7 @@ import AppHistoryEntry from "../models/AppHistoryEntry.js";
 // // Team Relations here
 // team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
 // team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
+
 
 
 export default {}
