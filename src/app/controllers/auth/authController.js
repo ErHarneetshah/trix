@@ -23,6 +23,7 @@ import Model from "../../../database/queries/dbConnection.js";
 import { QueryTypes } from "@sequelize/core";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 import { Notification } from "../../../database/models/Notification.js";
+import reportSettings from "../../../database/models/reportSettingsModel.js";
 
 class authController extends jwtService {
   companyRegister = async (req, res) => {
@@ -48,6 +49,15 @@ class authController extends jwtService {
         {
           name: requestData.name,
           employeeNumber: requestData.employeeNumber,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
+
+      const createReportSettings = await reportSettings.create(
+        {
+          company_id:createCompany.id
         },
         {
           transaction: dbTransaction,

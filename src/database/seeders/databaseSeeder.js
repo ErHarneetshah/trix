@@ -7,6 +7,8 @@ import team from "../models/teamModel.js";
 import User from "../models/userModel.js";
 import company from "../models/companyModel.js";
 import rolePermission from "../models/rolePermissionModel.js";
+import reportSettings from "../models/reportSettingsModel.js";
+import module from "../models/moduleModel.js";
 
 export default async function seedDatabase() {
   try {
@@ -39,6 +41,29 @@ export default async function seedDatabase() {
 
     await User.destroy({ where: {} });
     await sequelize.query(`ALTER TABLE ${User.getTableName()} AUTO_INCREMENT=1`);
+
+    await reportSettings.destroy({ where: {} });
+    await sequelize.query(`ALTER TABLE ${reportSettings.getTableName()} AUTO_INCREMENT=1`);
+
+    await module.destroy({ where: {} });
+    await sequelize.query(`ALTER TABLE ${reportSettings.getTableName()} AUTO_INCREMENT=1`);
+
+    const rootModules = await module.bulkCreate([
+      { name: "role" },
+      { name: "reportingManager" },
+      { name: "team" },
+      { name: "shifts" },
+      { name: "teamMembers" },
+      { name: "department" },
+      { name: "designation" },
+      { name: "adminAuth" },
+      { name: "userSettings" },
+      { name: "permissions" },
+      { name: "blockedWebsite" },
+      { name: "productiveApp" },
+      { name: "reportSettings" },
+      { name: "user" },
+    ]);
 
     for (let a = 1; a <= 4; a++) {
       //*________________--------------- ROLE -------------_____________________
@@ -122,7 +147,7 @@ export default async function seedDatabase() {
         await department.update({ parentDeptId: update.parentDeptId }, { where: { name: update.name, company_id: a } });
       }
 
-      console.log("Departments created and relationships updated successfully.");
+      console.log("Departments Data created successfully.");
 
       //*________________--------------- DESIGNATIONS -------------_____________________
       const rootDesignations = await designation.bulkCreate(
@@ -159,6 +184,7 @@ export default async function seedDatabase() {
         return map;
       }, {});
 
+      console.log("Designations Data Created successfully.");
       //*________________--------------- SHIFTS -------------_____________________
       const rootShift = await shift.bulkCreate([
         {
@@ -232,13 +258,14 @@ export default async function seedDatabase() {
         return map;
       }, {});
 
+      console.log("Shifts Data Created successfully.");
       //*________________--------------- TEAMS -------------_____________________
       const rootTeam = await team.bulkCreate([
         {
-            name: "Upper Management Team",
-            company_id: a,
-            departmentId: departmentMap["Upper Management"],
-            shiftId: shiftMap["Morning Shift"],
+          name: "Upper Management Team",
+          company_id: a,
+          departmentId: departmentMap["Upper Management"],
+          shiftId: shiftMap["Morning Shift"],
         },
         {
           name: "Development Team",
@@ -295,6 +322,9 @@ export default async function seedDatabase() {
         return map;
       }, {});
 
+      console.log("Teams Data Created successfully.");
+
+      //*________________--------------- USERS -------------_____________________
       const rootUser = await User.bulkCreate([
         {
           company_id: a,
@@ -310,7 +340,7 @@ export default async function seedDatabase() {
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
-          app_capture_time: 60
+          app_capture_time: 60,
         },
         {
           company_id: a,
@@ -325,22 +355,22 @@ export default async function seedDatabase() {
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
-          app_capture_time: 60
+          app_capture_time: 60,
         },
         {
           company_id: a,
           fullname: `Carol Davis ${a}`,
           email: `carol${a}.davis@example.com`,
           mobile: (Math.floor(Math.random() * 9_000_000_000) + 1_000_000_000).toString(),
-          departmentId: departmentMap["Project Coordinator Department"], 
-          designationId: designationMap["PC (Project Coordinator)"], 
+          departmentId: departmentMap["Project Coordinator Department"],
+          designationId: designationMap["PC (Project Coordinator)"],
           roleId: roleMap["Project Manager"], // User
           teamId: teamMap["Support Team"], // Team associated with Project Coordinator
           password: "$2a$10$abcdefghijklmnopqrstuv12345",
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
-          app_capture_time: 60
+          app_capture_time: 60,
         },
         {
           company_id: a,
@@ -355,7 +385,7 @@ export default async function seedDatabase() {
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
-          app_capture_time: 60
+          app_capture_time: 60,
         },
         {
           company_id: a,
@@ -370,7 +400,7 @@ export default async function seedDatabase() {
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
-          app_capture_time: 60
+          app_capture_time: 60,
         },
         {
           company_id: a,
@@ -385,7 +415,7 @@ export default async function seedDatabase() {
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
-          app_capture_time: 60
+          app_capture_time: 60,
         },
         {
           company_id: a,
@@ -400,7 +430,7 @@ export default async function seedDatabase() {
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
-          app_capture_time: 60
+          app_capture_time: 60,
         },
         {
           company_id: a,
@@ -415,7 +445,7 @@ export default async function seedDatabase() {
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
-          app_capture_time: 60
+          app_capture_time: 60,
         },
         {
           company_id: a,
@@ -430,7 +460,7 @@ export default async function seedDatabase() {
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
-          app_capture_time: 60
+          app_capture_time: 60,
         },
         {
           company_id: a,
@@ -445,7 +475,7 @@ export default async function seedDatabase() {
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
-          app_capture_time: 60
+          app_capture_time: 60,
         },
       ]);
 
@@ -453,6 +483,12 @@ export default async function seedDatabase() {
         map[user.name] = user.id;
         return map;
       }, {});
+
+      console.log("User Data Created successfully.");
+
+      //*________________--------------- REPORT SETTINGS -------------_____________________
+      const rootReportSettings = await reportSettings.bulkCreate([{ company_id: a }]);
+      console.log("Report Settings Data Created successfully.");
 
       //! For loop of COMPANY Ends here
     }
