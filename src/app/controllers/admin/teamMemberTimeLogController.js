@@ -12,12 +12,11 @@ class teamMemberTimeLogController {
     try {
       // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       let { searchParam, limit, page, date } = req.query;
-      let searchable = ["name"];
+      let searchable = ["$user.fullname$"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-      let userWhere = await helper.searchCondition(searchParam, searchable);
+      let logWhere = await helper.searchCondition(searchParam, searchable);
 
-      let logWhere = {};
 
       // Add date range filter to `reportWhere`
       // if (startDate && endDate) {
@@ -58,7 +57,6 @@ class teamMemberTimeLogController {
           {
             model: User,
             as: "user",
-            where: userWhere,
             required: true,
             attributes: ["id", "fullname", "currentStatus"],
           },
@@ -72,15 +70,14 @@ class teamMemberTimeLogController {
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
-      if (tab) {
-        if (tab.toLowerCase() === "working") {
-          userWhere.currentStatus = 1;
-        } else if (tab.toLowerCase() === "absent") {
-          userWhere.currentStatus = 0;
-        } else if (tab.toLowerCase() === "late") {
-          logWhere.late_coming = true;
-        }
-      }
+      
+      // const workingEmpCount = await TimeLog.count({
+      //   where: {
+      //     // Your conditions go here, for example:
+      //     status: 'working',
+      //     shift_id: 1, // Example condition
+      //   },
+      // });
 
       
 
@@ -94,12 +91,11 @@ class teamMemberTimeLogController {
     try {
       // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       let { searchParam, limit, page,date,tab } = req.query;
-      let searchable = ["name"];
+      let searchable = ["$user.fullname$"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-      let userWhere = await helper.searchCondition(searchParam, searchable);
+      let logWhere = await helper.searchCondition(searchParam, searchable);
 
-      let logWhere = {}
       // Add date range tab to `reportWhere`
       // if (startDate && endDate) {
       //   logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
@@ -148,7 +144,6 @@ class teamMemberTimeLogController {
           {
             model: User,
             as: "user",
-            where: userWhere, // Use `where` instead of `userWhere`
             required: true,
             attributes: ["id", "fullname"],
           },
