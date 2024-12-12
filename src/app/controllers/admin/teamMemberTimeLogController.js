@@ -27,14 +27,14 @@ class teamMemberTimeLogController {
         const endOfDay = new Date(date);
         endOfDay.setHours(23, 59, 59, 999);
 
-        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
       } else {
         startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
         endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
 
-        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
       }
 
       logWhere.company_id = req.user.company_id;
@@ -84,14 +84,14 @@ class teamMemberTimeLogController {
         endOfDay = new Date(date);
         endOfDay.setHours(23, 59, 59, 999);
 
-        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
       } else {
         startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
         endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
 
-        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
       }
 
       if (tab) {
@@ -134,45 +134,66 @@ class teamMemberTimeLogController {
   };
 
   getFilterCount = async (req, res) => {
-    let logWhere = {};
-    let startOfDay;
-    let endOfDay;
+    try {
+      let logWhere = {};
+      let userWhere = {};
+      let startOfDay;
+      let endOfDay;
 
-    startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
+      startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
 
-    logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+      logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+
+      userWhere.currentStatus = 1;
 
 
-    if (tab) {
-      if (tab.toLowerCase() === "working") {
-        userWhere.currentStatus = 1;
-      } else if (tab.toLowerCase() === "absent") {
-        userWhere.currentStatus = 0;
-      } else if (tab.toLowerCase() === "late") {
-        logWhere.late_coming = true;
-      }
+      const employeeCount = await User.count({
+        where: {
+          company_id: req.user.company_id, // Filters by `currentStatus` equals 1
+          updatedAt: {
+            [Op.between]: [startOfDay, endOfDay],
+          },
+        },
+      });
+
+      const workingCount = await User.count({
+        where: {
+          company_id: req.user.company_id,
+          currentStatus: 1, // Filters by `currentStatus` equals 1
+          updatedAt: {
+            [Op.between]: [startOfDay, endOfDay],
+          },
+        },
+      });
+
+      const absentCount = await User.count({
+        where: {
+          company_id: req.user.company_id,
+          currentStatus: 0, // Filters by `currentStatus` equals 1
+          updatedAt: {
+            [Op.between]: [startOfDay, endOfDay],
+          },
+        },
+      });
+
+      const lateCount = await TimeLog.count({
+        distinct: true, 
+        col: "user_id",
+        where: {
+          late_coming: true, // Filters by `currentStatus` equals 1
+          createdAt: {
+            [Op.between]: [startOfDay, endOfDay],
+          },
+        },
+      });
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", { employeeCount: employeeCount, workingCount: workingCount, absentCount: absentCount, lateCount: lateCount });
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
     }
-
-    const alldata = await TimeLog.count({
-      where: logWhere,
-      include: [
-        {
-          model: User,
-          as: "user",
-          required: true,
-          attributes: ["id", "fullname"],
-        },
-        {
-          model: shift,
-          as: "shift", // Alias for the associated `department` model
-          attributes: ["start_time", "end_time"], // Select specific fields
-        },
-      ],
-      order: [["createdAt", "DESC"]], // Sort by creation date (most recent first)
-    });
   };
 }
 
