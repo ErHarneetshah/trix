@@ -176,16 +176,16 @@ class teamMemberController {
       let { screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
 
       if (!id) {
-        return helper.sendResponse(res, variables.ValidationError, 0, {}, "ID is Required");
+        return helper.failed(res, variables.ValidationError, "ID is Required");
       }
 
       if (!Number.isInteger(screen_capture_time) || !Number.isInteger(broswer_capture_time) || !Number.isInteger(app_capture_time)) {
-        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Invalid Data: Only integer values are allowed");
+        return helper.failed(res, variables.BadRequest, "Invalid Data: Only integer values are allowed");
       }
 
       const user = await User.findOne({ where: { id } });
       if (!user) {
-        return helper.sendResponse(res, variables.NotFound, 0, null, "User not found");
+        return helper.failed(res, variables.NotFound, "User not found");
       }
 
       user.screen_capture_time = screen_capture_time;
@@ -193,10 +193,10 @@ class teamMemberController {
       user.app_capture_time = app_capture_time;
       await user.save();
 
-      return helper.sendResponse(res, variables.Success, 1, {}, "Settings Updated Successfully");
+      return helper.success(res, variables.Success, "Settings Updated Successfully");
     } catch (error) {
       console.error("Error updating settings:", error.message);
-      return helper.sendResponse(res, variables.Failure, 0, {}, "Failed to update settings");
+      return helper.failed(res, variables.Failure, "Failed to update settings");
     }
   };
 }
