@@ -12,11 +12,11 @@ const authMiddleware = async (req, res, next) => {
   try {
     console.log("Auth Middleware ---------------1--------------");
     const authHeader = req.header("Authorization");
-    console.log(authHeader);
     if (!authHeader)
       return helper.failed(res, variables.Unauthorized, "Access Denied. No Token Provided");
 
     const token = authHeader.replace("Bearer ", "");
+    console.log(token);
 
     const access_token = await accessToken.findOne({ where: {token: token } });
     console.log("------------1---------------------");

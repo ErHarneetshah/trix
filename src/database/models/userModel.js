@@ -176,5 +176,5 @@ const User = sequelize.define(
   }
 );
 
-// await User.sync({alter:1});
+await User.sync({alter:1});
 export default User;

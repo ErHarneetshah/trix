@@ -2,11 +2,8 @@ let whitelist = ["http://192.168.11.89:3000", "http://localhost:3001", "http://1
 let corsMiddleware = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1 || !origin) {
-      console.log({klkkl:"kllkl"})
       callback(null, true);
     } else {
-      console.log({klkkl:"fail"})
-
       callback(new Error("Not allowed by CORS"));
     }
   },

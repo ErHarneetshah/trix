@@ -12,6 +12,8 @@ import multer from "multer";
 // === file get === //
 import { fileURLToPath } from "url";
 import path from 'path'
+import importAndSyncAllModels from "./src/app/config/ImportDependencies/ImportModels.js";
+import sequelize from "./src/database/queries/dbConnection.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -42,6 +44,8 @@ app.get("/image/:type/:path", (req, res) => {
   );
   });
 
+// importAndSyncAllModels();
+// sequelize.sync();
 // Start the Express server
 httpServer.listen(PORT, "0.0.0.0", () =>
 console.log(`Server up and Running on http://${ip.address()}:${PORT}`)

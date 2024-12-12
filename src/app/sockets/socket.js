@@ -7,10 +7,52 @@ import { ImageUpload } from "../../database/models/ImageUpload.js";
 import { Op, Sequelize } from "sequelize";
 import Model from "../../database/queries/dbConnection.js";
 import { QueryTypes } from "@sequelize/core";
-import { BlockedWebsites } from "../../database/models/BlockedWebsite.js";
 import TimeLog from "../../database/models/TimeLog.js";
-import { ProductiveApp } from "../../database/models/ProductiveApp.js";
-import { System } from "../../database/models/System.js";
+import { Device } from "../../database/models/device.js";
+
+const userData = async (id) => {
+  let user = await User.findOne({ where: { id: id } });
+  // socket.join("privateRoom_" + id);
+  // console.log("privateRoom_" + id)
+  // io.to(user.socket_id).socketsJoin("privateRoom");
+
+  // let today;
+  // if (data.date) {
+  let today = new Date().toISOString().split("T")[0];
+  // } else {
+  //   today = new Date().toISOString().split("T")[0];
+  // }
+
+  let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${id} GROUP by url`;
+  let userHistories = await Model.query(web_query, {
+    type: QueryTypes.SELECT,
+  });
+
+  let app_query = `SELECT appName , count(id) as visits FROM app_histories where date = "${today}" AND userId = ${id} GROUP by appName`;
+  let appHistories = await Model.query(app_query, {
+    type: QueryTypes.SELECT,
+  });
+
+  let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
+  let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+
+  if (!user) {
+    return socket.emit("error", {
+      message: "User not found",
+    });
+  }
+  let response = {
+    status: 1,
+    message: "User Report fetched successfully",
+    data: {
+      user,
+      image,
+      userHistories,
+      appHistories,
+    },
+  };
+  return response;
+};
 
 const setupSocketIO = (io) => {
   // Middleware for Socket.IO authentication:
@@ -36,7 +78,7 @@ const setupSocketIO = (io) => {
   // Connection event:
   io.on("connection", async (socket) => {
     let userData = await User.findOne({ where: { id: socket.user.userId } });
-    if (User) {
+    if (userData) {
       userData.socket_id = socket.id; // Save socket id into user table
       await userData.save();
     }
@@ -53,7 +95,7 @@ const setupSocketIO = (io) => {
 
 // Admin specific handlers
 const handleAdminSocket = async (socket, io) => {
-  socket.on("check", () => socket.emit("pong"));
+  // socket.on("check", () => socket.emit("pong"));
 
   let result = await sendAdminNotifications(socket.user.userId);
   if (result.error) {
@@ -68,6 +110,19 @@ const handleAdminSocket = async (socket, io) => {
   } else {
     socket.emit("getUserStats", { result1 });
   }
+
+  socket.on("getSystemDetail", async (data) => {
+    let result2 = await getSystemDetail(socket,data);
+    if (result2.error) {
+      socket.emit("getSystemDetail", { message: result2.error });
+    } else {
+      socket.emit("getSystemDetail", result2);
+    }
+  });
+
+  socket.on("updatedSystemConfig",async()=>{
+    console.log("Data get successfully");
+  })
 
   socket.on("getRecentNotifications", async (data) => {
     let result1 = await getRecentNotifications(data);
@@ -91,13 +146,11 @@ const handleAdminSocket = async (socket, io) => {
     let result1 = await getUserReport(data, io, socket);
     if (result1.error) {
       socket.emit("getUserReport", { message: result1.error });
-    } else {
-      io.to("privateRoom").emit("getUserReport", result1);
     }
   });
 
   socket.on("disconnect", () => {
-    console.log(`Admin ID ${socket.user.userId} disconnected `);
+    console.log(`Admin ID ${socket.user.userId} disconnected `, socket.id);
   });
 };
 
@@ -162,10 +215,43 @@ const isRead = async (data, io) => {
   }
 };
 
+const getSystemDetail = async (socket,data) => {
+  try {
+    const limit = parseInt(data.limit) || 9;
+    const page = parseInt(data.page) || 1;
+    const { date } = data;
+    const offset = (page - 1) * limit;
+    const whereCondition = {};
+    if (date) {
+      whereCondition.date = date;
+    }
+    let systemDetail;
+    if(data.id){
+      systemDetail = await Device.findAll({ 
+        where: {companyId:socket.user.company_id, departmentId: data.id},
+        order: [["id", "DESC"]],
+        limit,
+        offset
+      });
+    }else{
+      systemDetail = await Device.findAll({ 
+        where: {companyId:socket.user.company_id},
+        order: [["id", "DESC"]],
+        limit,
+        offset
+      });
+    }
+    return systemDetail;
+  } catch (error) {
+    console.error("Error getting system detail:", error.message);
+    return { error: "Error getting system detail" };
+  }
+};
+
 const getUserReport = async (data, io, socket) => {
   try {
-    let user = await User.findOne({ where: { id: data.userId } });
-    socket.join("privateRoom_" + data.userId);
+    let user = await User.findOne({ where: { id: data.id } });
+    socket.join("privateRoom_" + data.id);
     io.to(user.socket_id).socketsJoin("privateRoom");
 
     let today;
@@ -175,32 +261,18 @@ const getUserReport = async (data, io, socket) => {
       today = new Date().toISOString().split("T")[0];
     }
 
-    let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${data.userId} GROUP by url`;
+    let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${data.id} GROUP by url`;
     let userHistories = await Model.query(web_query, {
       type: QueryTypes.SELECT,
     });
 
-    let app_query = `SELECT appName , count(id) as visits FROM app_histories where date = "${today}" AND userId = ${data.userId} GROUP by appName`;
+    let app_query = `SELECT appName , count(id) as visits FROM app_histories where date = "${today}" AND userId = ${data.id} GROUP by appName`;
     let appHistories = await Model.query(app_query, {
       type: QueryTypes.SELECT,
     });
 
-    let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${data.userId}`;
+    let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${data.id}`;
     let image = await Model.query(image_query, { type: QueryTypes.SELECT });
-
-    // let productive_apps = await ProductiveApp.findAndCountAll({where:{company_id:user?.company_id}});
-    // let app_array = []
-    // for (let i = 0; i < productive_apps.rows.length; i++) {
-    //   if(!app_array.includes(array[i])){
-    //     app_array.push(array[i])
-    //   }
-    // }
-    // let app_history = await AppHistoryEntry.findAndCountAll({where:{userId:data.userId,date:today}});
-    // let app_history_array = []
-
-    // let app_percent = async(productive_apps)=>{
-
-    // }
 
     if (!user) {
       return socket.emit("error", {
@@ -303,6 +375,7 @@ export const adminController = {
 ////////////////////////-------- USER SOCKET FUNCTION ------------/////////////////////////////////////
 
 // User specific handlers:
+
 const handleUserSocket = async (socket, io) => {
   socket.join(`privateRoom_${socket.user.userId}`);
 
@@ -310,7 +383,8 @@ const handleUserSocket = async (socket, io) => {
     let notificationCount = await notifyAdmin(
       socket.user.userId,
       data.type,
-      data.time
+      data.time,
+      data.url
     );
     if (notificationCount.error) {
       socket.emit("newNotification", {
@@ -324,55 +398,6 @@ const handleUserSocket = async (socket, io) => {
   socket.on("ping", async () => {
     socket.emit("pong");
   });
-
-  const userReport = async (id) => {
-    try {
-      let user = await User.findOne({ where: { id } });
-      let today = new Date().toISOString().split("T")[0];
-
-      let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${id} GROUP by url`;
-      let userHistories = await Model.query(web_query, {
-        type: QueryTypes.SELECT,
-      });
-
-      let app_query = `SELECT appName , count(id) as visits FROM app_histories where date = "${today}" AND userId = ${id} GROUP by appName`;
-      let appHistories = await Model.query(app_query, {
-        type: QueryTypes.SELECT,
-      });
-
-      let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
-      let image = await Model.query(image_query, { type: QueryTypes.SELECT });
-
-      if (!user) {
-        return socket.emit("error", {
-          message: "User not found",
-        });
-      }
-      let response = {
-        status: 1,
-        message: "User Report fetched successfully",
-        data: {
-          user,
-          image,
-          userHistories,
-          appHistories,
-        },
-      };
-      io.to("privateRoom_" + id).emit("userReport", response);
-    } catch (error) {
-      console.log("Error fetching stats:", error);
-      socket.emit("error", {
-        message: `Error fetching stats: ${error.message}`,
-      });
-    }
-  };
-
-  let result = await getBlockedWebsites(socket.user.userId);
-  if (result.error) {
-    socket.emit("getBlockedWebsites", { message: result.error });
-  } else {
-    socket.emit("getBlockedWebsites", result);
-  }
 
   let result2 = await getStatus(socket.user.userId);
   if (result2.error) {
@@ -390,6 +415,8 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("uploadHistory", async (data) => {
     try {
+      console.log("uploadHistory");
+
       let { url, title, visitTime } = data;
       let userId = socket.user.userId;
 
@@ -419,10 +446,13 @@ const handleUserSocket = async (socket, io) => {
         company_id,
         visitTime: parsedVisitTime,
       });
+      io.to(`privateRoom_${userId}`).emit(
+        "getUserReport",
+        await userData(userId)
+      );
       socket.emit("historySuccess", {
         message: "History uploaded successfully",
       });
-      await userReport(userId);
     } catch (error) {
       console.error("Error uploading history:", error.message);
       socket.emit("historyError", { message: "Failed to upload history" });
@@ -431,6 +461,8 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("uploadImage", async (data) => {
     try {
+      console.log("uploadImage");
+
       let today = new Date().toISOString().split("T")[0];
       let userId = socket.user.userId;
 
@@ -456,9 +488,12 @@ const handleUserSocket = async (socket, io) => {
           })
         )
       );
-
+      io.to(`privateRoom_${userId}`).emit(
+        "getUserReport",
+        await userData(userId)
+      );
       socket.emit("imageSuccess", { message: "Images uploaded successfully" });
-      userReport(userId);
+      // userReport(userId);
     } catch (error) {
       console.log("Error uploading images:", error);
       socket.emit("imageError", { message: "Failed to upload images" });
@@ -467,6 +502,8 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("uploadAppHistory", async (data) => {
     try {
+      console.log("uploadAppHistory");
+
       let { histories } = data;
       let userId = socket.user.userId;
 
@@ -515,51 +552,19 @@ const handleUserSocket = async (socket, io) => {
           });
         }
       }
-
+      io.to(`privateRoom_${userId}`).emit(
+        "getUserReport",
+        await userData(userId)
+      );
       socket.emit("appHistorySuccess", {
         message: "App history uploaded successfully",
       });
-      await userReport(userId);
+      // await userReport(userId);
     } catch (error) {
       console.error("Error uploading app history:", error.message);
       socket.emit("appHistoryError", {
         message: "Failed to upload app history",
       });
-    }
-  });
-
-  socket.on("systemConfig", async (data) => {
-    try {
-      let { ram, rom, memory } = data;
-      let userId = socket.user.userId;
-      let user = await User.findOne({ where: { id: userId } });
-      if (!user) {
-        socket.emit("systemConfigError", { message: "Unauthorized access" });
-        return;
-      }
-      if (!ram || !rom || !memory) {
-        socket.emit("systemConfigError", { message: "Invalid data" });
-        return;
-      }
-      let sys_data = await System.findOne({
-        where: { user_id: userId, company_id: user?.company_id },
-      });
-      if (!sys_data) {
-        sys_data = await System.create({
-          user_id: userId,
-          company_id: user?.company_id,
-          ram,
-          rom,
-          memory,
-        });
-      } else {
-        sys_data.update(data);
-      }
-      socket.emit("systemConfigSuccess", {
-        message: "system configration add successfully",
-      });
-    } catch (error) {
-      socket.emit("systemConfigError", { message: error.message });
     }
   });
 
@@ -569,24 +574,6 @@ const handleUserSocket = async (socket, io) => {
 };
 
 // User specific function:
-const getBlockedWebsites = async (userId) => {
-  try {
-    let user = await User.findOne({ where: { id: userId } });
-    if (!user) {
-      return { error: "User not found" };
-    }
-    let blockedWebsites = await BlockedWebsites.findAndCountAll({
-      where: { company_id: user.company_id },
-    });
-    return {
-      message: "Blocked websites",
-      blockedWebsites,
-    };
-  } catch (error) {
-    console.error("Error fetching blocked websites:", error);
-    return { error: "Failed to fetch blocked websites" };
-  }
-};
 
 const getStatus = async (userId) => {
   try {
@@ -625,7 +612,7 @@ const getUserSettings = async (userId) => {
   }
 };
 
-const notifyAdmin = async (id, type, time) => {
+const notifyAdmin = async (id, type, time, url) => {
   try {
     let today = new Date().toISOString().split("T")[0];
     let user = await User.findOne({ where: { id } });
@@ -662,6 +649,18 @@ const notifyAdmin = async (id, type, time) => {
       timeLog.idle_time = parseInt(timeLog.idle_time) + parseInt(time);
       timeLog.save();
     }
+    else if(type == 4){
+      if (!url) {
+        return { error: "Invalid Data" };
+      }
+      await Notification.create({
+        userId: id,
+        title: "Alert! Blocked Website",
+        company_id,
+        date: today,
+        message:`${user?.fullname} attempted to access a blocked website ${url}`
+      });
+    }
     let notificationCount = await Notification.count({
       where: { is_read: 0, company_id: user.company_id },
     });
@@ -673,15 +672,3 @@ const notifyAdmin = async (id, type, time) => {
 };
 
 export default setupSocketIO;
-
-///////////////////////////////////
-
-// export const getUserStats = async (io) => {
-//   try {
-//     await adminController.updateUsers(io);
-//     await adminController.updateAppsStats(io);
-//     await adminController.updateURLHostStats(io);
-//   } catch (error) {
-//     console.error("Error fetching admin getuserstats:", error.message);
-//   }
-// };
