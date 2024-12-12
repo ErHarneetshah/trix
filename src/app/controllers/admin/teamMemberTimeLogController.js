@@ -5,27 +5,39 @@ import TimeLog from "../../../database/models/teamLogsModel.js";
 import { group } from "console";
 import shift from "../../../database/models/shiftModel.js";
 import User from "../../../database/models/userModel.js";
+import { Op } from "sequelize";
 
 class teamMemberTimeLogController {
   getAllTeamMemberLog = async (req, res) => {
     try {
       // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      let { searchParam, limit, page, startDate, endDate } = req.query;
-      let searchable = ["name", "status"];
+      let { searchParam, limit, page, date } = req.query;
+      let searchable = ["name"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-      // let where = await helper.searchCondition(searchParam, searchable);
+      let userWhere = await helper.searchCondition(searchParam, searchable);
 
-      const logWhere = {};
+      let logWhere = {};
 
       // Add date range filter to `reportWhere`
-      if (startDate && endDate) {
-        logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
-      } else if (startDate) {
-        logWhere.createdAt = { [Op.gte]: new Date(startDate) };
-      } else if (endDate) {
-        logWhere.createdAt = { [Op.lte]: new Date(endDate) };
+      // if (startDate && endDate) {
+      //   logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
+      // } else if (startDate) {
+      //   logWhere.createdAt = { [Op.gte]: new Date(startDate) };
+      // } else if (endDate) {
+      //   logWhere.createdAt = { [Op.lte]: new Date(endDate) };
+      // }
+
+      if (date) {
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+      
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+      
+        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
       }
+
       // if (startDate && endDate) {
       //   logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Greater than or equal to startDate
       //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Less than or equal to endDate
@@ -46,6 +58,7 @@ class teamMemberTimeLogController {
           {
             model: User,
             as: "user",
+            where: userWhere,
             required: true,
             attributes: ["id", "fullname", "currentStatus"],
           },
@@ -68,24 +81,32 @@ class teamMemberTimeLogController {
   getTeamMemberLogFiltered = async (req, res) => {
     try {
       // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      let { searchParam, limit, page, startDate, endDate, tab } = req.query;
-      let searchable = ["name", "status"];
+      let { searchParam, limit, page,date,tab } = req.query;
+      let searchable = ["name"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-      // let where = await helper.searchCondition(searchParam, searchable);
+      let userWhere = await helper.searchCondition(searchParam, searchable);
 
-      const logWhere = {};
-      const userWhere = {};
-
-      console.log(tab);
+      let logWhere = {}
       // Add date range tab to `reportWhere`
-      if (startDate && endDate) {
-        logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
-      } else if (startDate) {
-        logWhere.createdAt = { [Op.gte]: new Date(startDate) };
-      } else if (endDate) {
-        logWhere.createdAt = { [Op.lte]: new Date(endDate) };
+      // if (startDate && endDate) {
+      //   logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
+      // } else if (startDate) {
+      //   logWhere.createdAt = { [Op.gte]: new Date(startDate) };
+      // } else if (endDate) {
+      //   logWhere.createdAt = { [Op.lte]: new Date(endDate) };
+      // }
+
+      if (date) {
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+      
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+      
+        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
       }
+
       // if (startDate && endDate) {
       //   logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Greater than or equal to startDate
       //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Less than or equal to endDate
@@ -106,7 +127,7 @@ class teamMemberTimeLogController {
       logWhere.company_id = req.user.company_id;
       
       const alldata = await TimeLog.findAndCountAll({
-        logWhere, // Filters for `workReports`
+        where: logWhere, // Filters for `workReports`
         offset,
         limit,
         // group: ["user_id"],
@@ -117,7 +138,7 @@ class teamMemberTimeLogController {
             as: "user",
             where: userWhere, // Use `where` instead of `userWhere`
             required: true,
-            attributes: ["id", "fullname", "currentStatus"],
+            attributes: ["id", "fullname"],
           },
           {
             model: shift,

@@ -10,15 +10,26 @@ import company from "../models/companyModel.js";
 export default async function seedDatabase() {
     try {
 
-        //__________________________________----------------------------COMPANIES START------------------------------------------------------
-
         await company.destroy({
             where: {}
         });
 
         await sequelize.query(`ALTER TABLE ${company.getTableName()} AUTO_INCREMENT=1`);
 
-        //__________________________________----------------------------COMPANIES END------------------------------------------------------
+        const createdCompanies = await company.bulkCreate(
+            [
+              { name: "LBM Solutions", employeeNumber: 120 },
+              { name: "ApniCars", employeeNumber: 160 },
+              { name: "Digimon", employeeNumber: 250 },
+              { name: "OceanWorks", employeeNumber: 50 },
+            ],
+            { returning: true }
+          ); // 'returning: true' ensures the inserted rows are returned
+      
+          let companyMapping = {};
+          for (const comp of createdCompanies) {
+            companyMapping[comp.name] = comp.id;
+          }
 
 
         //__________________________________----------------------------ROLE START------------------------------------------------------
@@ -275,7 +286,7 @@ export default async function seedDatabase() {
                 designationId: 5, // Software Developer
                 roleId: 3, // User
                 teamId: 1, // Team associated with Engineering
-                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa" // Placeholder hashed password //aBcD1234
+                password: "$2a$10$abcdefghijklmnopqrstuv12345" // Placeholder hashed password
             },
             {
                 company_id:101,
@@ -286,7 +297,7 @@ export default async function seedDatabase() {
                 designationId: 6, // Team Leader
                 roleId: 2, // Team Leader
                 teamId: 2, // Team associated with Marketing
-                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
+                password: "$2a$10$abcdefghijklmnopqrstuv12345"
             },
             {
                 company_id:101,
@@ -297,7 +308,7 @@ export default async function seedDatabase() {
                 designationId: 8, // HR Manager
                 roleId: 3, // User
                 teamId: 3, // Team associated with HR
-                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
+                password: "$2a$10$abcdefghijklmnopqrstuv12345"
             },
             {
                 company_id:101,
@@ -308,7 +319,7 @@ export default async function seedDatabase() {
                 designationId: 7, // Project Manager
                 roleId: 1, // Admin
                 teamId: 4, // Team associated with Finance
-                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
+                password: "$2a$10$abcdefghijklmnopqrstuv12345"
             },
             {
                 company_id:101,
@@ -319,7 +330,7 @@ export default async function seedDatabase() {
                 designationId: 9, // Sales Executive
                 roleId: 3, // User
                 teamId: 5, // Team associated with Sales
-                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
+                password: "$2a$10$abcdefghijklmnopqrstuv12345"
             },
             {
                 company_id:101,
@@ -330,7 +341,7 @@ export default async function seedDatabase() {
                 designationId: 5, // Software Developer
                 roleId: 3, // User
                 teamId: 1, // Team associated with Engineering
-                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
+                password: "$2a$10$abcdefghijklmnopqrstuv12345"
             },
             {
                 company_id:101,
@@ -341,7 +352,7 @@ export default async function seedDatabase() {
                 designationId: 10, // Marketing Coordinator
                 roleId: 3, // User
                 teamId: 2, // Team associated with Marketing
-                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
+                password: "$2a$10$abcdefghijklmnopqrstuv12345"
             },
             {
                 company_id:101,
@@ -352,7 +363,7 @@ export default async function seedDatabase() {
                 designationId: 8, // HR Manager
                 roleId: 2, // Team Leader
                 teamId: 3, // Team associated with HR
-                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
+                password: "$2a$10$abcdefghijklmnopqrstuv12345"
             },
             {
                 company_id:101,
@@ -363,7 +374,7 @@ export default async function seedDatabase() {
                 designationId: 11, // Financial Analyst
                 roleId: 3, // User
                 teamId: 4, // Team associated with Finance
-                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
+                password: "$2a$10$abcdefghijklmnopqrstuv12345"
             },
             {
                 company_id:101,
@@ -374,7 +385,7 @@ export default async function seedDatabase() {
                 designationId: 5, // Software Developer
                 roleId: 3, // User
                 teamId: 1, // Team associated with Engineering
-                password: "$2b$10$zibJitw0JGi5S8AklV3G5eS2FtBaTLog2udfMmHbANb3F44vQXjJa"
+                password: "$2a$10$abcdefghijklmnopqrstuv12345"
             }
         ]);
 

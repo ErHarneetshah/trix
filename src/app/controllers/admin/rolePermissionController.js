@@ -96,7 +96,7 @@ class rolePermissionController {
           DELETE: false,
         },
       };
-      console.log(permissionData);
+      // console.log(permissionData);
 
       await rolePermission.create(permissionData, { transaction });
       return true;
@@ -146,7 +146,7 @@ class rolePermissionController {
       });
       if (!existRole) return helper.failed(res, variables.ValidationError, "Role Name Does not exists in Roles!");
 
-      console.log(existRole.id);
+      // console.log(existRole.id);
 
       // Checking whether the role id exists in system or not
       const existingRolePermission = await rolePermission.findOne({

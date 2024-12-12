@@ -2,7 +2,7 @@ import nodeMailer from 'nodemailer'
 import emailGateway from "../database/models/emailGatewayModel.js";
 
 
-const sendMail = async (to, message, cc = '', subject = '', from = "") => {
+const sendM = async (to,subject,message,cc = '',  from = "") => {
     try {
         const activeEmailServer = await emailGateway.findOne({
             where: { is_active : 1 }
@@ -40,6 +40,6 @@ const sendMail = async (to, message, cc = '', subject = '', from = "") => {
  
 };
 
-export default { sendMail };
+export default { sendM };
 
 

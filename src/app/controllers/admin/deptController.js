@@ -32,7 +32,14 @@ class deptController {
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
-        attributes: ["id", "name", "parentDeptId", "status"],
+        attributes: ["id", "name", "parentDeptId"],
+        include: [
+          {
+            model: department, // Self-referencing association
+            as: "parentDept", // Alias for the parent department
+            attributes: ["name"], // Fetch the parent department name
+          },
+        ],
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 

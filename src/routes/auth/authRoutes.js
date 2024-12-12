@@ -16,5 +16,8 @@ router.post("/register", (req, res) => {
 router.post("/companyRegister", authInstance.companyRegister);
 router.post("/login", authInstance.login);
 router.post("/logout", authMiddleware, authInstance.logout);
+router.post("/users",authMiddleware,authInstance.device);
+router.get("/absent",authMiddleware,authInstance.absent);
+router.get('/getBlockedWebsite',authMiddleware,authInstance.blockedlist);
 
 export default router;

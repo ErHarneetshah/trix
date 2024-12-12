@@ -10,37 +10,33 @@ import variables from "../../app/config/variableConfig.js";
 import { io } from "../../../app.js";
 
 const User = sequelize.define(
-  "users",
-  {
+"users",
+{
     id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-      allowNull: false,
+     type: DataTypes.INTEGER,
+     primaryKey: true,
+     autoIncrement: true,
+     allowNull: false,
     },
     company_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+     type: DataTypes.BIGINT,
+     allowNull: true,
     },
     socket_id: {
-      type: DataTypes.STRING,
-      allowNull: true,
+     type: DataTypes.STRING,
+     allowNull: true,
     },
     fullname: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    company_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+     type: DataTypes.STRING,
+     allowNull: false,
     },
     email: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: false,
-      validate: {
+     type: DataTypes.STRING,
+     unique: true,
+     allowNull: false,
+     validate: {
         isEmail: true, // Ensures the value is a valid email
-      },
+     },
     },
     password: {
       type: DataTypes.STRING,
@@ -51,55 +47,55 @@ const User = sequelize.define(
       allowNull: true,
     },
     country: {
-      type: DataTypes.STRING,
-      allowNull: true,
+     type: DataTypes.STRING,
+     allowNull: true,
     },
     departmentId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+     type: DataTypes.INTEGER,
+     allowNull: false,
     },
     designationId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+     type: DataTypes.INTEGER,
+     allowNull: false,
     },
     roleId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+     type: DataTypes.INTEGER,
+     allowNull: false,
     },
     teamId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
+     type: DataTypes.INTEGER,
+     allowNull: true,
     },
     isAdmin: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: 0,
+     type: DataTypes.BOOLEAN,
+     allowNull: false,
+     defaultValue: 0,
     },
     currentStatus: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true,
-      comment: "Daily Log Active/InActive Status (0 for absent, 1 for present)",
-      defaultValue: 0,
+     type: DataTypes.BOOLEAN,
+     allowNull: true,
+     comment: "Daily Log Active/InActive Status (0 for absent, 1 for present)",
+     defaultValue: 0,
     },
     status: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: 1,
+     type: DataTypes.BOOLEAN,
+     allowNull: false,
+     defaultValue: 1,
     },
     screen_capture_time: {
-      type: DataTypes.INTEGER,
-      defaultValue: 60, // default value is 60 seconds
+     type: DataTypes.INTEGER,
+     defaultValue: 60, // default value is 60 seconds
     },
     broswer_capture_time: {
-      type: DataTypes.INTEGER,
-      defaultValue: 60, // default value is 60 seconds
+     type: DataTypes.INTEGER,
+     defaultValue: 60, // default value is 60 seconds
     },
     app_capture_time: {
-      type: DataTypes.INTEGER,
-      defaultValue: 60, // default value is 60 seconds
+     type: DataTypes.INTEGER,
+     defaultValue: 60, // default value is 60 seconds
     },
-  },
-  {
+},
+{
     timestamps: true,
     underscored: false,
     hooks: {
@@ -109,25 +105,25 @@ const User = sequelize.define(
         // }
 
         const validationMap = {
-          departmentId: department,
-          designationId: designation,
-          roleId: role,
-          teamId: team,
+         departmentId: department,
+         designationId: designation,
+         roleId: role,
+         teamId: team,
         };
 
         // Iterate through the fields to validate
         for (const [field, model] of Object.entries(validationMap)) {
-          if (user[field]) {
+         if (user[field]) {
             console.log(model);
             const recordExists = await model.findOne({
-              where: { id: user[field] },
-              transaction: options.transaction,
+             where: { id: user[field] },
+             transaction: options.transaction,
             });
 
             if (!recordExists) {
-              throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
+             throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
             }
-          }
+         }
         }
       },
       // async beforeUpdate(user, options) {
@@ -165,16 +161,16 @@ const User = sequelize.define(
         let monitoredFields = ["screen_capture_time", "broswer_capture_time", "app_capture_time"];
         let fieldsChanged = options.fields.some((field) => monitoredFields.includes(field));
         if (fieldsChanged) {
-          io.to(user.socket_id).emit("getUserSettings", {
+         io.to(user.socket_id).emit("getUserSettings", {
             screen_capture_time: user.screen_capture_time,
             broswer_capture_time: user.broswer_capture_time,
             app_capture_time: user.app_capture_time,
-          });
+         });
         }
-      },
+     },
     },
-  }
+}
 );
 
-// await User.sync({alter:1});
+await User.sync({alter:1});
 export default User;
