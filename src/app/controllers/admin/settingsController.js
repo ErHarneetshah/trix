@@ -38,17 +38,25 @@ const updateAdminDetails = async (req, res) => {
   try {
     const { fullname, email, mobile } = req.body;
 
-    if (!fullname || !email || !mobile) {
-      return helper.failed(res, variables.BadRequest, "All fields (fullname, email, mobile) are required");
+    const rules = {
+      fullname: "required|string|min:3|max:100", 
+      email: "required|email", 
+      mobile: "required|string|regex:/^\\d{10}$/",
+    };
+
+    const { status, message } = await validate(req.body, rules);
+    if (status === 0) {
+      return helper.failed(res, variables.ValidationError, message);
     }
+
     const user = await User.findOne({
-      where: { id: req.user.id, company_id:req.user.company_id },
+      where: { id: req.user.id, company_id: req.user.company_id },
     });
     if (!user) {
       return helper.failed(res, variables.BadRequest, "User not exists");
     }
 
-    await User.update({ fullname, email, mobile }, { where: { id: req.user.id, company_id:req.user.company_id } });
+    await User.update({ fullname, email, mobile }, { where: { id: req.user.id, company_id: req.user.company_id } });
     return helper.success(res, variables.Success, "Admin Profile Updated Successfully");
   } catch (error) {
     console.error("Error updating admin details:", error);
@@ -126,7 +134,7 @@ const addBlockWebsites = async (req, res) => {
     }
 
     const existingApp = await BlockedWebsites.findOne({
-      where: { website:website, companyId: req.user.company_id },
+      where: { website: website, companyId: req.user.company_id },
     });
 
     if (existingApp) {
@@ -137,7 +145,7 @@ const addBlockWebsites = async (req, res) => {
     let companyId = req.user.company_id;
     const websiteName = new URL(website).hostname;
 
-    const newWebsiteData = { departmentId: departmentId, website:website, website_name:websiteName, companyId:companyId,logo:faviconUrl };
+    const newWebsiteData = { departmentId: departmentId, website: website, website_name: websiteName, companyId: companyId, logo: faviconUrl };
     const newAppInfo = await BlockedWebsites.create(newWebsiteData);
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
 
@@ -204,17 +212,17 @@ const addProductiveApps = async (req, res) => {
       },
     });
 
-    if(!isDepartmentExists){
+    if (!isDepartmentExists) {
       return helper.failed(res, variables.NotFound, "Department is not exist.");
     }
-    
+
     // const imagespaths = await uploadPhotos(req, res, 'app_logo', imageArr);
 
-    const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id,app_name: app_name, app_logo: req.filedata.data });
+    const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id, app_name: app_name, app_logo: req.filedata.data });
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
-      console.error("Error creating app info:", error.message);
-      return helper.failed(res, variables.BadRequest, error.message);
+    console.error("Error creating app info:", error.message);
+    return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
@@ -234,7 +242,7 @@ const getAppInfo = async (req, res) => {
 
     const productiveApps = await ProductiveApp.findAndCountAll({
       where,
-      attributes: ["id", "app_name","app_logo"],
+      attributes: ["id", "app_name", "app_logo"],
       offset: offset,
       limit: limit,
       include: [
@@ -264,9 +272,9 @@ const getAppInfo = async (req, res) => {
   }
 };
 
-const getReportStatus = async(req,res) => {
+const getReportStatus = async (req, res) => {
 
- const getStatus = await reportSettings.findOne({
+  const getStatus = await reportSettings.findOne({
     where: { company_id: req.user.company_id },
     attributes: ["status"],
   });
@@ -275,9 +283,9 @@ const getReportStatus = async(req,res) => {
     return helper.failed(res, variables.NotFound, "Report status not found.");
   }
 
-  const statusMapping = {1:"Monthly",2:"Weekly",3:"Daily"};
-const statusType =  statusMapping[getStatus.status] || "unknown"
-  return helper.success(res, variables.Success, "Report settings retrieved successfully.", getStatus,{statusType});
+  const statusMapping = { 1: "Monthly", 2: "Weekly", 3: "Daily" };
+  const statusType = statusMapping[getStatus.status] || "unknown"
+  return helper.success(res, variables.Success, "Report settings retrieved successfully.", getStatus, { statusType });
 };
 
 const updateReportSettings = async (req, res) => {
@@ -302,7 +310,7 @@ const updateReportSettings = async (req, res) => {
       { status: exportType },
       { where: { company_id: req.user.company_id } }
     );
-      return helper.success(res, variables.Success, "Report Status Updated Successfully");
+    return helper.success(res, variables.Success, "Report Status Updated Successfully");
   } catch (error) {
     console.error("Error updating report settings:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -345,18 +353,17 @@ const addProductiveWebsites = async (req, res) => {
       },
     });
 
-    if(!isDepartmentExists){
+    if (!isDepartmentExists) {
       return helper.failed(res, variables.NotFound, "Department is not exist.");
     }
-    
+
     const existingApp = await ProductiveWebsite.findOne({ where: { website } });
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "Website with this name or URL already exists");
     }
+
     const faviconUrl = await fetchFaviconUrl(website);
-
     const websiteName = new URL(website).hostname;
-
     const newWebsiteData = { department_id: departmentId, website, website_name: websiteName, company_id: req.user.company_id, logo: faviconUrl };
 
     // Store productive website data
@@ -407,4 +414,4 @@ const getProductiveWebsites = async (req, res) => {
 };
 
 
-export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveApps, getAppInfo,getReportStatus, updateReportSettings, addProductiveWebsites, getProductiveWebsites };
+export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveApps, getAppInfo, getReportStatus, updateReportSettings, addProductiveWebsites, getProductiveWebsites };
