@@ -39,8 +39,8 @@ const updateAdminDetails = async (req, res) => {
     const { fullname, email, mobile } = req.body;
 
     const rules = {
-      fullname: "required|string|min:3|max:100", 
-      email: "required|email", 
+      fullname: "required|string|min:3|max:100",
+      email: "required|email",
       mobile: "required|string|regex:/^\\d{10}$/",
     };
 
@@ -67,6 +67,18 @@ const updateAdminDetails = async (req, res) => {
 const getBlockedWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
+
+    // check department is exists or not
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: departmentId,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if (!isDepartmentExists) {
+      return helper.failed(res, variables.NotFound, "Invalid department ID provided.");
+    }
 
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
@@ -143,7 +155,7 @@ const addBlockWebsites = async (req, res) => {
     if (!isDepartmentExists) {
       return helper.failed(res, variables.NotFound, "Department is not exist.");
     }
-    
+
     const existingApp = await BlockedWebsites.findOne({
       where: { website: website, companyId: req.user.company_id },
     });
@@ -169,13 +181,18 @@ const addBlockWebsites = async (req, res) => {
 const updateSitesStatus = async (req, res) => {
   try {
     const { id, status } = req.body;
-    const website = await BlockedWebsites.findByPk(id);
-    if (!website) {
-      return helper.failed(res, variables.NotFound, "Id not exists in our system.");
-    }
 
     if (status < 0 || status > 1) {
       return helper.failed(res, variables.ValidationError, "Status value must be 0 or 1");
+    }
+
+    const website = await BlockedWebsites.findByPk(id);
+    if (!website) {
+      return helper.failed(res, variables.NotFound, "Id does not exists in our system.");
+    }
+
+    if (website.status === status) {
+      return helper.failed(res, variables.BadRequest, `Site status is already ${status === 1 ? "Blocked" : "Unblocked"}.`);
     }
     const [updatedRows] = await BlockedWebsites.update({ status: status }, { where: { id: id, companyId: req.user.company_id } });
 
@@ -224,7 +241,7 @@ const addProductiveApps = async (req, res) => {
     });
 
     if (!isDepartmentExists) {
-      return helper.failed(res, variables.NotFound, "Department is not exist.");
+      return helper.failed(res, variables.NotFound, "Invalid department id is provided");
     }
 
     // const imagespaths = await uploadPhotos(req, res, 'app_logo', imageArr);
