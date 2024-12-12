@@ -174,7 +174,7 @@ const addProductiveApps = async (req, res) => {
   try {
     const { department_id, app_name } = req.body;
     const rules = {
-      department_id: 'required|integer|min:1',
+      department_id: 'required|integer',
       app_name: 'required|string|min:3|max:50',
     };
 
@@ -184,22 +184,24 @@ const addProductiveApps = async (req, res) => {
       return helper.failed(res, variables.ValidationError, message);
 
     }
-    const company_id = req.user.company_id;
+    const company_id = 101;
     const existingApp = await ProductiveApp.findOne({
-      where: { app_name:app_name, company_id: company_id }
+      where: { app_name }
     });
 
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "App with this name already exists");
     }
 
-    const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id, app_name: app_name });
+    // const imagespaths = await uploadPhotos(req, res, 'app_logo', imageArr);
+
+    const newAppInfo = await ProductiveApp.create({ company_id, department_id, app_name, app_logo: req.filedata.data });
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
-      console.error("Error creating app info:", error);
-      return helper.failed(res, variables.BadRequest, error.message);
+    console.error("Error creating app info:", error);
+    return helper.failed(res, variables.BadRequest, error.message);
   }
-  };
+};
 
 
 const getAppInfo = async (req, res) => {
@@ -217,7 +219,7 @@ const getAppInfo = async (req, res) => {
 
     const productiveApps = await ProductiveApp.findAndCountAll({
       where,
-      attributes: ["id", "app_name"],
+      attributes: ["id", "app_name","app_logo"],
       offset: offset,
       limit: limit,
       include: [

@@ -24,13 +24,21 @@ export const ProductiveApp = sequelize.define("productive_app",
       allowNull: false,
     },
 
-    app_logo:{
-        type: DataTypes.STRING,
-        allowNull: true
-    }
+    
+    app_logo: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      get() {
+          return (this.getDataValue('app_logo') ? process.env.BASE_URL + 'image/logos/' + this.getDataValue('app_logo') : null);
+      }
   },
+
+  },
+
   {
     timestamps: true,
+    // Prevent Sequelize from auto-creating foreign keys
+    underscored: false,
   }
 );
 

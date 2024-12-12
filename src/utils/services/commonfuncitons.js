@@ -1,5 +1,5 @@
 import multer from 'multer';
-import uploadImage from '../file-upload.js';
+import  uploadImage from '../file-upload.js';
 
 async function uploadPhotos(req, res, folder, imageArr) {
     try {
