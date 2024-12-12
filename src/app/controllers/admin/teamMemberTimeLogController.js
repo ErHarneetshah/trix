@@ -72,6 +72,16 @@ class teamMemberTimeLogController {
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
+      if (tab) {
+        if (tab.toLowerCase() === "working") {
+          userWhere.currentStatus = 1;
+        } else if (tab.toLowerCase() === "absent") {
+          userWhere.currentStatus = 0;
+        } else if (tab.toLowerCase() === "late") {
+          logWhere.late_coming = true;
+        }
+      }
+
       
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
