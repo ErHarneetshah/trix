@@ -74,21 +74,58 @@ const setupSocketIO = (io) => {
   });
 
   // Connection event:
+  // io.on("connection", async (socket) => {
+  //   let userData = await User.findOne({ where: { id: socket.user.userId } });
+  //   if (userData) {
+  //     userData.socket_id = socket.id; // Save socket id into user table
+  //     await userData.save();
+  //   }
+  //   socket.join(`Admin_${socket.user.company_id}`);
+  //   if (socket.user.isAdmin) {
+  //     console.log(`Admin ID ${socket.user.userId} connected `);
+  //     handleAdminSocket(socket, io);
+  //   } else {
+  //     console.log(`User ID ${socket.user.userId} connected `);
+  //     handleUserSocket(socket, io);
+  //   }
+  // });
   io.on("connection", async (socket) => {
-    let userData = await User.findOne({ where: { id: socket.user.userId } });
-    if (userData) {
-      userData.socket_id = socket.id; // Save socket id into user table
-      await userData.save();
-    }
-    socket.join(`Admin_${socket.user.company_id}`);
-    if (socket.user.isAdmin) {
-      console.log(`Admin ID ${socket.user.userId} connected `);
-      handleAdminSocket(socket, io);
-    } else {
-      console.log(`User ID ${socket.user.userId} connected `);
-      handleUserSocket(socket, io);
+    try {
+      let userData = await User.findOne({ where: { id: socket.user.userId } });
+      if (userData) {
+        // Check if userData.currentStatus is true
+        if (userData.currentStatus) {
+          console.log(`User ID ${socket.user.userId} is already connected. Disconnecting.`);
+          socket.emit("connectionDenied", { message: "You are already connected on another session." });
+          return socket.disconnect(true); // Disconnect the socket
+        }
+  
+        // Save socket ID into the user table
+        userData.socket_id = socket.id;
+        await userData.save();
+  
+        // Join the appropriate room
+        socket.join(`Admin_${socket.user.company_id}`);
+  
+        if (socket.user.isAdmin) {
+          console.log(`Admin ID ${socket.user.userId} connected.`);
+          handleAdminSocket(socket, io);
+        } else {
+          console.log(`User ID ${socket.user.userId} connected.`);
+          handleUserSocket(socket, io);
+        }
+      } else {
+        console.log(`User ID ${socket.user.userId} not found in database. Disconnecting.`);
+        socket.emit("connectionDenied", { message: "User not found." });
+        socket.disconnect(true);
+      }
+    } catch (error) {
+      console.error("Error handling connection:", error);
+      socket.emit("connectionError", { message: "An error occurred. Please try again later." });
+      socket.disconnect(true); // Disconnect in case of an error
     }
   });
+  
 
   return io;
 };
