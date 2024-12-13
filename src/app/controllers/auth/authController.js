@@ -17,6 +17,8 @@ import { QueryTypes } from "@sequelize/core";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 import { Notification } from "../../../database/models/Notification.js";
 import company from "../../../database/models/company.js";
+import department from "../../../database/models/departmentModel.js";
+import designation from "../../../database/models/designationModel.js";
 
 class authController extends jwtService {
   //* Login Funciton Rajan --------------------------------------------------------------
@@ -32,7 +34,21 @@ class authController extends jwtService {
       let email = requestData.email;
       let password = requestData.password;
 
-      let user = await User.findOne({ where: { email: email } }); // checking whether user exists
+      let user = await User.findOne({ 
+        where: { email: email 
+        },
+        include: [
+          {
+            model: department,
+            attributes: ["name"],
+          },
+          {
+            model: designation,
+            attributes: ["name"],
+          }
+        ]
+      }); // checking whether user exists
+      
       let comparePwd = await bcrypt.compare(password, user.password); // comparing passwords
       if (!comparePwd) {
         return helper.sendResponse(
