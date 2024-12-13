@@ -11,6 +11,8 @@ import TimeLog from "../../database/models/timeLogsModel.js";
 import { Device } from "../../database/models/device.js";
 import company from "../../database/models/company.js";
 import dbRelations from "../../database/queries/dbRelations.js";
+import team from "../../database/models/teamModel.js";
+import shift from "../../database/models/shiftModel.js";
 
 const userData = async (id) => {
   let user = await User.findOne({ where: { id: id } });
@@ -70,11 +72,11 @@ const setupSocketIO = (io) => {
 
   // Connection event:
   io.on("connection", async (socket) => {
-    let userData = await User.findOne({ where: { id: socket.user.userId } });    
+    let userData = await User.findOne({ where: { id: socket.user.userId } });
     if (userData) {
       userData.socket_id = socket.id; // Save socket id into user table
       await userData.save();
-    }    
+    }
     socket.join(`Admin_${socket.user.company_id}`);
     if (socket.user.isAdmin) {
       console.log(`Admin ID ${socket.user.userId} connected `);
@@ -206,42 +208,46 @@ const getSystemDetail = async (socket, data) => {
       whereCondition.departmentId = data.id;
     }
     if (data?.date) {
-      whereCondition.date = data.date; 
+      whereCondition.date = data.date;
     }
 
-    const page = data?.page || 1; 
-    const limit = data?.limit || 10; 
+    const page = data?.page || 1;
+    const limit = data?.limit || 10;
     const offset = (page - 1) * limit;
 
     const totalCount = await Device.count({
       where: whereCondition,
-      include: [{
-        model: User,
-        where: { currentStatus: 1 },
-        required: true,
-      }],
+      include: [
+        {
+          model: User,
+          where: { currentStatus: 1 },
+          required: true,
+        },
+      ],
     });
 
     const systemDetail = await Device.findAll({
       where: whereCondition,
-      include: [{
-        model: User,
-        where: {
-          currentStatus: 1,
+      include: [
+        {
+          model: User,
+          where: {
+            currentStatus: 1,
+          },
+          attributes: ["id", "fullname"],
+          required: true,
         },
-        attributes: ['id', 'fullname'],
-        required: true,
-      }],
+      ],
       order: [["id", "DESC"]],
       limit,
       offset,
     });
 
     return {
-      totalCount, 
-      page,        
-      limit,      
-      data: systemDetail, 
+      totalCount,
+      page,
+      limit,
+      data: systemDetail,
     };
   } catch (error) {
     console.error("Error getting system detail:", error.message);
@@ -249,37 +255,103 @@ const getSystemDetail = async (socket, data) => {
   }
 };
 
+const getUserStats = async (io, socket) => {
+  try {
+    await adminController.updateUsers(io, socket);
+    await adminController.updateAppsStats(io, socket);
+    await adminController.updateURLHostStats(io, socket);
+  } catch (error) {
+    console.log("Error fetching admin getuserstats:", error);
+  }
+};
+
+// const getUserReport = async (data, io, socket) => {
+//   try {
+//     let user = await User.findOne({ where: { id: data.id } });
+//     socket.join("privateRoom_" + data.id);
+//     io.to(user.socket_id).socketsJoin("privateRoom");
+
+//     let today;
+//     if (data.date) {
+//       today = new Date(data.date).toISOString().split("T")[0];
+//     } else {
+//       today = new Date().toISOString().split("T")[0];
+//     }
+
+//     let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${data.id} GROUP by url`;
+//     let userHistories = await Model.query(web_query, {
+//       type: QueryTypes.SELECT,
+//     });
+
+//     let app_query = `SELECT appName , count(id) as visits FROM app_histories where date = "${today}" AND userId = ${data.id} GROUP by appName`;
+//     let appHistories = await Model.query(app_query, {
+//       type: QueryTypes.SELECT,
+//     });
+
+//     let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${data.id}`;
+//     let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+
+//     if (!user) {
+//       return socket.emit("error", {
+//         message: "User not found",
+//       });
+//     }
+//     let response = {
+//       status: 1,
+//       message: "User Report fetched successfully",
+//       data: {
+//         user,
+//         image,
+//         userHistories,
+//         appHistories,
+//       },
+//     };
+//     return response;
+//   } catch (error) {
+//     console.error("Error getting user report:", error.message);
+//     return { error: "Error getting user report" };
+//   }
+// };
+
 const getUserReport = async (data, io, socket) => {
   try {
     let user = await User.findOne({ where: { id: data.id } });
+    if (!user) {
+      return socket.emit("error", { message: "User not found" });
+    }
+
     socket.join("privateRoom_" + data.id);
     io.to(user.socket_id).socketsJoin("privateRoom");
 
-    let today;
-    if (data.date) {
-      today = new Date(data.date).toISOString().split("T")[0];
-    } else {
-      today = new Date().toISOString().split("T")[0];
-    }
+    let today = data.date
+      ? new Date(data.date).toISOString().split("T")[0]
+      : new Date().toISOString().split("T")[0];
 
-    let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${data.id} GROUP by url`;
+    // Fetch web history
+    let web_query = `SELECT url, count(id) as visits FROM user_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY url`;
     let userHistories = await Model.query(web_query, {
       type: QueryTypes.SELECT,
     });
 
-    let app_query = `SELECT appName , count(id) as visits FROM app_histories where date = "${today}" AND userId = ${data.id} GROUP by appName`;
+    // Fetch app history
+    let app_query = `SELECT appName, count(id) as visits FROM app_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY appName`;
     let appHistories = await Model.query(app_query, {
       type: QueryTypes.SELECT,
     });
 
-    let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${data.id}`;
+    // Fetch image uploads
+    let image_query = `SELECT content FROM image_uploads WHERE date = "${today}" AND userId = ${data.id}`;
     let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
-    if (!user) {
-      return socket.emit("error", {
-        message: "User not found",
-      });
-    }
+    // Fetch productive and non-productive app data
+    const productiveAndNonProductiveData =
+      await singleUserProductiveAppAndNonproductiveApps(data.id, today);
+
+    // Fetch productive and non-productive website data
+    const productiveAndNonProductiveWebData =
+      await singleUserProductiveWebsitesAndNonproductiveWebsites(data.id,today);
+
+    // Combine the response data
     let response = {
       status: 1,
       message: "User Report fetched successfully",
@@ -288,8 +360,11 @@ const getUserReport = async (data, io, socket) => {
         image,
         userHistories,
         appHistories,
+        productiveAndNonProductiveData: productiveAndNonProductiveData || [],
+        productiveAndNonProductiveWebData: productiveAndNonProductiveWebData || [],
       },
     };
+
     return response;
   } catch (error) {
     console.error("Error getting user report:", error.message);
@@ -297,17 +372,344 @@ const getUserReport = async (data, io, socket) => {
   }
 };
 
-const getUserStats = async (io, socket) => {
+// APP Data Calculate:  ----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+const singleUserProductiveAppAndNonproductiveApps = async (userId, date) => {
   try {
-    await adminController.updateUsers(io, socket);
-    await adminController.updateAppsStats(io,socket);
-    await adminController.updateURLHostStats(io,socket);
+    if (!userId || !date) {
+      console.error("userId and date are required.");
+      return { success: false, message: "userId and date are required.", data: [] };
+    }
+
+    const nonProductiveAppsData = await singleUserNonProductiveAppData({ userId, date });
+    const productiveAppsData = await singleUserProductiveAppData({ userId, date });
+
+    if (
+      !Array.isArray(nonProductiveAppsData) ||
+      !Array.isArray(productiveAppsData)
+    ) {
+      console.error("Invalid data format.");
+      return { success: false, message: "Invalid data format.", data: [] };
+    }
+
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      nonProductiveAppsData.length >= productiveAppsData.length
+        ? [
+            nonProductiveAppsData,
+            productiveAppsData,
+            "non_productive_apps_total_time",
+            "productive_apps_value",
+          ]
+        : [
+            productiveAppsData,
+            nonProductiveAppsData,
+            "productive_apps_value",
+            "non_productive_apps_total_time",
+          ];
+
+    const combinedData = primaryData.map((primaryItem) => {
+      const matchingSecondaryItem = secondaryData.find(
+        (secondaryItem) => secondaryItem.name === primaryItem.name
+      );
+      return {
+        period: primaryItem.name,
+        [primaryKey]: parseFloat(primaryItem.value || "0.0"),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.value || "0.0"),
+      };
+    });
+
+    return combinedData 
   } catch (error) {
-    console.log("Error fetching admin getuserstats:", error);
+    console.error("Error in singleUserProductiveAppAndNonproductiveApps:", error);
+    return { success: false, message: "Internal Server Error", data: [] };
   }
 };
 
-// // AdminController (modularized)
+const singleUserNonProductiveAppData = async ({ userId, date }) => {
+  try {
+    if (!userId || !date) {
+      console.error("userId and date are required.");
+      return false;
+    }
+
+    const userInfo = await User.findOne({
+      where: { id: userId},
+    });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return { success: false, message };
+    }
+
+    const query = `
+      SELECT
+          DATE_FORMAT(ah.startTime, '%H:00') AS hour,
+          SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_duration
+      FROM
+          app_histories AS ah
+      WHERE
+          ah.appName NOT IN (
+              SELECT appName
+              FROM productive_apps
+              WHERE company_id = :companyId
+          )
+          AND DATE(ah.createdAt) = :date
+          AND ah.userId = :userId
+          AND ah.company_id = :companyId
+      GROUP BY
+          DATE_FORMAT(ah.startTime, '%H:00')
+      ORDER BY
+          hour;
+    `;
+    let companyId = userInfo.company_id 
+    const results = await Model.query(query, {
+      replacements: { date, userId, companyId },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    return results.map((result) => ({
+      name: result.hour,
+      value: result.total_duration ? parseFloat(result.total_duration) : 0,
+    }));
+  } catch (error) {
+    console.error("Error fetching non-productive app data:", error.message);
+    return false;
+  }
+};
+
+const singleUserProductiveAppData = async ({ userId, date }) => {
+  try {
+    if (!userId || !date) {
+      console.error("userId and date are required.");
+      return false;
+    }
+
+    const userInfo = await User.findOne({
+      where: { id: userId},
+    });
+    if (!userInfo) {
+      console.error("User does not exist.");
+      return false;
+    }
+
+    const query = `
+      SELECT
+          DATE_FORMAT(ah.startTime, '%H:00') AS hour,
+          SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_duration
+      FROM
+          app_histories AS ah
+      INNER JOIN
+          productive_apps ap ON ap.app_name = ah.appName
+      WHERE
+          DATE(ah.createdAt) = :date
+          AND ah.userId = :userId
+          AND ah.company_id = :companyId
+      GROUP BY
+          DATE_FORMAT(ah.startTime, '%H:00')
+      ORDER BY
+          hour;
+    `;
+    let companyId = userInfo.company_id;
+    const results = await Model.query(query, {
+      replacements: { date, userId, companyId },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    return results.map((result) => ({
+      name: result.hour,
+      value: result.total_duration ? parseFloat(result.total_duration) : 0,
+    }));
+  } catch (error) {
+    console.error("Error fetching productive app data:", error.message);
+    return false;
+  }
+};
+
+
+
+// Website data Calculate: ----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+const singleUserProductiveWebsitesAndNonproductiveWebsites = async (userId, date) => {
+  try {
+    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData({ userId, date });
+    
+    const productiveWebsitesData = await singleUserProductiveWebsiteData({ userId, date })
+
+    console.log({nonProductiveWebsitesData, productiveWebsitesData});
+    
+
+    if (
+      !Array.isArray(nonProductiveWebsitesData) ||
+      !Array.isArray(productiveWebsitesData)
+    ) {
+      return { success: false, message: "Invalid data format", data: [] };
+    }
+
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      nonProductiveWebsitesData.length >= productiveWebsitesData.length
+        ? [
+            nonProductiveWebsitesData,
+            productiveWebsitesData,
+            "non_productive_websites_total_time",
+            "productive_websites_value",
+          ]
+        : [
+            productiveWebsitesData,
+            nonProductiveWebsitesData,
+            "productive_websites_value",
+            "non_productive_websites_total_time",
+          ];
+
+    const combinedData = primaryData.map((primaryItem) => {
+      const matchingSecondaryItem = secondaryData.find(
+        (secondaryItem) => secondaryItem.name === primaryItem.name
+      );
+      return {
+        period: primaryItem.name,
+        [primaryKey]: parseFloat(primaryItem.value || "0.0"),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.value || "0.0"),
+      };
+    });
+
+    return combinedData
+  } catch (error) {
+    console.error(
+      "Error in singleUserProductiveWebsitesAndNonproductiveWebsites:",
+      error
+    );
+    return { success: false, message: "Internal Server Error", data: [] };
+  }
+};
+
+const singleUserNonProductiveWebsiteData = async ({ userId, date }) => {
+  try {
+    if (!userId || !date) {
+      const message = "userId and date are required.";
+      return { success: false, message };
+    }
+
+    const userInfo = await User.findOne({
+      where: { id: userId},
+    });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return { success: false, message };
+    }
+
+    const teamInfo = await team.findOne({
+      where: { id: userInfo.teamId, status: 1, company_id: userInfo.company_id },
+    });
+    if (!teamInfo) {
+      const message = "Team is invalid or inactive.";
+      return { success: false, message };
+    }
+
+    const shiftInfo = await shift.findOne({
+      where: { id: teamInfo.shiftId, status: 1, company_id: userInfo.company_id },
+    });
+    if (!shiftInfo) {
+      const message = "Shift is invalid or inactive.";
+      return { success: false, message };
+    }
+
+    const query = `
+    SELECT 
+    COUNT(uh.id) AS total_counts,
+    DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
+    FROM user_histories AS uh 
+    WHERE uh.website_name NOT IN (
+      SELECT website_name FROM productive_websites WHERE company_id=:companyId
+    )
+    AND uh.userId = :userId
+    AND uh.company_id = :companyId
+    AND DATE(uh.createdAt) = :date
+    GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
+    ORDER BY hour;
+    `;
+    let companyId = userInfo.company_id;
+    const results = await Model.query(query, {
+      replacements: { date, userId, companyId },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    const pieChartData = results.map((result) => ({
+      name: result.hour,
+      value: result.total_counts ? parseInt(result.total_counts, 10) : 0,
+    }));   
+
+    return  pieChartData
+  } catch (error) {
+    console.error("Error in singleUserNonProductiveWebsiteData:", error);
+    return { success: false, message: "An error occurred while fetching data." };
+  }
+};
+
+const singleUserProductiveWebsiteData = async ({ userId, date }) => {
+  try {
+    if (!userId || !date) {
+      const message = "userId and date are required.";
+      return { success: false, message };
+    }
+
+    const userInfo = await User.findOne({
+      where: { id: userId},
+    });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return { success: false, message };
+    }
+
+    const teamInfo = await team.findOne({
+      where: { id: userInfo.teamId, status: 1, company_id: userInfo.company_id  },
+    });
+    if (!teamInfo) {
+      const message = "Team is invalid or inactive.";
+      return { success: false, message };
+    }
+
+    const shiftInfo = await shift.findOne({
+      where: { id: teamInfo.shiftId, status: 1, company_id: userInfo.company_id  },
+    });
+    if (!shiftInfo) {
+      const message = "Shift is invalid or inactive.";
+      return { success: false, message };
+    }
+
+    const query = `
+      SELECT 
+        COUNT(uh.id) AS total_counts,
+        DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
+      FROM user_histories AS uh 
+      INNER JOIN productive_websites AS pw 
+        ON pw.website_name = uh.website_name 
+      WHERE 
+        uh.userId = :userId 
+        AND uh.company_id = :companyId 
+        AND DATE(uh.createdAt) = :date 
+      GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
+      ORDER BY hour;
+    `;
+    let companyId = userInfo.company_id ;
+    const results = await Model.query(query, {
+      replacements: { date, userId, companyId },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    const pieChartData = results.map((result) => ({
+      name: result.hour,
+      value: result.total_counts ? parseInt(result.total_counts, 10) : 0,
+    }));
+
+    return pieChartData
+  } catch (error) {
+    console.error("Error in singleUserProductiveWebsiteData:", error);
+    return { success: false, message: "An error occurred while fetching data." };
+  }
+};
+
+
+
+
+// AdminController (modularized)
 export const adminController = {
   async updateUsers(io, socket) {
     try {
@@ -332,7 +734,7 @@ export const adminController = {
     }
   },
 
-  async updateAppsStats(io,socket) {
+  async updateAppsStats(io, socket) {
     try {
       let today = new Date().toISOString().split("T")[0];
 
@@ -345,7 +747,7 @@ export const adminController = {
     }
   },
 
-  async updateURLHostStats(io,socket) {
+  async updateURLHostStats(io, socket) {
     try {
       let today = new Date().toISOString().split("T")[0];
       let urlStats = await UserHistory.findAll({
@@ -364,7 +766,10 @@ export const adminController = {
         group: ["host"],
         order: [[Sequelize.literal("count"), "DESC"]],
       });
-      io.to(`Admin_${socket.user.company_id}`).emit("urlHostUsageStats", urlStats);
+      io.to(`Admin_${socket.user.company_id}`).emit(
+        "urlHostUsageStats",
+        urlStats
+      );
       // socket.emit("urlHostUsageStats", urlStats);
     } catch (error) {
       console.error("Error updating URL host stats:", error.message);
@@ -391,7 +796,9 @@ const handleUserSocket = async (socket, io) => {
         message: "Failed to send notification",
       });
     } else {
-      io.to(`Admin_${socket.user.company_id}`).emit("newNotification", { notificationCount });
+      io.to(`Admin_${socket.user.company_id}`).emit("newNotification", {
+        notificationCount,
+      });
     }
   });
 
@@ -446,7 +853,10 @@ const handleUserSocket = async (socket, io) => {
         company_id,
         visitTime: parsedVisitTime,
       });
-      io.to(`privateRoom_${userId}`).emit("getUserReport",await userData(userId));
+      io.to(`privateRoom_${userId}`).emit(
+        "getUserReport",
+        await userData(userId)
+      );
       socket.emit("historySuccess", {
         message: "History uploaded successfully",
       });
@@ -600,7 +1010,7 @@ const getUserSettings = async (socket) => {
     if (!user) {
       return { error: "User not found" };
     }
-    
+
     let data = await company.findOne({
       where: { id: socket.user.company_id },
       attributes: ["screen_capture", "broswer_capture", "app_capture"],
@@ -680,3 +1090,215 @@ const notifyAdmin = async (id, type, time, url) => {
 };
 
 export default setupSocketIO;
+
+//chart Data
+
+// const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
+//   try {
+//     const { userId, date } = req.query;
+
+//     // Fetch data from both functions
+//     const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date });
+//     const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date });
+
+//     // Validate data format
+//     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
+//       return helper.failed(res, 400, "Invalid data format", []);
+//     }
+
+//     // Determine which array has the higher count
+//     const [primaryData, secondaryData, primaryKey, secondaryKey] =
+//       nonProductiveAppsData.length >= productiveAppsData.length
+//         ? [nonProductiveAppsData, productiveAppsData, 'non_productive_apps_total_time', 'productive_apps_value']
+//         : [productiveAppsData, nonProductiveAppsData, 'productive_apps_value', 'non_productive_apps_total_time'];
+
+//     // Combine data based on the larger array
+//     const combinedData = primaryData.map(primaryItem => {
+//       const matchingSecondaryItem = secondaryData.find(
+//         secondaryItem => secondaryItem.name === primaryItem.name // Match by period
+//       );
+//       return {
+//         period: primaryItem.name,
+//         [primaryKey]: parseFloat(primaryItem.value || '0.0'),
+//         [secondaryKey]: parseFloat(matchingSecondaryItem?.value || '0.0'),
+//       };
+//     });
+
+// Success response
+//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
+//   } catch (error) {
+//     console.error("Error in productiveAppsAndproductiveapps:", error);
+//     return helper.failed(res, 500, "Internal Server Error", []);
+//   }
+// };
+
+// // helper functions
+
+// const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
+//   try {
+//     // Extract `userId` and `date` based on the type of request
+//     const { userId, date } = type === 'api' ? req.query : obj;
+//     const companyId = 101;
+
+//     // Validate required parameters
+//     if (!userId || !date) {
+//       const message = "userId and date are required.";
+//       return type === 'api' ? helper.failed(res, 400, message) : false;
+//     }
+
+//     // Fetch user information
+//     const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+//     if (!userInfo) {
+//       const message = "User does not exist.";
+//       return type === 'api' ? helper.failed(res, 404, message) : false;
+//     }
+
+// Fetch team information
+//     const teamInfo = await team.findOne({
+//       where: { id: userInfo.teamId, status: 1, company_id: companyId },
+//     });
+//     if (!teamInfo) {
+//       const message = "Team is invalid or inactive.";
+//       return type === 'api' ? helper.failed(res, 404, message) : false;
+//     }
+
+//     // Fetch shift information
+//     const shiftInfo = await shift.findOne({
+//       where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+//     });
+//     if (!shiftInfo) {
+//       const message = "Shift is invalid or inactive.";
+//       return type === 'api' ? helper.failed(res, 404, message) : false;
+//     }
+
+//     // SQL query to fetch productive app data grouped by hour
+//     const query = `
+//       SELECT
+//           DATE_FORMAT(ah.startTime, '%H:00') AS hour,
+//           SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_duration
+//       FROM
+//           app_histories AS ah
+//       INNER JOIN
+//           productive_apps ap ON ap.app_name = ah.appName
+//       WHERE
+//           DATE(ah.createdAt) = :date
+//           AND ah.userId = :userId
+//           AND ah.company_id = :companyId
+//       GROUP BY
+//           DATE_FORMAT(ah.startTime, '%H:00')
+//       ORDER BY
+//           hour;
+//     `;
+
+//     // Execute query with replacements
+//     const results = await sequelize.query(query, {
+//       replacements: { date, userId, companyId },
+//       type: Sequelize.QueryTypes.SELECT,
+//       logging: console.log
+//     });
+
+//     // Format results for pie chart data
+//     const pieChartData = results.map((result) => ({
+//       name: result.hour,
+//       value: result.total_duration ? parseFloat((result.total_duration)) : 0, // Convert seconds to hours
+//     }));
+
+//     // Return success response
+//     const successMessage = "Productive app data fetched successfully.";
+//     return type === 'api'
+//       ? helper.success(res, variables.Success, successMessage, pieChartData)
+//       : pieChartData;
+//   } catch (error) {
+//     // Log error and return failure response
+//     console.error("Error fetching productive app data:", error.message);
+//     return type === 'api'
+//       ? helper.failed(res, 500, error.message)
+//       : false;
+//   }
+// };
+
+// const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
+//   try {
+//     // Extract `userId` and `date` based on the type of request
+//     const { userId, date } = type === 'api' ? req.query : obj;
+//     const companyId = 101;
+
+//     // Validate required parameters
+//     if (!userId || !date) {
+//       const message = "userId and date are required.";
+//       return type === 'api' ? helper.failed(res, 400, message) : false;
+//     }
+
+//     // Fetch user information
+//     const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+//     if (!userInfo) {
+//       const message = "User does not exist.";
+//       return type === 'api' ? helper.failed(res, 404, message) : false;
+//     }
+
+//     // Fetch team information
+//     const teamInfo = await team.findOne({
+//       where: { id: userInfo.teamId, status: 1, company_id: companyId },
+//     });
+//     if (!teamInfo) {
+//       const message = "Team is invalid or inactive.";
+//       return type === 'api' ? helper.failed(res, 404, message) : false;
+//     }
+
+//     // Fetch shift information
+//     const shiftInfo = await shift.findOne({
+//       where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+//     });
+//     if (!shiftInfo) {
+//       const message = "Shift is invalid or inactive.";
+//       return type === 'api' ? helper.failed(res, 404, message) : false;
+//     }
+
+//     // SQL query to fetch productive app data grouped by hour
+//     const query = `
+//     SELECT
+//     DATE_FORMAT(ah.startTime, '%H:00') AS hour,
+//     SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_duration
+// FROM
+//     app_histories AS ah
+// WHERE
+//     ah.appName NOT IN (
+//         SELECT appName
+//         FROM productive_apps
+//         WHERE company_id = :companyId
+//     )
+//  AND date(createdAt)=:date
+//     AND ah.userId = 2
+//     AND ah.company_id = :companyId
+// GROUP BY
+//     DATE_FORMAT(ah.startTime, '%H:00')
+// ORDER BY
+//     hour;
+//     `;
+
+//     // Execute query with replacements
+//     const results = await sequelize.query(query, {
+//       replacements: { date, userId, companyId },
+//       type: Sequelize.QueryTypes.SELECT,
+//       logging: console.log
+//     });
+
+//     // Format results for pie chart data
+//     const pieChartData = results.map((result) => ({
+//       name: result.hour,
+//       value: result.total_duration ? parseFloat((result.total_duration)) : 0, // Convert seconds to hours
+//     }));
+
+//     // Return success response
+//     const successMessage = "Non Productive app data fetched successfully.";
+//     return type === 'api'
+//       ? helper.success(res, variables.Success, successMessage, pieChartData)
+//       : pieChartData;
+//   } catch (error) {
+//     // Log error and return failure response
+//     console.error("Error fetching non productive app data:", error.message);
+//     return type === 'api'
+//       ? helper.failed(res, 500, error.message)
+//       : false;
+//   }
+// };
