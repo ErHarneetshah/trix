@@ -243,7 +243,7 @@ const getAppInfo = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
-    if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.ValidationError, "Department Id is required and in numbers");
+    // if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.ValidationError, "Department Id is required and in numbers");
 
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
@@ -429,7 +429,7 @@ const getProductiveWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
-    if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.ValidationError, "Department Id is required and in numbers");
+    // if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.ValidationError, "Department Id is required and in numbers");
 
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
