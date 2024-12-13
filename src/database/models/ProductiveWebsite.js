@@ -13,7 +13,7 @@ const ProductiveWebsite = sequelize.define("productive_website",
       allowNull: false,
       defaultValue: 101,
     },
-    departmentId: {
+    department_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
@@ -30,15 +30,11 @@ const ProductiveWebsite = sequelize.define("productive_website",
       type: DataTypes.STRING,
       allowNull: true,
     },
-    status: {
-      type: DataTypes.TINYINT,
-      allowNull: false,
-    },
   },
   {
     timestamps: true,
     // Prevent Sequelize from auto-creating foreign keys
-    underscored: false,
+    // underscored: false,
   }
 );
 

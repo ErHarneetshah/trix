@@ -3,7 +3,7 @@ import sequelize from "../../../database/queries/dbConnection.js";
 import { Op } from "sequelize";
 import validate from '../../../utils/CustomValidation.js';
 import variables from "../../config/variableConfig.js";
-import H from "nodemailer/lib/mailer/index.js";
+import H from "../../../utils/Mail.js";
 import helper from "../../../utils/services/helper.js";
 
 
@@ -27,12 +27,7 @@ const addEmailGateeways = async (req, res) => {
             return helper.failed(res, variables.ValidationError, message);
         }
 
-        // Destroys previous email credentials in order to use the latest one
-        await emailGateway.destroy({
-            where: {}
-            });
-           
-        // Alter the table autoincrement to 1
+        await emailGateway.destroy({ where: {} });
         await sequelize.query(`ALTER TABLE \`${emailGateway.getTableName()}\` AUTO_INCREMENT = 1;`);
         
         await emailGateway.create({ protocol, host, username, password, port, encryption });
@@ -60,7 +55,7 @@ const checkEmailServer = async (req, res) => {
     }
 
     // Sending mail using nodemailer
-    const sendmail = await H.sendMail(to, subject, message);
+    const sendmail = await H.sendM(to,subject,message);
     if (sendmail.success) {
         return helper.success(res, variables.Success, sendmail.message);
     } else {

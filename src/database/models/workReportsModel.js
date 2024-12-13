@@ -47,6 +47,6 @@ const workReports = sequelize.define(
   }
 );
 
-await workReports.sync({ alter: 1 });
+// await workReports.sync({ alter: 1 });
 
 export default workReports;

@@ -7,12 +7,14 @@ import { ImageUpload } from "../../database/models/ImageUpload.js";
 import { Op, Sequelize } from "sequelize";
 import Model from "../../database/queries/dbConnection.js";
 import { QueryTypes } from "@sequelize/core";
-import TimeLog from "../../database/models/TimeLog.js";
+import TimeLog from "../../database/models/timeLogsModel.js";
 import { Device } from "../../database/models/device.js";
 import company from "../../database/models/company.js";
 import dbRelations from "../../database/queries/dbRelations.js";
 import team from "../../database/models/teamModel.js";
 import shift from "../../database/models/shiftModel.js";
+import department from "../../database/models/departmentModel.js";
+import designation from "../../database/models/designationModel.js";
 
 const userData = async (id) => {
   let user = await User.findOne({ where: { id: id } });
@@ -315,7 +317,21 @@ const getUserStats = async (io, socket) => {
 
 const getUserReport = async (data, io, socket) => {
   try {
-    let user = await User.findOne({ where: { id: data.id } });
+    let user = await User.findOne({
+      where: { id: data.id },
+      include: [
+        {
+          model: department,
+          as: "department",
+          attributes: ["name"],
+        },
+        {
+          model: designation,
+          as: "designation",
+          attributes: ["name"],
+        },
+      ],
+    });
     if (!user) {
       return socket.emit("error", { message: "User not found" });
     }
@@ -718,9 +734,7 @@ export const adminController = {
       });
       let totalUsers = users.length;
       let activeUsers = users.filter((user) => user.currentStatus == 1).length;
-      let inactiveUsers = users.filter(
-        (user) => user.currentStatus == 0
-      ).length;
+      let inactiveUsers = users.filter((user) => user.currentStatus == 0).length;
 
       io.to(`Admin_${socket.user.company_id}`).emit("userCount", {
         totalUsers,
@@ -751,14 +765,7 @@ export const adminController = {
       let urlStats = await UserHistory.findAll({
         where: { date: today },
         attributes: [
-          [
-            Sequelize.fn(
-              "REGEXP_SUBSTR",
-              Sequelize.col("url"),
-              "^(?:https?:\\/\\/)?(?:[^@\\/\n]+@)?(?:www\\.)?([^:\\/?\n]+)"
-            ),
-            "host",
-          ],
+          [Sequelize.fn("REGEXP_SUBSTR", Sequelize.col("url"), "^(?:https?:\\/\\/)?(?:[^@\\/\n]+@)?(?:www\\.)?([^:\\/?\n]+)"), "host"],
           [Sequelize.fn("COUNT", Sequelize.col("url")), "count"],
         ],
         group: ["host"],
@@ -783,12 +790,7 @@ const handleUserSocket = async (socket, io) => {
   socket.join(`privateRoom_${socket.user.userId}`);
 
   socket.on("newNotification", async (data) => {
-    let notificationCount = await notifyAdmin(
-      socket.user.userId,
-      data.type,
-      data.time,
-      data.url
-    );
+    let notificationCount = await notifyAdmin(socket.user.userId, data.type, data.time, data.url);
     if (notificationCount.error) {
       socket.emit("newNotification", {
         message: "Failed to send notification",
@@ -837,9 +839,7 @@ const handleUserSocket = async (socket, io) => {
       }
 
       let today = new Date().toISOString().split("T")[0];
-      let parsedVisitTime = isNaN(new Date(visitTime))
-        ? new Date()
-        : new Date(visitTime);
+      let parsedVisitTime = isNaN(new Date(visitTime)) ? new Date() : new Date(visitTime);
 
       let company_id = user?.company_id;
 
@@ -893,10 +893,7 @@ const handleUserSocket = async (socket, io) => {
           })
         )
       );
-      io.to(`privateRoom_${userId}`).emit(
-        "getUserReport",
-        await userData(userId)
-      );
+      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
       socket.emit("imageSuccess", { message: "Images uploaded successfully" });
     } catch (error) {
       console.log("Error uploading images:", error);
@@ -956,10 +953,7 @@ const handleUserSocket = async (socket, io) => {
           });
         }
       }
-      io.to(`privateRoom_${userId}`).emit(
-        "getUserReport",
-        await userData(userId)
-      );
+      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
       socket.emit("appHistorySuccess", {
         message: "App history uploaded successfully",
       });
@@ -999,11 +993,7 @@ const getUserSettings = async (socket) => {
   try {
     let user = await User.findOne({
       where: { id: socket.user.userId },
-      attributes: [
-        "screen_capture_time",
-        "broswer_capture_time",
-        "app_capture_time",
-      ],
+      attributes: ["screen_capture_time", "broswer_capture_time", "app_capture_time"],
     });
     if (!user) {
       return { error: "User not found" };
@@ -1043,10 +1033,7 @@ const notifyAdmin = async (id, type, time, url) => {
         title: type == 1 ? "Login successful" : "Logout successful",
         company_id,
         date: today,
-        message:
-          type == 1
-            ? `${user?.fullname} login successfully`
-            : `${user?.fullname} logout successfully`,
+        message: type == 1 ? `${user?.fullname} login successfully` : `${user?.fullname} logout successfully`,
       });
     } else if (type == 3) {
       if (!time) {

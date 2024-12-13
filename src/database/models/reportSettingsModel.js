@@ -15,25 +15,23 @@ const reportSettings = sequelize.define('report_settings', {
             notEmpty: true,
         },
     },
-    name: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        validate: {
-            notEmpty: true,
-        },
-    },
+    // name: {
+    //     type: DataTypes.STRING,
+    //     allowNull: true,
+    //     validate: {
+    //         notEmpty: true,
+    //     },
+    // },
     status: {
         type: DataTypes.TINYINT,
         allowNull: false,
         defaultValue: 1,
-        comment: '1 => Active ,0=>Not Active'
+        comment: '1=>Monthly,2=>Weekly,3=>Daily'
     }
 }, {
     timestamps: true,
-    // Prevent Sequelize from auto-creating foreign keys
     underscored: false,
 });
 
 // await reportSettings.sync({alter:1});
-
 export default reportSettings;

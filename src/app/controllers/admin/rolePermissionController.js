@@ -8,26 +8,14 @@ import role from "../../../database/models/roleModel.js";
 class rolePermissionController {
   getAllRolePermissions = async (req, res) => {
     try {
-      let { searchParam, limit, page } = req.query;
-      // let permissionSearchable = ["modules"];
-      // let roleSearchable = ["name"];
-
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
-      // let permissionWhere = await helper.searchCondition(searchParam, permissionSearchable);
-      // let roleWhere = await helper.searchCondition(searchParam, roleSearchable);
-
       const alldata = await rolePermission.findAndCountAll({
-        // where: permissionWhere,
+        where: { company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
-        // offset: offset,
-        // limit: limit,
-        // order: [["id", "DESC"]],
+        order: [["id", "DESC"]],
         include: [
           {
             model: role,
-            // where: roleWhere,
-            as: "role",
+            as: "role", 
             attributes: ["name"],
           },
         ],
@@ -48,31 +36,30 @@ class rolePermissionController {
 
         let existingModule = acc.find((data) => data.modules === modules);
 
-            if (!existingModule) {
-                existingModule = {
-                    id,
-                    modules,
-                    roleDetails: []
-                };
-                acc.push(existingModule);
-            }
+        if (!existingModule) {
+          existingModule = {
+            id,
+            modules,
+            roleDetails: [],
+          };
+          acc.push(existingModule);
+        }
 
-            // existingModule.roleDetails[`roleName`] = roleName;
-            // existingModule.roleDetails[`permissions`] = permissions;
-            let i = 0;
-          //   [roleName].forEach((name) => {
-          //     existingModule.roleDetails[name] = {
-          //         roleName: name,
-          //         permissions: permissions
-          //     };
-          // });
-          existingModule.roleDetails.push({
-            roleName: roleName,
-            permissions: permissions
+        // existingModule.roleDetails[`roleName`] = roleName;
+        // existingModule.roleDetails[`permissions`] = permissions;
+        let i = 0;
+        //   [roleName].forEach((name) => {
+        //     existingModule.roleDetails[name] = {
+        //         roleName: name,
+        //         permissions: permissions
+        //     };
+        // });
+        existingModule.roleDetails.push({
+          roleName: roleName,
+          permissions: permissions,
         });
 
-            return acc;
-
+        return acc;
       }, []);
 
       return helper.success(res, variables.Success, "All Data Fetched Successfully!", transformedData);
@@ -84,7 +71,7 @@ class rolePermissionController {
   getSpecificRolePermissions = async (roleId, moduleName) => {
     try {
       const roleModuledata = await rolePermission.findOne({
-        where: { roleId: roleId, modules: moduleName },
+        where: { roleId: roleId, modules: moduleName, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!roleModuledata) return helper.failed(res, variables.NotFound, "No Data is available!");
@@ -96,11 +83,13 @@ class rolePermissionController {
     }
   };
 
-  addRolePermissions = async (module, roleId, transaction) => {
+  addRolePermissions = async (module, roleId, company_id, transaction) => {
     try {
+      if(isNaN(roleId)) throw new Error("Role Id must be in number");
       const permissionData = {
         roleId,
         modules: module.name,
+        company_id: company_id,
         permissions: {
           POST: false,
           GET: false,
@@ -108,7 +97,6 @@ class rolePermissionController {
           DELETE: false,
         },
       };
-      console.log(permissionData);
 
       await rolePermission.create(permissionData, { transaction });
       return true;
@@ -122,9 +110,9 @@ class rolePermissionController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { roleName, moduleName, permissions } = req.body;
-      if (!roleName) return helper.failed(res, variables.NotFound, "Role Name is required!");
-      if (!moduleName) return helper.failed(res, variables.NotFound, "Module name is required!");
-      if (!permissions) return helper.failed(res, variables.NotFound, "Permissions are required!");
+      if (!roleName || roleName == "undefined") return helper.failed(res, variables.NotFound, "Role Name is required!");
+      if (!moduleName || moduleName == "undefined") return helper.failed(res, variables.NotFound, "Module name is required!");
+      if (!permissions || permissions == "undefined") return helper.failed(res, variables.NotFound, "Permissions are required!");
 
       // Validate permissions object
       if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {
@@ -152,17 +140,17 @@ class rolePermissionController {
       }
 
       const existRole = await role.findOne({
-        where: { name: roleName },
+        where: { name: roleName, company_id: req.user.company_id },
         attributes: ["id"],
         transaction: dbTransaction,
       });
       if (!existRole) return helper.failed(res, variables.ValidationError, "Role Name Does not exists in Roles!");
 
-      console.log(existRole.id);
+      // console.log(existRole.id);
 
       // Checking whether the role id exists in system or not
       const existingRolePermission = await rolePermission.findOne({
-        where: { roleId: existRole.id, modules: moduleName },
+        where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingRolePermission) return helper.failed(res, variables.ValidationError, "Role Permission does not exists!");
@@ -173,17 +161,17 @@ class rolePermissionController {
           permissions: permissions,
         },
         {
-          where: { roleId: existRole.id, modules: moduleName },
+          where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
           transaction: dbTransaction,
         }
       );
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return helper.success(res, variables.Success, "Role Updated Successfully!");
+        return helper.success(res, variables.Success, "Role permissions Updated Successfully!");
       } else {
-        await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unable to update the role!");
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.failed(res, variables.UnknownError, "Unable to update the role permissions!");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();

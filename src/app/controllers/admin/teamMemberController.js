@@ -8,6 +8,7 @@ import designation from "../../../database/models/designationModel.js";
 import role from "../../../database/models/roleModel.js";
 import team from "../../../database/models/teamModel.js";
 import { Op } from "sequelize";
+import company from "../../../database/models/company.js";
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
@@ -19,16 +20,7 @@ class teamMemberController {
       let where = {};
       let search = [];
 
-      let searchable = [
-        "fullname",
-        "email",
-        "mobile",
-        "country",
-        "$department.name$",
-        "$designation.name$",
-        "$role.name$",
-        "$team.name$",
-      ];
+      let searchable = ["fullname", "email", "mobile", "country", "$department.name$", "$designation.name$", "$role.name$", "$team.name$"];
 
       if (searchParam) {
         //searchable filter
@@ -46,20 +38,15 @@ class teamMemberController {
       }
 
       where.isAdmin = 0;
+      where.company_id = req.user.company_id;
+
       const alldata = await User.findAndCountAll({
-        where,
+        where: where,
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
         attributes: {
-          exclude: [
-            "password",
-            "isAdmin",
-            "workstationId",
-            "createdAt",
-            "updatedAt",
-            "status",
-          ],
+          exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt", "status"],
         }, // Exclude fields
         include: [
           {
@@ -85,14 +72,8 @@ class teamMemberController {
         ],
       });
 
-      if (!alldata)
-        return helper.failed(res, variables.NotFound, "No Data is available!");
-      return helper.success(
-        res,
-        variables.Success,
-        "All Data fetched Successfully!",
-        alldata
-      );
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -104,38 +85,28 @@ class teamMemberController {
       const requestData = req.body;
 
       // Validating request body
-      const validationResult = await teamsValidationSchema.teamMemberValid(
-        requestData,
-        res
-      );
+      const validationResult = await teamsValidationSchema.teamMemberValid(requestData, res);
+      if (!validationResult.status) return helper.failed(res, variables.Unauthorized, validationResult.message);
 
       // Check if the user already exists
       const existingUser = await User.findOne({
-        where: { email: requestData.email },
+        where: { email: requestData.email, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 
       if (existingUser) {
-        return helper.failed(
-          res,
-          variables.Unauthorized,
-          "User already exists with this mail!"
-        );
+        return helper.failed(res, variables.Unauthorized, "User already exists with this mail!");
       }
 
-      const password = await helper.generatePass();
-      if (!password)
-        return helper.failed(
-          res,
-          variables.UnknownError,
-          "User already exists with this mail!"
-        );
+      const password = "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK";
+      // if (!password) return helper.failed(res, variables.UnknownError, "User already exists with this mail!");
+
       requestData.password = password;
-      console.log(requestData);
       // Create and save the new user
-      requestData.screenshot_time = 300;
-      requestData.app_history_time = 300;
-      requestData.browser_history_time = 300;
+      requestData.screenshot_time = 60;
+      requestData.app_history_time = 60;
+      requestData.browser_history_time = 60;
+      requestData.company_id = req.user.company_id;
 
       const teamMember = await User.create(requestData, {
         transaction: dbTransaction,
@@ -146,27 +117,18 @@ class teamMemberController {
 
       if (teamMember) {
         await dbTransaction.commit();
-        return helper.success(
-          res,
-          variables.Success,
-          "Team Member Added Successfully",
-          {
-            note: "This response is just for testing purposes for now",
-            requestData: requestData,
-            addedMember: teamMember,
-          }
-        );
+        return helper.success(res, variables.Success, "Team Member Added Successfully", {
+          note: "This response is just for testing purposes for now",
+          requestData: requestData,
+          addedMember: teamMember,
+        });
       } else {
-        await dbTransaction.rollback();
-        return helper.failed(
-          res,
-          variables.UnknownError,
-          "Unknow Error Occured While creating User Setting"
-        );
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.failed(res, variables.UnknownError, "Unknow Error Occured While creating User Setting");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      console.log(error.message);
+      // console.log(error.message);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -175,19 +137,23 @@ class teamMemberController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, ...updateFields } = req.body;
+      if (!id || isNaN(id)) return helper.failed(res, variables.ValidationError, "Id is required and in numbers");
       const existingTeamMember = await User.findOne({
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
 
-      if (!existingTeamMember)
-        return helper.failed(res, variables.BadRequest, "User does not exists");
-      if (existingTeamMember.isAdmin)
-        return helper.failed(
-          res,
-          variables.Unauthorized,
-          "You are not authorized to made this change"
-        );
+      if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists in your company data");
+      if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
+
+      if(updateFields.email){
+        const existingTeamMemberWithEmail = await User.findOne({
+          where: { email: updateFields.email },
+          transaction: dbTransaction,
+        });
+
+        if (existingTeamMemberWithEmail) return helper.failed(res, variables.BadRequest, "Email is already used in system");
+      }
 
       // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // if (updateFields.status !== 0 && updateFields.status !== 1) {
@@ -196,25 +162,17 @@ class teamMemberController {
 
       // Perform the update operation
       const [updatedRows] = await User.update(updateFields, {
-        where: { id: id },
+        where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
         individualHooks: true,
       });
 
       if (updatedRows > 0) {
         await dbTransaction.commit();
-        return helper.success(
-          res,
-          variables.Success,
-          "User Updated Successfully"
-        );
+        return helper.success(res, variables.Success, "User Updated Successfully");
       } else {
-        await dbTransaction.rollback();
-        return helper.failed(
-          res,
-          variables.UnknownError,
-          "Unable to update the shift"
-        );
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.failed(res, variables.UnknownError, "Unable to update the shift");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
@@ -222,71 +180,36 @@ class teamMemberController {
     }
   };
 
-  updatesetting = async (req, res) => {
+  updateSettings = async (req, res) => {
     try {
       let id = req.query.id;
       let { screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
-  
-      if (!id) {
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          {},
-          "ID is Required"
-        );
+
+      if (!id || isNaN(id)) {
+        return helper.failed(res, variables.ValidationError, "ID is Required and in numbers");
       }
-      
-      if (
-        !Number.isInteger(screen_capture_time) ||
-        !Number.isInteger(broswer_capture_time) ||
-        !Number.isInteger(app_capture_time)
-      ) {        
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          {},
-          "Invalid Data: Only integer values are allowed"
-        );
+
+      if (!Number.isInteger(screen_capture_time) || !Number.isInteger(broswer_capture_time) || !Number.isInteger(app_capture_time)) {
+        return helper.failed(res, variables.BadRequest, "Invalid Data: Only integer values are allowed");
       }
-  
-      const u = await User.findOne({ where: { id } });
+
+      const u = await User.findOne({ where: { id: id } });
       if (!u) {
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "user not found"
-        );
+        return helper.sendResponse(res, variables.NotFound, 0, null, "user not found");
       }
-  
+
       // u.screen_capture_time = screen_capture_time;
       // u.broswer_capture_time = broswer_capture_time;
       // u.app_capture_time = app_capture_time;
       // await u.save();
-      
-      await u.update({screen_capture_time,broswer_capture_time,app_capture_time},{where:{id:u?.id}});
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        {},
-        "Settings Updated Successfully",
-      );
+
+      await u.update({ screen_capture_time, broswer_capture_time, app_capture_time }, { where: { id: u?.id } });
+      return helper.sendResponse(res, variables.Success, 1, {}, "Settings Updated Successfully");
     } catch (error) {
       console.error("Error updating settings:", error.message);
-      return helper.sendResponse(
-        res,
-        variables.Failure,
-        0,
-        {},
-        "Failed to update settings"
-      );
+      return helper.failed(res, variables.Failure, "Failed to update settings");
     }
   };
-  
 }
 
 export default teamMemberController;

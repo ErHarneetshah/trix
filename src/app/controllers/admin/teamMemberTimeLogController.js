@@ -1,45 +1,47 @@
 import sequelize from "../../../database/queries/dbConnection.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
-import TimeLog from "../../../database/models/teamLogsModel.js";
+import TimeLog from "../../../database/models/timeLogsModel.js";
 import { group } from "console";
 import shift from "../../../database/models/shiftModel.js";
 import User from "../../../database/models/userModel.js";
+import { Op } from "sequelize";
 
 class teamMemberTimeLogController {
   getAllTeamMemberLog = async (req, res) => {
     try {
       // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      let { searchParam, limit, page, startDate, endDate } = req.query;
-      let searchable = ["name", "status"];
+      let { searchParam, limit, page, date } = req.query;
+      let searchable = ["$user.fullname$"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-      // let where = await helper.searchCondition(searchParam, searchable);
+      let logWhere = await helper.searchCondition(searchParam, searchable);
 
-      const logWhere = {};
+      let startOfDay;
+      let endOfDay;
 
-      // Add date range filter to `reportWhere`
-      if (startDate && endDate) {
-        logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
-      } else if (startDate) {
-        logWhere.createdAt = { [Op.gte]: new Date(startDate) };
-      } else if (endDate) {
-        logWhere.createdAt = { [Op.lte]: new Date(endDate) };
+      if (date) {
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+      } else {
+        startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
       }
-      // if (startDate && endDate) {
-      //   logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Greater than or equal to startDate
-      //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Less than or equal to endDate
-      // } else if (startDate) {
-      //   logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Only filter by startDate
-      // } else if (endDate) {
-      //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Only filter by endDate
-      // }
 
+      logWhere.company_id = req.user.company_id;
       const alldata = await TimeLog.findAndCountAll({
         where: logWhere, // Filters for `workReports`
         offset,
         limit,
-        // group: ["user_id"],
         attributes: ["id", "total_active_duration", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
         include: [
           {
@@ -67,32 +69,32 @@ class teamMemberTimeLogController {
   getTeamMemberLogFiltered = async (req, res) => {
     try {
       // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      let { searchParam, limit, page, startDate, endDate, tab } = req.query;
-      let searchable = ["name", "status"];
+      let { searchParam, limit, page, date, tab } = req.query;
+      let searchable = ["$user.fullname$"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-      // let where = await helper.searchCondition(searchParam, searchable);
+      let logWhere = await helper.searchCondition(searchParam, searchable);
+      let userWhere = {};
 
-      const logWhere = {};
-      const userWhere = {};
+      let startOfDay;
+      let endOfDay;
 
-      console.log(tab);
-      // Add date range tab to `reportWhere`
-      if (startDate && endDate) {
-        logWhere.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
-      } else if (startDate) {
-        logWhere.createdAt = { [Op.gte]: new Date(startDate) };
-      } else if (endDate) {
-        logWhere.createdAt = { [Op.lte]: new Date(endDate) };
+      if (date) {
+        startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+      } else {
+        startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
       }
-      // if (startDate && endDate) {
-      //   logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Greater than or equal to startDate
-      //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Less than or equal to endDate
-      // } else if (startDate) {
-      //   logWhere.logged_in_time = { [Op.gte]: new Date(startDate) }; // Only tab by startDate
-      // } else if (endDate) {
-      //   logWhere.logged_out_time = { [Op.lte]: new Date(endDate) }; // Only tab by endDate
-      // }
+
       if (tab) {
         if (tab.toLowerCase() === "working") {
           userWhere.currentStatus = 1;
@@ -102,21 +104,20 @@ class teamMemberTimeLogController {
           logWhere.late_coming = true;
         }
       }
+      logWhere.company_id = req.user.company_id;
 
-      console.log(userWhere);
       const alldata = await TimeLog.findAndCountAll({
-        logWhere, // Filters for `workReports`
+        where: logWhere, // Filters for `workReports`
         offset,
         limit,
-        // group: ["user_id"],
         attributes: ["id", "total_active_duration", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
         include: [
           {
             model: User,
             as: "user",
-            where: userWhere, // Use `where` instead of `userWhere`
+            where: userWhere,
             required: true,
-            attributes: ["id", "fullname", "currentStatus"],
+            attributes: ["id", "fullname"],
           },
           {
             model: shift,
@@ -129,6 +130,80 @@ class teamMemberTimeLogController {
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getFilterCount = async (req, res) => {
+    try {
+      let logWhere = {};
+      let userWhere = {};
+      let startOfDay;
+      let endOfDay;
+
+      startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+
+      logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+
+      userWhere.currentStatus = 1;
+
+
+      const employeeCount = await User.count({
+        where: {
+          company_id: req.user.company_id, // Filters by `currentStatus` equals 1
+          // updatedAt: {
+          //   [Op.between]: [startOfDay, endOfDay],
+          // },
+        },
+      });
+
+      const workingCount = await User.count({
+        where: {
+          company_id: req.user.company_id,
+          currentStatus: 1, // Filters by `currentStatus` equals 1
+          updatedAt: {
+            [Op.between]: [startOfDay, endOfDay],
+          },
+        },
+      });
+
+      const absentCount = await User.count({
+        where: {
+          company_id: req.user.company_id,
+          currentStatus: 0, // Filters by `currentStatus` equals 1
+          updatedAt: {
+            [Op.between]: [startOfDay, endOfDay],
+          },
+        },
+      });
+
+      const lateCount = await TimeLog.count({
+        distinct: true, 
+        col: "user_id",
+        where: {
+          late_coming: true, // Filters by `currentStatus` equals 1
+          createdAt: {
+            [Op.between]: [startOfDay, endOfDay],
+          },
+        },
+      });
+
+      const countsData = [
+        { count: employeeCount, name: "employee" },
+        { count: workingCount, name: "working" },
+        { count: absentCount, name: "absent" },
+        { count: lateCount, name: "late" },
+        { count: 0, name: "slacking" },
+        { count: 0, name: "productive" },
+        { count: 0, name: "unproductive" },
+      ];
+    
+      
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", countsData);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }

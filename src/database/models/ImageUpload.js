@@ -37,4 +37,4 @@ export const ImageUpload = sequelize.define(
   }
 );
 
-await ImageUpload.sync({ alter: 1 });
+// await ImageUpload.sync({ alter: 1 });

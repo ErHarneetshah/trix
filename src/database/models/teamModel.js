@@ -1,7 +1,5 @@
 import { DataTypes } from 'sequelize';
 import sequelize  from '../queries/dbConnection.js';
-import shift from './shiftModel.js';
-import department from './departmentModel.js';
 
 const team = sequelize.define('teams', {
   id: {
@@ -45,7 +43,6 @@ const team = sequelize.define('teams', {
   },
 }, {
   timestamps: true, // Adds createdAt and updatedAt columns
-  // Prevent Sequelize from auto-creating foreign keys
   underscored: false,
 });
 

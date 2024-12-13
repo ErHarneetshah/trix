@@ -1,6 +1,7 @@
 import express from "express";
 import authController from "../../app/controllers/auth/authController.js";
 import authMiddleware from "../../app/middlewares/authMiddleware.js";
+import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.js";
 
 const router = express.Router();
 const authInstance = new authController();
@@ -12,7 +13,7 @@ router.post("/register", (req, res) => {
   });
 });
 
-// router.post("/register", authInstance.register);
+router.post("/companyRegister", authInstance.companyRegister);
 router.post("/login", authInstance.login);
 router.post("/logout", authMiddleware, authInstance.logout);
 router.post("/users",authMiddleware,authInstance.device);

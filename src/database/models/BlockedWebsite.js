@@ -16,7 +16,7 @@ export const BlockedWebsites = sequelize.define(
       allowNull: false,
     },
 
-    departmentId:{
+    departmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
@@ -31,14 +31,26 @@ export const BlockedWebsites = sequelize.define(
       allowNull: false,
     },
 
-    status:{
-      type: DataTypes.BOOLEAN,
+    logo: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    
+    status: {
+      type: DataTypes.TINYINT,
+      allowNull: false,
       defaultValue: 1,
-    }
+      comment: '1 => Blocked Websites,0=>Unblock Websites'
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// await BlockedWebsites.sync({alter:1})
+
+// await BlockedWebsites.sync({alter:1}); 
+
+// BlockedWebsites.afterUpdate(()=>{
+  
+// })
