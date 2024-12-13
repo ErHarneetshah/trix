@@ -173,7 +173,7 @@ const retrieveUserReport = async (req, res) => {
     if (!userReport || userReport.length === 0) {
       return helper.failed(res, variables.NotFound, "No work report data found.");
     }
-    
+
     let data = userReport[0];
     if (!data || data == undefined) return helper.failed(res, variables.NotFound, "No Work Report Data Found", data);
 
@@ -203,7 +203,7 @@ const approveDisaproveReport = async (req, res) => {
     }
 
     const reportId = await workReports.findOne({
-      where: {id: id, company_id: req.user.company_id }
+      where: {id: id}
     });
     if (!reportId) {
       return helper.failed(res, variables.NotFound, "Work Report does not exists");
