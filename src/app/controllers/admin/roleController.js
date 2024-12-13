@@ -87,7 +87,7 @@ class roleController {
     const permissionInstance = new rolePermissionController();
     try {
       const { name } = req.body;
-      if (!name) return helper.failed(res, variables.NotFound, "Name is required!");
+      if (!name || name == "undefined") return helper.failed(res, variables.NotFound, "Name is required!");
 
       const existingRole = await role.findOne({
         where: { name: name, company_id: req.user.company_id },
@@ -117,8 +117,8 @@ class roleController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, name } = req.body;
-      if (!id) return helper.failed(res, variables.NotFound, "Id is required!");
-      if (!name) return helper.failed(res, variables.NotFound, "No Updation value is present");
+      if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is required and in numbers!");
+      if (!name || name == "undefined") return helper.failed(res, variables.NotFound, "No Updation value is present");
 
       //* Checking whether the role id exists in system or not
       const existingRole = await role.findOne({
@@ -181,7 +181,7 @@ class roleController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;
-      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
+      if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is Required and in numbers!");
 
       const existingRole = await role.findOne({
         where: { id: id, company_id: req.user.company_id },

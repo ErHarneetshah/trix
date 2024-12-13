@@ -129,9 +129,17 @@ class reportingManagerController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, reportManagerId } = req.body;
-      if (!id || !reportManagerId) {
+      if ((!id || id == "undefined" )|| (!reportManagerId || reportManagerId == "undefined")) {
         return helper.failed(res, variables.NotFound, "Id and reportManagerId both are Required!");
       }
+
+      if (id == reportManagerId) {
+        return helper.failed(res, variables.NotFound, "Id and reportManagerId cannot be same!");
+      }
+
+      if(isNaN(id) || isNaN(reportManagerId)) 
+        return helper.failed(res, variables.NotFound, "Id and reportManagerId must be in numbers!");
+
 
       //* Check if there is a dept already exists
       const existingDept = await department.findOne({
@@ -139,14 +147,14 @@ class reportingManagerController {
         transaction: dbTransaction,
       });
       if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
-     
+
       //* Check if there is a user already exists
       const existingUser = await User.findOne({
         where: { id: reportManagerId, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingUser) return helper.failed(res, variables.ValidationError, "User does not exists in system!");
-      if(existingUser.isAdmin) return helper.failed(res, variables.Unauthorized, "Not allowed to assign to this Id");
+      if (existingUser.isAdmin) return helper.failed(res, variables.Unauthorized, "Not allowed to assign to this Id");
 
       //* Check if there is a dept with a name in a different id
       // const existingReportManager = await department.findOne({

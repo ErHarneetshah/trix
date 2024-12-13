@@ -86,6 +86,7 @@ class teamMemberController {
 
       // Validating request body
       const validationResult = await teamsValidationSchema.teamMemberValid(requestData, res);
+      if (!validationResult.status) return helper.failed(res, variables.Unauthorized, validationResult.message);
 
       // Check if the user already exists
       const existingUser = await User.findOne({
@@ -136,6 +137,7 @@ class teamMemberController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, ...updateFields } = req.body;
+      if (!id || isNaN(id)) return helper.failed(res, variables.ValidationError, "Id is required and in numbers");
       const existingTeamMember = await User.findOne({
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
@@ -143,6 +145,15 @@ class teamMemberController {
 
       if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists in your company data");
       if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
+
+      if(updateFields.email){
+        const existingTeamMemberWithEmail = await User.findOne({
+          where: { email: updateFields.email },
+          transaction: dbTransaction,
+        });
+
+        if (existingTeamMemberWithEmail) return helper.failed(res, variables.BadRequest, "Email is already used in system");
+      }
 
       // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       // if (updateFields.status !== 0 && updateFields.status !== 1) {
@@ -174,38 +185,26 @@ class teamMemberController {
       let id = req.query.id;
       let { screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
 
-      if (!id) {
-        return helper.failed(res, variables.ValidationError, "ID is Required");
+      if (!id || isNaN(id)) {
+        return helper.failed(res, variables.ValidationError, "ID is Required and in numbers");
       }
 
       if (!Number.isInteger(screen_capture_time) || !Number.isInteger(broswer_capture_time) || !Number.isInteger(app_capture_time)) {
         return helper.failed(res, variables.BadRequest, "Invalid Data: Only integer values are allowed");
       }
-  
-      const u = await User.findOne({ where: { id } });
+
+      const u = await User.findOne({ where: { id: id } });
       if (!u) {
-        return helper.sendResponse(
-          res,
-          variables.NotFound,
-          0,
-          null,
-          "user not found"
-        );
+        return helper.sendResponse(res, variables.NotFound, 0, null, "user not found");
       }
-  
+
       // u.screen_capture_time = screen_capture_time;
       // u.broswer_capture_time = broswer_capture_time;
       // u.app_capture_time = app_capture_time;
       // await u.save();
-      
-      await u.update({screen_capture_time,broswer_capture_time,app_capture_time},{where:{id:u?.id}});
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        {},
-        "Settings Updated Successfully",
-      );
+
+      await u.update({ screen_capture_time, broswer_capture_time, app_capture_time }, { where: { id: u?.id } });
+      return helper.sendResponse(res, variables.Success, 1, {}, "Settings Updated Successfully");
     } catch (error) {
       console.error("Error updating settings:", error.message);
       return helper.failed(res, variables.Failure, "Failed to update settings");

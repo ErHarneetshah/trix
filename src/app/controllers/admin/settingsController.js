@@ -13,7 +13,6 @@ import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 import uploadPhotos from "../../../utils/services/commonfuncitons.js";
 
-
 const getAdminDetails = async (req, res) => {
   try {
     const alldata = await User.findOne({
@@ -69,6 +68,8 @@ const getBlockedWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
+    if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.NotFound, "Department Id is required and in numbers");
+
     // check department is exists or not
     const isDepartmentExists = await department.findOne({
       where: {
@@ -108,20 +109,10 @@ const getBlockedWebsites = async (req, res) => {
     });
 
     if (blockedWebsite.count === 0) {
-      return helper.success(
-        res,
-        variables.Success,
-        "No blocked websites found.",
-        blockedWebsite
-      );
+      return helper.success(res, variables.Success, "No blocked websites found.", blockedWebsite);
     }
 
-    return helper.success(
-      res,
-      variables.Success,
-      "Blocked websites retrieved successfully.",
-      blockedWebsite
-    );
+    return helper.success(res, variables.Success, "Blocked websites retrieved successfully.", blockedWebsite);
   } catch (error) {
     console.error("Error fetching blocked websites:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -132,14 +123,14 @@ const addBlockWebsites = async (req, res) => {
   try {
     const { departmentId, website } = req.body;
     const rules = {
-      departmentId: 'required|integer',
-      website: 'required|valid_url',
+      departmentId: "required|integer",
+      website: "required|valid_url",
     };
 
     const { status, message } = await validate(req.body, rules);
 
     if (req.body.departmentId == 0) {
-      return helper.failed(res, variables.ValidationError, 'The department ID must not be 0.');
+      return helper.failed(res, variables.ValidationError, "The department ID must not be 0.");
     }
 
     if (status === 0) {
@@ -172,7 +163,6 @@ const addBlockWebsites = async (req, res) => {
     const newWebsiteData = { departmentId: departmentId, website: website, website_name: websiteName, companyId: companyId, logo: faviconUrl };
     const newAppInfo = await BlockedWebsites.create(newWebsiteData);
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
-
   } catch (error) {
     console.error("Error creating app info:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -182,6 +172,8 @@ const addBlockWebsites = async (req, res) => {
 const updateSitesStatus = async (req, res) => {
   try {
     const { id, status } = req.body;
+
+    if (!id || isNaN(id)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
 
     if (status < 0 || status > 1) {
       return helper.failed(res, variables.ValidationError, "Status value must be 0 or 1");
@@ -207,19 +199,17 @@ const updateSitesStatus = async (req, res) => {
   }
 };
 
-
 const addProductiveApps = async (req, res) => {
   try {
     const { department_id, app_name } = req.body;
     const rules = {
-      department_id: 'required|integer',
-      app_name: 'required|string|min:3|max:50',
+      department_id: "required|integer",
+      app_name: "required|string|min:3|max:50",
     };
 
     const { status, message } = await validate(req.body, rules);
     if (status === 0) {
       return helper.failed(res, variables.ValidationError, message);
-
     }
     const company_id = req.user.company_id;
 
@@ -227,7 +217,7 @@ const addProductiveApps = async (req, res) => {
       return helper.failed(res, variables.ValidationError, message);
     }
     const existingApp = await ProductiveApp.findOne({
-      where: { app_name: app_name, company_id: req.user.company_id }
+      where: { app_name: app_name, company_id: req.user.company_id },
     });
 
     if (existingApp) {
@@ -255,14 +245,14 @@ const addProductiveApps = async (req, res) => {
   }
 };
 
-
 const getAppInfo = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
+
+    if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.ValidationError, "Department Id is required and in numbers");
+
     limit = parseInt(limit) || 10;
-
     let offset = (page - 1) * limit || 0;
-
     let where = { company_id: req.user.company_id };
 
     if (departmentId && departmentId != 0) {
@@ -296,15 +286,11 @@ const getAppInfo = async (req, res) => {
     });
 
     if (productiveApps.count === 0) {
-      return helper.success(
-        res, variables.Success, "No apps found.", productiveApps
-      );
+      return helper.success(res, variables.Success, "No apps found.", productiveApps);
     }
 
     // Success response
-    return helper.success(
-      res, variables.Success, "Apps retrieved successfully", productiveApps
-    );
+    return helper.success(res, variables.Success, "Apps retrieved successfully", productiveApps);
   } catch (error) {
     // Handle errors
     console.error("Error fetching app info:", error);
@@ -313,7 +299,6 @@ const getAppInfo = async (req, res) => {
 };
 
 const getReportStatus = async (req, res) => {
-
   const getStatus = await reportSettings.findOne({
     where: { company_id: req.user.company_id },
     attributes: ["status"],
@@ -324,7 +309,7 @@ const getReportStatus = async (req, res) => {
   }
 
   const statusMapping = { 1: "Monthly", 2: "Weekly", 3: "Daily" };
-  const statusType = statusMapping[getStatus.status] || "unknown"
+  const statusType = statusMapping[getStatus.status] || "unknown";
   return helper.success(res, variables.Success, "Report settings retrieved successfully.", getStatus, { statusType });
 };
 
@@ -333,23 +318,19 @@ const updateReportSettings = async (req, res) => {
     const { exportType } = req.body;
 
     const rules = {
-      exportType: 'required|integer|in:1,2,3',
+      exportType: "required|integer|in:1,2,3",
     };
 
     const { status, message } = await validate(req.body, rules);
 
     if (status === 0) {
       return helper.failed(res, variables.ValidationError, "Export Type can only be 1, 2 or 3");
-
     }
     if (exportType < 1 || exportType > 4) {
       return helper.failed(res, variables.ValidationError, "Export Type can only be 1, 2 or 3");
     }
 
-    const [updatedPreviousStatus] = await reportSettings.update(
-      { status: exportType },
-      { where: { company_id: req.user.company_id } }
-    );
+    const [updatedPreviousStatus] = await reportSettings.update({ status: exportType }, { where: { company_id: req.user.company_id } });
 
     if (updatedPreviousStatus === 0) {
       return helper.failed(res, variables.NotFound, "No report settings found for the specified company.");
@@ -364,16 +345,46 @@ const updateReportSettings = async (req, res) => {
 
 // add productive websites
 
+// const fetchFaviconUrl = async (website) => {
+//   try {
+//     const response = await fetch(website);
+//     const html = await response.text();
+//     const faviconRegex = /<link[^>]+rel=["']?(?:icon|shortcut icon)["']?[^>]*href=["']([^"']+)["']/i;
+//     const match = html.match(faviconRegex);
+//     return match ? new URL(match[1], website).href : `${new URL(website).origin}/favicon.ico`;
+//   } catch (error) {
+//     console.warn("Could not fetch favicon, using default:", error.message);
+//     return `${new URL(website).origin}/favicon.ico`;
+//   }
+// };
 const fetchFaviconUrl = async (website) => {
   try {
-    const response = await fetch(website);
+    if (!website || typeof website !== "string") {
+      throw new Error("Invalid website URL. Please provide a valid string.");
+    }
+
+    const websiteUrl = new URL(website);
+
+    const response = await fetch(websiteUrl.href);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch website. Status: ${response.status}`);
+    }
+
     const html = await response.text();
+
     const faviconRegex = /<link[^>]+rel=["']?(?:icon|shortcut icon)["']?[^>]*href=["']([^"']+)["']/i;
     const match = html.match(faviconRegex);
-    return match ? new URL(match[1], website).href : `${new URL(website).origin}/favicon.ico`;
+
+    return match ? new URL(match[1], websiteUrl.origin).href : `${websiteUrl.origin}/favicon.ico`;
   } catch (error) {
     console.warn("Could not fetch favicon, using default:", error.message);
-    return `${new URL(website).origin}/favicon.ico`;
+
+    // // Default to `/favicon.ico` for invalid URLs or other errors
+    // try {
+    //   return `${new URL(website).origin}/favicon.ico`;
+    // } catch {
+    //   return "https://example.com/favicon.ico"; // Final fallback
+    // }
   }
 };
 
@@ -381,13 +392,13 @@ const addProductiveWebsites = async (req, res) => {
   try {
     const { departmentId, website } = req.body;
     const rules = {
-      departmentId: 'required|integer',
-      website: 'required|valid_url',
+      departmentId: "required|integer",
+      website: "required|valid_url",
     };
 
     const { status, message } = await validate(req.body, rules);
     if (status === 0 || departmentId === 0) {
-      const errorMessage = status === 0 ? message : 'The department ID must not be 0.';
+      const errorMessage = status === 0 ? message : "The department ID must not be 0.";
       return helper.failed(res, variables.ValidationError, errorMessage);
     }
 
@@ -424,6 +435,9 @@ const getProductiveWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
+    if(!departmentId || isNaN(departmentId))
+      return helper.failed(res, variables.ValidationError, "Department Id is required and in numbers");
+
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
 
@@ -458,5 +472,16 @@ const getProductiveWebsites = async (req, res) => {
   }
 };
 
-
-export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveApps, getAppInfo, getReportStatus, updateReportSettings, addProductiveWebsites, getProductiveWebsites };
+export default {
+  getAdminDetails,
+  updateAdminDetails,
+  addBlockWebsites,
+  getBlockedWebsites,
+  updateSitesStatus,
+  addProductiveApps,
+  getAppInfo,
+  getReportStatus,
+  updateReportSettings,
+  addProductiveWebsites,
+  getProductiveWebsites,
+};

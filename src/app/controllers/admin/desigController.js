@@ -95,7 +95,7 @@ class desigController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name } = req.body;
-      if (!name) return helper.failed(res, variables.BadRequest, "Name is Required!");
+      if (!name || name == "undefined") return helper.failed(res, variables.BadRequest, "Name is Required!");
 
       // Check if the designation id exists in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesig = await designation.findOne({
@@ -122,7 +122,8 @@ class desigController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, name } = req.body;
-      if (!id) return helper.failed(res, variables.ValidationError, "Id is Required!");
+      if (!id || id == "undefined" || isNaN(id)) return helper.failed(res, variables.ValidationError, "Id is Required and in numbers!");
+      if (!name || name == "undefined") return helper.failed(res, variables.ValidationError, "Name is Required!");
 
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesig = await designation.findOne({
@@ -181,7 +182,7 @@ class desigController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;
-      if (!id) return helper.failed(res, variables.BadRequest, "Id is Required!");
+      if (!id || id == "undefined" || isNaN(id)) return helper.failed(res, variables.BadRequest, "Id is Required and in numbers!");
 
       // Check if the designation exists in db or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDesig = await designation.findOne({
@@ -190,12 +191,10 @@ class desigController {
       });
       if (!existingDesig) return helper.failed(res, variables.NotFound, "Designation does not exists!");
 
-
       // Check if the desgination used in other tables from db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const isUsedInUsers = await User.findOne({ where: { designationId: id } });
       if(isUsedInUsers) 
         return helper.failed(res, variables.Unauthorized, "Cannot Delete this Designation as it is referred in other tables");
-
 
       // Delete the desgination from db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const deleteDesig = await designation.destroy({

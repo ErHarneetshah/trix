@@ -85,6 +85,7 @@ class rolePermissionController {
 
   addRolePermissions = async (module, roleId, company_id, transaction) => {
     try {
+      if(isNaN(roleId)) throw new Error("Role Id must be in number");
       const permissionData = {
         roleId,
         modules: module.name,
@@ -109,9 +110,9 @@ class rolePermissionController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { roleName, moduleName, permissions } = req.body;
-      if (!roleName) return helper.failed(res, variables.NotFound, "Role Name is required!");
-      if (!moduleName) return helper.failed(res, variables.NotFound, "Module name is required!");
-      if (!permissions) return helper.failed(res, variables.NotFound, "Permissions are required!");
+      if (!roleName || roleName == "undefined") return helper.failed(res, variables.NotFound, "Role Name is required!");
+      if (!moduleName || moduleName == "undefined") return helper.failed(res, variables.NotFound, "Module name is required!");
+      if (!permissions || permissions == "undefined") return helper.failed(res, variables.NotFound, "Permissions are required!");
 
       // Validate permissions object
       if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {

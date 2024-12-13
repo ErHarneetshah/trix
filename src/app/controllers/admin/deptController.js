@@ -88,9 +88,10 @@ class deptController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name, parentDeptId } = req.body;
-console.log(req.user.company_id);
 
-      if ((!name || name == "undefined") || (!parentDeptId || parentDeptId == "undefined")) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
+      if ((!name || name == "undefined") || (!parentDeptId || parentDeptId == "undefined" )) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
+
+      if(isNaN(parentDeptId)) return helper.failed(res, variables.Unauthorized, "Parent Dept Id is Required in numbers!");
 
       // checking whether department name requested by used already exists or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
@@ -138,9 +139,12 @@ console.log(req.user.company_id);
     try {
       // const { id, name, parentDeptId } = req.body;
       const { id, name, parentDeptId } = req.body;
-      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
-      if (!name && !parentDeptId) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
+      if (!id || id == "undefined") return helper.failed(res, variables.NotFound, "Id is Required!");
+      if ((!name || name == "undefined") && (!parentDeptId || parentDeptId == "undefined")) return helper.failed(res, variables.NotFound, "Either Name or parentDeptId is Required in order to update the table!");
       if (id == parentDeptId) return helper.failed(res, variables.Unauthorized, "Both Id and ParentDeptId cannot be same");
+
+      if(isNaN(id)) return helper.failed(res, variables.Unauthorized, "Id is Required in numbers!");
+      if(isNaN(parentDeptId)) return helper.failed(res, variables.Unauthorized, "Parent Dept Id is Required in numbers!");
 
       // Check if there is a dept already exists >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({
@@ -221,7 +225,7 @@ console.log(req.user.company_id);
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;
-      if (!id) return helper.failed(res, variables.NotFound, "Id is Required!");
+      if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is Required and in numbers!");
 
       // Check if the department already exists in db >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const existingDept = await department.findOne({

@@ -19,7 +19,7 @@ class teamsValidationSchema {
       // console.log("Team Member Validation -------------------------");
       // console.log(status);
       if (!status) {
-        return helper.failed(res, variables.ValidationError, message);
+        return { status: false, message: message };
       }
 
       return { status: true };
@@ -34,15 +34,15 @@ class teamsValidationSchema {
       // console.log("Shift Validation -------------------------");
       const { status, message } = await CValidator(data, {
         name: "required|string",
-        start_time: `required|string`,
-        end_time: `required|string`,
+        start_time: `required`,
+        end_time: `required`,
         days: "required|array",
         "days.*": "required|string|in:Mon,Tue,Wed,Thu,Fri,Sat,Sun",
       });
 
       // console.log(status);
       if (!status) {
-        return helper.failed(res, variables.ValidationError, message);
+        return { status: false, message: message };
       }
 
       return { status: true };
@@ -63,7 +63,7 @@ class teamsValidationSchema {
 
       // console.log(status);
       if (!status) {
-        return helper.failed(res, variables.ValidationError, message);
+        return { status: false, message: message };
       }
 
       return { status: true };

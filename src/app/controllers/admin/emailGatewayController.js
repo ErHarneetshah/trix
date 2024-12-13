@@ -27,10 +27,7 @@ const addEmailGateeways = async (req, res) => {
             return helper.failed(res, variables.ValidationError, message);
         }
 
-        await emailGateway.destroy({
-            where: {}
-            });
-           
+        await emailGateway.destroy({ where: {} });
         await sequelize.query(`ALTER TABLE \`${emailGateway.getTableName()}\` AUTO_INCREMENT = 1;`);
         
         await emailGateway.create({ protocol, host, username, password, port, encryption });
