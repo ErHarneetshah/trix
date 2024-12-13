@@ -74,6 +74,7 @@ class teamMemberTimeLogController {
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
       let logWhere = await helper.searchCondition(searchParam, searchable);
+      let userWhere = {};
 
       let startOfDay;
       let endOfDay;
@@ -114,6 +115,7 @@ class teamMemberTimeLogController {
           {
             model: User,
             as: "user",
+            where: userWhere,
             required: true,
             attributes: ["id", "fullname"],
           },

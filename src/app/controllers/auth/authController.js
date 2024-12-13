@@ -432,7 +432,7 @@ class authController extends jwtService {
       // console.log(error);
 
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
+      return helper.sendResponse(res, variables.Forbidden, 0, null, error.message);
     }
   };
 

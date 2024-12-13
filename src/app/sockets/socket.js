@@ -534,9 +534,6 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (userId, date
     
     const productiveWebsitesData = await singleUserProductiveWebsiteData({ userId, date })
 
-    console.log({nonProductiveWebsitesData, productiveWebsitesData});
-    
-
     if (
       !Array.isArray(nonProductiveWebsitesData) ||
       !Array.isArray(productiveWebsitesData)
