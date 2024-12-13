@@ -151,20 +151,29 @@ const retrieveAllReport = async (req, res) => {
 
 const retrieveUserReport = async (req, res) => {
   try {
-    let { id } = req.query;
-    const user = await User.findOne({
-      where: { id: id, company_id:req.user.company_id },
-    });
-    if (!user) {
-      return helper.failed(res, variables.NotFound, "User not exists");
+    let { id } = req.params;
+
+    if (!id || isNaN(id)) {
+      return helper.failed(res, variables.ValidationError, "Invalid or missing user ID.");
     }
 
-    const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.user_id = ${id} AND wr.company_id = ${req.user.company_id};`;
+    const user = await User.findOne({
+      where: { id: id },
+    });
+    if (!user) {
+      return helper.failed(res, variables.NotFound, "User does  not exists");
+    }
+
+    const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.user_id = ${id} AND wr.company_id = ${user.company_id};`;
     const userReport = await workReports.sequelize.query(query, {
       // replacements: { userId: id },
       type: workReports.sequelize.QueryTypes.SELECT,
     });
 
+    if (!userReport || userReport.length === 0) {
+      return helper.failed(res, variables.NotFound, "No work report data found.");
+    }
+    
     let data = userReport[0];
     if (!data || data == undefined) return helper.failed(res, variables.NotFound, "No Work Report Data Found", data);
 

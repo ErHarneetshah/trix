@@ -46,5 +46,4 @@ team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
 team.hasMany(User, { as: 'members', foreignKey: 'teamId' });
 
 
-
 export default {}
