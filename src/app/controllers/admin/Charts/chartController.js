@@ -687,25 +687,67 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
 
 
 //function for productive apps and productive websites chart
+// const productiveAppsAndproductiveWebsites = async (req, res, next) => {
+//   try {
+//     const { filterType, dateOption } = req.query;
+
+//     const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
+//     const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
+//     console.log(productiveAppsData);
+//     console.log(productiveWebsiteData);
+
+//     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
+//       return helper.failed(res, 400, "Invalid data format", []);
+//     }
+
+//     const combinedData = productiveAppsData.map(item1 => {
+//       const item2 = productiveWebsiteData.find(item => item.period === item1.period); // Match by period
+//       return {
+//         period: item1.period,
+//         productive_apps_total_time: parseFloat(item1.total_time || '0.0'),
+//         productive_websites_total_time: parseFloat(item2?.total_time || '0.0')
+//       };
+//     });
+
+//     // Success response
+//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
+//   } catch (error) {
+//     console.error("Error in productiveAppsAndproductiveWebsites:", error);
+//     return helper.failed(res, 500, "Internal Server Error", []);
+//   }
+// };
+
 const productiveAppsAndproductiveWebsites = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
 
+    // Fetch data for productive apps and websites
     const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
     const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
+
     console.log(productiveAppsData);
     console.log(productiveWebsiteData);
 
+    // Validate data format
     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
       return helper.failed(res, 400, "Invalid data format", []);
     }
 
-    const combinedData = productiveAppsData.map(item1 => {
-      const item2 = productiveWebsiteData.find(item => item.period === item1.period); // Match by period
+    // Determine which dataset is larger and iterate over it
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      productiveAppsData.length >= productiveWebsiteData.length
+        ? [productiveAppsData, productiveWebsiteData, 'productive_apps_total_time', 'productive_websites_total_time']
+        : [productiveWebsiteData, productiveAppsData, 'productive_websites_total_time', 'productive_apps_total_time'];
+
+    // Combine data based on the larger dataset
+    const combinedData = primaryData.map(primaryItem => {
+      const matchingSecondaryItem = secondaryData.find(
+        secondaryItem => secondaryItem.period === primaryItem.period // Match by period
+      );
       return {
-        period: item1.period,
-        productive_apps_total_time: parseFloat(item1.total_time || '0.0'),
-        productive_websites_total_time: parseFloat(item2?.total_time || '0.0')
+        period: primaryItem.period,
+        [primaryKey]: parseFloat(primaryItem.total_time || '0.0'),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.total_time || '0.0'),
       };
     });
 
@@ -718,35 +760,47 @@ const productiveAppsAndproductiveWebsites = async (req, res, next) => {
 };
 
 
-
 //function for productive apps and productive websites chart
+//browser history 
 const productiveWebsiteAndNonproductiveWebsites = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
 
+    // Fetch data for non-productive and productive websites
     const nonProductiveWebsitesData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
     const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
 
+    // Validate data format
     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsiteData)) {
       return helper.failed(res, 400, "Invalid data format", []);
     }
 
-    const combinedData = nonProductiveWebsitesData.map(item1 => {
-      const item2 = productiveWebsiteData.find(item => item.period === item1.period); // Match by period
+    // Determine which dataset is larger and iterate over it
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      nonProductiveWebsitesData.length >= productiveWebsiteData.length
+        ? [nonProductiveWebsitesData, productiveWebsiteData, 'non_productive_websites_total_time', 'productive_websites_total_time']
+        : [productiveWebsiteData, nonProductiveWebsitesData, 'productive_websites_total_time', 'non_productive_websites_total_time'];
+
+    // Combine data based on the larger dataset
+    const combinedData = primaryData.map(primaryItem => {
+      const matchingSecondaryItem = secondaryData.find(
+        secondaryItem => secondaryItem.period === primaryItem.period // Match by period
+      );
       return {
-        period: item1.period,
-        non_productive_websites_total_time: parseFloat(item1.total_time || '0.0'),
-        productive_websites_total_time: parseFloat(item2?.total_time || '0.0')
+        period: primaryItem.period,
+        [primaryKey]: parseFloat(primaryItem.total_time || '0.0'),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.total_time || '0.0'),
       };
     });
 
     // Success response
     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
   } catch (error) {
-    console.error("Error in productiveAppsAndproductiveWebsites:", error);
+    console.error("Error in productiveWebsiteAndNonproductiveWebsites:", error);
     return helper.failed(res, 500, "Internal Server Error", []);
   }
 };
+
 
 
 //function for productive apps and non productive apps chart
@@ -754,29 +808,41 @@ const productiveAppAndNonproductiveApps = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
 
+    // Fetch data for non-productive and productive apps
     const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption });
     const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
 
+    // Validate data format
     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       return helper.failed(res, 400, "Invalid data format", []);
     }
 
-    const combinedData = nonProductiveAppsData.map(item1 => {
-      const item2 = productiveAppsData.find(item => item.period === item1.period); // Match by period
+    // Determine which dataset is larger and iterate over it
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      nonProductiveAppsData.length >= productiveAppsData.length
+        ? [nonProductiveAppsData, productiveAppsData, 'non_productive_apps_total_time', 'productive_apps_total_time']
+        : [productiveAppsData, nonProductiveAppsData, 'productive_apps_total_time', 'non_productive_apps_total_time'];
+
+    // Combine data based on the larger dataset
+    const combinedData = primaryData.map(primaryItem => {
+      const matchingSecondaryItem = secondaryData.find(
+        secondaryItem => secondaryItem.period === primaryItem.period // Match by period
+      );
       return {
-        period: item1.period,
-        non_productive_apps_total_time: parseFloat(item1.total_time || '0.0'),
-        productive_apps_total_time: parseFloat(item2?.total_time || '0.0')
+        period: primaryItem.period,
+        [primaryKey]: parseFloat(primaryItem.total_time || '0.0'),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.total_time || '0.0'),
       };
     });
 
     // Success response
     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
   } catch (error) {
-    console.error("Error in productiveAppsAndproductiveapps:", error);
+    console.error("Error in productiveAppAndNonproductiveApps:", error);
     return helper.failed(res, 500, "Internal Server Error", []);
   }
 };
+
 
 
 //helper function for transform data
@@ -819,19 +885,6 @@ const activityData = async (req, res, next) => {
   }
 };
 
-
-//helper function for generate hour
-const generateHourRange = (start, end) => {
-  const startHour = parseInt(start.split(":")[0], 10);
-  const endHour = parseInt(end.split(":")[0], 10);
-
-  const hours = [];
-  for (let hour = startHour; hour <= endHour; hour++) {
-    hours.push(hour);
-  }
-
-  return hours;
-};
 
 
 const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
@@ -968,7 +1021,7 @@ WHERE
         FROM productive_apps
         WHERE company_id = :companyId
     )
- AND date(createdAt)="2024-12-11"
+ AND date(createdAt)=:date
     AND ah.userId = 2
     AND ah.company_id = :companyId
 GROUP BY
@@ -1171,25 +1224,67 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
 
 
 //function for productive apps and productive websites chart
+// const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, next) => {
+//   try {
+//     const { userId, date } = req.query;
+
+//     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date });
+//     const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date });
+
+//     console.log(nonProductiveWebsitesData);
+//     console.log(productiveWebsitesData);
+//     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {
+//       return helper.failed(res, 400, "Invalid data format", []);
+//     }
+
+//     const combinedData = nonProductiveWebsitesData.map(item1 => {
+//       const item2 = productiveWebsitesData.find(item => item.period === item1.period); // Match by period
+//       return {
+//         period: item1.name,
+//         non_productive_websites_total_time: parseFloat(item1.value || '0.0'),
+//         productive_websites_value: parseFloat(item2?.value || '0.0')
+//       };
+//     });
+
+//     // Success response
+//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
+//   } catch (error) {
+//     console.error("Error in singleUserProductiveWebsitesAndNonproductiveWebsites:", error);
+//     return helper.failed(res, 500, "Internal Server Error", []);
+//   }
+// };
+
 const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, next) => {
   try {
     const { userId, date } = req.query;
 
+    // Fetch data for non-productive and productive websites
     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date });
     const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date });
 
     console.log(nonProductiveWebsitesData);
     console.log(productiveWebsitesData);
+
+    // Validate data format
     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {
       return helper.failed(res, 400, "Invalid data format", []);
     }
 
-    const combinedData = nonProductiveWebsitesData.map(item1 => {
-      const item2 = productiveWebsitesData.find(item => item.period === item1.period); // Match by period
+    // Determine which dataset is larger and iterate over it
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      nonProductiveWebsitesData.length >= productiveWebsitesData.length
+        ? [nonProductiveWebsitesData, productiveWebsitesData, 'non_productive_websites_total_time', 'productive_websites_value']
+        : [productiveWebsitesData, nonProductiveWebsitesData, 'productive_websites_value', 'non_productive_websites_total_time'];
+
+    // Combine data based on the larger dataset
+    const combinedData = primaryData.map(primaryItem => {
+      const matchingSecondaryItem = secondaryData.find(
+        secondaryItem => secondaryItem.name === primaryItem.name // Match by period
+      );
       return {
-        period: item1.name,
-        non_productive_websites_total_time: parseFloat(item1.value || '0.0'),
-        productive_websites_value: parseFloat(item2?.value || '0.0')
+        period: primaryItem.name,
+        [primaryKey]: parseFloat(primaryItem.value || '0.0'),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.value || '0.0'),
       };
     });
 
@@ -1203,24 +1298,61 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, ne
 
 
 //function for productive apps and non productive apps chart
+// const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
+//   try {
+//     const { userId, date } = req.query;
+
+//     const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date });
+//     const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date });
+
+//     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
+//       return helper.failed(res, 400, "Invalid data format", []);
+//     }
+
+//     const combinedData = nonProductiveAppsData.map(item1 => {
+//       const item2 = productiveAppsData.find(item => item.period === item1.period); // Match by period
+//       return {
+//         period: item1.name,
+//         non_productive_apps_total_time: parseFloat(item1.value || '0.0'),
+//         productive_apps_value: parseFloat(item2?.value || '0.0')
+//       };
+//     });
+
+//     // Success response
+//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
+//   } catch (error) {
+//     console.error("Error in productiveAppsAndproductiveapps:", error);
+//     return helper.failed(res, 500, "Internal Server Error", []);
+//   }
+// };
 const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
   try {
     const { userId, date } = req.query;
 
+    // Fetch data from both functions
     const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date });
     const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date });
 
-    console.log(nonProductiveAppsData);
+    // Validate data format
     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       return helper.failed(res, 400, "Invalid data format", []);
     }
 
-    const combinedData = nonProductiveAppsData.map(item1 => {
-      const item2 = productiveAppsData.find(item => item.period === item1.period); // Match by period
+    // Determine which array has the higher count
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      nonProductiveAppsData.length >= productiveAppsData.length
+        ? [nonProductiveAppsData, productiveAppsData, 'non_productive_apps_total_time', 'productive_apps_value']
+        : [productiveAppsData, nonProductiveAppsData, 'productive_apps_value', 'non_productive_apps_total_time'];
+
+    // Combine data based on the larger array
+    const combinedData = primaryData.map(primaryItem => {
+      const matchingSecondaryItem = secondaryData.find(
+        secondaryItem => secondaryItem.name === primaryItem.name // Match by period
+      );
       return {
-        period: item1.name,
-        non_productive_apps_total_time: parseFloat(item1.value || '0.0'),
-        productive_apps_value: parseFloat(item2?.value || '0.0')
+        period: primaryItem.name,
+        [primaryKey]: parseFloat(primaryItem.value || '0.0'),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.value || '0.0'),
       };
     });
 
