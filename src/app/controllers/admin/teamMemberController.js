@@ -123,7 +123,7 @@ class teamMemberController {
           addedMember: teamMember,
         });
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unknow Error Occured While creating User Setting");
       }
     } catch (error) {
@@ -161,7 +161,7 @@ class teamMemberController {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "User Updated Successfully");
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to update the shift");
       }
     } catch (error) {

@@ -169,7 +169,7 @@ class rolePermissionController {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Role permissions Updated Successfully!");
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to update the role permissions!");
       }
     } catch (error) {

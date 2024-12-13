@@ -252,7 +252,7 @@ class deptController {
         return helper.success(res, variables.Success, "Department Successfully Deleted");
       } else {
         // Rollback db enteries if error occured >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to delete department");
       }
     } catch (error) {

@@ -31,9 +31,10 @@ class authController extends jwtService {
     try {
       // const {fullname, companyName, email, mobile, employeeNumber, password, confirmPassword, companyAddress } = req.body;
       const requestData = req.body;
-
       // Validating request body
       const validationResult = await authValidation.companyRegisterValid(requestData, res);
+      if (!validationResult.status) return helper.sendResponse(res, variables.ValidationError, 0, {}, validationResult.message);
+
 
       // Check if the user already exists
       const existingUser = await company.findOne({
@@ -57,7 +58,7 @@ class authController extends jwtService {
 
       const createReportSettings = await reportSettings.create(
         {
-          company_id:createCompany.id
+          company_id: createCompany.id
         },
         {
           transaction: dbTransaction,
@@ -159,7 +160,7 @@ class authController extends jwtService {
       );
 
       if (!createCompany || !createDepartment || !createDesignation || !createRole || !createShift || !createTeam || !createUser) {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.NoContent, "Unable to create enteries in db");
       }
 
@@ -172,7 +173,7 @@ class authController extends jwtService {
       await createAccessToken(createUser.id, createUser.isAdmin, createUser.company_id, token, expireTime, dbTransaction);
 
       await dbTransaction.commit();
-      return helper.sendResponse(res, variables.Success, 1, { token: token }, "Register Successfully");
+      return helper.success(res, variables.Success, "Register Successfully");
     } catch (error) {
       console.log(error.message);
       if (dbTransaction) await dbTransaction.rollback();
@@ -251,6 +252,8 @@ class authController extends jwtService {
       let requestData = req.body;
 
       let validationResult = await authValidation.loginValid(requestData, res); // validation done here
+      if (!validationResult.status) return helper.sendResponse(res, variables.ValidationError, 0, {}, validationResult.message);
+
 
       //* Request parameters
       let email = requestData.email;
@@ -388,7 +391,7 @@ class authController extends jwtService {
     } catch (error) {
       // console.log(error);
 
-      await dbTransaction.rollback();
+      if (dbTransaction) await dbTransaction.rollback();
       return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
     }
   };

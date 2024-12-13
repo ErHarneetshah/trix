@@ -229,7 +229,7 @@ class teamController {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Team Updated Successfully");
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to update the team");
       }
     } catch (error) {
@@ -265,7 +265,7 @@ class teamController {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Team deleted Successfully!");
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to delete the Team!");
       }
     } catch (error) {

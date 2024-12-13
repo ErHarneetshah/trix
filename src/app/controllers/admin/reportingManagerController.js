@@ -182,7 +182,7 @@ class reportingManagerController {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Reporting Manager updated successfully!");
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.BadRequest, "Unable to update reporting manager!");
       }
     } catch (error) {
@@ -214,7 +214,7 @@ class reportingManagerController {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Report Manager deleted Successfully!");
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to delete reporting Manager!");
       }
     } catch (error) {
