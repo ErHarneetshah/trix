@@ -13,6 +13,9 @@ import company from "../../database/models/company.js";
 import dbRelations from "../../database/queries/dbRelations.js";
 import team from "../../database/models/teamModel.js";
 import shift from "../../database/models/shiftModel.js";
+import department from "../../database/models/departmentModel.js";
+import designation from "../../database/models/designationModel.js";
+import role from "../../database/models/roleModel.js";
 
 const userData = async (id) => {
   let user = await User.findOne({ where: { id: id } });
@@ -315,7 +318,31 @@ const getUserStats = async (io, socket) => {
 
 const getUserReport = async (data, io, socket) => {
   try {
-    let user = await User.findOne({ where: { id: data.id } });
+    let user = await User.findOne({
+      where: { id: data.id },
+      include: [
+        {
+          model: department,
+          as: "department",
+          attributes: ["name"],
+        },
+        {
+          model: designation,
+          as: "designation",
+          attributes: ["name"],
+        },
+        {
+          model: role,
+          as: "role",
+          attributes: ["name"],
+        },
+        {
+          model: team,
+          as: "team",
+          attributes: ["name"],
+        },
+      ],
+    });
     if (!user) {
       return socket.emit("error", { message: "User not found" });
     }
@@ -323,9 +350,7 @@ const getUserReport = async (data, io, socket) => {
     socket.join("privateRoom_" + data.id);
     io.to(user.socket_id).socketsJoin("privateRoom");
 
-    let today = data.date
-      ? new Date(data.date).toISOString().split("T")[0]
-      : new Date().toISOString().split("T")[0];
+    let today = data.date ? new Date(data.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
 
     // Fetch web history
     let web_query = `SELECT url, count(id) as visits FROM user_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY url`;
@@ -344,12 +369,10 @@ const getUserReport = async (data, io, socket) => {
     let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
     // Fetch productive and non-productive app data
-    const productiveAndNonProductiveData =
-      await singleUserProductiveAppAndNonproductiveApps(data.id, today);
+    const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(data.id, today);
 
     // Fetch productive and non-productive website data
-    const productiveAndNonProductiveWebData =
-      await singleUserProductiveWebsitesAndNonproductiveWebsites(data.id,today);
+    const productiveAndNonProductiveWebData = await singleUserProductiveWebsitesAndNonproductiveWebsites(data.id, today);
 
     // Combine the response data
     let response = {
@@ -384,33 +407,18 @@ const singleUserProductiveAppAndNonproductiveApps = async (userId, date) => {
     const nonProductiveAppsData = await singleUserNonProductiveAppData({ userId, date });
     const productiveAppsData = await singleUserProductiveAppData({ userId, date });
 
-    if (
-      !Array.isArray(nonProductiveAppsData) ||
-      !Array.isArray(productiveAppsData)
-    ) {
+    if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       console.error("Invalid data format.");
       return { success: false, message: "Invalid data format.", data: [] };
     }
 
     const [primaryData, secondaryData, primaryKey, secondaryKey] =
       nonProductiveAppsData.length >= productiveAppsData.length
-        ? [
-            nonProductiveAppsData,
-            productiveAppsData,
-            "non_productive_apps_total_time",
-            "productive_apps_value",
-          ]
-        : [
-            productiveAppsData,
-            nonProductiveAppsData,
-            "productive_apps_value",
-            "non_productive_apps_total_time",
-          ];
+        ? [nonProductiveAppsData, productiveAppsData, "non_productive_apps_total_time", "productive_apps_value"]
+        : [productiveAppsData, nonProductiveAppsData, "productive_apps_value", "non_productive_apps_total_time"];
 
     const combinedData = primaryData.map((primaryItem) => {
-      const matchingSecondaryItem = secondaryData.find(
-        (secondaryItem) => secondaryItem.name === primaryItem.name
-      );
+      const matchingSecondaryItem = secondaryData.find((secondaryItem) => secondaryItem.name === primaryItem.name);
       return {
         period: primaryItem.name,
         [primaryKey]: parseFloat(primaryItem.value || "0.0"),
@@ -418,7 +426,7 @@ const singleUserProductiveAppAndNonproductiveApps = async (userId, date) => {
       };
     });
 
-    return combinedData 
+    return combinedData;
   } catch (error) {
     console.error("Error in singleUserProductiveAppAndNonproductiveApps:", error);
     return { success: false, message: "Internal Server Error", data: [] };
@@ -433,7 +441,7 @@ const singleUserNonProductiveAppData = async ({ userId, date }) => {
     }
 
     const userInfo = await User.findOne({
-      where: { id: userId},
+      where: { id: userId },
     });
     if (!userInfo) {
       const message = "User does not exist.";
@@ -460,7 +468,7 @@ const singleUserNonProductiveAppData = async ({ userId, date }) => {
       ORDER BY
           hour;
     `;
-    let companyId = userInfo.company_id 
+    let companyId = userInfo.company_id;
     const results = await Model.query(query, {
       replacements: { date, userId, companyId },
       type: Sequelize.QueryTypes.SELECT,
@@ -484,7 +492,7 @@ const singleUserProductiveAppData = async ({ userId, date }) => {
     }
 
     const userInfo = await User.findOne({
-      where: { id: userId},
+      where: { id: userId },
     });
     if (!userInfo) {
       console.error("User does not exist.");
@@ -524,42 +532,25 @@ const singleUserProductiveAppData = async ({ userId, date }) => {
   }
 };
 
-
-
 // Website data Calculate: ----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 const singleUserProductiveWebsitesAndNonproductiveWebsites = async (userId, date) => {
   try {
     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData({ userId, date });
-    
-    const productiveWebsitesData = await singleUserProductiveWebsiteData({ userId, date })
 
-    if (
-      !Array.isArray(nonProductiveWebsitesData) ||
-      !Array.isArray(productiveWebsitesData)
-    ) {
+    const productiveWebsitesData = await singleUserProductiveWebsiteData({ userId, date });
+
+    if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {
       return { success: false, message: "Invalid data format", data: [] };
     }
 
     const [primaryData, secondaryData, primaryKey, secondaryKey] =
       nonProductiveWebsitesData.length >= productiveWebsitesData.length
-        ? [
-            nonProductiveWebsitesData,
-            productiveWebsitesData,
-            "non_productive_websites_total_time",
-            "productive_websites_value",
-          ]
-        : [
-            productiveWebsitesData,
-            nonProductiveWebsitesData,
-            "productive_websites_value",
-            "non_productive_websites_total_time",
-          ];
+        ? [nonProductiveWebsitesData, productiveWebsitesData, "non_productive_websites_total_time", "productive_websites_value"]
+        : [productiveWebsitesData, nonProductiveWebsitesData, "productive_websites_value", "non_productive_websites_total_time"];
 
     const combinedData = primaryData.map((primaryItem) => {
-      const matchingSecondaryItem = secondaryData.find(
-        (secondaryItem) => secondaryItem.name === primaryItem.name
-      );
+      const matchingSecondaryItem = secondaryData.find((secondaryItem) => secondaryItem.name === primaryItem.name);
       return {
         period: primaryItem.name,
         [primaryKey]: parseFloat(primaryItem.value || "0.0"),
@@ -567,12 +558,9 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (userId, date
       };
     });
 
-    return combinedData
+    return combinedData;
   } catch (error) {
-    console.error(
-      "Error in singleUserProductiveWebsitesAndNonproductiveWebsites:",
-      error
-    );
+    console.error("Error in singleUserProductiveWebsitesAndNonproductiveWebsites:", error);
     return { success: false, message: "Internal Server Error", data: [] };
   }
 };
@@ -585,7 +573,7 @@ const singleUserNonProductiveWebsiteData = async ({ userId, date }) => {
     }
 
     const userInfo = await User.findOne({
-      where: { id: userId},
+      where: { id: userId },
     });
     if (!userInfo) {
       const message = "User does not exist.";
@@ -631,9 +619,9 @@ const singleUserNonProductiveWebsiteData = async ({ userId, date }) => {
     const pieChartData = results.map((result) => ({
       name: result.hour,
       value: result.total_counts ? parseInt(result.total_counts, 10) : 0,
-    }));   
+    }));
 
-    return  pieChartData
+    return pieChartData;
   } catch (error) {
     console.error("Error in singleUserNonProductiveWebsiteData:", error);
     return { success: false, message: "An error occurred while fetching data." };
@@ -648,7 +636,7 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
     }
 
     const userInfo = await User.findOne({
-      where: { id: userId},
+      where: { id: userId },
     });
     if (!userInfo) {
       const message = "User does not exist.";
@@ -656,7 +644,7 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
     }
 
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: userInfo.company_id  },
+      where: { id: userInfo.teamId, status: 1, company_id: userInfo.company_id },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -664,7 +652,7 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
     }
 
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: userInfo.company_id  },
+      where: { id: teamInfo.shiftId, status: 1, company_id: userInfo.company_id },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -685,7 +673,7 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
       GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
       ORDER BY hour;
     `;
-    let companyId = userInfo.company_id ;
+    let companyId = userInfo.company_id;
     const results = await Model.query(query, {
       replacements: { date, userId, companyId },
       type: Sequelize.QueryTypes.SELECT,
@@ -696,15 +684,12 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
       value: result.total_counts ? parseInt(result.total_counts, 10) : 0,
     }));
 
-    return pieChartData
+    return pieChartData;
   } catch (error) {
     console.error("Error in singleUserProductiveWebsiteData:", error);
     return { success: false, message: "An error occurred while fetching data." };
   }
 };
-
-
-
 
 // AdminController (modularized)
 export const adminController = {
@@ -717,9 +702,7 @@ export const adminController = {
       });
       let totalUsers = users.length;
       let activeUsers = users.filter((user) => user.currentStatus == 1).length;
-      let inactiveUsers = users.filter(
-        (user) => user.currentStatus == 0
-      ).length;
+      let inactiveUsers = users.filter((user) => user.currentStatus == 0).length;
 
       io.to(`Admin_${socket.user.company_id}`).emit("userCount", {
         totalUsers,
@@ -750,23 +733,13 @@ export const adminController = {
       let urlStats = await UserHistory.findAll({
         where: { date: today },
         attributes: [
-          [
-            Sequelize.fn(
-              "REGEXP_SUBSTR",
-              Sequelize.col("url"),
-              "^(?:https?:\\/\\/)?(?:[^@\\/\n]+@)?(?:www\\.)?([^:\\/?\n]+)"
-            ),
-            "host",
-          ],
+          [Sequelize.fn("REGEXP_SUBSTR", Sequelize.col("url"), "^(?:https?:\\/\\/)?(?:[^@\\/\n]+@)?(?:www\\.)?([^:\\/?\n]+)"), "host"],
           [Sequelize.fn("COUNT", Sequelize.col("url")), "count"],
         ],
         group: ["host"],
         order: [[Sequelize.literal("count"), "DESC"]],
       });
-      io.to(`Admin_${socket.user.company_id}`).emit(
-        "urlHostUsageStats",
-        urlStats
-      );
+      io.to(`Admin_${socket.user.company_id}`).emit("urlHostUsageStats", urlStats);
       // socket.emit("urlHostUsageStats", urlStats);
     } catch (error) {
       console.error("Error updating URL host stats:", error.message);
@@ -782,12 +755,7 @@ const handleUserSocket = async (socket, io) => {
   socket.join(`privateRoom_${socket.user.userId}`);
 
   socket.on("newNotification", async (data) => {
-    let notificationCount = await notifyAdmin(
-      socket.user.userId,
-      data.type,
-      data.time,
-      data.url
-    );
+    let notificationCount = await notifyAdmin(socket.user.userId, data.type, data.time, data.url);
     if (notificationCount.error) {
       socket.emit("newNotification", {
         message: "Failed to send notification",
@@ -836,9 +804,7 @@ const handleUserSocket = async (socket, io) => {
       }
 
       let today = new Date().toISOString().split("T")[0];
-      let parsedVisitTime = isNaN(new Date(visitTime))
-        ? new Date()
-        : new Date(visitTime);
+      let parsedVisitTime = isNaN(new Date(visitTime)) ? new Date() : new Date(visitTime);
 
       let company_id = user?.company_id;
 
@@ -850,10 +816,7 @@ const handleUserSocket = async (socket, io) => {
         company_id,
         visitTime: parsedVisitTime,
       });
-      io.to(`privateRoom_${userId}`).emit(
-        "getUserReport",
-        await userData(userId)
-      );
+      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
       socket.emit("historySuccess", {
         message: "History uploaded successfully",
       });
@@ -892,10 +855,7 @@ const handleUserSocket = async (socket, io) => {
           })
         )
       );
-      io.to(`privateRoom_${userId}`).emit(
-        "getUserReport",
-        await userData(userId)
-      );
+      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
       socket.emit("imageSuccess", { message: "Images uploaded successfully" });
     } catch (error) {
       console.log("Error uploading images:", error);
@@ -955,10 +915,7 @@ const handleUserSocket = async (socket, io) => {
           });
         }
       }
-      io.to(`privateRoom_${userId}`).emit(
-        "getUserReport",
-        await userData(userId)
-      );
+      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
       socket.emit("appHistorySuccess", {
         message: "App history uploaded successfully",
       });
@@ -998,11 +955,7 @@ const getUserSettings = async (socket) => {
   try {
     let user = await User.findOne({
       where: { id: socket.user.userId },
-      attributes: [
-        "screen_capture_time",
-        "broswer_capture_time",
-        "app_capture_time",
-      ],
+      attributes: ["screen_capture_time", "broswer_capture_time", "app_capture_time"],
     });
     if (!user) {
       return { error: "User not found" };
@@ -1042,10 +995,7 @@ const notifyAdmin = async (id, type, time, url) => {
         title: type == 1 ? "Login successful" : "Logout successful",
         company_id,
         date: today,
-        message:
-          type == 1
-            ? `${user?.fullname} login successfully`
-            : `${user?.fullname} logout successfully`,
+        message: type == 1 ? `${user?.fullname} login successfully` : `${user?.fullname} logout successfully`,
       });
     } else if (type == 3) {
       if (!time) {

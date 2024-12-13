@@ -155,9 +155,9 @@ class teamMemberTimeLogController {
       const employeeCount = await User.count({
         where: {
           company_id: req.user.company_id, // Filters by `currentStatus` equals 1
-          updatedAt: {
-            [Op.between]: [startOfDay, endOfDay],
-          },
+          // updatedAt: {
+          //   [Op.between]: [startOfDay, endOfDay],
+          // },
         },
       });
 
