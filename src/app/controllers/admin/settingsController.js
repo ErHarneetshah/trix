@@ -13,7 +13,6 @@ import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 import uploadPhotos from "../../../utils/services/commonfuncitons.js";
 
 
-
 const getAdminDetails = async (req, res) => {
   try {
     const alldata = await User.findOne({
@@ -38,17 +37,26 @@ const getAdminDetails = async (req, res) => {
 const updateAdminDetails = async (req, res) => {
   try {
     const { fullname, email, mobile } = req.body;
-    if (!fullname || !email || !mobile) {
-      return helper.failed(res, variables.BadRequest, "All fields (fullname, email, mobile) are required");
+
+    const rules = {
+      fullname: "required|string|min:3|max:100",
+      email: "required|email",
+      mobile: "required|string|regex:/^\\d{10}$/",
+    };
+
+    const { status, message } = await validate(req.body, rules);
+    if (status === 0) {
+      return helper.failed(res, variables.ValidationError, message);
     }
+
     const user = await User.findOne({
-      where: { id: req.user.id, company_id:req.user.company_id },
+      where: { id: req.user.id, company_id: req.user.company_id },
     });
     if (!user) {
       return helper.failed(res, variables.BadRequest, "User not exists");
     }
 
-    await User.update({ fullname, email, mobile }, { where: { id: req.user.id, company_id:req.user.company_id } });
+    await User.update({ fullname, email, mobile }, { where: { id: req.user.id, company_id: req.user.company_id } });
     return helper.success(res, variables.Success, "Admin Profile Updated Successfully");
   } catch (error) {
     console.error("Error updating admin details:", error);
@@ -60,10 +68,22 @@ const getBlockedWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
+    // check department is exists or not
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: departmentId,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if (!isDepartmentExists) {
+      return helper.failed(res, variables.NotFound, "Invalid department ID provided.");
+    }
+
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
 
-    let where = { companyId: req.user.company_id, status: 1 };
+    let where = { companyId: req.user.company_id };
 
     if (departmentId && departmentId != 0) {
       where.departmentId = departmentId;
@@ -76,7 +96,7 @@ const getBlockedWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name", "status","logo"],
+      attributes: ["id", "website", "website_name", "status", "logo"],
       include: [
         {
           model: department,
@@ -125,8 +145,19 @@ const addBlockWebsites = async (req, res) => {
       return helper.failed(res, variables.ValidationError, message);
     }
 
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: departmentId,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if (!isDepartmentExists) {
+      return helper.failed(res, variables.NotFound, "Department is not exist.");
+    }
+
     const existingApp = await BlockedWebsites.findOne({
-      where: { website:website, companyId: req.user.company_id },
+      where: { website: website, companyId: req.user.company_id },
     });
 
     if (existingApp) {
@@ -137,10 +168,10 @@ const addBlockWebsites = async (req, res) => {
     let companyId = req.user.company_id;
     const websiteName = new URL(website).hostname;
 
-    const newWebsiteData = { departmentId, website, website_name:websiteName, companyId,logo:faviconUrl };
+    const newWebsiteData = { departmentId: departmentId, website: website, website_name: websiteName, companyId: companyId, logo: faviconUrl };
     const newAppInfo = await BlockedWebsites.create(newWebsiteData);
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
-    
+
   } catch (error) {
     console.error("Error creating app info:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -150,15 +181,20 @@ const addBlockWebsites = async (req, res) => {
 const updateSitesStatus = async (req, res) => {
   try {
     const { id, status } = req.body;
-    const website = await BlockedWebsites.findByPk(id);
-    if (!website) {
-      return helper.failed(res, variables.NotFound, "Id not exists in our system.");
-    }
 
     if (status < 0 || status > 1) {
       return helper.failed(res, variables.ValidationError, "Status value must be 0 or 1");
     }
-    const [updatedRows] = await BlockedWebsites.update({ status: status }, { where: { id: id } });
+
+    const website = await BlockedWebsites.findByPk(id);
+    if (!website) {
+      return helper.failed(res, variables.NotFound, "Id does not exists in our system.");
+    }
+
+    if (website.status === status) {
+      return helper.failed(res, variables.BadRequest, `Site status is already ${status === 1 ? "Blocked" : "Unblocked"}.`);
+    }
+    const [updatedRows] = await BlockedWebsites.update({ status: status }, { where: { id: id, companyId: req.user.company_id } });
 
     if (updatedRows === 0) {
       return helper.failed(res, variables.NotFound, "Site not found or status not changed");
@@ -170,36 +206,53 @@ const updateSitesStatus = async (req, res) => {
   }
 };
 
+
 const addProductiveApps = async (req, res) => {
   try {
     const { department_id, app_name } = req.body;
     const rules = {
-      department_id: 'required|integer|min:1',
+      department_id: 'required|integer',
       app_name: 'required|string|min:3|max:50',
     };
 
     const { status, message } = await validate(req.body, rules);
-
     if (status === 0) {
       return helper.failed(res, variables.ValidationError, message);
 
     }
     const company_id = req.user.company_id;
+
+    if (!req.filedata.data) {
+      return helper.failed(res, variables.ValidationError, message);
+    }
     const existingApp = await ProductiveApp.findOne({
-      where: { app_name:app_name, company_id: company_id }
+      where: { app_name: app_name, company_id: req.user.company_id }
     });
 
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "App with this name already exists");
     }
 
-    const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id, app_name: app_name });
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: department_id,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if (!isDepartmentExists) {
+      return helper.failed(res, variables.NotFound, "Invalid department id is provided");
+    }
+
+    // const imagespaths = await uploadPhotos(req, res, 'app_logo', imageArr);
+
+    const newAppInfo = await ProductiveApp.create({ company_id: company_id, department_id: department_id, app_name: app_name, app_logo: req.filedata.data });
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
-      console.error("Error creating app info:", error.message);
-      return helper.failed(res, variables.BadRequest, error.message);
+    console.error("Error creating app info:", error.message);
+    return helper.failed(res, variables.BadRequest, error.message);
   }
-  };
+};
 
 
 const getAppInfo = async (req, res) => {
@@ -217,7 +270,7 @@ const getAppInfo = async (req, res) => {
 
     const productiveApps = await ProductiveApp.findAndCountAll({
       where,
-      attributes: ["id", "app_name"],
+      attributes: ["id", "app_name", "app_logo"],
       offset: offset,
       limit: limit,
       include: [
@@ -247,51 +300,45 @@ const getAppInfo = async (req, res) => {
   }
 };
 
+const getReportStatus = async (req, res) => {
+
+  const getStatus = await reportSettings.findOne({
+    where: { company_id: req.user.company_id },
+    attributes: ["status"],
+  });
+
+  if (!getStatus) {
+    return helper.failed(res, variables.NotFound, "Report status not found.");
+  }
+
+  const statusMapping = { 1: "Monthly", 2: "Weekly", 3: "Daily" };
+  const statusType = statusMapping[getStatus.status] || "unknown"
+  return helper.success(res, variables.Success, "Report settings retrieved successfully.", getStatus, { statusType });
+};
+
 const updateReportSettings = async (req, res) => {
   try {
     const { exportType } = req.body;
 
     const rules = {
-      exportType: 'required|string|min:2|max:50',
+      exportType: 'required|integer|in:1,2,3',
     };
 
     const { status, message } = await validate(req.body, rules);
 
     if (status === 0) {
-      return helper.failed(res, variables.ValidationError, "Status is required");
+      return helper.failed(res, variables.ValidationError, "Export Type can only be 1, 2 or 3");
 
     }
-
-    const getPreviousStatus = await reportSettings.findOne({
-      where: { is_active: 1 },
-      attributes: ['id']
-    });
-    const previousId = getPreviousStatus ? getPreviousStatus.id : 1;
+    if (exportType < 1 || exportType > 4) {
+      return helper.failed(res, variables.ValidationError, "Export Type can only be 1, 2 or 3");
+    }
 
     const [updatedPreviousStatus] = await reportSettings.update(
-      { is_active: 0 },
-      { where: { id: previousId } }
+      { status: exportType },
+      { where: { company_id: req.user.company_id } }
     );
-
-    const currentStatus = await reportSettings.findOne({
-      where: { name: exportType },
-      attributes: ['id']
-    });
-    const currentId = currentStatus ? currentStatus.id : 1;
-
-    const [updateCurrentStatus] = await reportSettings.update(
-      { is_active: 1 },
-      { where: { id: currentId } }
-    );
-
-    if (updateCurrentStatus > 0) {
-      return helper.success(res, variables.Success, "Report Status Updated Successfully", updateReportStatus);
-
-    } else {
-      return helper.failed(res, variables.BadRequest, "Something went wrong");
-
-    }
-
+    return helper.success(res, variables.Success, "Report Status Updated Successfully");
   } catch (error) {
     console.error("Error updating report settings:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -327,16 +374,25 @@ const addProductiveWebsites = async (req, res) => {
       return helper.failed(res, variables.ValidationError, errorMessage);
     }
 
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: departmentId,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if (!isDepartmentExists) {
+      return helper.failed(res, variables.NotFound, "Department is not exist.");
+    }
+
     const existingApp = await ProductiveWebsite.findOne({ where: { website } });
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "Website with this name or URL already exists");
     }
+
     const faviconUrl = await fetchFaviconUrl(website);
-
-    const companyId = 101; 
     const websiteName = new URL(website).hostname;
-
-    const newWebsiteData = {department_id: departmentId,website,website_name: websiteName,company_id: companyId,logo: faviconUrl};
+    const newWebsiteData = { department_id: departmentId, website, website_name: websiteName, company_id: req.user.company_id, logo: faviconUrl };
 
     // Store productive website data
     const newAppInfo = await ProductiveWebsite.create(newWebsiteData);
@@ -365,7 +421,7 @@ const getProductiveWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name","logo"],
+      attributes: ["id", "website", "website_name", "logo"],
       include: [
         {
           model: department,
@@ -386,4 +442,4 @@ const getProductiveWebsites = async (req, res) => {
 };
 
 
-export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveApps, getAppInfo, updateReportSettings, addProductiveWebsites, getProductiveWebsites };
+export default { getAdminDetails, updateAdminDetails, addBlockWebsites, getBlockedWebsites, updateSitesStatus, addProductiveApps, getAppInfo, getReportStatus, updateReportSettings, addProductiveWebsites, getProductiveWebsites };

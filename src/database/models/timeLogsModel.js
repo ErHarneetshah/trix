@@ -50,7 +50,6 @@ const TimeLog = sequelize.define('timelogs',{
   },
   {
     timestamps: true,
-    // Prevent Sequelize from auto-creating foreign keys
     underscored: false,
   }
 );
@@ -80,6 +79,6 @@ TimeLog.afterUpdate(async (timeLog) => {
  }
 });
 
-// await TimeLog.sync({ alter: 1 });
+await TimeLog.sync({ alter: 1 });
 
 export default TimeLog;

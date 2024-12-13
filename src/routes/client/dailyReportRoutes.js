@@ -9,4 +9,3 @@ router.post('/add-user-report', authMiddleware,verifyUserMiddleware,  workReport
 router.get('/get-self-report',  authMiddleware,verifyUserMiddleware,   workReportsController.getSelfReport);
 
 export default router;
-

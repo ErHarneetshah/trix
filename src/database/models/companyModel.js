@@ -1,5 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
+import { io } from "../../../app.js";
+import User from "./userModel.js";
 
 const company = sequelize.define(
   "companies",
@@ -34,14 +36,53 @@ const company = sequelize.define(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: 1,
-      comment: "0 for Inactive, 1 for active"
+      comment: "0 for Inactive, 1 for active",
+    },
+    screen_capture: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 1,
+    },
+    broswer_capture: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 1,
+    },
+    app_capture: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 1,
     },
   },
   {
     timestamps: true,
-    underscored: false, // prevents from generating foreign keys on it's own    
+    hooks: {
+      async afterUpdate(user, options) {
+        let monitoredFields = [
+          "screen_capture",
+          "broswer_capture",
+          "app_capture",
+        ];
+        let fieldsChanged = options.fields.some((field) =>
+          monitoredFields.includes(field)
+        );
+
+        if (fieldsChanged) {
+          let userData = await User.findAll({ where: { company_id: user.id } });
+          userData.forEach((x) => {
+            if (x.socket_id) {               
+              io.to(x.socket_id).emit("getUserSettings", {
+                screen_capture_time: x.screen_capture_time,
+                broswer_capture_time: x.broswer_capture_time,
+                app_capture_time: x.app_capture_time,
+                screen_capture: user.screen_capture,
+                broswer_capture: user.broswer_capture,
+                app_capture: user.app_capture
+              });
+            }
+          });
+        }
+      },
+    },
   }
 );
 
-// await company.sync({alter:1});
+await company.sync({ alter: 1 });
 export default company;

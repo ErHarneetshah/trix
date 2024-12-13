@@ -20,7 +20,7 @@ export const BlockedWebsites = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-
+    
     website_name:{
       type: DataTypes.STRING,
       allowNull: false,
@@ -45,21 +45,11 @@ export const BlockedWebsites = sequelize.define(
   },
   {
     timestamps: true,
-    // Prevent Sequelize from auto-creating foreign keys
-    underscored: false,
-    hooks: {
-        async afterUpdate(user, options) {
-          io.to('Admin').emit("getBlockedWebsites", {
-            message: "Blocked website updated",
-          });
-          
-        },
-      },
   }
 );
 
 
-await BlockedWebsites.sync({alter:1}); 
+// await BlockedWebsites.sync({alter:1}); 
 
 // BlockedWebsites.afterUpdate(()=>{
   

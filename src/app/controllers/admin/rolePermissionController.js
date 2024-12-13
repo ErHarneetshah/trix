@@ -145,7 +145,7 @@ class rolePermissionController {
       });
       if (!existRole) return helper.failed(res, variables.ValidationError, "Role Name Does not exists in Roles!");
 
-      (existRole.id);
+      // console.log(existRole.id);
 
       // Checking whether the role id exists in system or not
       const existingRolePermission = await rolePermission.findOne({

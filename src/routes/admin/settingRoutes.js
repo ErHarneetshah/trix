@@ -9,11 +9,9 @@ const router = express.Router();
 
 const uploadImageWithPath = async (req, res, next) => {
   try {
-    console.log("----------------------- Upload Image Path ------------------------");
-
+    // console.log("----------------------- Upload Image Path ------------------------");
     req.headers["mypath"] = "logos"; // Set the 'mypath' header to 'logos'
     return fileUpload(req, res, next); // Call the fileUpload utility
-    console.log({test});
     // next();
   } catch (error) {
     console.error("Error in UploadImageWithPath:", error);
@@ -36,17 +34,20 @@ router.post('/update-sites-status',    authMiddleware,verifyAdminMiddleware,    
 
 router.post('/add-productive-apps',    authMiddleware,verifyAdminMiddleware,uploadImageWithPath,    settingsController.addProductiveApps);
 router.get('/get-app-info',    authMiddleware,verifyAdminMiddleware,    settingsController.getAppInfo);
-router.put('/update-report-status/:id',    authMiddleware,verifyAdminMiddleware,    settingsController.updateReportSettings);
+
+router.get('/get-report-status',    authMiddleware,verifyAdminMiddleware,    settingsController.getReportStatus);
+router.put('/update-report-status',    authMiddleware,verifyAdminMiddleware,    settingsController.updateReportSettings);
 
 //email gateway routes
-router.post('/add-email-gateways', authMiddleware,verifyAdminMiddleware, emailGatewayController.addEmailGateeways);
-router.post('/check-email-server', authMiddleware,verifyAdminMiddleware, emailGatewayController.checkEmailServer);
-router.get('/get-email-list', authMiddleware,verifyAdminMiddleware, emailGatewayController.getEmailList);
+router.post('/add-email-gateways', authMiddleware,verifyAdminMiddleware,  emailGatewayController.addEmailGateeways);
+router.post('/check-email-server', authMiddleware,verifyAdminMiddleware,  emailGatewayController.checkEmailServer);
+router.get('/get-email-list', authMiddleware,verifyAdminMiddleware,  emailGatewayController.getEmailList);
 
 
 //add productive websites
-router.post('/add-productive-websites', authMiddleware,verifyAdminMiddleware, settingsController.addProductiveWebsites);
+router.post('/add-productive-websites', authMiddleware,verifyAdminMiddleware,  settingsController.addProductiveWebsites);
 router.get('/get-productive-websites',    authMiddleware,verifyAdminMiddleware,    settingsController.getProductiveWebsites);
 
 
 export default router;
+

@@ -1,23 +1,29 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
+import { io } from "../../../app.js";
 
-export const System = sequelize.define("system", {
+export const Device = sequelize.define("device", {
   user_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
 
-  company_id:{
+  companyId:{
     type: DataTypes.INTEGER,
     allowNull: false,
   },
 
-  rom: {
+  departmentId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+
+  device_name: {
     type: DataTypes.STRING,
     allowNull: false,
   },
 
-  ram: {
+  device_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -26,12 +32,11 @@ export const System = sequelize.define("system", {
     type: DataTypes.STRING,
     allowNull: false
   }
+  
 },{
   underscored: false,
 });
 
-await System.sync({ alter: 1 });
+await Device.sync({ alter: 1 });
 
-System.afterCreate(()=>{
-  
-})
+

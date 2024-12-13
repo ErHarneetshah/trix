@@ -46,7 +46,9 @@ class teamMemberController {
         offset: offset,
         limit: limit,
         order: [["id", "DESC"]],
-        attributes: { exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt", "status"] }, // Exclude fields
+        attributes: {
+          exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt", "status"],
+        }, // Exclude fields
         include: [
           {
             model: department,
@@ -96,8 +98,9 @@ class teamMemberController {
         return helper.failed(res, variables.Unauthorized, "User already exists with this mail!");
       }
 
-      const password = await helper.generatePass();
-      if (!password) return helper.failed(res, variables.UnknownError, "User already exists with this mail!");
+      const password = "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK";
+      // if (!password) return helper.failed(res, variables.UnknownError, "User already exists with this mail!");
+
       requestData.password = password;
       // Create and save the new user
       requestData.screenshot_time = 60;
@@ -125,7 +128,7 @@ class teamMemberController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      console.log(error.message);
+      // console.log(error.message);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -169,26 +172,31 @@ class teamMemberController {
 
   updateSettings = async (req, res) => {
     try {
-      let id = req.body; // Retrieve the user ID from the query parameters
+      let id = req.query.id;
       let { screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
 
-      // Update the user settings
-      const user = await User.findOne({ where: { id: id, company_id: req.user.company_id } });
-      if (user) {
-        user.screen_capture_time = screen_capture_time;
-        user.broswer_capture_time = broswer_capture_time;
-        user.app_capture_time = app_capture_time;
-        await user.save();
-      }else{
-        return helper.failed(res, variables.NotFound, error.message, "User does not exists in your company id");
-
+      if (!id) {
+        return helper.failed(res, variables.ValidationError, "ID is Required");
       }
 
-      // Send a success response
-      return helper.success(res, variables.Success,"Setting Updated Successfully");
+      if (!Number.isInteger(screen_capture_time) || !Number.isInteger(broswer_capture_time) || !Number.isInteger(app_capture_time)) {
+        return helper.failed(res, variables.BadRequest, "Invalid Data: Only integer values are allowed");
+      }
+
+      const user = await User.findOne({ where: { id } });
+      if (!user) {
+        return helper.failed(res, variables.NotFound, "User not found");
+      }
+
+      user.screen_capture_time = screen_capture_time;
+      user.broswer_capture_time = broswer_capture_time;
+      user.app_capture_time = app_capture_time;
+      await user.save();
+
+      return helper.success(res, variables.Success, "Settings Updated Successfully");
     } catch (error) {
-      console.error("Error updating settings:", error);
-      return helper.failed(res, variables.BadRequest, error.message, "Failed to update settings");
+      console.error("Error updating settings:", error.message);
+      return helper.failed(res, variables.Failure, "Failed to update settings");
     }
   };
 }
