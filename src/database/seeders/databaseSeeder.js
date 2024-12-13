@@ -337,7 +337,7 @@ export default async function seedDatabase() {
           roleId: roleMap["Admin"], // User
           teamId: teamMap["Upper Management Team"], // Team associated with Engineering
           password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK", // Placeholder hashed password // Test@123
-          idAdmin: 1,
+          isAdmin: 1,
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
