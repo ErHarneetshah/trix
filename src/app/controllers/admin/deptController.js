@@ -68,7 +68,7 @@ class deptController {
   getSpecificDept = async (req, res) => {
     try {
       const { id } = req.body;
-      if (!id) return helper.failed(res, variables.NotFound, "Id is required");
+      if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is required and in numbers");
 
       // Retrieving the specific department data from table >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const deptData = await department.findOne({
