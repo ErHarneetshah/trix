@@ -10,6 +10,10 @@ router.get('/topFiveOfflineLoggedUsers', dashboardDataController.getTopFiveOffli
 router.get('/topFiveLateComingUsers', dashboardDataController.topFiveLateComingUsers);
 
 
+router.get('/getDashbaordData', dashboardDataController.getDashbaordData);
+
+
+
 
 
 
