@@ -3,7 +3,7 @@ import sequelize from "../../../../database/queries/dbConnection.js";
 import { Sequelize,Op, fn, col, where, literal  } from "sequelize";
 import variables from "../../../config/variableConfig.js";
 import User from "../../../../database/models/userModel.js";
-import TimeLog from "../../../../database/models/TimeLog.js";
+import TimeLog from "../../../../database/models/timeLogsModel.js";
 
 
 const topFiveProductiveAppsUsers = async (req, res, next) => {
