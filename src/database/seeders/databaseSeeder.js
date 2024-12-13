@@ -336,7 +336,7 @@ export default async function seedDatabase() {
           designationId: designationMap["MD (Managing Director)"], // Software Developer
           roleId: roleMap["Admin"], // User
           teamId: teamMap["Upper Management Team"], // Team associated with Engineering
-          password: "$2a$10$abcdefghijklmnopqrstuv12345", // Placeholder hashed password
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK", // Placeholder hashed password // Test@123
           idAdmin: 1,
           country: "India",
           screen_capture_time: 60,
@@ -352,7 +352,7 @@ export default async function seedDatabase() {
           designationId: designationMap["SD (Software Developer)"], // Team Leader
           roleId: roleMap["Developer"], // Team Leader
           teamId: teamMap["Development Team"], // Team associated with Marketing
-          password: "$2a$10$abcdefghijklmnopqrstuv12345",
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
@@ -367,7 +367,7 @@ export default async function seedDatabase() {
           designationId: designationMap["PC (Project Coordinator)"],
           roleId: roleMap["Project Manager"], // User
           teamId: teamMap["Support Team"], // Team associated with Project Coordinator
-          password: "$2a$10$abcdefghijklmnopqrstuv12345",
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
@@ -382,7 +382,7 @@ export default async function seedDatabase() {
           designationId: designationMap["Employee"],
           roleId: roleMap["User"],
           teamId: teamMap["Research Team"],
-          password: "$2a$10$abcdefghijklmnopqrstuv12345",
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
@@ -397,7 +397,7 @@ export default async function seedDatabase() {
           designationId: designationMap["Team Leader"],
           roleId: roleMap["Team Leader"],
           teamId: teamMap["Support Team"],
-          password: "$2a$10$abcdefghijklmnopqrstuv12345",
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
@@ -412,7 +412,7 @@ export default async function seedDatabase() {
           designationId: designationMap["Team Leader"], // Software Developer
           roleId: roleMap["Team Leader"], // User
           teamId: teamMap["Development Team"], // Team associated with Engineering
-          password: "$2a$10$abcdefghijklmnopqrstuv12345",
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
@@ -427,7 +427,7 @@ export default async function seedDatabase() {
           designationId: designationMap["CEO (Chief Executive Officer)"], // Marketing Coordinator
           roleId: roleMap["Manager"], // User
           teamId: teamMap["Upper Management Team"], // Team associated with Marketing
-          password: "$2a$10$abcdefghijklmnopqrstuv12345",
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
@@ -442,7 +442,7 @@ export default async function seedDatabase() {
           designationId: designationMap["CTO (Chief Technical Officer)"], // Project Coordinator Manager
           roleId: roleMap["Manager"], // User
           teamId: teamMap["Upper Management Team"], // Team associated with Project Coordinator
-          password: "$2a$10$abcdefghijklmnopqrstuv12345",
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
@@ -457,7 +457,7 @@ export default async function seedDatabase() {
           designationId: designationMap["CIO (Chief Information Officer)"], // Project Coordinator Manager
           roleId: roleMap["Manager"], // User
           teamId: teamMap["Upper Management Team"], // Team associated with Finance
-          password: "$2a$10$abcdefghijklmnopqrstuv12345",
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
@@ -472,7 +472,7 @@ export default async function seedDatabase() {
           designationId: designationMap["System Analyst Engineer"], // Software Developer
           roleId: roleMap["DevOps Engineer"], // User
           teamId: teamMap["Ops Team"], // Team associated with Engineering
-          password: "$2a$10$abcdefghijklmnopqrstuv12345",
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
           browser_capture_time: 60,
