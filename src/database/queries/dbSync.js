@@ -4,7 +4,7 @@ import TimeLog from '../models/timeLogsModel.js';
 import accessToken from '../models/accessTokenModel.js';
 import AppHistoryEntry from '../models/AppHistoryEntry.js';
 import { BlockedWebsites } from '../models/BlockedWebsite.js';
-import company from '../models/companyModel.js';
+import company from '../models/company.js';
 import department from '../models/departmentModel.js';
 import designation from '../models/designationModel.js';
 import { Device } from '../models/device.js';

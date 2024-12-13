@@ -1,7 +1,6 @@
 import authValidation from "../../../utils/validations/authValidation.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import User from "../../../database/models/userModel.js";
-import { createUserSetting } from "../../../database/models/userSettingModel.js";
 import jwtService from "../../../utils/services/jwtService.js";
 import accessToken, { createAccessToken } from "../../../database/models/accessTokenModel.js";
 import helper from "../../../utils/services/helper.js";
@@ -9,7 +8,7 @@ import variables from "../../config/variableConfig.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
 import { getShiftData } from "../../../utils/validations/socketValidation.js";
 import bcrypt from "bcrypt";
-import company from "../../../database/models/companyModel.js";
+import company from "../../../database/models/company.js";
 import department from "../../../database/models/departmentModel.js";
 import designation from "../../../database/models/designationModel.js";
 import role from "../../../database/models/roleModel.js";

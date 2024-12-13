@@ -5,7 +5,7 @@ import designation from "../models/designationModel.js";
 import shift from "../models/shiftModel.js";
 import team from "../models/teamModel.js";
 import User from "../models/userModel.js";
-import company from "../models/companyModel.js";
+import company from "../models/company.js";
 import rolePermission from "../models/rolePermissionModel.js";
 
 export default async function seedDatabase() {

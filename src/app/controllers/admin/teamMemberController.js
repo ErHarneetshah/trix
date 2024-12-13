@@ -3,13 +3,12 @@ import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import User from "../../../database/models/userModel.js";
 import teamsValidationSchema from "../../../utils/validations/teamsValidation.js";
-import { createUserSetting } from "../../../database/models/userSettingModel.js";
 import department from "../../../database/models/departmentModel.js";
 import designation from "../../../database/models/designationModel.js";
 import role from "../../../database/models/roleModel.js";
 import team from "../../../database/models/teamModel.js";
 import { Op } from "sequelize";
-import company from "../../../database/models/companyModel.js";
+import company from "../../../database/models/company.js";
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
@@ -182,18 +181,31 @@ class teamMemberController {
       if (!Number.isInteger(screen_capture_time) || !Number.isInteger(broswer_capture_time) || !Number.isInteger(app_capture_time)) {
         return helper.failed(res, variables.BadRequest, "Invalid Data: Only integer values are allowed");
       }
-
-      const user = await User.findOne({ where: { id } });
-      if (!user) {
-        return helper.failed(res, variables.NotFound, "User not found");
+  
+      const u = await User.findOne({ where: { id } });
+      if (!u) {
+        return helper.sendResponse(
+          res,
+          variables.NotFound,
+          0,
+          null,
+          "user not found"
+        );
       }
-
-      user.screen_capture_time = screen_capture_time;
-      user.broswer_capture_time = broswer_capture_time;
-      user.app_capture_time = app_capture_time;
-      await user.save();
-
-      return helper.success(res, variables.Success, "Settings Updated Successfully");
+  
+      // u.screen_capture_time = screen_capture_time;
+      // u.broswer_capture_time = broswer_capture_time;
+      // u.app_capture_time = app_capture_time;
+      // await u.save();
+      
+      await u.update({screen_capture_time,broswer_capture_time,app_capture_time},{where:{id:u?.id}});
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        1,
+        {},
+        "Settings Updated Successfully",
+      );
     } catch (error) {
       console.error("Error updating settings:", error.message);
       return helper.failed(res, variables.Failure, "Failed to update settings");
