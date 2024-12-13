@@ -16,18 +16,6 @@ const company = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    // email: {
-    //   type: DataTypes.STRING,
-    //   allowNull: true,
-    // },
-    // address: {
-    //   type: DataTypes.STRING,
-    //   allowNull: true,
-    // },
-    // mobile: {
-    //   type: DataTypes.STRING,
-    //   allowNull: false,
-    // },
     employeeNumber: {
       type: DataTypes.INTEGER,
       allowNull: false,
