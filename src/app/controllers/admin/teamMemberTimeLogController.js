@@ -192,7 +192,18 @@ class teamMemberTimeLogController {
         },
       });
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", { employeeCount: employeeCount, workingCount: workingCount, absentCount: absentCount, lateCount: lateCount });
+      const countsData = [
+        { count: employeeCount, name: "employee" },
+        { count: workingCount, name: "working" },
+        { count: absentCount, name: "absent" },
+        { count: lateCount, name: "late" },
+        { count: 0, name: "slacking" },
+        { count: 0, name: "productive" },
+        { count: 0, name: "unproductive" },
+      ];
+    
+      
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", countsData);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }

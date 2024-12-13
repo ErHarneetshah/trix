@@ -68,30 +68,24 @@ const getBlockedWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
-    if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.NotFound, "Department Id is required and in numbers");
-
-    // check department is exists or not
-    const isDepartmentExists = await department.findOne({
-      where: {
-        id: departmentId,
-        company_id: req.user.company_id,
-      },
-    });
-
-    if (!isDepartmentExists) {
-      return helper.failed(res, variables.NotFound, "Invalid department ID provided.");
-    }
+    // if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.NotFound, "Department Id is required and in numbers");
 
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
-
     let where = { companyId: req.user.company_id };
 
-    if (departmentId && departmentId != 0) {
+    if (departmentId && departmentId !== 0) {
+      const isDepartmentExists = await department.findOne({
+        where: {
+          id: departmentId,
+          company_id: req.user.company_id,
+        },
+      });
+      if (!isDepartmentExists) {
+        return helper.failed(res, variables.NotFound, "Invalid department ID provided.");
+      }
       where.departmentId = departmentId;
     }
-
-    where.companyId = req.user.company_id;
 
     const blockedWebsite = await BlockedWebsites.findAndCountAll({
       where: where,
@@ -267,11 +261,8 @@ const getAppInfo = async (req, res) => {
         return helper.failed(res, variables.NotFound, "Invalid department id is provided");
       }
 
-
       where.department_id = departmentId;
     }
-
-
 
     const productiveApps = await ProductiveApp.findAndCountAll({
       where,
@@ -438,8 +429,7 @@ const getProductiveWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
-    if(!departmentId || isNaN(departmentId))
-      return helper.failed(res, variables.ValidationError, "Department Id is required and in numbers");
+    if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.ValidationError, "Department Id is required and in numbers");
 
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
@@ -457,7 +447,6 @@ const getProductiveWebsites = async (req, res) => {
       if (!isDepartmentExists) {
         return helper.failed(res, variables.NotFound, "Department does not exist.");
       }
-
 
       where.department_id = departmentId;
     }
