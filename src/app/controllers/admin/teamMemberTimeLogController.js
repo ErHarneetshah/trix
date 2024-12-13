@@ -97,7 +97,6 @@ class teamMemberTimeLogController {
       if (tab) {
         if (tab.toLowerCase() === "working") {
           userWhere.currentStatus = 1;
-          // logWhere.
         } else if (tab.toLowerCase() === "absent") {
           userWhere.currentStatus = 0;
         } else if (tab.toLowerCase() === "late") {
