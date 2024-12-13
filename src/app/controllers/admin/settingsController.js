@@ -7,6 +7,7 @@ import variables from "../../config/variableConfig.js";
 import department from "../../../database/models/departmentModel.js";
 import validate from "../../../utils/CustomValidation.js";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
+import designation from "../../../database/models/designationModel.js";
 
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
@@ -20,8 +21,8 @@ const getAdminDetails = async (req, res) => {
       attributes: ["fullname", "email", "mobile"],
       include: [
         {
-          model: department,
-          as: "department",
+          model: designation,
+          as: "designation",
           attributes: ["name"],
         },
       ],
@@ -268,6 +269,17 @@ const getAppInfo = async (req, res) => {
       where.department_id = departmentId;
     }
 
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: departmentId,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if (!isDepartmentExists) {
+      return helper.failed(res, variables.NotFound, "Invalid department id is provided");
+    }
+
     const productiveApps = await ProductiveApp.findAndCountAll({
       where,
       attributes: ["id", "app_name", "app_logo"],
@@ -338,7 +350,12 @@ const updateReportSettings = async (req, res) => {
       { status: exportType },
       { where: { company_id: req.user.company_id } }
     );
-    return helper.success(res, variables.Success, "Report Status Updated Successfully");
+
+    if (updatedPreviousStatus === 0) {
+      return helper.failed(res, variables.NotFound, "No report settings found for the specified company.");
+    }
+
+    return helper.success(res, variables.Success, "Report Settings Updated Successfully");
   } catch (error) {
     console.error("Error updating report settings:", error);
     return helper.failed(res, variables.BadRequest, error.message);

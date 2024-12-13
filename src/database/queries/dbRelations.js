@@ -48,5 +48,4 @@ team.hasMany(User, { as: 'children', foreignKey: 'teamId' });
 
 
 
-
 export default {}
