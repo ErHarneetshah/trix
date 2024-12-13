@@ -22,7 +22,7 @@ class authValidationSchema {
 
       return {status: true};
     } catch (error) {
-      console.error("Validation error:", error.message);
+      console.error("Validation error:", error);
       return helper.failed(res, variables.InternalServerError, error.message);
     }
   };

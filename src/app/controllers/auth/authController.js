@@ -56,6 +56,11 @@ class authController extends jwtService {
         }
       );
 
+      if (!createCompany || !createCompany.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Register Company");
+      }
+
       const createReportSettings = await reportSettings.create(
         {
           company_id: createCompany.id
@@ -64,6 +69,11 @@ class authController extends jwtService {
           transaction: dbTransaction,
         }
       );
+
+      if (!createReportSettings || !createReportSettings.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Report Settings for this Company");
+      }
 
       //* Step2
       const createDepartment = await department.create(
@@ -77,6 +87,11 @@ class authController extends jwtService {
         }
       );
 
+      if (!createDepartment || !createDepartment.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Department for this Company");
+      }
+
       //* Step3
       const createDesignation = await designation.create(
         {
@@ -87,6 +102,11 @@ class authController extends jwtService {
           transaction: dbTransaction,
         }
       );
+
+      if (!createDesignation || !createDesignation.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Designation for this Company");
+      }
 
       //* Step4
       const createRole = await role.create(
@@ -99,13 +119,22 @@ class authController extends jwtService {
         }
       );
 
+      if (!createRole || !createRole.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Role for this Company");
+      }
+
       //* Step4 Part II
       const permissionInstance = new rolePermissionController();
       const createPermissionModules = await module.findAll({
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       for (const module of createPermissionModules) {
-        await permissionInstance.addRolePermissions(module, createRole.id, createCompany.id, dbTransaction);
+        let addedPermissions = await permissionInstance.addRolePermissions(module, createRole.id, createCompany.id, dbTransaction);
+        if (!addedPermissions) {
+          if (dbTransaction) await dbTransaction.rollback();
+          return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Role Permission for this Company");
+        }
       }
 
       //* Step5
@@ -124,6 +153,11 @@ class authController extends jwtService {
         }
       );
 
+      if (!createShift || !createShift.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Shift for this Company");
+      }
+
       //* Step6
       const createTeam = await team.create(
         {
@@ -136,6 +170,12 @@ class authController extends jwtService {
           transaction: dbTransaction,
         }
       );
+      
+
+      if (!createTeam || !createTeam.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        throw new Error("Unable to Create Team Record for this company.");
+      }
 
       //* Step7
       const createUser = await User.create(
@@ -159,10 +199,11 @@ class authController extends jwtService {
         }
       );
 
-      if (!createCompany || !createDepartment || !createDesignation || !createRole || !createShift || !createTeam || !createUser) {
+      if (!createUser || !createUser.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.NoContent, "Unable to create enteries in db");
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create User for this Company");
       }
+
 
       // Generate JWT token
       const token = this.generateToken(createUser.id.toString(), createUser.isAdmin, createUser.company_id, "1d");
