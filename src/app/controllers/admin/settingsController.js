@@ -266,19 +266,22 @@ const getAppInfo = async (req, res) => {
     let where = { company_id: req.user.company_id };
 
     if (departmentId && departmentId != 0) {
+      const isDepartmentExists = await department.findOne({
+        where: {
+          id: departmentId,
+          company_id: req.user.company_id,
+        },
+      });
+
+      if (!isDepartmentExists) {
+        return helper.failed(res, variables.NotFound, "Invalid department id is provided");
+      }
+
+
       where.department_id = departmentId;
     }
 
-    const isDepartmentExists = await department.findOne({
-      where: {
-        id: departmentId,
-        company_id: req.user.company_id,
-      },
-    });
 
-    if (!isDepartmentExists) {
-      return helper.failed(res, variables.NotFound, "Invalid department id is provided");
-    }
 
     const productiveApps = await ProductiveApp.findAndCountAll({
       where,
@@ -424,16 +427,7 @@ const getProductiveWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
-    const isDepartmentExists = await department.findOne({
-      where: {
-        id: departmentId,
-        company_id: req.user.company_id,
-      },
-    });
 
-    if (!isDepartmentExists) {
-      return helper.failed(res, variables.NotFound, "Department does not exist.");
-    }
 
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
@@ -441,6 +435,18 @@ const getProductiveWebsites = async (req, res) => {
     let where = { company_id: req.user.company_id };
 
     if (departmentId && departmentId != 0) {
+      const isDepartmentExists = await department.findOne({
+        where: {
+          id: departmentId,
+          company_id: req.user.company_id,
+        },
+      });
+
+      if (!isDepartmentExists) {
+        return helper.failed(res, variables.NotFound, "Department does not exist.");
+      }
+
+
       where.department_id = departmentId;
     }
 
