@@ -151,7 +151,7 @@ const retrieveAllReport = async (req, res) => {
 
 const retrieveUserReport = async (req, res) => {
   try {
-    let { id } = req.params;
+    let { id } = req.query;
 
     if (!id || isNaN(id)) {
       return helper.failed(res, variables.ValidationError, "Invalid or missing user ID.");
