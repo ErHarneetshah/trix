@@ -88,8 +88,6 @@ class deptController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { name, parentDeptId } = req.body;
-console.log(req.user.company_id);
-
       if ((!name || name == "undefined") || (!parentDeptId || parentDeptId == "undefined")) return helper.failed(res, variables.NotFound, "Both Name and parentDeptId is Required!");
 
       // checking whether department name requested by used already exists or not >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

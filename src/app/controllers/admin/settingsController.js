@@ -424,6 +424,17 @@ const getProductiveWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
+    const isDepartmentExists = await department.findOne({
+      where: {
+        id: departmentId,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if (!isDepartmentExists) {
+      return helper.failed(res, variables.NotFound, "Department does not exist.");
+    }
+
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
 
