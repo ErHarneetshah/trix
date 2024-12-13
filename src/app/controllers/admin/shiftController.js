@@ -202,7 +202,7 @@ class shiftController {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Shift Updated Successfully");
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to update the shift");
       }
     } catch (error) {
@@ -240,7 +240,7 @@ class shiftController {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Shift deleted Successfully!");
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to delete the Shift!");
       }
     } catch (error) {

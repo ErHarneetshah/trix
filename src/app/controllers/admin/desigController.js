@@ -166,7 +166,7 @@ class desigController {
         return helper.success(res, variables.Success, "Designation updated Successfully!");
       } else {
         // Revert the db enteries if error occurs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, 0, null, "Unable to update the designation!");
       }
     } catch (error) {
@@ -209,7 +209,7 @@ class desigController {
         return helper.success(res, variables.Success, "Designation deleted Successfully!");
       } else {
         // Rollback db entereis if error occurs >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to delete designation!");
       }
     } catch (error) {

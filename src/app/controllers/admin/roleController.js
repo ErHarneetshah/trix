@@ -168,7 +168,7 @@ class roleController {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Role Updated Successfully!");
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to update the role!");
       }
     } catch (error) {
@@ -211,7 +211,7 @@ class roleController {
         await dbTransaction.commit();
         return helper.success(res, variables.Created, "Role and Role Permissions deleted successfully");
       } else {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.UnknownError, "Unable to delete the role");
       }
     } catch (error) {

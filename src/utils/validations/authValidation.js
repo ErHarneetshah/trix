@@ -10,19 +10,17 @@ class authValidationSchema {
         email: "required|email",
         password: "required|min:8|max:50",
         confirmPassword: "required|same:password",
-        employeeNumber: "required|integer",
+        employeeNumber: "required|numeric",
         mobile: "required|numeric|digits:10"
         // companyName: "required|regex:/^[a-zA-Z ]*$/|min:3|max:50",
         // companyAddress: "required|string|min:10",
       });
-
-      // console.log("Company Register Validation -------------------------");
-      // console.log(status);
+   
       if (!status) {
-        return helper.failed(res, variables.ValidationError, message);
+        return {status:false, message:message};
       }
 
-      return { status: true };
+      return {status: true};
     } catch (error) {
       console.error("Validation error:", error.message);
       return helper.failed(res, variables.InternalServerError, error.message);
@@ -64,10 +62,10 @@ class authValidationSchema {
 
       if (!status) {
         // console.log("Login Validation Error");
-        return helper.failed(res, variables.ValidationError, message);
+        return {status:false, message: message};
       }
 
-      return true;
+      return {status:true};
     } catch (error) {
       console.error("Validation error:", error);
       return helper.failed(res, variables.InternalServerError, error.message);
