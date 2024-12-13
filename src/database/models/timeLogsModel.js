@@ -11,20 +11,20 @@ const TimeLog = sequelize.define('timelogs',{
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    company_id:{
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
     logged_in_time: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    total_active_duration: {
-      type: DataTypes.STRING,
+    active_time: {
+      type: DataTypes.INTEGER,
       allowNull: true
     },
     late_coming_duration: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    early_going_duration: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: true
     },
     logged_out_time: {
@@ -35,14 +35,21 @@ const TimeLog = sequelize.define('timelogs',{
       type: DataTypes.BOOLEAN,
       defaultValue: 0,
     },
-    early_going: {
-      type: DataTypes.BOOLEAN,
+    spare_time:{
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    idle_time:{
+      type: DataTypes.INTEGER,
       defaultValue: 0,
-    }
+    },
+    date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
   },
   {
     timestamps: true,
-    // Prevent Sequelize from auto-creating foreign keys
     underscored: false,
   }
 );
@@ -72,6 +79,6 @@ TimeLog.afterUpdate(async (timeLog) => {
  }
 });
 
-// await TimeLog.sync({alter:1});
+await TimeLog.sync({ alter: 1 });
 
 export default TimeLog;

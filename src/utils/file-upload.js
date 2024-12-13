@@ -31,13 +31,10 @@ const upload = multer({
 
 const fileUpload = async (req, res, next) => {
  try {
-   
- 
     upload(req, res, (err) => {
    
 
         if (err) {
-
             // let result = helper.failed(res , variables.InternalServerError , err);
             let result =  {
                 status: 0,
@@ -60,8 +57,8 @@ const fileUpload = async (req, res, next) => {
             status: 1,
             message: "success",
             data: req.file?.filename
-          };
-
+         };
+        // req.filedata = reply.success(req.file?.filename);
         next();
     });
  } catch (error) {

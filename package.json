@@ -11,7 +11,8 @@
     "seedTeamMemberDailyLog": "node src/database/seeders/seedTeamMemberDailyLog.js",
     "seedModules": "node src/database/seeders/seedModules.js",
     "deleteExpireToken": "node src/utils/services/scheduler.js",
-    "database-seed": "node src/database/seeders/AllSeeder.js"
+    "database-seed": "node src/database/seeders/AllSeeder.js",
+    "sync-db": "node src/database/queries/dbSync.js"
   },
   "author": "LBM Developers",
   "license": "ISC",
@@ -40,6 +41,7 @@
     "nodemailer": "^6.9.16",
     "nodemon": "^3.1.7",
     "path": "^0.12.7",
+    "punycode": "^2.3.1",
     "sequelize": "^6.37.5",
     "socket.io": "^4.8.1",
     "tldts": "^6.1.66",

@@ -6,7 +6,7 @@ import jwtService from "../../../utils/services/jwtService.js";
 import accessToken, { createAccessToken } from "../../../database/models/accessTokenModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
-import TimeLog from "../../../database/models/TimeLog.js";
+import TimeLog from "../../../database/models/timeLogsModel.js";
 import { getShiftData } from "../../../utils/validations/socketValidation.js";
 import bcrypt from "bcrypt";
 import company from "../../../database/models/companyModel.js";
@@ -22,6 +22,8 @@ import { io } from "../../../../app.js";
 import Model from "../../../database/queries/dbConnection.js";
 import { QueryTypes } from "@sequelize/core";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
+import { Notification } from "../../../database/models/Notification.js";
+import reportSettings from "../../../database/models/reportSettingsModel.js";
 
 class authController extends jwtService {
   companyRegister = async (req, res) => {
@@ -47,6 +49,15 @@ class authController extends jwtService {
         {
           name: requestData.name,
           employeeNumber: requestData.employeeNumber,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
+
+      const createReportSettings = await reportSettings.create(
+        {
+          company_id:createCompany.id
         },
         {
           transaction: dbTransaction,
@@ -356,7 +367,7 @@ class authController extends jwtService {
           user.save();
 
           // Create a new TimeLog entry
-          await TimeLog.create({
+          const createdTimeLog = await TimeLog.create({
             user_id: user.id,
             shift_id: shiftData.id,
             company_id: user.company_id,
@@ -367,6 +378,9 @@ class authController extends jwtService {
             active_time: 0,
             date: today,
           });
+
+          console.log("------------------------- 7 ----------------------------")
+          console.log(createdTimeLog);
         }
       }
       await dbTransaction.commit();
@@ -385,7 +399,7 @@ class authController extends jwtService {
       let userData = await User.findOne({ where: { id: req.user.id } }); // checking if the user exists based on id
       let token = await accessToken.findOne({ where: { userId: req.user.id } }); // checking if the token exists in system
 
-      if (!token) return helper.sendResponse(res, variables.NotFound, 0, null, "Already Logout");
+      if (!token) return helper.failed(res, variables.NotFound, "Already Logout");
 
       //* Upadting Time log if the user is not admin
       if (!userData.isAdmin) {
@@ -421,10 +435,9 @@ class authController extends jwtService {
       }
       await token.destroy(); // token destroyed here
 
-      return helper.sendResponse(res, variables.Success, 1, null, "Logout Successfully");
+      return helper.success(res, variables.Success, "Logout Successfully");
     } catch (error) {
-      // Handle errors
-      return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
@@ -444,10 +457,10 @@ class authController extends jwtService {
       let { deviceName, deviceId, memory } = req.body;
       let user = await User.findOne({ where: { id } });
       if (!user) {
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "User not found!!!");
+        return helper.failed(res, variables.BadRequest, "User not found!!!");
       }
       if (!deviceName || !deviceId || !memory) {
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Invalid Data!!!");
+        return helper.failed(res, variables.BadRequest, "Invalid Data!!!");
       }
       let device = await Device.findOne({ where: { user_id: id } });
       let create;
@@ -471,9 +484,9 @@ class authController extends jwtService {
         create = await Device.findOne({ where: { user_id: id } });
       }
       io.to("Admin").emit("updatedSystemConfig", create);
-      return helper.sendResponse(res, variables.Success, 1, {}, "system configration add successfully");
+      return helper.success(res, variables.Success, "system configration add successfully");
     } catch (error) {
-      return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
@@ -487,9 +500,9 @@ class authController extends jwtService {
         where: { companyId: user.company_id, departmentId: user?.departmentId, status: 1 },
         attributes: ["website"],
       });
-      return helper.sendResponse(res, variables.Success, 1, blockedWebsites, "Blocked websites fetched successfully!!");
+      return helper.success(res, variables.Success, "Blocked websites fetched successfully!!", blockedWebsites);
     } catch (error) {
-      return helper.sendResponse(res, variables.BadRequest, 0, null, "Error in blocked Website!!!");
+      return helper.failed(res, variables.BadRequest, "Error in blocked Website!!!");
     }
   };
 
@@ -499,15 +512,77 @@ class authController extends jwtService {
       let year = req.query.year ? req.query.year : new Date().getFullYear();
 
       if (!month || !year) {
-        return helper.sendResponse(res, variables.ValidationError, 0, null, "Invalid Data!!!");
+        return helper.failed(res, variables.ValidationError, "Invalid Data!!!");
       }
       let web_query = `select (select count(id) from users where company_id=${req.user.company_id}) as total_employees,(select count(id) from users where company_id=${req.user.company_id})-((select count(id) from users where company_id=${req.user.company_id}) -count(DISTINCT user_id)) as total_persent_employees,(select count(id) from users where company_id=${req.user.company_id}) -count(DISTINCT user_id) as total_absent_employees,date from timelogs where company_id=${req.user.company_id} and month(date)=${month} and year(date)=${year} group by date`;
       let Absent_data = await Model.query(web_query, {
         type: QueryTypes.SELECT,
       });
-      return helper.sendResponse(res, variables.Success, 1, Absent_data, "Absent Calender Data fetched successfully!!");
+      return helper.success(res, variables.Success, "Absent Calender Data fetched successfully!!", Absent_data);
     } catch (error) {
-      return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  markAsRead = async (req, res) => {
+    try {
+      let data = await Notification.findAll({ where: { is_read: 0 } });
+      if (!data || data.length == 0) {
+        return helper.success(res, variables.Success, "No unread notifications found.");
+      }
+      await Notification.update({ is_read: 1 }, { where: { is_read: 0 } });
+      io.to("Admin").emit("newNotification", { notificationCount: 0 });
+      return helper.success(res, variables.Success, "Notification Data cleared successfully");
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  notification_page = async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit) || 5;
+      const page = parseInt(req.query.page) || 1;
+      const offset = (page - 1) * limit;
+      const whereCondition = {};
+      if (req.query.date) {
+        whereCondition.date = req.query.date;
+      }
+
+      const data = await Notification.findAndCountAll({
+        where: whereCondition,
+        order: [["id", "DESC"]],
+        limit,
+        offset,
+      });
+
+      if (!data || data.length == 0) {
+        return helper.success(res, variables.Success, "No notifications found.");
+      }
+
+      return helper.success(res, variables.Success, "Notification Data fetched successfully", data);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  advanced_setting = async (req, res) => {
+    try {
+      let { screen_capture, broswer_capture, app_capture } = req.body;
+      if (![0, 1].includes(screen_capture) || ![0, 1].includes(broswer_capture) || ![0, 1].includes(app_capture)) {
+        return helper.failed(res, variables.BadRequest, "Invalid Data");
+      }
+
+      let data = await company.findOne({ where: { id: req.user.company_id } });
+      if (!data) {
+        return helper.failed(res, variables.NotFound, "company not found!!");
+      }
+      data.screen_capture = screen_capture;
+      data.broswer_capture = broswer_capture;
+      data.app_capture = app_capture;
+      data.save();
+      return helper.success(res, variables.Success, "Advanced setting update successfully!");
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 }

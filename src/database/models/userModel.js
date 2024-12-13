@@ -1,13 +1,14 @@
 import { DataTypes } from "sequelize";
-import bcrypt from "bcryptjs";
+// import bcrypt from "bcryptjs";
 import sequelize from "../queries/dbConnection.js";
-import department from "./departmentModel.js";
-import designation from "./designationModel.js";
-import role from "./roleModel.js";
-import team from "./teamModel.js";
-import helper from "../../utils/services/helper.js";
-import variables from "../../app/config/variableConfig.js";
+// import department from "./departmentModel.js";
+// import designation from "./designationModel.js";
+// import role from "./roleModel.js";
+// import team from "./teamModel.js";
+// import helper from "../../utils/services/helper.js";
+// import variables from "../../app/config/variableConfig.js";
 import { io } from "../../../app.js";
+import company from "./companyModel.js";
 
 const User = sequelize.define(
 "users",
@@ -99,33 +100,33 @@ const User = sequelize.define(
     timestamps: true,
     underscored: false,
     hooks: {
-      async beforeCreate(user, options) {
-        // if (user.password) {
-        //   user.password = await bcrypt.hash(user.password, 10);
-        // }
+      // async beforeCreate(user, options) {
+      //   // if (user.password) {
+      //   //   user.password = await bcrypt.hash(user.password, 10);
+      //   // }
 
-        const validationMap = {
-         departmentId: department,
-         designationId: designation,
-         roleId: role,
-         teamId: team,
-        };
+      //   const validationMap = {
+      //    departmentId: department,
+      //    designationId: designation,
+      //    roleId: role,
+      //    teamId: team,
+      //   };
 
-        // Iterate through the fields to validate
-        for (const [field, model] of Object.entries(validationMap)) {
-         if (user[field]) {
-            console.log(model);
-            const recordExists = await model.findOne({
-             where: { id: user[field] },
-             transaction: options.transaction,
-            });
+      //   // Iterate through the fields to validate
+      //   for (const [field, model] of Object.entries(validationMap)) {
+      //    if (user[field]) {
+      //       console.log(model);
+      //       const recordExists = await model.findOne({
+      //        where: { id: user[field] },
+      //        transaction: options.transaction,
+      //       });
 
-            if (!recordExists) {
-             throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
-            }
-         }
-        }
-      },
+      //       if (!recordExists) {
+      //        throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
+      //       }
+      //    }
+      //   }
+      // },
       // async beforeUpdate(user, options) {
       //   // Hash the password if it's being updated
       //   if (user.password) {
@@ -158,14 +159,24 @@ const User = sequelize.define(
       //   }
       // },
       async afterUpdate(user, options) {
-        let monitoredFields = ["screen_capture_time", "broswer_capture_time", "app_capture_time"];
-        let fieldsChanged = options.fields.some((field) => monitoredFields.includes(field));
+        let monitoredFields = [
+          "screen_capture_time",
+          "broswer_capture_time",
+          "app_capture_time",
+        ];
+        let fieldsChanged = options.fields.some((field) =>
+          monitoredFields.includes(field)
+        );
+        let comp = await company.findOne({ where: { id: user.company_id } });
         if (fieldsChanged) {
          io.to(user.socket_id).emit("getUserSettings", {
             screen_capture_time: user.screen_capture_time,
             broswer_capture_time: user.broswer_capture_time,
             app_capture_time: user.app_capture_time,
-         });
+            screen_capture: comp.screen_capture,
+            broswer_capture: comp.broswer_capture,
+            app_capture: comp.app_capture,
+          });
         }
      },
     },

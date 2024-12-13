@@ -96,7 +96,6 @@ class rolePermissionController {
           DELETE: false,
         },
       };
-      // console.log(permissionData);
 
       await rolePermission.create(permissionData, { transaction });
       return true;
