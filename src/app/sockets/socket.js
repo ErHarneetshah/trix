@@ -889,7 +889,8 @@ const handleUserSocket = async (socket, io) => {
             userId,
             date: today,
             company_id,
-            content: `data:image/png;base64,${image.data}`,
+            content: image.data,                                //------> for testing
+            // content: `data:image/png;base64,${image.data}`,  // -------> for production
           })
         )
       );

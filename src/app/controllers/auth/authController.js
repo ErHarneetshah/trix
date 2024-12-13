@@ -74,7 +74,6 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Report Settings for this Company");
       }
 
-      //* Step2
       const createDepartment = await department.create(
         {
           name: "Director",
@@ -91,7 +90,6 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Department for this Company");
       }
 
-      //* Step3
       const createDesignation = await designation.create(
         {
           name: "Director",
@@ -107,7 +105,6 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Designation for this Company");
       }
 
-      //* Step4
       const createRole = await role.create(
         {
           name: "Admin",
@@ -123,7 +120,6 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Role for this Company");
       }
 
-      //* Step4 Part II
       const permissionInstance = new rolePermissionController();
       const createPermissionModules = await module.findAll({
         attributes: { exclude: ["createdAt", "updatedAt"] },
@@ -136,7 +132,6 @@ class authController extends jwtService {
         }
       }
 
-      //* Step5
       const createShift = await shift.create(
         {
           company_id: createCompany.id,
@@ -144,7 +139,6 @@ class authController extends jwtService {
           start_time: "09:00",
           end_time: "18:00",
           total_hours: 9,
-          // days: JSON.stringify(["mon", "tue", "wed", "thu", "fri"]),
           days: ["mon", "tue", "wed", "thu", "fri"],
         },
         {
@@ -157,7 +151,6 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Shift for this Company");
       }
 
-      //* Step6
       const createTeam = await team.create(
         {
           name: "Head Management",
@@ -176,7 +169,6 @@ class authController extends jwtService {
         throw new Error("Unable to Create Team Record for this company.");
       }
 
-      //* Step7
       const createUser = await User.create(
         {
           company_id: createCompany.id,
@@ -204,11 +196,9 @@ class authController extends jwtService {
       }
 
 
-      // Generate JWT token
       const token = this.generateToken(createUser.id.toString(), createUser.isAdmin, createUser.company_id, "1d");
       if (!token) return helper.failed(res, variables.serviceUnavailabe, "Unable to create access token");
 
-      // Save token to the database
       const expireTime = this.calculateTime();
       await createAccessToken(createUser.id, createUser.isAdmin, createUser.company_id, token, expireTime, dbTransaction);
 
@@ -220,70 +210,6 @@ class authController extends jwtService {
       return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
     }
   };
-
-  //* Previous Login Function Harneet ------------------------------------------------------------
-  // login = async (req, res) => {
-  //   const dbTransaction = await sequelize.transaction();
-  //   try {
-  //     const requestData = req.body;
-
-  //     //Validating request data
-  //     await authValidation.loginValid(requestData, res);
-
-  //     // Find the user and check if they are deactivated
-  //     const existsUser = await User.findOne({
-  //       where: { email: requestData.email },
-  //       transaction: dbTransaction,
-  //     });
-
-  //     // Password Matching if user exists
-  //     if (existsUser) {
-  //       if (await bcrypt.compare(requestData.password, user.password)) return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
-  //     }else{
-  //       return helper.sendResponse(res, variables.NotFound, 0, null, "Email Does not exists in system");
-  //     }
-
-  //     // Create and save the new user
-  //     const user = await User.create(requestData, {
-  //       transaction: dbTransaction,
-  //     });
-
-  //     // Create user settings
-  //     await createUserSetting(user.id, dbTransaction);
-
-  //     // Generate JWT token
-  //     const token = this.generateToken(user.id.toString(), user.isAdmin, "1d");
-
-  //     // Save token to the database
-  //     const expireTime = this.calculateTime();
-  //     await createAccessToken(
-  //       user.id,
-  //       user.isAdmin,
-  //       token,
-  //       expireTime,
-  //       dbTransaction
-  //     );
-
-  //     await dbTransaction.commit();
-  //     return helper.sendResponse(
-  //       res,
-  //       variables.Success,
-  //       1,
-  //       { token: token },
-  //       "Register Successfully"
-  //     );
-  //   } catch (error) {
-  //     if (dbTransaction) await dbTransaction.rollback();
-  //     console.log(error.message);
-  //     return helper.sendResponse(
-  //       res,
-  //       variables.BadRequest,
-  //       0,
-  //       null,
-  //       error.message
-  //     );
-  //   }
-  // };
 
   login = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
@@ -422,8 +348,6 @@ class authController extends jwtService {
             date: today,
           });
 
-          console.log("------------------------- 7 ----------------------------")
-          console.log(createdTimeLog);
         }
       }
       await dbTransaction.commit();
