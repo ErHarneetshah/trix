@@ -28,26 +28,26 @@ class authController extends jwtService {
   companyRegister = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      // const {fullname, companyName, email, mobile, employeeNumber, password, confirmPassword, companyAddress } = req.body;
       const requestData = req.body;
+
       // Validating request body
       const validationResult = await authValidation.companyRegisterValid(requestData, res);
       if (!validationResult.status) return helper.sendResponse(res, variables.ValidationError, 0, {}, validationResult.message);
 
-
       // Check if the user already exists
-      const existingUser = await company.findOne({
-        where: { name: requestData.name },
+      const existingCompany = await company.findOne({
+        where: { name: requestData.name, email: requestData.email },
         transaction: dbTransaction,
       });
-      if (existingUser) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Company already exists with this Name!");
+      if (existingCompany) {
+        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Company already exists with this Name and Email!");
       }
 
       //* Step1
       const createCompany = await company.create(
         {
           name: requestData.name,
+          email: requestData.email,
           employeeNumber: requestData.employeeNumber,
         },
         {
@@ -76,7 +76,7 @@ class authController extends jwtService {
 
       const createDepartment = await department.create(
         {
-          name: "Director",
+          name: "Upper Management",
           isRootId: 1,
           company_id: createCompany.id,
         },
@@ -92,7 +92,7 @@ class authController extends jwtService {
 
       const createDesignation = await designation.create(
         {
-          name: "Director",
+          name: "MD (Managing Director)",
           company_id: createCompany.id,
         },
         {
@@ -107,7 +107,7 @@ class authController extends jwtService {
 
       const createRole = await role.create(
         {
-          name: "Admin",
+          name: "Super Admin",
           company_id: createCompany.id,
         },
         {
@@ -135,7 +135,7 @@ class authController extends jwtService {
       const createShift = await shift.create(
         {
           company_id: createCompany.id,
-          name: "Admin Morning Shift",
+          name: "Morning Shift",
           start_time: "09:00",
           end_time: "18:00",
           total_hours: 9,
@@ -153,7 +153,7 @@ class authController extends jwtService {
 
       const createTeam = await team.create(
         {
-          name: "Head Management",
+          name: "Upper Management Team",
           company_id: createCompany.id,
           departmentId: createDepartment.id,
           shiftId: createShift.id,

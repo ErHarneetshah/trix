@@ -1,12 +1,5 @@
 import { DataTypes } from "sequelize";
-// import bcrypt from "bcryptjs";
 import sequelize from "../queries/dbConnection.js";
-// import department from "./departmentModel.js";
-// import designation from "./designationModel.js";
-// import role from "./roleModel.js";
-// import team from "./teamModel.js";
-// import helper from "../../utils/services/helper.js";
-// import variables from "../../app/config/variableConfig.js";
 import { io } from "../../../app.js";
 import company from "./company.js";
 import { Device } from "./device.js";

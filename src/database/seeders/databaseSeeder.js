@@ -15,10 +15,10 @@ export default async function seedDatabase() {
     await company.destroy({ where: {} });
     await sequelize.query(`ALTER TABLE ${company.getTableName()} AUTO_INCREMENT=1`);
     await company.bulkCreate([
-      { name: "LBM Solutions", employeeNumber: 120 },
-      { name: "ApniCars", employeeNumber: 160 },
-      { name: "Digimon", employeeNumber: 250 },
-      { name: "OceanWorks", employeeNumber: 50 },
+      { name: "LBM Solutions", email: "admin1@example.com", employeeNumber: 120 },
+      { name: "ApniCars", email: "admin2@example.com", employeeNumber: 160 },
+      { name: "Digimon", email: "admin3@example.com", employeeNumber: 250 },
+      { name: "OceanWorks", email: "admin4@example.com", employeeNumber: 50 },
     ]);
 
     await role.destroy({ where: {} });
@@ -68,8 +68,8 @@ export default async function seedDatabase() {
     for (let a = 1; a <= 4; a++) {
       //*________________--------------- ROLE -------------_____________________
       const rootRole = await role.bulkCreate([
-        { name: "Admin", company_id: a },
         { name: "Super Admin", company_id: a },
+        { name: "Admin", company_id: a },
         { name: "Team Leader", company_id: a },
         { name: "Manager", company_id: a },
         { name: "User", company_id: a },
@@ -334,7 +334,7 @@ export default async function seedDatabase() {
           mobile: (Math.floor(Math.random() * 9_000_000_000) + 1_000_000_000).toString(),
           departmentId: departmentMap["Upper Management"], // Engineering
           designationId: designationMap["MD (Managing Director)"], // Software Developer
-          roleId: roleMap["Admin"], // User
+          roleId: roleMap["Super Admin"], // User
           teamId: teamMap["Upper Management Team"], // Team associated with Engineering
           password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK", // Placeholder hashed password // Test@123
           isAdmin: 1,

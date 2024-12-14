@@ -30,7 +30,7 @@ import shift from '../models/shiftModel.js';
     // Synchronize models with the database
     const forceSync = process.argv.includes('--force'); // Use `--force` argument to drop and recreate tables
     console.log(`Synchronizing models${forceSync ? ' with force' : ''}...`);
-    await sequelize.sync({ force: forceSync });
+    await sequelize.sync({ force: forceSync, alter: true });
 
     console.log(`Models synchronized successfully${forceSync ? ' (forced)' : ''}.`);
   } catch (error) {
