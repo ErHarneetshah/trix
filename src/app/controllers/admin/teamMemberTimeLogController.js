@@ -139,26 +139,42 @@ class teamMemberTimeLogController {
 
   getFilterCount = async (req, res) => {
     try {
+      let { date } = req.query;
       let logWhere = {};
       let userWhere = {};
       let startOfDay;
       let endOfDay;
 
-      startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
+      if (date) {
+        startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
 
-      logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+      } else {
+        startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+      }
 
       userWhere.currentStatus = 1;
 
       const employeeCount = await User.count({
         where: {
-          company_id: req.user.company_id
-          // updatedAt: {
-          //   [Op.between]: [startOfDay, endOfDay],
-          // },
+          company_id: req.user.company_id,
+        },
+      });
+
+      const todayEmployeeCount = await User.count({
+        where: {
+          company_id: req.user.company_id,
+          updatedAt: {
+            [Op.between]: [startOfDay, endOfDay],
+          },
         },
       });
 
@@ -195,6 +211,7 @@ class teamMemberTimeLogController {
 
       const countsData = [
         { count: employeeCount, name: "employee" },
+        { count: todayEmployeeCount, name: "todayEmployee" },
         { count: workingCount, name: "working" },
         { count: absentCount, name: "absent" },
         { count: lateCount, name: "late" },
