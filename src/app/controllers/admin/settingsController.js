@@ -1,6 +1,4 @@
 import User from "../../../database/models/userModel.js";
-import sequelize from "../../../database/queries/dbConnection.js";
-import { Op, QueryTypes } from "sequelize";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
@@ -8,10 +6,8 @@ import department from "../../../database/models/departmentModel.js";
 import validate from "../../../utils/CustomValidation.js";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 import designation from "../../../database/models/designationModel.js";
-
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
-import uploadPhotos from "../../../utils/services/commonfuncitons.js";
 
 const getAdminDetails = async (req, res) => {
   try {
@@ -66,13 +62,12 @@ const updateAdminDetails = async (req, res) => {
 
 const getBlockedWebsites = async (req, res) => {
   try {
+    // ___________---------- Search, Limit, Pagination ----------_______________
     let { departmentId, limit, page } = req.query;
-
-    // if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.NotFound, "Department Id is required and in numbers");
-
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
     let where = { companyId: req.user.company_id };
+    // ___________-----------------------------------------------_______________
 
     if (departmentId && departmentId !== 0) {
       const isDepartmentExists = await department.findOne({

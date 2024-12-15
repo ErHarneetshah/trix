@@ -9,14 +9,14 @@ import team from "../../../database/models/teamModel.js";
 class shiftController {
   getAllShift = async (req, res) => {
     try {
-      // Search Parameter filters and pagination code >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       let searchable = ["name", "status"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
       let where = await helper.searchCondition(searchParam, searchable);
-
       where.company_id = req.user.company_id;
+      // ___________---------- Search, Limit, Pagination ----------_______________
 
       const alldata = await shift.findAndCountAll({
         where: where,
@@ -59,7 +59,6 @@ class shiftController {
         },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-
       if (!specificData) return helper.failed(res, variables.NotFound, `Data not Found of matching attributes `);
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
@@ -73,7 +72,6 @@ class shiftController {
     try {
       const requestData = req.body;
 
-      //Validating the request data
       const validationResult = await teamsValidationSchema.shiftValid(requestData, res);
       if (!validationResult.status) return helper.failed(res, variables.ValidationError, validationResult.message);
 
@@ -99,7 +97,7 @@ class shiftController {
           name: requestData.name,
           start_time: requestData.start_time,
           end_time: requestData.end_time,
-          days: JSON.stringify(requestData.days), // Ensure days are correctly formatted for comparison
+          days: JSON.stringify(requestData.days),
         },
         transaction: dbTransaction,
       });
@@ -110,7 +108,6 @@ class shiftController {
         where: {
           name: requestData.name,
           company_id: req.user.company_id,
-          // id: { [Op.ne]: id }, // Exclude the current record by id
         },
         transaction: dbTransaction,
       });
@@ -165,19 +162,17 @@ class shiftController {
         }
       }
 
-      //* Check if there is a dept already exists
       const existingShift = await shift.findOne({
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in your company!");
 
-      //* Check if there is a dept with a name in a different id
       const existingShiftWithName = await shift.findOne({
         where: {
           name: updateFields.name,
           company_id: req.user.company_id,
-          id: { [Op.ne]: id }, // Exclude the current record by id
+          id: { [Op.ne]: id },
         },
         transaction: dbTransaction,
       });
@@ -185,7 +180,6 @@ class shiftController {
         return helper.failed(res, variables.ValidationError, "Shift name already exists in different record!");
       }
 
-      //* if the id has the same value in db
       if (updateFields.start_time && updateFields.end_time) {
         const alreadySameShift = await shift.findOne({
           where: { id: id, company_id: req.user.company_id, name: updateFields.name, start_time: updateFields.start_time, end_time: updateFields.end_time, days: JSON.stringify(days) },
@@ -194,7 +188,7 @@ class shiftController {
         if (alreadySameShift) return helper.success(res, variables.Success, "Shift Re-Updated Successfully!");
       }
 
-      const [updatedRows] = await shift.update(
+      const updated = await shift.update(
         {
           ...updateFields,
           days: JSON.stringify(days),
@@ -206,7 +200,7 @@ class shiftController {
         }
       );
 
-      if (updatedRows > 0) {
+      if (updated) {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Shift Updated Successfully");
       } else {
@@ -231,9 +225,7 @@ class shiftController {
       });
       if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in your company id!");
 
-      // Check if the Deaprtmetn id exists in other tables >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       const isUsedInTeams = await team.findOne({ where: { shiftId: id } });
-
       if (isUsedInTeams) {
         return helper.failed(res, variables.Unauthorized, "Cannot Delete this Shift as it is referred in other tables");
       }

@@ -41,7 +41,6 @@ const addEmailGateeways = async (req, res) => {
 const checkEmailServer = async (req, res) => {
     const { to, subject, message } = req.body;
 
-    // Validation Rules
     const rules = {
         to: 'required|email',
         subject: 'required|string|min:3|max:100',
@@ -49,12 +48,10 @@ const checkEmailServer = async (req, res) => {
     };
 
     const { status, message: validationMessage } = await validate(req.body, rules);
-
     if (status === 0) {
         return helper.failed(res, variables.ValidationError, validationMessage);
     }
 
-    // Sending mail using nodemailer
     const sendmail = await H.sendM(to,subject,message);
     if (sendmail.success) {
         return helper.success(res, variables.Success, sendmail.message);

@@ -125,7 +125,7 @@ class authController extends jwtService {
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       for (const module of createPermissionModules) {
-        let addedPermissions = await permissionInstance.addRolePermissions(module, createRole.id, createCompany.id, dbTransaction);
+        let addedPermissions = await permissionInstance.addSuperAdminPermissions(module, createRole.id, createCompany.id, dbTransaction);
         if (!addedPermissions) {
           if (dbTransaction) await dbTransaction.rollback();
           return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Role Permission for this Company");

@@ -7,15 +7,17 @@ import department from "../../../database/models/departmentModel.js";
 import { Op } from "sequelize";
 
 class reportingManagerController {
+  //* ________-------- GET All Report Managers ---------______________
   getAllReportManager = async (req, res) => {
     try {
+      // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       let searchable = ["name", `$reportingManager.fullname$`];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
       let where = await helper.searchCondition(searchParam, searchable);
-
       where.company_id = req.user.company_id;
+      // ___________---------- Search, Limit, Pagination ----------_______________
 
       const allData = await department.findAndCountAll({
         where: where,
@@ -33,21 +35,13 @@ class reportingManagerController {
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data not Found");
 
-      //! Adjust data in such a way that is changes null value to  {}
-      // const modifiedData = allData.map((item) => {
-      //   // Ensure reportingManager is not null, replace with {} if it is
-      //   if (!item.reportingManager) {
-      //     item.reportingManager = {};
-      //   }
-      //   return item;
-      // });
-
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
+  //* ________-------- GET Active Report Managers Dropdown ---------______________
   getReportManagerDropdown = async (req, res) => {
     try {
       const allData = await User.findAll({
@@ -55,9 +49,6 @@ class reportingManagerController {
           status: true,
           isAdmin: 0,
           company_id: req.user.company_id,
-          // id: {
-          //   [Op.notIn]: sequelize.literal(`(SELECT DISTINCT reportingManagerId FROM departments WHERE reportingManagerId IS NOT NULL)`),
-          // },
         },
         attributes: ["id", "fullname"],
       });
@@ -70,23 +61,7 @@ class reportingManagerController {
     }
   };
 
-  // getSpecificReportManager = async (req, res) => {
-  //   try {
-  //     const requestData = req.body;
-
-  //     const specificData = await reportingManager.findOne({
-  //       attributes: { exclude: ["createdAt", "updatedAt"] },
-  //       where: requestData,
-  //     });
-  //     if (!specificData) return helper.failed(res, variables.NotFound, "Data not Found");
-
-  //     return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
-  //   } catch (error) {
-  //     return helper.failed(res, variables.BadRequest, error.message);
-  //   }
-  // };
-
-  //* Add Report Manager API Code
+  //* ________-------- POST Add Report Managers ---------______________
   addReportManager = async (req, res) => {
     return helper.failed(res, variables.Unauthorized, "This API is for development Purposes only. It is not for front end or project's main purposes");
     const dbTransaction = await sequelize.transaction();
@@ -125,11 +100,12 @@ class reportingManagerController {
     }
   };
 
+  //* ________-------- PUT Add Report Managers ---------______________
   updateReportManager = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, reportManagerId } = req.body;
-      if ((!id || id == "undefined" )|| (!reportManagerId || reportManagerId == "undefined")) {
+      if ((!id || isNaN(id)) || (!reportManagerId || isNaN(reportManagerId))) {
         return helper.failed(res, variables.NotFound, "Id and reportManagerId both are Required!");
       }
 
@@ -137,18 +113,14 @@ class reportingManagerController {
         return helper.failed(res, variables.NotFound, "Id and reportManagerId cannot be same!");
       }
 
-      if(isNaN(id) || isNaN(reportManagerId)) 
-        return helper.failed(res, variables.NotFound, "Id and reportManagerId must be in numbers!");
-
-
-      //* Check if there is a dept already exists
-      const existingDept = await department.findOne({
+      // ________-------- Report Managers Exists or Not ---------______________
+      const existingReportManager = await department.findOne({
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists!");
+      if (!existingReportManager) return helper.failed(res, variables.ValidationError, "Department does not exists!");
 
-      //* Check if there is a user already exists
+      // ________-------- User Exists or Not ---------______________
       const existingUser = await User.findOne({
         where: { id: reportManagerId, company_id: req.user.company_id },
         transaction: dbTransaction,
@@ -156,26 +128,8 @@ class reportingManagerController {
       if (!existingUser) return helper.failed(res, variables.ValidationError, "User does not exists in system!");
       if (existingUser.isAdmin) return helper.failed(res, variables.Unauthorized, "Not allowed to assign to this Id");
 
-      //* Check if there is a dept with a name in a different id
-      // const existingReportManager = await department.findOne({
-      //   where: {
-      //     reportingManagerId: reportManagerId,
-      //     id: { [Op.ne]: id }, // Exclude the current record by id
-      //   },
-      //   transaction: dbTransaction,
-      // });
-      // if (existingReportManager) {
-      //   return helper.failed(res, variables.ValidationError, "Report Manager Already Assigned to a department");
-      // }
-
-      //* if the id has the same value in db
-      const alreadySameReportManager = await department.findOne({
-        where: { id: id, reportingManagerId: reportManagerId, company_id: req.user.company_id },
-        transaction: dbTransaction,
-      });
-      if (alreadySameReportManager) return helper.success(res, variables.Success, "Report Manager Re-Assigned Successfully!");
-
-      const [updatedRows] = await department.update(
+      // ________-------- Update Department ---------______________
+      const updated = await department.update(
         {
           reportingManagerId: reportManagerId,
         },
@@ -186,7 +140,7 @@ class reportingManagerController {
         }
       );
 
-      if (updatedRows > 0) {
+      if (updated) {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Reporting Manager updated successfully!");
       } else {
@@ -199,6 +153,7 @@ class reportingManagerController {
     }
   };
 
+  //* ________-------- DELETE Report Managers ---------______________
   deleteReportManager = async (req, res) => {
     return helper.failed(res, variables.Unauthorized, "This API is for development Purposes only. It is not for front end or project's main purposes");
     const dbTransaction = await sequelize.transaction();
