@@ -332,11 +332,11 @@ export default async function seedDatabase() {
           fullname: `Admin ${a}`,
           email: `admin${a}@example.com`,
           mobile: (Math.floor(Math.random() * 9_000_000_000) + 1_000_000_000).toString(),
-          departmentId: departmentMap["Upper Management"], // Engineering
-          designationId: designationMap["MD (Managing Director)"], // Software Developer
-          roleId: roleMap["Super Admin"], // User
-          teamId: teamMap["Upper Management Team"], // Team associated with Engineering
-          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK", // Placeholder hashed password // Test@123
+          departmentId: departmentMap["Upper Management"],
+          designationId: designationMap["MD (Managing Director)"],
+          roleId: roleMap["Super Admin"],
+          teamId: teamMap["Upper Management Team"],
+          password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK", // Test@123
           isAdmin: 1,
           country: "India",
           screen_capture_time: 60,
@@ -408,10 +408,10 @@ export default async function seedDatabase() {
           fullname: `Frank Wilson ${a}`,
           email: `frank${a}.wilson@example.com`,
           mobile: (Math.floor(Math.random() * 9_000_000_000) + 1_000_000_000).toString(),
-          departmentId: departmentMap["Development Department"], // Engineering
-          designationId: designationMap["Team Leader"], // Software Developer
-          roleId: roleMap["Team Leader"], // User
-          teamId: teamMap["Development Team"], // Team associated with Engineering
+          departmentId: departmentMap["Development Department"],
+          designationId: designationMap["Team Leader"],
+          roleId: roleMap["Team Leader"],
+          teamId: teamMap["Development Team"],
           password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
@@ -423,10 +423,10 @@ export default async function seedDatabase() {
           fullname: `Grace Lee ${a}`,
           email: `grace${a}.lee@example.com`,
           mobile: (Math.floor(Math.random() * 9_000_000_000) + 1_000_000_000).toString(),
-          departmentId: departmentMap["Upper Management"], // Marketing
-          designationId: designationMap["CEO (Chief Executive Officer)"], // Marketing Coordinator
-          roleId: roleMap["Manager"], // User
-          teamId: teamMap["Upper Management Team"], // Team associated with Marketing
+          departmentId: departmentMap["Upper Management"],
+          designationId: designationMap["CEO (Chief Executive Officer)"],
+          roleId: roleMap["Manager"],
+          teamId: teamMap["Upper Management Team"],
           password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
@@ -438,10 +438,10 @@ export default async function seedDatabase() {
           fullname: `Henry Clark ${a}`,
           email: `henry${a}.clark@example.com`,
           mobile: (Math.floor(Math.random() * 9_000_000_000) + 1_000_000_000).toString(),
-          departmentId: departmentMap["Upper Management"], // Project Coordinator
-          designationId: designationMap["CTO (Chief Technical Officer)"], // Project Coordinator Manager
-          roleId: roleMap["Manager"], // User
-          teamId: teamMap["Upper Management Team"], // Team associated with Project Coordinator
+          departmentId: departmentMap["Upper Management"],
+          designationId: designationMap["CTO (Chief Technical Officer)"],
+          roleId: roleMap["Manager"],
+          teamId: teamMap["Upper Management Team"],
           password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
@@ -453,10 +453,10 @@ export default async function seedDatabase() {
           fullname: `Ivy Adams ${a}`,
           email: `ivy${a}.adams@example.com`,
           mobile: (Math.floor(Math.random() * 9_000_000_000) + 1_000_000_000).toString(),
-          departmentId: departmentMap["Upper Management"], // Project Coordinator
-          designationId: designationMap["CIO (Chief Information Officer)"], // Project Coordinator Manager
-          roleId: roleMap["Manager"], // User
-          teamId: teamMap["Upper Management Team"], // Team associated with Finance
+          departmentId: departmentMap["Upper Management"],
+          designationId: designationMap["CIO (Chief Information Officer)"],
+          roleId: roleMap["Manager"],
+          teamId: teamMap["Upper Management Team"],
           password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
@@ -468,10 +468,10 @@ export default async function seedDatabase() {
           fullname: `Jack Thompson ${a}`,
           email: `jack${a}.thompson@example.com`,
           mobile: (Math.floor(Math.random() * 9_000_000_000) + 1_000_000_000).toString(),
-          departmentId: departmentMap["Server And Hardware Department"], // Engineering
-          designationId: designationMap["System Analyst Engineer"], // Software Developer
-          roleId: roleMap["DevOps Engineer"], // User
-          teamId: teamMap["Ops Team"], // Team associated with Engineering
+          departmentId: departmentMap["Server And Hardware Department"],
+          designationId: designationMap["System Analyst Engineer"],
+          roleId: roleMap["DevOps Engineer"],
+          teamId: teamMap["Ops Team"],
           password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK",
           country: "India",
           screen_capture_time: 60,
