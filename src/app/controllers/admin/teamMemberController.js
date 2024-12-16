@@ -161,22 +161,24 @@ class teamMemberController {
         return helper.failed(res, variables.ValidationError, "ID is Required and in numbers");
       }
 
-      // if (!Number.isInteger(screen_capture_time) || !Number.isInteger(broswer_capture_time) || !Number.isInteger(app_capture_time)) {
-      //   return helper.failed(res, variables.BadRequest, "Invalid Data: Only integer values are allowed");
-      // }
-
-      if (
-        ![0, 1].includes(screen_capture) ||
-        ![0, 1].includes(broswer_capture) ||
-        ![0, 1].includes(app_capture) ||
-        screen_capture_time < 60 ||
-        broswer_capture_time < 60 ||
-        app_capture_time < 60
-      ) {
-        return helper.failed(res, variables.BadRequest, "Invalid Data: Only integer values are allowed");
-      }
+      const validations = [
+        { key: "screen_capture", value: screen_capture, validValues: [0, 1] },
+        { key: "broswer_capture", value: broswer_capture, validValues: [0, 1] },
+        { key: "app_capture", value: app_capture, validValues: [0, 1] },
+        { key: "screen_capture_time", value: screen_capture_time, minValue: 60 },
+        { key: "broswer_capture_time", value: broswer_capture_time, minValue: 60 },
+        { key: "app_capture_time", value: app_capture_time, minValue: 60 },
+      ];
       
-
+      for (const validation of validations) {
+        if (validation.validValues && !validation.validValues.includes(validation.value)) {
+          return helper.failed(res,variables.BadRequest,`Invalid value for ${validation.key}. Allowed values are: ${validation.validValues.join(", ")}.`);
+        }
+        if (validation.minValue && validation.value < validation.minValue) {
+          return helper.failed(res,variables.BadRequest,`${validation.key} must be at least ${validation.minValue}.`
+          );
+        }
+      }
       const u = await User.findOne({ where: { id: id } });
       if (!u) {
         return helper.sendResponse(res, variables.NotFound, 0, null, "user not found");
