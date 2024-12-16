@@ -31,6 +31,10 @@ const TimeLog = sequelize.define('timelogs',{
       type: DataTypes.STRING,
       allowNull: true
     },
+    early_going: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 0,
+    },
     late_coming: {
       type: DataTypes.BOOLEAN,
       defaultValue: 0,
@@ -53,7 +57,6 @@ const TimeLog = sequelize.define('timelogs',{
     underscored: false,
   }
 );
-
 
 TimeLog.afterUpdate(async (timeLog) => {
  if(timeLog){

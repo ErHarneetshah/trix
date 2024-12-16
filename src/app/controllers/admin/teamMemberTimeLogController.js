@@ -43,7 +43,7 @@ class teamMemberTimeLogController {
         where: logWhere, // Filters for `workReports`
         offset,
         limit,
-        attributes: ["id", "total_active_duration", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
+        attributes: ["id", "active_time", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
         include: [
           {
             model: User,
@@ -169,15 +169,6 @@ class teamMemberTimeLogController {
         },
       });
 
-      const todayEmployeeCount = await User.count({
-        where: {
-          company_id: req.user.company_id,
-          updatedAt: {
-            [Op.between]: [startOfDay, endOfDay],
-          },
-        },
-      });
-
       const workingCount = await User.count({
         where: {
           company_id: req.user.company_id,
@@ -211,7 +202,6 @@ class teamMemberTimeLogController {
 
       const countsData = [
         { count: employeeCount, name: "employee" },
-        { count: todayEmployeeCount, name: "todayEmployee" },
         { count: workingCount, name: "working" },
         { count: absentCount, name: "absent" },
         { count: lateCount, name: "late" },
