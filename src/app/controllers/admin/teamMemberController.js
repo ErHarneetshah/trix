@@ -155,22 +155,34 @@ class teamMemberController {
   updateSettings = async (req, res) => {
     try {
       let id = req.query.id;
-      let { screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
+      let { screen_capture_time, broswer_capture_time, app_capture_time , screen_capture, broswer_capture, app_capture} = req.body;
 
       if (!id || isNaN(id)) {
         return helper.failed(res, variables.ValidationError, "ID is Required and in numbers");
       }
 
-      if (!Number.isInteger(screen_capture_time) || !Number.isInteger(broswer_capture_time) || !Number.isInteger(app_capture_time)) {
+      // if (!Number.isInteger(screen_capture_time) || !Number.isInteger(broswer_capture_time) || !Number.isInteger(app_capture_time)) {
+      //   return helper.failed(res, variables.BadRequest, "Invalid Data: Only integer values are allowed");
+      // }
+
+      if (
+        ![0, 1].includes(screen_capture) ||
+        ![0, 1].includes(broswer_capture) ||
+        ![0, 1].includes(app_capture) ||
+        screen_capture_time < 60 ||
+        broswer_capture_time < 60 ||
+        app_capture_time < 60
+      ) {
         return helper.failed(res, variables.BadRequest, "Invalid Data: Only integer values are allowed");
       }
+      
 
       const u = await User.findOne({ where: { id: id } });
       if (!u) {
         return helper.sendResponse(res, variables.NotFound, 0, null, "user not found");
       }
 
-      await u.update({ screen_capture_time, broswer_capture_time, app_capture_time }, { where: { id: u?.id } });
+      await u.update({ screen_capture_time, broswer_capture_time, app_capture_time, screen_capture, broswer_capture, app_capture}, { where: { id: u?.id } });
       return helper.sendResponse(res, variables.Success, 1, {}, "Settings Updated Successfully");
     } catch (error) {
       console.error("Error updating settings:", error.message);

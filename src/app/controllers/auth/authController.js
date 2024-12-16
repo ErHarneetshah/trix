@@ -2,7 +2,9 @@ import authValidation from "../../../utils/validations/authValidation.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import User from "../../../database/models/userModel.js";
 import jwtService from "../../../utils/services/jwtService.js";
-import accessToken, { createAccessToken } from "../../../database/models/accessTokenModel.js";
+import accessToken, {
+  createAccessToken,
+} from "../../../database/models/accessTokenModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
@@ -31,8 +33,18 @@ class authController extends jwtService {
       const requestData = req.body;
 
       // Validating request body
-      const validationResult = await authValidation.companyRegisterValid(requestData, res);
-      if (!validationResult.status) return helper.sendResponse(res, variables.ValidationError, 0, {}, validationResult.message);
+      const validationResult = await authValidation.companyRegisterValid(
+        requestData,
+        res
+      );
+      if (!validationResult.status)
+        return helper.sendResponse(
+          res,
+          variables.ValidationError,
+          0,
+          {},
+          validationResult.message
+        );
 
       // Check if the user already exists
       const existingCompany = await company.findOne({
@@ -40,7 +52,13 @@ class authController extends jwtService {
         transaction: dbTransaction,
       });
       if (existingCompany) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Company already exists with this Name and Email!");
+        return helper.sendResponse(
+          res,
+          variables.Unauthorized,
+          0,
+          null,
+          "Company already exists with this Name and Email!"
+        );
       }
 
       //* Step1
@@ -57,12 +75,18 @@ class authController extends jwtService {
 
       if (!createCompany || !createCompany.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Register Company");
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          0,
+          null,
+          "Unable to Register Company"
+        );
       }
 
       const createReportSettings = await reportSettings.create(
         {
-          company_id: createCompany.id
+          company_id: createCompany.id,
         },
         {
           transaction: dbTransaction,
@@ -71,7 +95,13 @@ class authController extends jwtService {
 
       if (!createReportSettings || !createReportSettings.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Report Settings for this Company");
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          0,
+          null,
+          "Unable to Create Report Settings for this Company"
+        );
       }
 
       const createDepartment = await department.create(
@@ -87,7 +117,13 @@ class authController extends jwtService {
 
       if (!createDepartment || !createDepartment.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Department for this Company");
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          0,
+          null,
+          "Unable to Create Department for this Company"
+        );
       }
 
       const createDesignation = await designation.create(
@@ -102,7 +138,13 @@ class authController extends jwtService {
 
       if (!createDesignation || !createDesignation.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Designation for this Company");
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          0,
+          null,
+          "Unable to Create Designation for this Company"
+        );
       }
 
       const createRole = await role.create(
@@ -117,7 +159,13 @@ class authController extends jwtService {
 
       if (!createRole || !createRole.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Role for this Company");
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          0,
+          null,
+          "Unable to Create Role for this Company"
+        );
       }
 
       const permissionInstance = new rolePermissionController();
@@ -125,10 +173,22 @@ class authController extends jwtService {
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       for (const module of createPermissionModules) {
-        let addedPermissions = await permissionInstance.addSuperAdminPermissions(module, createRole.id, createCompany.id, dbTransaction);
+        let addedPermissions =
+          await permissionInstance.addSuperAdminPermissions(
+            module,
+            createRole.id,
+            createCompany.id,
+            dbTransaction
+          );
         if (!addedPermissions) {
           if (dbTransaction) await dbTransaction.rollback();
-          return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Role Permission for this Company");
+          return helper.sendResponse(
+            res,
+            variables.BadRequest,
+            0,
+            null,
+            "Unable to Create Role Permission for this Company"
+          );
         }
       }
 
@@ -148,7 +208,13 @@ class authController extends jwtService {
 
       if (!createShift || !createShift.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Shift for this Company");
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          0,
+          null,
+          "Unable to Create Shift for this Company"
+        );
       }
 
       const createTeam = await team.create(
@@ -162,7 +228,6 @@ class authController extends jwtService {
           transaction: dbTransaction,
         }
       );
-      
 
       if (!createTeam || !createTeam.id) {
         if (dbTransaction) await dbTransaction.rollback();
@@ -192,22 +257,50 @@ class authController extends jwtService {
 
       if (!createUser || !createUser.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create User for this Company");
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          0,
+          null,
+          "Unable to Create User for this Company"
+        );
       }
 
-
-      const token = this.generateToken(createUser.id.toString(), createUser.isAdmin, createUser.company_id, "1d");
-      if (!token) return helper.failed(res, variables.serviceUnavailabe, "Unable to create access token");
+      const token = this.generateToken(
+        createUser.id.toString(),
+        createUser.isAdmin,
+        createUser.company_id,
+        "1d"
+      );
+      if (!token)
+        return helper.failed(
+          res,
+          variables.serviceUnavailabe,
+          "Unable to create access token"
+        );
 
       const expireTime = this.calculateTime();
-      await createAccessToken(createUser.id, createUser.isAdmin, createUser.company_id, token, expireTime, dbTransaction);
+      await createAccessToken(
+        createUser.id,
+        createUser.isAdmin,
+        createUser.company_id,
+        token,
+        expireTime,
+        dbTransaction
+      );
 
       await dbTransaction.commit();
       return helper.success(res, variables.Success, "Register Successfully");
     } catch (error) {
       console.log(error.message);
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
+      return helper.sendResponse(
+        res,
+        variables.BadRequest,
+        0,
+        null,
+        error.message
+      );
     }
   };
 
@@ -218,8 +311,14 @@ class authController extends jwtService {
       let requestData = req.body;
 
       let validationResult = await authValidation.loginValid(requestData, res); // validation done here
-      if (!validationResult.status) return helper.sendResponse(res, variables.ValidationError, 0, {}, validationResult.message);
-
+      if (!validationResult.status)
+        return helper.sendResponse(
+          res,
+          variables.ValidationError,
+          0,
+          {},
+          validationResult.message
+        );
 
       //* Request parameters
       let email = requestData.email;
@@ -251,25 +350,55 @@ class authController extends jwtService {
         ],
       }); // checking whether user exists
       if (!user) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
+        return helper.sendResponse(
+          res,
+          variables.Unauthorized,
+          0,
+          null,
+          "Invalid Credentials"
+        );
       }
 
       let comparePwd = await bcrypt.compare(password, user.password); // comparing passwords
       if (!comparePwd) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Incorrect Credentials!!!");
+        return helper.sendResponse(
+          res,
+          variables.Unauthorized,
+          0,
+          null,
+          "Incorrect Credentials!!!"
+        );
       }
 
       // checking whether user is active or not
       if (!user.status) {
-        return helper.sendResponse(res, variables.Forbidden, 0, null, "Your Account has been De-Activated. Contact Support");
+        return helper.sendResponse(
+          res,
+          variables.Forbidden,
+          0,
+          null,
+          "Your Account has been De-Activated. Contact Support"
+        );
       }
       let token;
 
       // Generate Token if user is Admin
       if (user.isAdmin) {
-        token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
+        token = this.generateToken(
+          user.id.toString(),
+          user.isAdmin,
+          user.company_id,
+          "1d"
+        );
         let expireTime = this.calculateTime();
-        await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
+        await createAccessToken(
+          user.id,
+          user.isAdmin,
+          user.company_id,
+          token,
+          expireTime,
+          dbTransaction
+        );
 
         // setting Admin attendence (currentStatus) to present(1)
         user.currentStatus = 1;
@@ -282,24 +411,65 @@ class authController extends jwtService {
 
         let shiftData = await getShiftData(user.teamId); //getting shift details of user
 
-        let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
+        let [shiftHours, shiftMinutes] = shiftData.start_time
+          .split(":")
+          .map(Number);
         let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
 
-        if (currentHours > endHours && currentHours === endHours && currentMinutes > endMinutes) {
-          return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
+        if (
+          currentHours > endHours &&
+          currentHours === endHours &&
+          currentMinutes > endMinutes
+        ) {
+          return helper.sendResponse(
+            res,
+            variables.Forbidden,
+            0,
+            {},
+            "Your shift is over. You cannot log in at this time."
+          );
         }
-        if (currentHours > endHours && currentHours === endHours && currentMinutes > endMinutes) {
-          return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
+        if (
+          currentHours > endHours &&
+          currentHours === endHours &&
+          currentMinutes > endMinutes
+        ) {
+          return helper.sendResponse(
+            res,
+            variables.Forbidden,
+            0,
+            {},
+            "Your shift is over. You cannot log in at this time."
+          );
         }
 
         // Generating Token for user
-        token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
+        token = this.generateToken(
+          user.id.toString(),
+          user.isAdmin,
+          user.company_id,
+          "1d"
+        );
         let expireTime = this.calculateTime();
         // console.log(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
 
-        const generatedToken = await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
+        const generatedToken = await createAccessToken(
+          user.id,
+          user.isAdmin,
+          user.company_id,
+          token,
+          expireTime,
+          dbTransaction
+        );
 
-        if (!generatedToken) return helper.sendResponse(res, variables.BadRequest, 0, null, "Token Did not saved in db");
+        if (!generatedToken)
+          return helper.sendResponse(
+            res,
+            variables.BadRequest,
+            0,
+            null,
+            "Token Did not saved in db"
+          );
 
         //* Time Log Management is done from here -----------------------------------------------
         let timeLog = await TimeLog.findOne({
@@ -318,18 +488,28 @@ class authController extends jwtService {
           let logoutTime = new Date();
           logoutTime.setHours(hours, mins, 0, 0);
           let spareMinutes = Math.floor((now - logoutTime) / 60000);
-          timeLog.spare_time = parseInt(timeLog.spare_time) + parseInt(spareMinutes);
+          timeLog.spare_time =
+            parseInt(timeLog.spare_time) + parseInt(spareMinutes);
           timeLog.logged_out_time = null;
           timeLog.save();
           user.currentStatus = 1;
           user.save();
         } else {
-          if (currentHours > shiftHours || (currentHours === shiftHours && currentMinutes > shiftMinutes)) {
-            lateMinutes = (currentHours - shiftHours) * 60 + (currentMinutes - shiftMinutes);
+          if (
+            currentHours > shiftHours ||
+            (currentHours === shiftHours && currentMinutes > shiftMinutes)
+          ) {
+            lateMinutes =
+              (currentHours - shiftHours) * 60 +
+              (currentMinutes - shiftMinutes);
             lateComing = 1;
-            lateComingDuration = `${Math.floor(lateMinutes / 60)}:${lateMinutes % 60}`;
+            lateComingDuration = `${Math.floor(lateMinutes / 60)}:${
+              lateMinutes % 60
+            }`;
           }
-          const [lateHours, lateMins] = lateComingDuration.split(":").map(Number);
+          const [lateHours, lateMins] = lateComingDuration
+            .split(":")
+            .map(Number);
           lateMinutes = lateHours * 60 + lateMins;
 
           user.currentStatus = 1;
@@ -347,16 +527,27 @@ class authController extends jwtService {
             active_time: 0,
             date: today,
           });
-
         }
       }
       await dbTransaction.commit();
-      return helper.sendResponse(res, variables.Success, 1, { token: token, user: user }, "Login Successfully");
+      return helper.sendResponse(
+        res,
+        variables.Success,
+        1,
+        { token: token, user: user },
+        "Login Successfully"
+      );
     } catch (error) {
       // console.log(error);
 
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(res, variables.Forbidden, 0, null, error.message);
+      return helper.sendResponse(
+        res,
+        variables.Forbidden,
+        0,
+        null,
+        error.message
+      );
     }
   };
 
@@ -366,7 +557,8 @@ class authController extends jwtService {
       let userData = await User.findOne({ where: { id: req.user.id } }); // checking if the user exists based on id
       let token = await accessToken.findOne({ where: { userId: req.user.id } }); // checking if the token exists in system
 
-      if (!token) return helper.failed(res, variables.NotFound, "Already Logout");
+      if (!token)
+        return helper.failed(res, variables.NotFound, "Already Logout");
 
       //* Upadting Time log if the user is not admin
       if (!userData.isAdmin) {
@@ -381,14 +573,18 @@ class authController extends jwtService {
           await userData.save();
 
           let logged_out_time = new Date();
-          let [loginHours, loginMinutes] = time_data?.logged_in_time.split(":").map(Number);
+          let [loginHours, loginMinutes] = time_data?.logged_in_time
+            .split(":")
+            .map(Number);
           let loginTimeInMinutes = loginHours * 60 + loginMinutes;
           let logoutHours = logged_out_time.getHours();
           let logoutMinutes = logged_out_time.getMinutes();
           let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
 
           let duration = logoutTimeInMinutes - loginTimeInMinutes;
-          let active_time = parseInt(parseInt(duration) - parseInt(time_data?.spare_time)) - parseInt(time_data?.idle_time);
+          let active_time =
+            parseInt(parseInt(duration) - parseInt(time_data?.spare_time)) -
+            parseInt(time_data?.idle_time);
 
           await time_data.update({
             logged_out_time: `${logoutHours}:${logoutMinutes}`,
@@ -414,7 +610,9 @@ class authController extends jwtService {
     const now = new Date(); // Current date and time
 
     // Add 1 day to the current date
-    const oneDayFromNow = new Date(now.getTime() + oneDayInMilliseconds).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" });
+    const oneDayFromNow = new Date(
+      now.getTime() + oneDayInMilliseconds
+    ).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" });
     return oneDayFromNow;
   };
 
@@ -451,7 +649,11 @@ class authController extends jwtService {
         create = await Device.findOne({ where: { user_id: id } });
       }
       io.to("Admin").emit("updatedSystemConfig", create);
-      return helper.success(res, variables.Success, "system configration add successfully");
+      return helper.success(
+        res,
+        variables.Success,
+        "system configration add successfully"
+      );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -464,12 +666,25 @@ class authController extends jwtService {
         return { error: "User not found" };
       }
       let blockedWebsites = await BlockedWebsites.findAndCountAll({
-        where: { companyId: user.company_id, departmentId: user?.departmentId, status: 1 },
+        where: {
+          companyId: user.company_id,
+          departmentId: user?.departmentId,
+          status: 1,
+        },
         attributes: ["website"],
       });
-      return helper.success(res, variables.Success, "Blocked websites fetched successfully!!", blockedWebsites);
+      return helper.success(
+        res,
+        variables.Success,
+        "Blocked websites fetched successfully!!",
+        blockedWebsites
+      );
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, "Error in blocked Website!!!");
+      return helper.failed(
+        res,
+        variables.BadRequest,
+        "Error in blocked Website!!!"
+      );
     }
   };
 
@@ -485,7 +700,12 @@ class authController extends jwtService {
       let Absent_data = await Model.query(web_query, {
         type: QueryTypes.SELECT,
       });
-      return helper.success(res, variables.Success, "Absent Calender Data fetched successfully!!", Absent_data);
+      return helper.success(
+        res,
+        variables.Success,
+        "Absent Calender Data fetched successfully!!",
+        Absent_data
+      );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -495,11 +715,19 @@ class authController extends jwtService {
     try {
       let data = await Notification.findAll({ where: { is_read: 0 } });
       if (!data || data.length == 0) {
-        return helper.success(res, variables.Success, "No unread notifications found.");
+        return helper.success(
+          res,
+          variables.Success,
+          "No unread notifications found."
+        );
       }
       await Notification.update({ is_read: 1 }, { where: { is_read: 0 } });
       io.to("Admin").emit("newNotification", { notificationCount: 0 });
-      return helper.success(res, variables.Success, "Notification Data cleared successfully");
+      return helper.success(
+        res,
+        variables.Success,
+        "Notification Data cleared successfully"
+      );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -523,31 +751,89 @@ class authController extends jwtService {
       });
 
       if (!data || data.length == 0) {
-        return helper.success(res, variables.Success, "No notifications found.");
+        return helper.success(
+          res,
+          variables.Success,
+          "No notifications found."
+        );
       }
 
-      return helper.success(res, variables.Success, "Notification Data fetched successfully", data);
+      return helper.success(
+        res,
+        variables.Success,
+        "Notification Data fetched successfully",
+        data
+      );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
+  // advanced_setting = async (req, res) => {
+  //   try {
+  //     let { screen_capture, broswer_capture, app_capture } = req.body;
+  //     if (![0, 1].includes(screen_capture) || ![0, 1].includes(broswer_capture) || ![0, 1].includes(app_capture)) {
+  //       return helper.failed(res, variables.BadRequest, "Invalid Data");
+  //     }
+
+  //     let data = await company.findOne({ where: { id: req.user.company_id } });
+  //     if (!data) {
+  //       return helper.failed(res, variables.NotFound, "company not found!!");
+  //     }
+  //     data.screen_capture = screen_capture;
+  //     data.broswer_capture = broswer_capture;
+  //     data.app_capture = app_capture;
+  //     data.save();
+  //     return helper.success(res, variables.Success, "Advanced setting update successfully!");
+  //   } catch (error) {
+  //     return helper.failed(res, variables.BadRequest, error.message);
+  //   }
+  // };
   advanced_setting = async (req, res) => {
     try {
-      let { screen_capture, broswer_capture, app_capture } = req.body;
-      if (![0, 1].includes(screen_capture) || ![0, 1].includes(broswer_capture) || ![0, 1].includes(app_capture)) {
+      const {
+        screen_capture,
+        broswer_capture,
+        app_capture,
+        screen_capture_time,
+        broswer_capture_time,
+        app_capture_time,
+      } = req.body;
+
+      if (
+        ![0, 1].includes(screen_capture) ||
+        ![0, 1].includes(broswer_capture) ||
+        ![0, 1].includes(app_capture) ||
+        screen_capture_time < 60 ||
+        broswer_capture_time < 60 ||
+        app_capture_time < 60
+      ) {
         return helper.failed(res, variables.BadRequest, "Invalid Data");
       }
 
-      let data = await company.findOne({ where: { id: req.user.company_id } });
-      if (!data) {
-        return helper.failed(res, variables.NotFound, "company not found!!");
+      const users = await User.findAll({
+        where: { company_id: req.user.company_id },
+      });
+      if (!users || users.length === 0) {
+        return helper.failed(res, variables.NotFound, "Data Not Found!!");
       }
-      data.screen_capture = screen_capture;
-      data.broswer_capture = broswer_capture;
-      data.app_capture = app_capture;
-      data.save();
-      return helper.success(res, variables.Success, "Advanced setting update successfully!");
+
+      for (const user of users) {
+        await user.update({
+          screen_capture_time,
+          broswer_capture_time,
+          app_capture_time,
+          screen_capture,
+          broswer_capture,
+          app_capture,
+        });
+      }
+
+      return helper.success(
+        res,
+        variables.Success,
+        "Advanced settings updated successfully!"
+      );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
