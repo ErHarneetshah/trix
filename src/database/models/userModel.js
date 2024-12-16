@@ -79,98 +79,55 @@ const User = sequelize.define(
     },
     screen_capture_time: {
      type: DataTypes.INTEGER,
-     defaultValue: 60, // default value is 60 seconds
+     defaultValue: 60, 
     },
     broswer_capture_time: {
      type: DataTypes.INTEGER,
-     defaultValue: 60, // default value is 60 seconds
+     defaultValue: 60, 
     },
     app_capture_time: {
      type: DataTypes.INTEGER,
-     defaultValue: 60, // default value is 60 seconds
+     defaultValue: 60, 
     },
+    screen_capture: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 1,
+    },
+    broswer_capture: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 1,
+    },
+    app_capture: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 1,
+    }
 },
 {
     timestamps: true,
     underscored: false,
     hooks: {
-      // async beforeCreate(user, options) {
-      //   // if (user.password) {
-      //   //   user.password = await bcrypt.hash(user.password, 10);
-      //   // }
-
-      //   const validationMap = {
-      //    departmentId: department,
-      //    designationId: designation,
-      //    roleId: role,
-      //    teamId: team,
-      //   };
-
-      //   // Iterate through the fields to validate
-      //   for (const [field, model] of Object.entries(validationMap)) {
-      //    if (user[field]) {
-      //       console.log(model);
-      //       const recordExists = await model.findOne({
-      //        where: { id: user[field] },
-      //        transaction: options.transaction,
-      //       });
-
-      //       if (!recordExists) {
-      //        throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
-      //       }
-      //    }
-      //   }
-      // },
-      // async beforeUpdate(user, options) {
-      //   // Hash the password if it's being updated
-      //   if (user.password) {
-      //     user.password = await bcrypt.hash(user.password, 10);
-      //   }
-
-      //   // Define a mapping of fields to their respective models
-      //   const validationMap = {
-      //     departmentId: department,
-      //     designationId: designation,
-      //     roleId: role,
-      //     teamId: team,
-      //   };
-
-      //   // Iterate through the fields to validate
-      //   for (const [field, model] of Object.entries(validationMap)) {
-      //     if (user[field]) {
-      //       console.log("------------------------");
-      //       console.log(model);
-      //       const recordExists = await model.findOne({
-      //         where: { id: user[field] },
-      //         transaction: options.transaction,
-      //       });
-
-      //       if (!recordExists) {
-      //         return helper.failed(res, variables.NotFound, `${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
-      //         // throw new Error(`${field.replace(/Id$/, "")} with ID ${user[field]} does not exist.`);
-      //       }
-      //     }
-      //   }
-      // },
       async afterUpdate(user, options) {
 
         let monitoredFieldss = [
           "screen_capture_time",
           "broswer_capture_time",
           "app_capture_time",
+          "screen_capture",
+          "broswer_capture",
+          "app_capture",
         ];
         let fieldsChangeds = options.fields.some((field) =>
           monitoredFieldss.includes(field)
         );
-        let comp = await company.findOne({ where: { id: user.company_id } });
+        // let comp = await company.findOne({ where: { id: user.company_id } });
         if (fieldsChangeds) {
           io.to(user.socket_id).emit("getUserSettings", {
             screen_capture_time: user.screen_capture_time,
             broswer_capture_time: user.broswer_capture_time,
             app_capture_time: user.app_capture_time,
-            screen_capture: comp.screen_capture,
-            broswer_capture: comp.broswer_capture,
-            app_capture: comp.app_capture,
+            screen_capture: user.screen_capture,
+            broswer_capture: user.broswer_capture,
+            app_capture: user.app_capture,
           });
         }
 
@@ -235,5 +192,5 @@ const User = sequelize.define(
 }
 );
 
-await User.sync({alter:1});
+// await User.sync({alter:1});
 export default User;
