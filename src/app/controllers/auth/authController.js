@@ -181,9 +181,9 @@ class authController extends jwtService {
           roleId: createRole.id,
           teamId: createTeam.id,
           isAdmin: 1,
-          screenshot_time: 60,
-          app_history_time: 60,
-          browser_history_time: 60,
+          screen_capture_time: 60,
+          app_capture_time: 60,
+          broswer_capture_time: 60,
         },
         {
           transaction: dbTransaction,

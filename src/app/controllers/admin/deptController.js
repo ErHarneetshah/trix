@@ -144,16 +144,18 @@ class deptController {
 
       // ___________-------- Dept exists with same name or not ---------________________
       if (parentDeptId) {
-        if (existingDept.isRootId) return helper.failed(res, variables.ValidationError, "Cannot update the Parent Department of Root Department!");
-
-        const existingDeptWithName = await department.findOne({
-          where: {
-            id: parentDeptId,
-            company_id: req.user.company_id,
-          },
-          transaction: dbTransaction,
-        });
-        if (!existingDeptWithName) return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
+        if (existingDept.isRootId) {
+          parentDeptId = null;
+        } else {
+          const existingDeptWithName = await department.findOne({
+            where: {
+              id: parentDeptId,
+              company_id: req.user.company_id,
+            },
+            transaction: dbTransaction,
+          });
+          if (!existingDeptWithName) return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
+        }
       }
 
       // ___________-------- Adding fields to update ---------________________

@@ -84,9 +84,9 @@ class teamMemberController {
       const password = "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK"; // Test@123
 
       requestData.password = password;
-      requestData.screenshot_time = 60;
-      requestData.app_history_time = 60;
-      requestData.browser_history_time = 60;
+      requestData.screen_capture_time = 60;
+      requestData.app_capture_time = 60;
+      requestData.broswer_capture_time = 60;
       requestData.company_id = req.user.company_id;
 
       const teamMember = await User.create(requestData, {
