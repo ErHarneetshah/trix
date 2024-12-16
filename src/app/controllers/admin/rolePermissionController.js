@@ -123,7 +123,7 @@ class rolePermissionController {
       const { roleName, moduleName, permissions } = req.body;
       if (!roleName || typeof roleName !== "string") return helper.failed(res, variables.NotFound, "Role Name is required!");
       if (!moduleName || typeof moduleName !== "string") return helper.failed(res, variables.NotFound, "Module name is required!");
-      if (!permissions || typeof permissions !== "string") return helper.failed(res, variables.NotFound, "Permissions are required!");
+      if (!permissions || typeof permissions == "undefined") return helper.failed(res, variables.NotFound, "Permissions are required!");
 
       if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {
         return helper.failed(res, variables.BadRequest, "Permissions must be a valid object.");
