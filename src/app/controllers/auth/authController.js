@@ -268,84 +268,43 @@ class authController extends jwtService {
         let expireTime = this.calculateTime();
         await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
 
-        // setting Admin attendence (currentStatus) to present(1)
-        user.currentStatus = 1;
-        user.save();
+       
       } else {
-        // Ensure the user isn't logging in after shift end time
         let now = new Date();
         let currentHours = now.getHours();
         let currentMinutes = now.getMinutes();
 
-        let shiftData = await getShiftData(user.teamId); //getting shift details of user
+        let shiftData = await getShiftData(user.teamId); 
 
         let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
         let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
-
-        if (currentHours > endHours && currentHours === endHours && currentMinutes > endMinutes) {
-          return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
+        if (
+          currentHours > endHours &&
+          currentHours === endHours &&
+          currentMinutes > endMinutes
+        ) {
+          return helper.sendResponse(
+            res,
+            variables.Forbidden,
+            0,
+            {},
+            "Your shift is over. You cannot log in at this time."
+          );
         }
-        if (currentHours > endHours && currentHours === endHours && currentMinutes > endMinutes) {
-          return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
-        }
 
-        // Generating Token for user
-        token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
+        token = this.generateToken(
+          user.id.toString(),
+          user.isAdmin,
+          user.company_id,
+          "1d"
+        );
         let expireTime = this.calculateTime();
-        // console.log(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
 
         const generatedToken = await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
 
         if (!generatedToken) return helper.sendResponse(res, variables.BadRequest, 0, null, "Token Did not saved in db");
 
-        //* Time Log Management is done from here -----------------------------------------------
-        let timeLog = await TimeLog.findOne({
-          where: {
-            user_id: user.id,
-            date: today,
-          },
-          order: [["createdAt", "DESC"]],
-        });
        
-        let lateComing = 0;
-        let lateComingDuration = "00:00";
-        let lateMinutes = 0;
-
-        if (timeLog && timeLog.logged_out_time != null) {
-          const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
-          let logoutTime = new Date();
-          logoutTime.setHours(hours, mins, 0, 0);
-          let spareMinutes = Math.floor((now - logoutTime) / 60000);
-          timeLog.spare_time = parseInt(timeLog.spare_time) + parseInt(spareMinutes);
-          timeLog.logged_out_time = null;
-          timeLog.save();
-          user.currentStatus = 1;
-          user.save();
-        } else {
-          if (currentHours > shiftHours || (currentHours === shiftHours && currentMinutes > shiftMinutes)) {
-            lateMinutes = (currentHours - shiftHours) * 60 + (currentMinutes - shiftMinutes);
-            lateComing = 1;
-            lateComingDuration = `${Math.floor(lateMinutes / 60)}:${lateMinutes % 60}`;
-          }
-          const [lateHours, lateMins] = lateComingDuration.split(":").map(Number);
-          lateMinutes = lateHours * 60 + lateMins;
-
-          user.currentStatus = 1;
-          user.save();
-
-          // Create a new TimeLog entry
-          const createdTimeLog = await TimeLog.create({
-            user_id: user.id,
-            shift_id: shiftData.id,
-            company_id: user.company_id,
-            logged_in_time: `${currentHours}:${currentMinutes}`,
-            late_coming: lateComing,
-            late_coming_duration: lateMinutes,
-            spare_time: 0,
-            active_time: 0,
-            date: today,
-          });
-        }
       }
       await dbTransaction.commit();
       return helper.sendResponse(res, variables.Success, 1, { token: token, user: user }, "Login Successfully");
@@ -358,54 +317,14 @@ class authController extends jwtService {
   //* Logout Function -----------------------------------------------------------------
   logout = async (req, res) => {
     try {
-      let userData = await User.findOne({ where: { id: req.user.id } }); // checking if the user exists based on id
+      let userData = await User.findOne({ where: { id: req.user.id } }); 
       let token = await accessToken.findOne({ where: { token: req.sessionToken } }); // checking if the token exists in system
       if (!token) return helper.failed(res, variables.NotFound, "Already Logout");
 
-      //* Upadting Time log if the user is not admin
-      if (!userData.isAdmin) {
-        if (token) {
-          let time_data = await TimeLog.findOne({
-            where: { user_id: req.user.id },
-            order: [["createdAt", "DESC"]],
-          });
+      if (!token)
+        return helper.failed(res, variables.NotFound, "Already Logout");
 
-          userData.currentStatus = 0;
-          userData.socket_id = null;
-          await userData.save();
-
-
-          let early_going = 0;
-          let logged_out_time = new Date();
-
-          let shiftData = await getShiftData(userData.teamId); //getting shift details of user
-          let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
-
-          let [loginHours, loginMinutes] = time_data?.logged_in_time.split(":").map(Number);
-          let loginTimeInMinutes = loginHours * 60 + loginMinutes;
-          let logoutHours = logged_out_time.getHours();
-          let logoutMinutes = logged_out_time.getMinutes();
-
-          if (logoutHours < endHours || (logoutHours === endHours && logoutMinutes < endMinutes)) {
-            early_going = 1;
-          }
-
-          let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
-          let duration = logoutTimeInMinutes - loginTimeInMinutes;
-          let active_time = parseInt(parseInt(duration) - parseInt(time_data?.spare_time)) - parseInt(time_data?.idle_time);
-
-          await time_data.update({
-            logged_out_time: `${logoutHours}:${logoutMinutes}`,
-            active_time: active_time,
-            early_going: early_going
-          });
-        }
-      } else {
-        userData.currentStatus = 0;
-        userData.socket_id = null;
-        await userData.save();
-      }
-      await token.destroy();
+      await token.destroy(); // token destroyed here
 
       return helper.success(res, variables.Success, "Logout Successfully");
     } catch (error) {
@@ -455,8 +374,12 @@ class authController extends jwtService {
         });
         create = await Device.findOne({ where: { user_id: id } });
       }
-      io.to("Admin").emit("updatedSystemConfig", create);
-      return helper.success(res, variables.Success, "system configration add successfully");
+      io.to(`Admin_${req.user.company_id}`).emit("getSystemDetail", create);
+      return helper.success(
+        res,
+        variables.Success,
+        "system configration add successfully"
+      );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -507,8 +430,12 @@ class authController extends jwtService {
         return helper.success(res, variables.Success, "No unread notifications found.");
       }
       await Notification.update({ is_read: 1 }, { where: { is_read: 0 } });
-      io.to("Admin").emit("newNotification", { notificationCount: 0 });
-      return helper.success(res, variables.Success, "Notification Data cleared successfully");
+      io.to(`Admin_${req.user.company_id}`).emit("newNotification", { notificationCount: 0 });
+      return helper.success(
+        res,
+        variables.Success,
+        "Notification Data cleared successfully"
+      );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
