@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon app.js",
-    "sync-models": "node src/database/queries/establishConnection.js",
-    "generateSecretKey": "node src/utils/common/generateSecretKey.js",
+    "generatePass": "node src/utils/development/generateBycrptPass.js",
+    "generateSecretKey": "node src/utils/development/generateSecretKey.js",
     "seedTeamMemberDailyLog": "node src/database/seeders/seedTeamMemberDailyLog.js",
     "seedModules": "node src/database/seeders/seedModules.js",
     "deleteExpireToken": "node src/utils/services/scheduler.js",

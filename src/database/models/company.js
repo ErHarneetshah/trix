@@ -16,6 +16,14 @@ const company = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    email: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
+      validate: {
+         isEmail: true, // Ensures the value is a valid email
+      },
+     },
     employeeNumber: {
       type: DataTypes.INTEGER,
       allowNull: false,

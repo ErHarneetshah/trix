@@ -8,37 +8,20 @@ import designation from "../../../database/models/designationModel.js";
 import role from "../../../database/models/roleModel.js";
 import team from "../../../database/models/teamModel.js";
 import { Op } from "sequelize";
-import company from "../../../database/models/company.js";
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
     try {
+      // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-
-      let where = {};
-      let search = [];
-
       let searchable = ["fullname", "email", "mobile", "country", "$department.name$", "$designation.name$", "$role.name$", "$team.name$"];
-
-      if (searchParam) {
-        //searchable filter
-        searchable.forEach((key) => {
-          search.push({
-            [key]: {
-              [Op.substring]: searchParam,
-            },
-          });
-        });
-
-        where = {
-          [Op.or]: search,
-        };
-      }
-
+      let where = await helper.searchCondition(searchParam, searchable);
       where.isAdmin = 0;
       where.company_id = req.user.company_id;
+      // ___________-----------------------------------------------_______________
+
 
       const alldata = await User.findAndCountAll({
         where: where,
@@ -47,7 +30,7 @@ class teamMemberController {
         order: [["id", "DESC"]],
         attributes: {
           exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt", "status"],
-        }, // Exclude fields
+        },
         include: [
           {
             model: department,
@@ -98,11 +81,9 @@ class teamMemberController {
         return helper.failed(res, variables.Unauthorized, "User already exists with this mail!");
       }
 
-      const password = "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK";
-      // if (!password) return helper.failed(res, variables.UnknownError, "User already exists with this mail!");
+      const password = "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK"; // Test@123
 
       requestData.password = password;
-      // Create and save the new user
       requestData.screenshot_time = 60;
       requestData.app_history_time = 60;
       requestData.browser_history_time = 60;
@@ -111,9 +92,6 @@ class teamMemberController {
       const teamMember = await User.create(requestData, {
         transaction: dbTransaction,
       });
-
-      // Create user settings
-      // const userSetting = await createUserSetting(teamMember.id, dbTransaction, res);
 
       if (teamMember) {
         await dbTransaction.commit();
@@ -128,7 +106,6 @@ class teamMemberController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      // console.log(error.message);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -146,7 +123,7 @@ class teamMemberController {
       if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists in your company data");
       if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
 
-      if(updateFields.email){
+      if (updateFields.email) {
         const existingTeamMemberWithEmail = await User.findOne({
           where: { email: updateFields.email },
           transaction: dbTransaction,
@@ -154,11 +131,6 @@ class teamMemberController {
 
         if (existingTeamMemberWithEmail) return helper.failed(res, variables.BadRequest, "Email is already used in system");
       }
-
-      // Check if the status updation request value is in 0 or 1 only >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      // if (updateFields.status !== 0 && updateFields.status !== 1) {
-      //   return helper.failed(res, variables.ValidationError, "Status must be either 0 or 1");
-      // }
 
       // Perform the update operation
       const [updatedRows] = await User.update(updateFields, {
@@ -197,11 +169,6 @@ class teamMemberController {
       if (!u) {
         return helper.sendResponse(res, variables.NotFound, 0, null, "user not found");
       }
-
-      // u.screen_capture_time = screen_capture_time;
-      // u.broswer_capture_time = broswer_capture_time;
-      // u.app_capture_time = app_capture_time;
-      // await u.save();
 
       await u.update({ screen_capture_time, broswer_capture_time, app_capture_time }, { where: { id: u?.id } });
       return helper.sendResponse(res, variables.Success, 1, {}, "Settings Updated Successfully");

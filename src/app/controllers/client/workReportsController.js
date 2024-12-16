@@ -5,6 +5,7 @@ import validate from "../../../utils/CustomValidation.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import User from "../../../database/models/userModel.js";
+import { is } from "date-fns/locale";
 
 const createReport = async (req, res) => {
   try {
@@ -66,32 +67,18 @@ const getSelfReport = async (req, res) => {
   try {
     let id = req.user.id;
 
+    if (!id || isNaN(id)) return helper.failed(res, variables.ValidationError, "Id is required and in numbers");
+
     let work_data = await workReports.findAll({
       where: { user_id: id },
-
       attributes: ["user_id", "description", "status", "remarks", "createdAt"],
     });
 
     return helper.success(res, variables.Success, "Retrieved User Report Successfully.", work_data);
   } catch (error) {
     console.error("Error fetching reports:", error);
-
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
-
-// const getSelfReport = async (req, res) => {
-//   try {
-//     const query = `SELECT wr.description, CASE  WHEN wr.status = 0 THEN 'Pending' WHEN wr.status = 1 THEN 'Approved' WHEN wr.status = 2 THEN 'Disapproved' ELSE 'Unknown' END AS status FROM work_reports As wr WHERE wr.user_id = ${req.user.id}`;
-
-//     const selfReport = await workReports.sequelize.query(query, {
-//       type: workReports.sequelize.QueryTypes.SELECT,
-//     });
-//     return helper.success(res, variables.Success, "Retrieved User Report Successfully.", selfReport);
-//   } catch (error) {
-//     console.error("Error fetching reports:", error);
-//     return helper.failed(res, variables.BadRequest, error.message);
-//   }
-// };
 
 export default { createReport, getSelfReport };

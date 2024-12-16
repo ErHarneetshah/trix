@@ -38,6 +38,7 @@ class appConfig {
         app_secret: process.env.L_APP_SECRET,
       };
     }
+    this.#config.collation = process.env.collation;
     this.#jwtConfig = process.env.JWT_SECRET_KEY;
   }
 

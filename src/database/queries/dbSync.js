@@ -24,19 +24,16 @@ import shift from '../models/shiftModel.js';
 
 (async () => {
   try {
-    // Log database connection status
     console.log('Initializing database connection...');
 
-    // Synchronize models with the database
-    const forceSync = process.argv.includes('--force'); // Use `--force` argument to drop and recreate tables
+    const forceSync = process.argv.includes('--force');
     console.log(`Synchronizing models${forceSync ? ' with force' : ''}...`);
-    await sequelize.sync({ force: forceSync });
+    await sequelize.sync({ force: forceSync, alter: true });
 
     console.log(`Models synchronized successfully${forceSync ? ' (forced)' : ''}.`);
   } catch (error) {
     console.error('Error synchronizing models:', error);
   } finally {
-    // Close the database connection
     await sequelize.close();
     console.log('Database connection closed.');
   }
