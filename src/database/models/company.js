@@ -21,7 +21,7 @@ const company = sequelize.define(
       unique: true,
       allowNull: false,
       validate: {
-         isEmail: true, // Ensures the value is a valid email
+         isEmail: true,
       },
      },
     employeeNumber: {

@@ -122,8 +122,8 @@ class rolePermissionController {
     try {
       const { roleName, moduleName, permissions } = req.body;
       if (!roleName || typeof roleName !== "string") return helper.failed(res, variables.NotFound, "Role Name is required!");
-      if (!moduleName || typeof moduleName == "string") return helper.failed(res, variables.NotFound, "Module name is required!");
-      if (!permissions || typeof permissions == "string") return helper.failed(res, variables.NotFound, "Permissions are required!");
+      if (!moduleName || typeof moduleName !== "string") return helper.failed(res, variables.NotFound, "Module name is required!");
+      if (!permissions || typeof permissions == "undefined") return helper.failed(res, variables.NotFound, "Permissions are required!");
 
       if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {
         return helper.failed(res, variables.BadRequest, "Permissions must be a valid object.");
@@ -142,8 +142,8 @@ class rolePermissionController {
 
       for (const [key, value] of Object.entries(permissions)) {
         if (value !== true && value !== false) {
-          return helper.failed(res, variables.BadRequest, `Invalid value for permission "${key}". Only 'true' or 'false' are allowed.`);
-        }
+        return helper.failed(res, variables.BadRequest, `Invalid value for permission "${key}". Only 'true' or 'false' are allowed.`);
+      }
       }
 
       const existRole = await role.findOne({
