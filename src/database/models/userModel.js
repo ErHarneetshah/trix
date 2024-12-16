@@ -89,20 +89,18 @@ const User = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 60,
     },
-    //! Uncomment this
-
-    // screen_capture: {
-    //   type: DataTypes.BOOLEAN,
-    //   defaultValue: 1,
-    // },
-    // broswer_capture: {
-    //   type: DataTypes.BOOLEAN,
-    //   defaultValue: 1,
-    // },
-    // app_capture: {
-    //   type: DataTypes.BOOLEAN,
-    //   defaultValue: 1,
-    // }
+    screen_capture: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 1,
+    },
+    broswer_capture: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 1,
+    },
+    app_capture: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 1,
+    }
   },
   {
     timestamps: true,
@@ -111,18 +109,16 @@ const User = sequelize.define(
       async afterUpdate(user, options) {
         let monitoredFieldss = ["screen_capture_time", "broswer_capture_time", "app_capture_time", "screen_capture", "broswer_capture", "app_capture"];
         let fieldsChangeds = options.fields.some((field) => monitoredFieldss.includes(field));
-        // let comp = await company.findOne({ where: { id: user.company_id } });
-        //! Uncomment this
-        // if (fieldsChangeds) {
-        //   io.to(user.socket_id).emit("getUserSettings", {
-        //     screen_capture_time: user.screen_capture_time,
-        //     broswer_capture_time: user.broswer_capture_time,
-        //     app_capture_time: user.app_capture_time,
-        //     screen_capture: user.screen_capture,
-        //     broswer_capture: user.broswer_capture,
-        //     app_capture: user.app_capture,
-        //   });
-        // }
+        if (fieldsChangeds) {
+          io.to(user.socket_id).emit("getUserSettings", {
+            screen_capture_time: user.screen_capture_time,
+            broswer_capture_time: user.broswer_capture_time,
+            app_capture_time: user.app_capture_time,
+            screen_capture: user.screen_capture,
+            broswer_capture: user.broswer_capture,
+            app_capture: user.app_capture,
+          });
+        }
 
         let monitoredFields = ["currentStatus"];
         let fieldsChanged = options.fields.some((field) => monitoredFields.includes(field));
