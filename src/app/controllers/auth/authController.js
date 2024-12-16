@@ -36,7 +36,7 @@ class authController extends jwtService {
 
       // Check if the user already exists
       const existingCompany = await company.findOne({
-        where: { name: requestData.name, email: requestData.email },
+        where: { name: requestData.name, /*email: requestData.email*/ },
         transaction: dbTransaction,
       });
       if (existingCompany) {
@@ -47,7 +47,7 @@ class authController extends jwtService {
       const createCompany = await company.create(
         {
           name: requestData.name,
-          email: requestData.email,
+          // email: requestData.email,
           employeeNumber: requestData.employeeNumber,
         },
         {

@@ -1,4 +1,6 @@
 import User from "../../../database/models/userModel.js";
+import sequelize from "../../../database/queries/dbConnection.js";
+import { Op, QueryTypes } from "sequelize";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
@@ -6,8 +8,10 @@ import department from "../../../database/models/departmentModel.js";
 import validate from "../../../utils/CustomValidation.js";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 import designation from "../../../database/models/designationModel.js";
+
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
+import uploadPhotos from "../../../utils/services/commonfuncitons.js";
 
 const getAdminDetails = async (req, res) => {
   try {
@@ -62,25 +66,27 @@ const updateAdminDetails = async (req, res) => {
 
 const getBlockedWebsites = async (req, res) => {
   try {
-    // ___________---------- Search, Limit, Pagination ----------_______________
     let { departmentId, limit, page } = req.query;
+
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
-    let where = { companyId: req.user.company_id };
-    // ___________-----------------------------------------------_______________
 
-    if (departmentId && departmentId !== 0) {
+    let where = { companyId: req.user.company_id };
+
+    if (departmentId && (departmentId != 0 || isNaN(departmentId))) {
       const isDepartmentExists = await department.findOne({
         where: {
           id: departmentId,
           company_id: req.user.company_id,
         },
       });
-      if (!isDepartmentExists) {
-        return helper.failed(res, variables.NotFound, "Invalid department ID provided.");
-      }
+
+      if (!isDepartmentExists) return helper.failed(res, variables.NotFound, "Invalid department ID provided.");
+
       where.departmentId = departmentId;
     }
+
+    where.companyId = req.user.company_id;
 
     const blockedWebsite = await BlockedWebsites.findAndCountAll({
       where: where,
@@ -238,13 +244,12 @@ const getAppInfo = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
-    // if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.ValidationError, "Department Id is required and in numbers");
 
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
     let where = { company_id: req.user.company_id };
 
-    if (departmentId && departmentId != 0) {
+    if (departmentId && (departmentId != 0 || isNaN(departmentId))) {
       const isDepartmentExists = await department.findOne({
         where: {
           id: departmentId,
@@ -334,18 +339,6 @@ const updateReportSettings = async (req, res) => {
 
 // add productive websites
 
-// const fetchFaviconUrl = async (website) => {
-//   try {
-//     const response = await fetch(website);
-//     const html = await response.text();
-//     const faviconRegex = /<link[^>]+rel=["']?(?:icon|shortcut icon)["']?[^>]*href=["']([^"']+)["']/i;
-//     const match = html.match(faviconRegex);
-//     return match ? new URL(match[1], website).href : `${new URL(website).origin}/favicon.ico`;
-//   } catch (error) {
-//     console.warn("Could not fetch favicon, using default:", error.message);
-//     return `${new URL(website).origin}/favicon.ico`;
-//   }
-// };
 const fetchFaviconUrl = async (website) => {
   try {
     if (!website || typeof website !== "string") {
@@ -355,11 +348,14 @@ const fetchFaviconUrl = async (website) => {
     const websiteUrl = new URL(website);
 
     const response = await fetch(websiteUrl.href);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch website. Status: ${response.status}`);
-    }
+    // if (!response.ok) {
+    //   throw new Error(`Failed to fetch website. Status: ${response.status}`);
+    // }
 
     const html = await response.text();
+    if (!html) {
+      throw new Error(`Failed to fetch website.`);
+    }
 
     const faviconRegex = /<link[^>]+rel=["']?(?:icon|shortcut icon)["']?[^>]*href=["']([^"']+)["']/i;
     const match = html.match(faviconRegex);
@@ -424,14 +420,12 @@ const getProductiveWebsites = async (req, res) => {
   try {
     let { departmentId, limit, page } = req.query;
 
-    // if (!departmentId || isNaN(departmentId)) return helper.failed(res, variables.ValidationError, "Department Id is required and in numbers");
-
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
 
     let where = { company_id: req.user.company_id };
 
-    if (departmentId && departmentId != 0) {
+    if (departmentId && (departmentId != 0 || isNaN(departmentId))) {
       const isDepartmentExists = await department.findOne({
         where: {
           id: departmentId,
