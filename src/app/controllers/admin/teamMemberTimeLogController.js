@@ -169,15 +169,6 @@ class teamMemberTimeLogController {
         },
       });
 
-      const todayEmployeeCount = await User.count({
-        where: {
-          company_id: req.user.company_id,
-          updatedAt: {
-            [Op.between]: [startOfDay, endOfDay],
-          },
-        },
-      });
-
       const workingCount = await User.count({
         where: {
           company_id: req.user.company_id,
@@ -211,7 +202,6 @@ class teamMemberTimeLogController {
 
       const countsData = [
         { count: employeeCount, name: "employee" },
-        { count: todayEmployeeCount, name: "todayEmployee" },
         { count: workingCount, name: "working" },
         { count: absentCount, name: "absent" },
         { count: lateCount, name: "late" },

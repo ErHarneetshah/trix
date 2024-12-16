@@ -11,27 +11,19 @@ const role = sequelize.define('roles', {
   company_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    validate: {
-      notEmpty: true,
-    },
   },
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-    validate: {
-      notEmpty: true, // Prevents empty string
-    },
   },
   status: {
     type: DataTypes.BOOLEAN,
-    allowNull: false,
     defaultValue: 1,
   },
 }, {
-  timestamps: true, // Adds createdAt and updatedAt columns
+  timestamps: true,
   underscored: false,
 });
 
-// await role.sync({alter:1});
 
 export default role;

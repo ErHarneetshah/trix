@@ -9,9 +9,17 @@ import company from "../models/company.js";
 import rolePermission from "../models/rolePermissionModel.js";
 import reportSettings from "../models/reportSettingsModel.js";
 import module from "../models/moduleModel.js";
+import AppHistoryEntry from "../models/AppHistoryEntry.js";
+import { UpdatedAt } from "@sequelize/core/decorators-legacy";
+import { BlockedWebsites } from "../models/BlockedWebsite.js";
+import { Device } from "../models/device.js";
+import ProductiveWebsite from "../models/ProductiveWebsite.js";
+import { ProductiveApp } from "../models/ProductiveApp.js";
 
 export default async function seedDatabase() {
   try {
+    const currentDate = new Date().toISOString().split("T")[0];
+
     await company.destroy({ where: {} });
     await sequelize.query(`ALTER TABLE ${company.getTableName()} AUTO_INCREMENT=1`);
     await company.bulkCreate([
@@ -68,7 +76,6 @@ export default async function seedDatabase() {
     for (let a = 1; a <= 4; a++) {
       //*________________--------------- ROLE -------------_____________________
       const rootRole = await role.bulkCreate([
-        { name: "Super Admin", company_id: a },
         { name: "Admin", company_id: a },
         { name: "Team Leader", company_id: a },
         { name: "Manager", company_id: a },
@@ -95,23 +102,43 @@ export default async function seedDatabase() {
         return map;
       }, {});
 
+      const roleIds = rootRole.map((role) => role.id);
+
       //*________________--------------- ROLE PERMISSIONS -------------_____________________
-      for (let b = 1; b <= 19; b++) {
+      //? Super Admin Role Permissions
+      await rolePermission.bulkCreate([
+        { company_id: a, roleId: roleIds[0], modules: "role", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "reportingManager", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "team", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "shifts", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "teamMembers", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "department", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "designation", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "adminAuth", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "userSettings", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "permissions", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "blockedWebsite", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "productiveApp", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "reportSettings", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+        { company_id: a, roleId: roleIds[0], modules: "user", permissions: { POST: true, GET: true, PUT: true, DELETE: true } },
+      ]);
+
+      for (let b = 1; b < roleIds.length; b++) {
         await rolePermission.bulkCreate([
-          { company_id: a, roleId: b, modules: "role", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "reportingManager", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "team", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "shifts", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "teamMembers", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "department", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "designation", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "adminAuth", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "userSettings", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "permissions", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "blockedWebsite", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "productiveApp", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "reportSettings", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
-          { company_id: a, roleId: b, modules: "user", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "role", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "reportingManager", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "team", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "shifts", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "teamMembers", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "department", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "designation", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "adminAuth", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "userSettings", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "permissions", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "blockedWebsite", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "productiveApp", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "reportSettings", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
+          { company_id: a, roleId: roleIds[b], modules: "user", permissions: { POST: false, GET: false, PUT: false, DELETE: false } },
         ]);
       }
 
@@ -133,6 +160,12 @@ export default async function seedDatabase() {
         map[dept.name] = dept.id;
         return map;
       }, {});
+
+      const deptIds = rootDepartments.map((dept) => dept.id);
+      const deptData = rootDepartments.map((dept) => ({
+        deptId: dept.id,
+        companyId: dept.company_id, // Replace `company_id` with the actual key in your data if different
+      }));
 
       // Step 2: Add parent-child relationships dynamically
       const updates = [
@@ -184,6 +217,8 @@ export default async function seedDatabase() {
         map[desig.name] = desig.id;
         return map;
       }, {});
+
+      const designationIds = rootDesignations.map((designation) => designation.id);
 
       console.log("Designations Data Created successfully.");
       //*________________--------------- SHIFTS -------------_____________________
@@ -259,6 +294,8 @@ export default async function seedDatabase() {
         return map;
       }, {});
 
+      const shiftIds = rootShift.map((shift) => shift.id);
+
       console.log("Shifts Data Created successfully.");
       //*________________--------------- TEAMS -------------_____________________
       const rootTeam = await team.bulkCreate([
@@ -323,6 +360,8 @@ export default async function seedDatabase() {
         return map;
       }, {});
 
+      const teamIds = rootTeam.map((team) => team.id);
+
       console.log("Teams Data Created successfully.");
 
       //*________________--------------- USERS -------------_____________________
@@ -334,7 +373,7 @@ export default async function seedDatabase() {
           mobile: (Math.floor(Math.random() * 9_000_000_000) + 1_000_000_000).toString(),
           departmentId: departmentMap["Upper Management"],
           designationId: designationMap["MD (Managing Director)"],
-          roleId: roleMap["Super Admin"],
+          roleId: roleMap["Admin"],
           teamId: teamMap["Upper Management Team"],
           password: "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK", // Test@123
           isAdmin: 1,
@@ -481,6 +520,10 @@ export default async function seedDatabase() {
       ]);
 
       const userIds = rootUser.map((user) => user.id);
+      const userData = rootDepartments.map((user) => ({
+        userId: user.id,
+        companyId: user.company_id, // Replace `company_id` with the actual key in your data if different
+      }));
 
       console.log("User Data Created successfully.");
 
@@ -490,64 +533,604 @@ export default async function seedDatabase() {
 
       //*________________--------------- APP HISTORY -------------_____________________
 
-      userIds.forEach((id) => {
-        console.log(`Processing user with ID: ${id}`);
-
-        (id, a, "2024-12-13", "Postman", "2024-12-13 09:39:35", "2024-12-13 09:40:35", "2024-12-13 09:39:35", "2024-12-13 09:40:35"),
-          (id, a, "2024-12-13", "Google Chrome", "2024-12-13 09:39:35", "2024-12-13 09:40:35", "2024-12-13 09:39:35", "2024-12-13 09:40:35"),
-          (id, a, "2024-12-13", "Android Studio", "2024-12-13 09:39:35", "2024-12-13 09:40:35", "2024-12-13 09:39:35", "2024-12-13 09:40:35"),
-          (id, a, "2024-12-13", "Finder", "2024-12-13 09:39:35", "2024-12-13 09:40:35", "2024-12-13 09:39:35", "2024-12-13 09:40:35"),
-          (id, a, "2024-12-13", "Cliq", "2024-12-13 09:39:35", "2024-12-13 09:40:35", "2024-12-13 09:39:35", "2024-12-13 09:40:35"),
-          (id, a, "2024-12-13", "MongoDB Compass", "2024-12-13 09:39:35", "2024-12-13 09:40:35", "2024-12-13 09:39:35", "2024-12-13 09:40:35"),
-          (id, a, "2024-12-13", "Calendar", "2024-12-13 09:39:35", "2024-12-13 09:40:35", "2024-12-13 09:39:35", "2024-12-13 09:40:35"),
-          (id, a, "2024-12-13", "Code", "2024-12-13 09:39:35", "2024-12-13 09:40:35", "2024-12-13 09:39:35", "2024-12-13 09:40:35"),
-          (id, a, "2024-12-13", "E-Monitrix", "2024-12-13 09:39:35", "2024-12-13 09:40:35", "2024-12-13 09:39:35", "2024-12-13 09:40:35"),
-          (id, a, "2024-12-13", "Postman", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59"),
-          (id, a, "2024-12-13", "Google Chrome", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59"),
-          (id, a, "2024-12-13", "Android Studio", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59"),
-          (id, a, "2024-12-13", "Finder", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59"),
-          (id, a, "2024-12-13", "Cliq", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59"),
-          (id, a, "2024-12-13", "MongoDB Compass", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59"),
-          (id, a, "2024-12-13", "Calendar", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59"),
-          (id, a, "2024-12-13", "Code", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59"),
-          (id, a, "2024-12-13", "E-Monitrix", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59", "2024-12-13 09:40:59"),
-          (id, a, "2024-12-13", "Postman", "2024-12-13 09:41:31", "2024-12-13 09:44:31", "2024-12-13 09:41:31", "2024-12-13 09:44:31"),
-          (id, a, "2024-12-13", "Google Chrome", "2024-12-13 09:41:31", "2024-12-13 09:44:31", "2024-12-13 09:41:31", "2024-12-13 09:44:31"),
-          (id, a, "2024-12-13", "Android Studio", "2024-12-13 09:41:31", "2024-12-13 09:44:31", "2024-12-13 09:41:31", "2024-12-13 09:44:31"),
-          (id, a, "2024-12-13", "Finder", "2024-12-13 09:41:31", "2024-12-13 09:44:31", "2024-12-13 09:41:31", "2024-12-13 09:44:31"),
-          (id, a, "2024-12-13", "Cliq", "2024-12-13 09:41:31", "2024-12-13 09:44:31", "2024-12-13 09:41:31", "2024-12-13 09:44:31"),
-          (id, a, "2024-12-13", "MongoDB Compass", "2024-12-13 09:41:31", "2024-12-13 09:44:31", "2024-12-13 09:41:31", "2024-12-13 09:44:31"),
-          (id, a, "2024-12-13", "Calendar", "2024-12-13 09:41:31", "2024-12-13 09:44:31", "2024-12-13 09:41:31", "2024-12-13 09:44:31"),
-          (id, a, "2024-12-13", "Code", "2024-12-13 09:41:31", "2024-12-13 09:44:31", "2024-12-13 09:41:31", "2024-12-13 09:44:31"),
-          (id, a, "2024-12-13", "E-Monitrix", "2024-12-13 09:41:31", "2024-12-13 09:44:31", "2024-12-13 09:41:32", "2024-12-13 09:44:31"),
-          (id, a, "2024-12-13", "Postman", "2024-12-13 09:47:48", "2024-12-13 09:49:48", "2024-12-13 09:48:48", "2024-12-13 09:49:48"),
-          (id, a, "2024-12-13", "Google Chrome", "2024-12-13 09:47:48", "2024-12-13 09:49:48", "2024-12-13 09:48:48", "2024-12-13 09:49:48"),
-          (id, a, "2024-12-13", "Android Studio", "2024-12-13 09:47:48", "2024-12-13 09:49:48", "2024-12-13 09:48:48", "2024-12-13 09:49:48"),
-          (id, a, "2024-12-13", "Finder", "2024-12-13 09:47:48", "2024-12-13 09:49:48", "2024-12-13 09:48:48", "2024-12-13 09:49:48"),
-          (id, a, "2024-12-13", "Cliq", "2024-12-13 09:47:48", "2024-12-13 09:49:48", "2024-12-13 09:48:48", "2024-12-13 09:49:48"),
-          (id, a, "2024-12-13", "MongoDB Compass", "2024-12-13 09:47:48", "2024-12-13 09:49:48", "2024-12-13 09:48:48", "2024-12-13 09:49:48"),
-          (id, a, "2024-12-13", "Calendar", "2024-12-13 09:47:48", "2024-12-13 09:49:48", "2024-12-13 09:48:48", "2024-12-13 09:49:48"),
-          (id, a, "2024-12-13", "Code", "2024-12-13 09:47:48", "2024-12-13 09:49:48", "2024-12-13 09:48:48", "2024-12-13 09:49:48"),
-          (id, a, "2024-12-13", "E-Monitrix", "2024-12-13 09:47:48", "2024-12-13 09:49:48", "2024-12-13 09:48:48", "2024-12-13 09:49:48"),
-          (id, a, "2024-12-13", "ApplicationFrameHost", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47"),
-          (id, a, "2024-12-13", "chrome", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47"),
-          (id, a, "2024-12-13", "Cliq", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47"),
-          (id, a, "2024-12-13", "Code", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47"),
-          (id, a, "2024-12-13", "explorer", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47"),
-          (id, a, "2024-12-13", "monitrix", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47"),
-          (id, a, "2024-12-13", "Postman", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47"),
-          (id, a, "2024-12-13", "qemu-system-x86_64", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47"),
-          (id, a, "2024-12-13", "SystemSettings", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47"),
-          (id, a, "2024-12-13", "TextInputHost", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47", "2024-12-13 09:57:47"),
-          (id, a, "2024-12-13", "ApplicationFrameHost", "2024-12-13 11:01:34", "2024-12-13 11:02:34", "2024-12-13 11:01:34", "2024-12-13 11:02:35"),
-          (id, a, "2024-12-13", "chrome", "2024-12-13 11:01:34", "2024-12-13 11:02:34", "2024-12-13 11:01:34", "2024-12-13 11:02:35"),
-          (id, a, "2024-12-13", "Cliq", "2024-12-13 11:01:34", "2024-12-13 11:02:34", "2024-12-13 11:01:34", "2024-12-13 11:02:35"),
-          (id, a, "2024-12-13", "Code", "2024-12-13 11:01:34", "2024-12-13 11:02:34", "2024-12-13 11:01:34", "2024-12-13 11:02:35"),
-          (id, a, "2024-12-13", "monitrix", "2024-12-13 11:01:34", "2024-12-13 11:02:34", "2024-12-13 11:01:34", "2024-12-13 11:02:35"),
-          (id, a, "2024-12-13", "qemu-system-x86_64", "2024-12-13 11:01:34", "2024-12-13 11:02:34", "2024-12-13 11:01:34", "2024-12-13 11:02:35"),
-          (id, a, "2024-12-13", "SystemSettings", "2024-12-13 11:01:34", "2024-12-13 11:02:34", "2024-12-13 11:01:34", "2024-12-13 11:02:35"),
-          (id, a, "2024-12-13", "TextInputHost", "2024-12-13 11:01:34", "2024-12-13 11:02:34", "2024-12-13 11:01:34", "2024-12-13 11:02:35");
+      userIds.forEach(async (id) => {
+        let rootAppHistories = await AppHistoryEntry.bulkCreate([
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Postman`,
+            startTime: `${currentDate} 09:39:35`,
+            endTime: `${currentDate} 09:40:35`,
+            createdAt: `${currentDate} 09:39:35`,
+            updatedAt: `${currentDate} 09:40:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Google Chrome`,
+            startTime: `${currentDate} 09:39:35`,
+            endTime: `${currentDate} 09:40:35`,
+            createdAt: `${currentDate} 09:39:35`,
+            updatedAt: `${currentDate} 09:40:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Android Studio`,
+            startTime: `${currentDate} 09:39:35`,
+            endTime: `${currentDate} 09:40:35`,
+            createdAt: `${currentDate} 09:39:35`,
+            updatedAt: `${currentDate} 09:40:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Finder`,
+            startTime: `${currentDate} 09:39:35`,
+            endTime: `${currentDate} 09:40:35`,
+            createdAt: `${currentDate} 09:39:35`,
+            updatedAt: `${currentDate} 09:40:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Cliq`,
+            startTime: `${currentDate} 09:39:35`,
+            endTime: `${currentDate} 09:40:35`,
+            createdAt: `${currentDate} 09:39:35`,
+            updatedAt: `${currentDate} 09:40:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `MongoDB Compass`,
+            startTime: `${currentDate} 09:39:35`,
+            endTime: `${currentDate} 09:40:35`,
+            createdAt: `${currentDate} 09:39:35`,
+            updatedAt: `${currentDate} 09:40:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Calendar`,
+            startTime: `${currentDate} 09:39:35`,
+            endTime: `${currentDate} 09:40:35`,
+            createdAt: `${currentDate} 09:39:35`,
+            updatedAt: `${currentDate} 09:40:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Code`,
+            startTime: `${currentDate} 09:39:35`,
+            endTime: `${currentDate} 09:40:35`,
+            createdAt: `${currentDate} 09:39:35`,
+            updatedAt: `${currentDate} 09:40:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `E-Monitrix`,
+            startTime: `${currentDate} 09:39:35`,
+            endTime: `${currentDate} 09:40:35`,
+            createdAt: `${currentDate} 09:39:35`,
+            updatedAt: `${currentDate} 09:40:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Postman`,
+            startTime: `${currentDate} 09:40:59`,
+            endTime: `${currentDate} 09:40:59`,
+            createdAt: `${currentDate} 09:40:59`,
+            updatedAt: `${currentDate} 09:40:59`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Google Chrome`,
+            startTime: `${currentDate} 09:40:59`,
+            endTime: `${currentDate} 09:40:59`,
+            createdAt: `${currentDate} 09:40:59`,
+            updatedAt: `${currentDate} 09:40:59`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Android Studio`,
+            startTime: `${currentDate} 09:40:59`,
+            endTime: `${currentDate} 09:40:59`,
+            createdAt: `${currentDate} 09:40:59`,
+            updatedAt: `${currentDate} 09:40:59`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Finder`,
+            startTime: `${currentDate} 09:40:59`,
+            endTime: `${currentDate} 09:40:59`,
+            createdAt: `${currentDate} 09:40:59`,
+            updatedAt: `${currentDate} 09:40:59`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Cliq`,
+            startTime: `${currentDate} 09:40:59`,
+            endTime: `${currentDate} 09:40:59`,
+            createdAt: `${currentDate} 09:40:59`,
+            updatedAt: `${currentDate} 09:40:59`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `MongoDB Compass`,
+            startTime: `${currentDate} 09:40:59`,
+            endTime: `${currentDate} 09:40:59`,
+            createdAt: `${currentDate} 09:40:59`,
+            updatedAt: `${currentDate} 09:40:59`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Calendar`,
+            startTime: `${currentDate} 09:40:59`,
+            endTime: `${currentDate} 09:40:59`,
+            createdAt: `${currentDate} 09:40:59`,
+            updatedAt: `${currentDate} 09:40:59`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Code`,
+            startTime: `${currentDate} 09:40:59`,
+            endTime: `${currentDate} 09:40:59`,
+            createdAt: `${currentDate} 09:40:59`,
+            updatedAt: `${currentDate} 09:40:59`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `E-Monitrix`,
+            startTime: `${currentDate} 09:40:59`,
+            endTime: `${currentDate} 09:40:59`,
+            createdAt: `${currentDate} 09:40:59`,
+            updatedAt: `${currentDate} 09:40:59`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Postman`,
+            startTime: `${currentDate} 09:41:31`,
+            endTime: `${currentDate} 09:44:31`,
+            createdAt: `${currentDate} 09:41:31`,
+            updatedAt: `${currentDate} 09:44:31`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Google Chrome`,
+            startTime: `${currentDate} 09:41:31`,
+            endTime: `${currentDate} 09:44:31`,
+            createdAt: `${currentDate} 09:41:31`,
+            updatedAt: `${currentDate} 09:44:31`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Android Studio`,
+            startTime: `${currentDate} 09:41:31`,
+            endTime: `${currentDate} 09:44:31`,
+            createdAt: `${currentDate} 09:41:31`,
+            updatedAt: `${currentDate} 09:44:31`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Finder`,
+            startTime: `${currentDate} 09:41:31`,
+            endTime: `${currentDate} 09:44:31`,
+            createdAt: `${currentDate} 09:41:31`,
+            updatedAt: `${currentDate} 09:44:31`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Cliq`,
+            startTime: `${currentDate} 09:41:31`,
+            endTime: `${currentDate} 09:44:31`,
+            createdAt: `${currentDate} 09:41:31`,
+            updatedAt: `${currentDate} 09:44:31`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `MongoDB Compass`,
+            startTime: `${currentDate} 09:41:31`,
+            endTime: `${currentDate} 09:44:31`,
+            createdAt: `${currentDate} 09:41:31`,
+            updatedAt: `${currentDate} 09:44:31`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Calendar`,
+            startTime: `${currentDate} 09:41:31`,
+            endTime: `${currentDate} 09:44:31`,
+            createdAt: `${currentDate} 09:41:31`,
+            updatedAt: `${currentDate} 09:44:31`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Code`,
+            startTime: `${currentDate} 09:41:31`,
+            endTime: `${currentDate} 09:44:31`,
+            createdAt: `${currentDate} 09:41:31`,
+            updatedAt: `${currentDate} 09:44:31`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `E-Monitrix`,
+            startTime: `${currentDate} 09:41:31`,
+            endTime: `${currentDate} 09:44:31`,
+            createdAt: `${currentDate} 09:41:32`,
+            updatedAt: `${currentDate} 09:44:31`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Postman`,
+            startTime: `${currentDate} 09:47:48`,
+            endTime: `${currentDate} 09:49:48`,
+            createdAt: `${currentDate} 09:48:48`,
+            updatedAt: `${currentDate} 09:49:48`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Google Chrome`,
+            startTime: `${currentDate} 09:47:48`,
+            endTime: `${currentDate} 09:49:48`,
+            createdAt: `${currentDate} 09:48:48`,
+            updatedAt: `${currentDate} 09:49:48`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Android Studio`,
+            startTime: `${currentDate} 09:47:48`,
+            endTime: `${currentDate} 09:49:48`,
+            createdAt: `${currentDate} 09:48:48`,
+            updatedAt: `${currentDate} 09:49:48`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Finder`,
+            startTime: `${currentDate} 09:47:48`,
+            endTime: `${currentDate} 09:49:48`,
+            createdAt: `${currentDate} 09:48:48`,
+            updatedAt: `${currentDate} 09:49:48`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Cliq`,
+            startTime: `${currentDate} 09:47:48`,
+            endTime: `${currentDate} 09:49:48`,
+            createdAt: `${currentDate} 09:48:48`,
+            updatedAt: `${currentDate} 09:49:48`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `MongoDB Compass`,
+            startTime: `${currentDate} 09:47:48`,
+            endTime: `${currentDate} 09:49:48`,
+            createdAt: `${currentDate} 09:48:48`,
+            updatedAt: `${currentDate} 09:49:48`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Calendar`,
+            startTime: `${currentDate} 09:47:48`,
+            endTime: `${currentDate} 09:49:48`,
+            createdAt: `${currentDate} 09:48:48`,
+            updatedAt: `${currentDate} 09:49:48`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Code`,
+            startTime: `${currentDate} 09:47:48`,
+            endTime: `${currentDate} 09:49:48`,
+            createdAt: `${currentDate} 09:48:48`,
+            updatedAt: `${currentDate} 09:49:48`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `E-Monitrix`,
+            startTime: `${currentDate} 09:47:48`,
+            endTime: `${currentDate} 09:49:48`,
+            createdAt: `${currentDate} 09:48:48`,
+            updatedAt: `${currentDate} 09:49:48`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `ApplicationFrameHost`,
+            startTime: `${currentDate} 09:57:47`,
+            endTime: `${currentDate} 09:57:47`,
+            createdAt: `${currentDate} 09:57:47`,
+            updatedAt: `${currentDate} 09:57:47`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `chrome`,
+            startTime: `${currentDate} 09:57:47`,
+            endTime: `${currentDate} 09:57:47`,
+            createdAt: `${currentDate} 09:57:47`,
+            updatedAt: `${currentDate} 09:57:47`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Cliq`,
+            startTime: `${currentDate} 09:57:47`,
+            endTime: `${currentDate} 09:57:47`,
+            createdAt: `${currentDate} 09:57:47`,
+            updatedAt: `${currentDate} 09:57:47`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Code`,
+            startTime: `${currentDate} 09:57:47`,
+            endTime: `${currentDate} 09:57:47`,
+            createdAt: `${currentDate} 09:57:47`,
+            updatedAt: `${currentDate} 09:57:47`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `explorer`,
+            startTime: `${currentDate} 09:57:47`,
+            endTime: `${currentDate} 09:57:47`,
+            createdAt: `${currentDate} 09:57:47`,
+            updatedAt: `${currentDate} 09:57:47`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `monitrix`,
+            startTime: `${currentDate} 09:57:47`,
+            endTime: `${currentDate} 09:57:47`,
+            createdAt: `${currentDate} 09:57:47`,
+            updatedAt: `${currentDate} 09:57:47`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Postman`,
+            startTime: `${currentDate} 09:57:47`,
+            endTime: `${currentDate} 09:57:47`,
+            createdAt: `${currentDate} 09:57:47`,
+            updatedAt: `${currentDate} 09:57:47`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `qemu-system-x86_64`,
+            startTime: `${currentDate} 09:57:47`,
+            endTime: `${currentDate} 09:57:47`,
+            createdAt: `${currentDate} 09:57:47`,
+            updatedAt: `${currentDate} 09:57:47`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `SystemSettings`,
+            startTime: `${currentDate} 09:57:47`,
+            endTime: `${currentDate} 09:57:47`,
+            createdAt: `${currentDate} 09:57:47`,
+            updatedAt: `${currentDate} 09:57:47`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `TextInputHost`,
+            startTime: `${currentDate} 09:57:47`,
+            endTime: `${currentDate} 09:57:47`,
+            createdAt: `${currentDate} 09:57:47`,
+            updatedAt: `${currentDate} 09:57:47`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `ApplicationFrameHost`,
+            startTime: `${currentDate} 11:01:34`,
+            endTime: `${currentDate} 11:02:34`,
+            createdAt: `${currentDate} 11:01:34`,
+            updatedAt: `${currentDate} 11:02:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `chrome`,
+            startTime: `${currentDate} 11:01:34`,
+            endTime: `${currentDate} 11:02:34`,
+            createdAt: `${currentDate} 11:01:34`,
+            updatedAt: `${currentDate} 11:02:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Cliq`,
+            startTime: `${currentDate} 11:01:34`,
+            endTime: `${currentDate} 11:02:34`,
+            createdAt: `${currentDate} 11:01:34`,
+            updatedAt: `${currentDate} 11:02:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `Code`,
+            startTime: `${currentDate} 11:01:34`,
+            endTime: `${currentDate} 11:02:34`,
+            createdAt: `${currentDate} 11:01:34`,
+            updatedAt: `${currentDate} 11:02:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `monitrix`,
+            startTime: `${currentDate} 11:01:34`,
+            endTime: `${currentDate} 11:02:34`,
+            createdAt: `${currentDate} 11:01:34`,
+            updatedAt: `${currentDate} 11:02:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `qemu-system-x86_64`,
+            startTime: `${currentDate} 11:01:34`,
+            endTime: `${currentDate} 11:02:34`,
+            createdAt: `${currentDate} 11:01:34`,
+            updatedAt: `${currentDate} 11:02:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `SystemSettings`,
+            startTime: `${currentDate} 11:01:34`,
+            endTime: `${currentDate} 11:02:34`,
+            createdAt: `${currentDate} 11:01:34`,
+            updatedAt: `${currentDate} 11:02:35`,
+          },
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            appName: `TextInputHost`,
+            startTime: `${currentDate} 11:01:34`,
+            endTime: `${currentDate} 11:02:34`,
+            createdAt: `${currentDate} 11:01:34`,
+            updatedAt: `${currentDate} 11:02:35`,
+          },
+        ]);
       });
+
+      deptIds.forEach(async (deptId) => {
+        let rootBlockedWebsites = await BlockedWebsites.bulkCreate([
+          { companyId: a, departmentId: deptId, website_name: "chatgpt.com", website: "https://chatgpt.com/", logo: NULL, status: 1 },
+          { companyId: a, departmentId: deptId, website_name: "google.com", website: "https://google.com/", logo: NULL, status: 1 },
+          { companyId: a, departmentId: deptId, website_name: "www.open.ai", website: "https://www.open.ai", logo: "https://www.open.ai/favicon.ico", status: 1 },
+          {
+            companyId: a,
+            departmentId: deptId,
+            website_name: "lbmsolutions.keka.com",
+            website: "https://lbmsolutions.keka.com/",
+            logo: "https://cdn.kekastatic.net/shared/branding/logo/favicon.ico",
+            status: 1,
+          },
+          { companyId: a, departmentId: deptId, website_name: "hh.keka.com", website: "https://hh.keka.com/", logo: "https://cdn.kekastatic.net/shared/branding/logo/favicon.ico", status: 1 },
+          { companyId: a, departmentId: deptId, website_name: "fff.keka.com", website: "https://fff.keka.com/", logo: "https://cdn.kekastatic.net/shared/branding/logo/favicon.ico", status: 1 },
+        ]);
+
+        let rootProductiveWebsite = await ProductiveWebsite.bulkCreate([
+          { company_id: a, department_id: deptId, website_name: "vsipl.in", website: "https://vsipl.in/", logo: "https://vsipl.in/favicon.ico" },
+          { company_id: a, department_id: deptId, website_name: "www.w3schools.com", website: "https://www.w3schools.com/", logo: "https://www.w3schools.com/favicon.ico" },
+          { company_id: a, department_id: deptId, website_name: "chatgpt.com", website: "https://chatgpt.com/", logo: "/images/logos/app1.png" },
+          { company_id: a, department_id: deptId, website_name: "Facebook", website: "google.co.in", logo: "/images/logos/app2.png" },
+        ]);
+      });
+
+      let rootProductiveApps = await ProductiveApp.bulkCreate([
+        { company_id: a, department_id: deptId, app_name: "spotify", NULL },
+        { company_id: a, department_id: deptId, app_name: "test", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "testing2", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "testing5", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "testing6", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "testing9", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "teslaa1", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "teslaa2", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "teslaa3", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "teslaa4", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "teslaa5", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "teslaa888", app_logo: "1733927994878.png" },
+        { company_id: a, department_id: deptId, app_name: "lamborgini", app_logo: NULL },
+        { company_id: a, department_id: deptId, app_name: "lamborgini2", app_logo: "1733978573070.jpg" },
+        { company_id: a, department_id: deptId, app_name: "cliq\r\n", app_logo: "/images/logos/app1.png" },
+        { company_id: a, department_id: deptId, app_name: "chrome", app_logo: "/images/logos/app2.png" },
+        { company_id: a, department_id: deptId, app_name: "Emon", app_logo: "1734008068247.png" },
+        { company_id: a, department_id: deptId, app_name: "dsfsdfsdf", app_logo: "1734084843158.png" },
+        { company_id: a, department_id: deptId, app_name: "dsfsdddfsdf", app_logo: "1734084944465.png" },
+        { company_id: a, department_id: deptId, app_name: "gggg", app_logo: "1734085269400.png" },
+        { company_id: a, department_id: deptId, app_name: "02d256562a", app_logo: "1734085471916.png" },
+        { company_id: a, department_id: deptId, app_name: "reetika", app_logo: "1734085503747.png" },
+        { company_id: a, department_id: deptId, app_name: "wewe", app_logo: "1734085754382.png" },
+        { company_id: a, department_id: deptId, app_name: "tytyty", app_logo: "1734085805813.png" },
+        { company_id: a, department_id: deptId, app_name: "dsgf", app_logo: "1734085850035.png" },
+        { company_id: a, department_id: deptId, app_name: "gjhgj", app_logo: "1734086183986.png" },
+      ]);
 
       //! For loop of COMPANY Ends here
     }
