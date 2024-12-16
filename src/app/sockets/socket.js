@@ -33,6 +33,17 @@ const userData = async (id) => {
   let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
   let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
+  // Fetch productive and non-productive app data
+  const productiveAndNonProductiveData =
+  await singleUserProductiveAppAndNonproductiveApps(id, today);
+
+// Fetch productive and non-productive website data
+const productiveAndNonProductiveWebData =
+  await singleUserProductiveWebsitesAndNonproductiveWebsites(
+    id,
+    today
+  );
+
   if (!user) {
     return socket.emit("error", {
       message: "User not found",
@@ -46,6 +57,8 @@ const userData = async (id) => {
       image,
       userHistories,
       appHistories,
+      productiveAndNonProductiveData: productiveAndNonProductiveData || [],
+      productiveAndNonProductiveWebData:productiveAndNonProductiveWebData || [],
     },
   };
   return response;
@@ -74,14 +87,12 @@ const setupSocketIO = (io) => {
 
   // Connection event:
   io.on("connection", async (socket) => {
-    let userData = await User.findOne({ where: { id: socket.user.userId } });
-    if (userData) {
-      userData.socket_id = socket.id; // Save socket id into user table
-      await userData.save();
-    }
+    
     socket.join(`Admin_${socket.user.company_id}`);
     if (socket.user.isAdmin) {
       console.log(`Admin ID ${socket.user.userId} connected `);
+      let userData = await User.findOne({ where: { id: socket.user.userId } });
+      userData.socket_id = socket.id
       userData.currentStatus = 1;
       userData.save();
       handleAdminSocket(socket, io);
@@ -91,30 +102,29 @@ const setupSocketIO = (io) => {
 
       let user = await User.findOne({ where: { id: socket.user.userId } });
 
-      let now = new Date();
-      let currentHours = now.getHours();
-      let currentMinutes = now.getMinutes();
+      // let now = new Date();
+      // let currentHours = now.getHours();
+      // let currentMinutes = now.getMinutes();
 
-      let shiftData = await getShiftData(user.teamId); //getting shift details of user
-
-      let [shiftHours, shiftMinutes] = shiftData.start_time
-        .split(":")
-        .map(Number);
-      let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
-      if (
-        currentHours > endHours &&
-        currentHours === endHours &&
-        currentMinutes > endMinutes
-      ) {
-        return helper.sendResponse(
-          res,
-          variables.Forbidden,
-          0,
-          {},
-          "Your shift is over. You cannot log in at this time."
-        );
-      }
-
+      // let shiftData = await getShiftData(user.teamId); //getting shift details of user
+      
+      // let [shiftHours, shiftMinutes] = shiftData.start_time
+      //   .split(":")
+      //   .map(Number);
+      // let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
+      // if (
+      //   currentHours > endHours &&
+      //   currentHours === endHours &&
+      //   currentMinutes > endMinutes
+      // ) {
+      //   return helper.sendResponse(
+      //     res,
+      //     variables.Forbidden,
+      //     0,
+      //     {},
+      //     "Your shift is over. You cannot log in at this time."
+      //   );
+      // }
       let timeLog = await TimeLog.findOne({
         where: {
           user_id: user.id,
@@ -134,6 +144,7 @@ const setupSocketIO = (io) => {
         timeLog.spare_time =
           parseInt(timeLog.spare_time) + parseInt(spareMinutes);
         timeLog.logged_out_time = null;
+        timeLog.early_going= 0;
         timeLog.save();
         user.currentStatus = 1;
         user.save();
@@ -956,6 +967,10 @@ export const adminController = {
   },
 };
 
+
+
+
+
 ////////////////////////-------- USER SOCKET FUNCTION ------------/////////////////////////////////////
 
 // User specific handlers:
@@ -1153,8 +1168,44 @@ const handleUserSocket = async (socket, io) => {
     }
   });
 
+  // socket.on("disconnect", async () => {
+  //   console.log(`User ID ${socket.user.userId} disconnected `);
+  //   let userData = await User.findOne({ where: { id: socket.user.userId } });
+  //   let time_data = await TimeLog.findOne({
+  //     where: { user_id: socket.user.userId },
+  //     order: [["createdAt", "DESC"]],
+  //   });
+
+  //   userData.currentStatus = 0;
+  //   userData.socket_id = null;
+  //   await userData.save();
+
+  //   // if (time_data) {
+  //   let logged_out_time = new Date();
+  //   let [loginHours, loginMinutes] = time_data?.logged_in_time
+  //     .split(":")
+  //     .map(Number);
+  //   let loginTimeInMinutes = loginHours * 60 + loginMinutes;
+  //   let logoutHours = logged_out_time.getHours();
+  //   let logoutMinutes = logged_out_time.getMinutes();
+  //   let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
+
+  //   let duration = logoutTimeInMinutes - loginTimeInMinutes;
+  //   let active_time =
+  //     parseInt(duration) -
+  //     parseInt(time_data?.spare_time) -
+  //     parseInt(time_data?.idle_time);
+
+  //   await time_data.update({
+  //     logged_out_time: `${logoutHours}:${logoutMinutes}`,
+  //     active_time,
+  //   });
+  //   // }
+  // });
+
   socket.on("disconnect", async () => {
-    console.log(`User ID ${socket.user.userId} disconnected `);
+    console.log(`User ID ${socket.user.userId} disconnected`);
+    
     let userData = await User.findOne({ where: { id: socket.user.userId } });
     let time_data = await TimeLog.findOne({
       where: { user_id: socket.user.userId },
@@ -1165,28 +1216,39 @@ const handleUserSocket = async (socket, io) => {
     userData.socket_id = null;
     await userData.save();
 
-    // if (time_data) {
-    let logged_out_time = new Date();
-    let [loginHours, loginMinutes] = time_data?.logged_in_time
-      .split(":")
-      .map(Number);
-    let loginTimeInMinutes = loginHours * 60 + loginMinutes;
-    let logoutHours = logged_out_time.getHours();
-    let logoutMinutes = logged_out_time.getMinutes();
-    let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
+    if (time_data) {
+        let loggedOutTime = new Date();
+        let logoutHours = loggedOutTime.getHours();
+        let logoutMinutes = loggedOutTime.getMinutes();
 
-    let duration = logoutTimeInMinutes - loginTimeInMinutes;
-    let active_time =
-      parseInt(duration) -
-      parseInt(time_data?.spare_time) -
-      parseInt(time_data?.idle_time);
+        let logoutTimeInMinutes = (logoutHours * 60) + logoutMinutes;
 
-    await time_data.update({
-      logged_out_time: `${logoutHours}:${logoutMinutes}`,
-      active_time,
-    });
-    // }
-  });
+        let shiftData = await getShiftData(userData.teamId);
+        let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
+
+        let shiftEndTimeInMinutes = (endHours * 60) + endMinutes;
+
+        let [loginHours, loginMinutes] = time_data.logged_in_time.split(":").map(Number);
+        let loginTimeInMinutes = (loginHours * 60) + loginMinutes;
+
+        let duration = logoutTimeInMinutes - loginTimeInMinutes;
+        let activeTime =
+          parseInt(duration) -
+          parseInt(time_data.spare_time || 0) -
+          parseInt(time_data.idle_time || 0);
+
+        let earlyGoing = logoutTimeInMinutes < shiftEndTimeInMinutes ? 1 : 0;
+
+        let formattedLogoutTime = `${String(logoutHours).padStart(2, "0")}:${String(logoutMinutes).padStart(2, "0")}`;
+
+        await time_data.update({
+          logged_out_time: formattedLogoutTime,
+          active_time: activeTime,
+          early_going: earlyGoing,
+        });
+    }
+});
+
 };
 
 // User specific function:

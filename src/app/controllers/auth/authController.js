@@ -399,23 +399,20 @@ class authController extends jwtService {
           expireTime,
           dbTransaction
         );
-
-       
       } else {
         let now = new Date();
         let currentHours = now.getHours();
         let currentMinutes = now.getMinutes();
 
-        let shiftData = await getShiftData(user.teamId); 
+        let shiftData = await getShiftData(user.teamId);
 
-        let [shiftHours, shiftMinutes] = shiftData.start_time
-          .split(":")
-          .map(Number);
+        // let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
         let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
+
+        console.log(endHours, endMinutes, currentHours, currentMinutes);
+
         if (
-          currentHours > endHours &&
-          currentHours === endHours &&
-          currentMinutes > endMinutes
+          currentHours > endHours || (currentHours == endHours && currentMinutes > endMinutes)
         ) {
           return helper.sendResponse(
             res,
@@ -451,8 +448,6 @@ class authController extends jwtService {
             null,
             "Token Did not saved in db"
           );
-
-       
       }
       await dbTransaction.commit();
       return helper.sendResponse(
@@ -477,8 +472,8 @@ class authController extends jwtService {
   //* Logout Function -----------------------------------------------------------------
   logout = async (req, res) => {
     try {
-      let userData = await User.findOne({ where: { id: req.user.id } }); 
-      let token = await accessToken.findOne({ where: { userId: req.user.id } }); 
+      let userData = await User.findOne({ where: { id: req.user.id } });
+      let token = await accessToken.findOne({ where: { userId: req.user.id } });
 
       if (!token)
         return helper.failed(res, variables.NotFound, "Already Logout");
@@ -609,7 +604,9 @@ class authController extends jwtService {
         );
       }
       await Notification.update({ is_read: 1 }, { where: { is_read: 0 } });
-      io.to(`Admin_${req.user.company_id}`).emit("newNotification", { notificationCount: 0 });
+      io.to(`Admin_${req.user.company_id}`).emit("newNotification", {
+        notificationCount: 0,
+      });
       return helper.success(
         res,
         variables.Success,
@@ -693,17 +690,37 @@ class authController extends jwtService {
         { key: "screen_capture", value: screen_capture, validValues: [0, 1] },
         { key: "broswer_capture", value: broswer_capture, validValues: [0, 1] },
         { key: "app_capture", value: app_capture, validValues: [0, 1] },
-        { key: "screen_capture_time", value: screen_capture_time, minValue: 60 },
-        { key: "broswer_capture_time", value: broswer_capture_time, minValue: 60 },
+        {
+          key: "screen_capture_time",
+          value: screen_capture_time,
+          minValue: 60,
+        },
+        {
+          key: "broswer_capture_time",
+          value: broswer_capture_time,
+          minValue: 60,
+        },
         { key: "app_capture_time", value: app_capture_time, minValue: 60 },
       ];
-      
+
       for (const validation of validations) {
-        if (validation.validValues && !validation.validValues.includes(validation.value)) {
-          return helper.failed(res,variables.BadRequest,`Invalid value for ${validation.key}. Allowed values are: ${validation.validValues.join(", ")}.`);
+        if (
+          validation.validValues &&
+          !validation.validValues.includes(validation.value)
+        ) {
+          return helper.failed(
+            res,
+            variables.BadRequest,
+            `Invalid value for ${
+              validation.key
+            }. Allowed values are: ${validation.validValues.join(", ")}.`
+          );
         }
         if (validation.minValue && validation.value < validation.minValue) {
-          return helper.failed(res,variables.BadRequest,`${validation.key} must be at least ${validation.minValue}.`
+          return helper.failed(
+            res,
+            variables.BadRequest,
+            `${validation.key} must be at least ${validation.minValue}.`
           );
         }
       }
@@ -737,8 +754,18 @@ class authController extends jwtService {
   };
   get_advanced_setting = async (req, res) => {
     try {
-      let id = req.user.id;      
-      let data = await User.findOne({where:{id},attributes:['screen_capture_time','broswer_capture_time','app_capture_time','screen_capture','broswer_capture','app_capture']});
+      let id = req.user.id;
+      let data = await User.findOne({
+        where: { id },
+        attributes: [
+          "screen_capture_time",
+          "broswer_capture_time",
+          "app_capture_time",
+          "screen_capture",
+          "broswer_capture",
+          "app_capture",
+        ],
+      });
       if (!data) {
         return helper.failed(res, variables.NotFound, "Data Not Found!!");
       }
