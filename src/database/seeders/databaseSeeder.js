@@ -1124,8 +1124,6 @@ export default async function seedDatabase() {
 
       deptIds.forEach(async (deptId) => {
         let rootBlockedWebsites = await BlockedWebsites.bulkCreate([
-          { companyId: a, departmentId: deptId, website_name: "chatgpt.com", website: "https://chatgpt.com/", logo: NULL, status: 1 },
-          { companyId: a, departmentId: deptId, website_name: "google.com", website: "https://google.com/", logo: NULL, status: 1 },
           { companyId: a, departmentId: deptId, website_name: "www.open.ai", website: "https://www.open.ai", logo: "https://www.open.ai/favicon.ico", status: 1 },
           {
             companyId: a,
@@ -1145,36 +1143,37 @@ export default async function seedDatabase() {
           { company_id: a, department_id: deptId, website_name: "chatgpt.com", website: "https://chatgpt.com/", logo: "/images/logos/app1.png" },
           { company_id: a, department_id: deptId, website_name: "Facebook", website: "google.co.in", logo: "/images/logos/app2.png" },
         ]);
+
+        let rootProductiveApps = await ProductiveApp.bulkCreate([
+          { company_id: a, department_id: deptId, app_name: "spotify"},
+          { company_id: a, department_id: deptId, app_name: "test" },
+          { company_id: a, department_id: deptId, app_name: "testing2" },
+          { company_id: a, department_id: deptId, app_name: "testing5" },
+          { company_id: a, department_id: deptId, app_name: "testing6" },
+          { company_id: a, department_id: deptId, app_name: "testing9" },
+          { company_id: a, department_id: deptId, app_name: "teslaa1" },
+          { company_id: a, department_id: deptId, app_name: "teslaa2" },
+          { company_id: a, department_id: deptId, app_name: "teslaa3" },
+          { company_id: a, department_id: deptId, app_name: "teslaa4" },
+          { company_id: a, department_id: deptId, app_name: "teslaa5" },
+          { company_id: a, department_id: deptId, app_name: "teslaa888", app_logo: "1733927994878.png" },
+          { company_id: a, department_id: deptId, app_name: "lamborgini" },
+          { company_id: a, department_id: deptId, app_name: "lamborgini2", app_logo: "1733978573070.jpg" },
+          { company_id: a, department_id: deptId, app_name: "cliq\r\n", app_logo: "/images/logos/app1.png" },
+          { company_id: a, department_id: deptId, app_name: "chrome", app_logo: "/images/logos/app2.png" },
+          { company_id: a, department_id: deptId, app_name: "Emon", app_logo: "1734008068247.png" },
+          { company_id: a, department_id: deptId, app_name: "dsfsdfsdf", app_logo: "1734084843158.png" },
+          { company_id: a, department_id: deptId, app_name: "dsfsdddfsdf", app_logo: "1734084944465.png" },
+          { company_id: a, department_id: deptId, app_name: "gggg", app_logo: "1734085269400.png" },
+          { company_id: a, department_id: deptId, app_name: "02d256562a", app_logo: "1734085471916.png" },
+          { company_id: a, department_id: deptId, app_name: "reetika", app_logo: "1734085503747.png" },
+          { company_id: a, department_id: deptId, app_name: "wewe", app_logo: "1734085754382.png" },
+          { company_id: a, department_id: deptId, app_name: "tytyty", app_logo: "1734085805813.png" },
+          { company_id: a, department_id: deptId, app_name: "dsgf", app_logo: "1734085850035.png" },
+          { company_id: a, department_id: deptId, app_name: "gjhgj", app_logo: "1734086183986.png" },
+        ]);
       });
 
-      let rootProductiveApps = await ProductiveApp.bulkCreate([
-        { company_id: a, department_id: deptId, app_name: "spotify", NULL },
-        { company_id: a, department_id: deptId, app_name: "test", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "testing2", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "testing5", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "testing6", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "testing9", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "teslaa1", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "teslaa2", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "teslaa3", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "teslaa4", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "teslaa5", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "teslaa888", app_logo: "1733927994878.png" },
-        { company_id: a, department_id: deptId, app_name: "lamborgini", app_logo: NULL },
-        { company_id: a, department_id: deptId, app_name: "lamborgini2", app_logo: "1733978573070.jpg" },
-        { company_id: a, department_id: deptId, app_name: "cliq\r\n", app_logo: "/images/logos/app1.png" },
-        { company_id: a, department_id: deptId, app_name: "chrome", app_logo: "/images/logos/app2.png" },
-        { company_id: a, department_id: deptId, app_name: "Emon", app_logo: "1734008068247.png" },
-        { company_id: a, department_id: deptId, app_name: "dsfsdfsdf", app_logo: "1734084843158.png" },
-        { company_id: a, department_id: deptId, app_name: "dsfsdddfsdf", app_logo: "1734084944465.png" },
-        { company_id: a, department_id: deptId, app_name: "gggg", app_logo: "1734085269400.png" },
-        { company_id: a, department_id: deptId, app_name: "02d256562a", app_logo: "1734085471916.png" },
-        { company_id: a, department_id: deptId, app_name: "reetika", app_logo: "1734085503747.png" },
-        { company_id: a, department_id: deptId, app_name: "wewe", app_logo: "1734085754382.png" },
-        { company_id: a, department_id: deptId, app_name: "tytyty", app_logo: "1734085805813.png" },
-        { company_id: a, department_id: deptId, app_name: "dsgf", app_logo: "1734085850035.png" },
-        { company_id: a, department_id: deptId, app_name: "gjhgj", app_logo: "1734086183986.png" },
-      ]);
       
 
       // let rootTimeLogs = await TimeLog.bulkCreate([

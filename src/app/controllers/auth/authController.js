@@ -359,7 +359,7 @@ class authController extends jwtService {
   logout = async (req, res) => {
     try {
       let userData = await User.findOne({ where: { id: req.user.id } }); // checking if the user exists based on id
-      let token = await accessToken.findOne({ where: { token: req.currentSession } }); // checking if the token exists in system
+      let token = await accessToken.findOne({ where: { token: req.sessionToken } }); // checking if the token exists in system
       if (!token) return helper.failed(res, variables.NotFound, "Already Logout");
 
       //* Upadting Time log if the user is not admin
@@ -396,8 +396,8 @@ class authController extends jwtService {
 
           await time_data.update({
             logged_out_time: `${logoutHours}:${logoutMinutes}`,
-            active_time,
-            early_going
+            active_time: active_time,
+            early_going: early_going
           });
         }
       } else {
