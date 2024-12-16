@@ -6,6 +6,7 @@ import { group } from "console";
 import shift from "../../../database/models/shiftModel.js";
 import User from "../../../database/models/userModel.js";
 import { Op } from "sequelize";
+import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
 
 class teamMemberTimeLogController {
   getAllTeamMemberLog = async (req, res) => {
@@ -173,9 +174,9 @@ class teamMemberTimeLogController {
         where: {
           company_id: req.user.company_id,
           currentStatus: 1,
-          updatedAt: {
-            [Op.between]: [startOfDay, endOfDay],
-          },
+          // updatedAt: {
+          //   [Op.between]: [startOfDay, endOfDay],
+          // },
         },
       });
 
@@ -200,6 +201,23 @@ class teamMemberTimeLogController {
         },
       });
 
+      const ProductiveAppHistory = await AppHistoryEntry.findAll({
+        where: {
+          company_id: req.user.company_id,
+          createdAt: {
+            [Op.between]: [startOfDay, endOfDay],
+          },
+        },
+      });
+
+      let sameEntries = []; 
+
+      for (const entry of ProductiveAppHistory) {
+        if (entry.appName === "Postman") {
+          sameEntries.push(entry);
+        }
+      }
+
       const countsData = [
         { count: employeeCount, name: "employee" },
         { count: workingCount, name: "working" },
@@ -210,7 +228,7 @@ class teamMemberTimeLogController {
         { count: 0, name: "unproductive" },
       ];
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", countsData);
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", { countsData: countsData, other: sameEntries });
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
