@@ -27,6 +27,7 @@ const sendM = async (to,subject,message,cc = '',  from = "") => {
                 html: '<b>' + message + '</b>'
             };
         const info = await transporter.sendMail(mailOptions);
+       console.log(info);
         if(info.messageId){
             return { success: true, message: "Email sent successfully.", info };
         }
