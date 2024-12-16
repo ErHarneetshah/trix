@@ -738,7 +738,9 @@ class authController extends jwtService {
       const limit = parseInt(req.query.limit) || 5;
       const page = parseInt(req.query.page) || 1;
       const offset = (page - 1) * limit;
-      const whereCondition = {};
+      const whereCondition = {
+        company_id: req.user.company_id,
+      };
       if (req.query.date) {
         whereCondition.date = req.query.date;
       }
@@ -800,15 +802,23 @@ class authController extends jwtService {
         app_capture_time,
       } = req.body;
 
-      if (
-        ![0, 1].includes(screen_capture) ||
-        ![0, 1].includes(broswer_capture) ||
-        ![0, 1].includes(app_capture) ||
-        screen_capture_time < 60 ||
-        broswer_capture_time < 60 ||
-        app_capture_time < 60
-      ) {
-        return helper.failed(res, variables.BadRequest, "Invalid Data");
+      const validations = [
+        { key: "screen_capture", value: screen_capture, validValues: [0, 1] },
+        { key: "broswer_capture", value: broswer_capture, validValues: [0, 1] },
+        { key: "app_capture", value: app_capture, validValues: [0, 1] },
+        { key: "screen_capture_time", value: screen_capture_time, minValue: 60 },
+        { key: "broswer_capture_time", value: broswer_capture_time, minValue: 60 },
+        { key: "app_capture_time", value: app_capture_time, minValue: 60 },
+      ];
+      
+      for (const validation of validations) {
+        if (validation.validValues && !validation.validValues.includes(validation.value)) {
+          return helper.failed(res,variables.BadRequest,`Invalid value for ${validation.key}. Allowed values are: ${validation.validValues.join(", ")}.`);
+        }
+        if (validation.minValue && validation.value < validation.minValue) {
+          return helper.failed(res,variables.BadRequest,`${validation.key} must be at least ${validation.minValue}.`
+          );
+        }
       }
 
       const users = await User.findAll({
@@ -833,6 +843,23 @@ class authController extends jwtService {
         res,
         variables.Success,
         "Advanced settings updated successfully!"
+      );
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+  get_advanced_setting = async (req, res) => {
+    try {
+      let id = req.user.id;      
+      let data = await User.findOne({where:{id},attributes:['screen_capture_time','broswer_capture_time','app_capture_time','screen_capture','broswer_capture','app_capture']});
+      if (!data) {
+        return helper.failed(res, variables.NotFound, "Data Not Found!!");
+      }
+      return helper.success(
+        res,
+        variables.Success,
+        "Advanced settings updated successfully!",
+        data
       );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);

@@ -157,7 +157,7 @@ const handleAdminSocket = async (socket, io) => {
   });
 
   socket.on("getRecentNotifications", async (data) => {
-    let result1 = await getRecentNotifications(data);
+    let result1 = await getRecentNotifications(data,socket);
     if (result1.error) {
       socket.emit("getRecentNotifications", { message: result1.error });
     } else {
@@ -205,10 +205,10 @@ const sendAdminNotifications = async (id) => {
   }
 };
 
-const getRecentNotifications = async (data) => {
-  try {
+const getRecentNotifications = async (data,socket) => {
+  try {    
     const notifications = await Notification.findAndCountAll({
-      where: { is_read: 0 },
+      where: { is_read: 0 ,company_id:socket.user.company_id},
       order: [["id", "DESC"]],
       limit: 5,
     });
