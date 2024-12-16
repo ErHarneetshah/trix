@@ -72,7 +72,7 @@ TimeLog.afterUpdate(async (timeLog) => {
     let totalHours = Math.floor(totalDurationInMinutes / 60);
     let totalMinutes = totalDurationInMinutes % 60;
     await TimeLog.update(
-      { total_active_duration: `${totalHours}:${totalMinutes}` },
+      { active_time: `${totalHours}:${totalMinutes}` },
       { where: { id: timeLog.id } }
     );
   }

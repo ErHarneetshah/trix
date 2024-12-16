@@ -5,33 +5,33 @@ import company from "./company.js";
 import { Device } from "./device.js";
 
 const User = sequelize.define(
-"users",
-{
+  "users",
+  {
     id: {
-     type: DataTypes.INTEGER,
-     primaryKey: true,
-     autoIncrement: true,
-     allowNull: false,
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
     },
     company_id: {
-     type: DataTypes.BIGINT,
-     allowNull: true,
+      type: DataTypes.BIGINT,
+      allowNull: true,
     },
     socket_id: {
-     type: DataTypes.STRING,
-     allowNull: true,
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     fullname: {
-     type: DataTypes.STRING,
-     allowNull: false,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     email: {
-     type: DataTypes.STRING,
-     unique: true,
-     allowNull: false,
-    //  validate: {
-    //     isEmail: true, // Ensures the value is a valid email
-    //  },
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
+      //  validate: {
+      //     isEmail: true, // Ensures the value is a valid email
+      //  },
     },
     password: {
       type: DataTypes.STRING,
@@ -42,101 +42,90 @@ const User = sequelize.define(
       allowNull: true,
     },
     country: {
-     type: DataTypes.STRING,
-     allowNull: true,
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     departmentId: {
-     type: DataTypes.INTEGER,
-     allowNull: false,
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
     designationId: {
-     type: DataTypes.INTEGER,
-     allowNull: false,
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
     roleId: {
-     type: DataTypes.INTEGER,
-     allowNull: false,
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
     teamId: {
-     type: DataTypes.INTEGER,
-     allowNull: true,
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
     isAdmin: {
-     type: DataTypes.BOOLEAN,
-     allowNull: false,
-     defaultValue: 0,
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: 0,
     },
     currentStatus: {
-     type: DataTypes.BOOLEAN,
-     allowNull: true,
-     comment: "Daily Log Active/InActive Status (0 for absent, 1 for present)",
-     defaultValue: 0,
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      comment: "Daily Log Active/InActive Status (0 for absent, 1 for present)",
+      defaultValue: 0,
     },
     status: {
-     type: DataTypes.BOOLEAN,
-     allowNull: false,
-     defaultValue: 1,
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: 1,
     },
     screen_capture_time: {
-     type: DataTypes.INTEGER,
-     defaultValue: 60, 
+      type: DataTypes.INTEGER,
+      defaultValue: 60,
     },
     broswer_capture_time: {
-     type: DataTypes.INTEGER,
-     defaultValue: 60, 
+      type: DataTypes.INTEGER,
+      defaultValue: 60,
     },
     app_capture_time: {
-     type: DataTypes.INTEGER,
-     defaultValue: 60, 
+      type: DataTypes.INTEGER,
+      defaultValue: 60,
     },
-    screen_capture: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: 1,
-    },
-    broswer_capture: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: 1,
-    },
-    app_capture: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: 1,
-    }
-},
-{
+    //! Uncomment this
+
+    // screen_capture: {
+    //   type: DataTypes.BOOLEAN,
+    //   defaultValue: 1,
+    // },
+    // broswer_capture: {
+    //   type: DataTypes.BOOLEAN,
+    //   defaultValue: 1,
+    // },
+    // app_capture: {
+    //   type: DataTypes.BOOLEAN,
+    //   defaultValue: 1,
+    // }
+  },
+  {
     timestamps: true,
     underscored: false,
     hooks: {
       async afterUpdate(user, options) {
-
-        let monitoredFieldss = [
-          "screen_capture_time",
-          "broswer_capture_time",
-          "app_capture_time",
-          "screen_capture",
-          "broswer_capture",
-          "app_capture",
-        ];
-        let fieldsChangeds = options.fields.some((field) =>
-          monitoredFieldss.includes(field)
-        );
+        let monitoredFieldss = ["screen_capture_time", "broswer_capture_time", "app_capture_time", "screen_capture", "broswer_capture", "app_capture"];
+        let fieldsChangeds = options.fields.some((field) => monitoredFieldss.includes(field));
         // let comp = await company.findOne({ where: { id: user.company_id } });
-        if (fieldsChangeds) {
-          io.to(user.socket_id).emit("getUserSettings", {
-            screen_capture_time: user.screen_capture_time,
-            broswer_capture_time: user.broswer_capture_time,
-            app_capture_time: user.app_capture_time,
-            screen_capture: user.screen_capture,
-            broswer_capture: user.broswer_capture,
-            app_capture: user.app_capture,
-          });
-        }
-
-
+        //! Uncomment this
+        // if (fieldsChangeds) {
+        //   io.to(user.socket_id).emit("getUserSettings", {
+        //     screen_capture_time: user.screen_capture_time,
+        //     broswer_capture_time: user.broswer_capture_time,
+        //     app_capture_time: user.app_capture_time,
+        //     screen_capture: user.screen_capture,
+        //     broswer_capture: user.broswer_capture,
+        //     app_capture: user.app_capture,
+        //   });
+        // }
 
         let monitoredFields = ["currentStatus"];
-        let fieldsChanged = options.fields.some((field) =>
-          monitoredFields.includes(field)
-        );
+        let fieldsChanged = options.fields.some((field) => monitoredFields.includes(field));
 
         // console.log({options , fieldsChanged , monitoredFields})
 
@@ -181,15 +170,11 @@ const User = sequelize.define(
             data: systemDetail,
           };
 
-          io.to(`Admin_${user.company_id}`).emit(
-            "getSystemDetail",
-            responseData
-          );
+          io.to(`Admin_${user.company_id}`).emit("getSystemDetail", responseData);
         }
-
       },
     },
-}
+  }
 );
 
 // await User.sync({alter:1});
