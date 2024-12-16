@@ -1,4 +1,4 @@
-import { verifyToken } from "../../utils/validations/socketValidation.js";
+import { getShiftData, verifyToken } from "../../utils/validations/socketValidation.js";
 import { Notification } from "../../database/models/Notification.js";
 import { UserHistory } from "../../database/models/UserHistory.js";
 import User from "../../database/models/userModel.js";
@@ -82,9 +82,92 @@ const setupSocketIO = (io) => {
     socket.join(`Admin_${socket.user.company_id}`);
     if (socket.user.isAdmin) {
       console.log(`Admin ID ${socket.user.userId} connected `);
+      userData.currentStatus = 1;
+      userData.save();
       handleAdminSocket(socket, io);
     } else {
       console.log(`User ID ${socket.user.userId} connected `);
+      let today = new Date().toISOString().split("T")[0];
+
+      let user = await User.findOne({ where: { id: socket.user.userId } });
+
+      let now = new Date();
+      let currentHours = now.getHours();
+      let currentMinutes = now.getMinutes();
+
+      let shiftData = await getShiftData(user.teamId); //getting shift details of user
+
+      let [shiftHours, shiftMinutes] = shiftData.start_time
+        .split(":")
+        .map(Number);
+      let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
+      if (
+        currentHours > endHours &&
+        currentHours === endHours &&
+        currentMinutes > endMinutes
+      ) {
+        return helper.sendResponse(
+          res,
+          variables.Forbidden,
+          0,
+          {},
+          "Your shift is over. You cannot log in at this time."
+        );
+      }
+
+      let timeLog = await TimeLog.findOne({
+        where: {
+          user_id: user.id,
+          date: today,
+        },
+        order: [["createdAt", "DESC"]],
+      });
+      let lateComing = 0;
+      let lateComingDuration = "00:00";
+      let lateMinutes = 0;
+
+      if (timeLog && timeLog.logged_out_time != null) {
+        const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
+        let logoutTime = new Date();
+        logoutTime.setHours(hours, mins, 0, 0);
+        let spareMinutes = Math.floor((now - logoutTime) / 60000);
+        timeLog.spare_time =
+          parseInt(timeLog.spare_time) + parseInt(spareMinutes);
+        timeLog.logged_out_time = null;
+        timeLog.save();
+        user.currentStatus = 1;
+        user.save();
+      } else {
+        if (
+          currentHours > shiftHours ||
+          (currentHours === shiftHours && currentMinutes > shiftMinutes)
+        ) {
+          lateMinutes =
+            (currentHours - shiftHours) * 60 + (currentMinutes - shiftMinutes);
+          lateComing = 1;
+          lateComingDuration = `${Math.floor(lateMinutes / 60)}:${
+            lateMinutes % 60
+          }`;
+        }
+        const [lateHours, lateMins] = lateComingDuration.split(":").map(Number);
+        lateMinutes = lateHours * 60 + lateMins;
+
+        user.currentStatus = 1;
+        user.save();
+
+        // Create a new TimeLog entry
+        await TimeLog.create({
+          user_id: user.id,
+          shift_id: shiftData.id,
+          company_id: user.company_id,
+          logged_in_time: `${currentHours}:${currentMinutes}`,
+          late_coming: lateComing,
+          late_coming_duration: lateMinutes,
+          spare_time: 0,
+          active_time: 0,
+          date: today,
+        });
+      }
       handleUserSocket(socket, io);
     }
   });
@@ -98,14 +181,14 @@ const setupSocketIO = (io) => {
   //         socket.emit("connectionDenied", { message: "You are already connected on another session." });
   //         return socket.disconnect(true); // Disconnect the socket
   //       }
-  
+
   //       // Save socket ID into the user table
   //       userData.socket_id = socket.id;
   //       await userData.save();
-  
+
   //       // Join the appropriate room
   //       socket.join(`Admin_${socket.user.company_id}`);
-  
+
   //       if (socket.user.isAdmin) {
   //         console.log(`Admin ID ${socket.user.userId} connected.`);
   //         handleAdminSocket(socket, io);
@@ -124,7 +207,6 @@ const setupSocketIO = (io) => {
   //     socket.disconnect(true); // Disconnect in case of an error
   //   }
   // });
-  
 
   return io;
 };
@@ -157,7 +239,7 @@ const handleAdminSocket = async (socket, io) => {
   });
 
   socket.on("getRecentNotifications", async (data) => {
-    let result1 = await getRecentNotifications(data,socket);
+    let result1 = await getRecentNotifications(data, socket);
     if (result1.error) {
       socket.emit("getRecentNotifications", { message: result1.error });
     } else {
@@ -183,8 +265,12 @@ const handleAdminSocket = async (socket, io) => {
     }
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     console.log(`Admin ID ${socket.user.userId} disconnected `);
+    let userData = await User.findOne({ where: { id: socket.user.userId } });
+    userData.currentStatus = 0;
+    userData.socket_id = null;
+    await userData.save();
   });
 };
 
@@ -205,10 +291,10 @@ const sendAdminNotifications = async (id) => {
   }
 };
 
-const getRecentNotifications = async (data,socket) => {
-  try {    
+const getRecentNotifications = async (data, socket) => {
+  try {
     const notifications = await Notification.findAndCountAll({
-      where: { is_read: 0 ,company_id:socket.user.company_id},
+      where: { is_read: 0, company_id: socket.user.company_id },
       order: [["id", "DESC"]],
       limit: 5,
     });
@@ -402,7 +488,10 @@ const getUserReport = async (data, io, socket) => {
 
     // Fetch productive and non-productive website data
     const productiveAndNonProductiveWebData =
-      await singleUserProductiveWebsitesAndNonproductiveWebsites(data.id,today);
+      await singleUserProductiveWebsitesAndNonproductiveWebsites(
+        data.id,
+        today
+      );
 
     // Combine the response data
     let response = {
@@ -414,11 +503,11 @@ const getUserReport = async (data, io, socket) => {
         userHistories,
         appHistories,
         productiveAndNonProductiveData: productiveAndNonProductiveData || [],
-        productiveAndNonProductiveWebData: productiveAndNonProductiveWebData || [],
+        productiveAndNonProductiveWebData:
+          productiveAndNonProductiveWebData || [],
       },
     };
-   
-    
+
     return response;
   } catch (error) {
     console.error("Error getting user report:", error.message);
@@ -432,11 +521,21 @@ const singleUserProductiveAppAndNonproductiveApps = async (userId, date) => {
   try {
     if (!userId || !date) {
       console.error("userId and date are required.");
-      return { success: false, message: "userId and date are required.", data: [] };
+      return {
+        success: false,
+        message: "userId and date are required.",
+        data: [],
+      };
     }
 
-    const nonProductiveAppsData = await singleUserNonProductiveAppData({ userId, date });
-    const productiveAppsData = await singleUserProductiveAppData({ userId, date });
+    const nonProductiveAppsData = await singleUserNonProductiveAppData({
+      userId,
+      date,
+    });
+    const productiveAppsData = await singleUserProductiveAppData({
+      userId,
+      date,
+    });
 
     if (
       !Array.isArray(nonProductiveAppsData) ||
@@ -472,9 +571,12 @@ const singleUserProductiveAppAndNonproductiveApps = async (userId, date) => {
       };
     });
 
-    return combinedData 
+    return combinedData;
   } catch (error) {
-    console.error("Error in singleUserProductiveAppAndNonproductiveApps:", error);
+    console.error(
+      "Error in singleUserProductiveAppAndNonproductiveApps:",
+      error
+    );
     return { success: false, message: "Internal Server Error", data: [] };
   }
 };
@@ -487,7 +589,7 @@ const singleUserNonProductiveAppData = async ({ userId, date }) => {
     }
 
     const userInfo = await User.findOne({
-      where: { id: userId},
+      where: { id: userId },
     });
     if (!userInfo) {
       const message = "User does not exist.";
@@ -514,7 +616,7 @@ const singleUserNonProductiveAppData = async ({ userId, date }) => {
       ORDER BY
           hour;
     `;
-    let companyId = userInfo.company_id 
+    let companyId = userInfo.company_id;
     const results = await Model.query(query, {
       replacements: { date, userId, companyId },
       type: Sequelize.QueryTypes.SELECT,
@@ -538,7 +640,7 @@ const singleUserProductiveAppData = async ({ userId, date }) => {
     }
 
     const userInfo = await User.findOne({
-      where: { id: userId},
+      where: { id: userId },
     });
     if (!userInfo) {
       console.error("User does not exist.");
@@ -578,15 +680,22 @@ const singleUserProductiveAppData = async ({ userId, date }) => {
   }
 };
 
-
-
 // Website data Calculate: ----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-const singleUserProductiveWebsitesAndNonproductiveWebsites = async (userId, date) => {
+const singleUserProductiveWebsitesAndNonproductiveWebsites = async (
+  userId,
+  date
+) => {
   try {
-    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData({ userId, date });
-    
-    const productiveWebsitesData = await singleUserProductiveWebsiteData({ userId, date })    
+    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData({
+      userId,
+      date,
+    });
+
+    const productiveWebsitesData = await singleUserProductiveWebsiteData({
+      userId,
+      date,
+    });
 
     if (
       !Array.isArray(nonProductiveWebsitesData) ||
@@ -621,7 +730,7 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (userId, date
       };
     });
 
-    return combinedData
+    return combinedData;
   } catch (error) {
     console.error(
       "Error in singleUserProductiveWebsitesAndNonproductiveWebsites:",
@@ -639,7 +748,7 @@ const singleUserNonProductiveWebsiteData = async ({ userId, date }) => {
     }
 
     const userInfo = await User.findOne({
-      where: { id: userId},
+      where: { id: userId },
     });
     if (!userInfo) {
       const message = "User does not exist.";
@@ -647,7 +756,11 @@ const singleUserNonProductiveWebsiteData = async ({ userId, date }) => {
     }
 
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: userInfo.company_id },
+      where: {
+        id: userInfo.teamId,
+        status: 1,
+        company_id: userInfo.company_id,
+      },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -655,7 +768,11 @@ const singleUserNonProductiveWebsiteData = async ({ userId, date }) => {
     }
 
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: userInfo.company_id },
+      where: {
+        id: teamInfo.shiftId,
+        status: 1,
+        company_id: userInfo.company_id,
+      },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -685,12 +802,15 @@ const singleUserNonProductiveWebsiteData = async ({ userId, date }) => {
     const pieChartData = results.map((result) => ({
       name: result.hour,
       value: result.total_counts ? parseInt(result.total_counts, 10) : 0,
-    }));   
+    }));
 
-    return  pieChartData
+    return pieChartData;
   } catch (error) {
     console.error("Error in singleUserNonProductiveWebsiteData:", error);
-    return { success: false, message: "An error occurred while fetching data." };
+    return {
+      success: false,
+      message: "An error occurred while fetching data.",
+    };
   }
 };
 
@@ -702,7 +822,7 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
     }
 
     const userInfo = await User.findOne({
-      where: { id: userId},
+      where: { id: userId },
     });
     if (!userInfo) {
       const message = "User does not exist.";
@@ -710,7 +830,11 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
     }
 
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: userInfo.company_id  },
+      where: {
+        id: userInfo.teamId,
+        status: 1,
+        company_id: userInfo.company_id,
+      },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -718,7 +842,11 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
     }
 
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: userInfo.company_id  },
+      where: {
+        id: teamInfo.shiftId,
+        status: 1,
+        company_id: userInfo.company_id,
+      },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -739,7 +867,7 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
       GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
       ORDER BY hour;
     `;
-    let companyId = userInfo.company_id ;
+    let companyId = userInfo.company_id;
     const results = await Model.query(query, {
       replacements: { date, userId, companyId },
       type: Sequelize.QueryTypes.SELECT,
@@ -750,15 +878,15 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
       value: result.total_counts ? parseInt(result.total_counts, 10) : 0,
     }));
 
-    return pieChartData
+    return pieChartData;
   } catch (error) {
     console.error("Error in singleUserProductiveWebsiteData:", error);
-    return { success: false, message: "An error occurred while fetching data." };
+    return {
+      success: false,
+      message: "An error occurred while fetching data.",
+    };
   }
 };
-
-
-
 
 // AdminController (modularized)
 export const adminController = {
@@ -771,7 +899,9 @@ export const adminController = {
       });
       let totalUsers = users.length;
       let activeUsers = users.filter((user) => user.currentStatus == 1).length;
-      let inactiveUsers = users.filter((user) => user.currentStatus == 0).length;
+      let inactiveUsers = users.filter(
+        (user) => user.currentStatus == 0
+      ).length;
 
       io.to(`Admin_${socket.user.company_id}`).emit("userCount", {
         totalUsers,
@@ -802,7 +932,14 @@ export const adminController = {
       let urlStats = await UserHistory.findAll({
         where: { date: today },
         attributes: [
-          [Sequelize.fn("REGEXP_SUBSTR", Sequelize.col("url"), "^(?:https?:\\/\\/)?(?:[^@\\/\n]+@)?(?:www\\.)?([^:\\/?\n]+)"), "host"],
+          [
+            Sequelize.fn(
+              "REGEXP_SUBSTR",
+              Sequelize.col("url"),
+              "^(?:https?:\\/\\/)?(?:[^@\\/\n]+@)?(?:www\\.)?([^:\\/?\n]+)"
+            ),
+            "host",
+          ],
           [Sequelize.fn("COUNT", Sequelize.col("url")), "count"],
         ],
         group: ["host"],
@@ -827,7 +964,12 @@ const handleUserSocket = async (socket, io) => {
   socket.join(`privateRoom_${socket.user.userId}`);
 
   socket.on("newNotification", async (data) => {
-    let notificationCount = await notifyAdmin(socket.user.userId, data.type, data.time, data.url);
+    let notificationCount = await notifyAdmin(
+      socket.user.userId,
+      data.type,
+      data.time,
+      data.url
+    );
     if (notificationCount.error) {
       socket.emit("newNotification", {
         message: "Failed to send notification",
@@ -876,7 +1018,9 @@ const handleUserSocket = async (socket, io) => {
       }
 
       let today = new Date().toISOString().split("T")[0];
-      let parsedVisitTime = isNaN(new Date(visitTime)) ? new Date() : new Date(visitTime);
+      let parsedVisitTime = isNaN(new Date(visitTime))
+        ? new Date()
+        : new Date(visitTime);
 
       let company_id = user?.company_id;
 
@@ -926,12 +1070,15 @@ const handleUserSocket = async (socket, io) => {
             userId,
             date: today,
             company_id,
-            content: image.data,                                //------> for testing
+            content: image.data, //------> for testing
             // content: `data:image/png;base64,${image.data}`,  // -------> for production
           })
         )
       );
-      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
+      io.to(`privateRoom_${userId}`).emit(
+        "getUserReport",
+        await userData(userId)
+      );
       socket.emit("imageSuccess", { message: "Images uploaded successfully" });
     } catch (error) {
       console.log("Error uploading images:", error);
@@ -991,7 +1138,10 @@ const handleUserSocket = async (socket, io) => {
           });
         }
       }
-      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
+      io.to(`privateRoom_${userId}`).emit(
+        "getUserReport",
+        await userData(userId)
+      );
       socket.emit("appHistorySuccess", {
         message: "App history uploaded successfully",
       });
@@ -1005,6 +1155,37 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("disconnect", async () => {
     console.log(`User ID ${socket.user.userId} disconnected `);
+    let userData = await User.findOne({ where: { id: socket.user.userId } });
+    let time_data = await TimeLog.findOne({
+      where: { user_id: socket.user.userId },
+      order: [["createdAt", "DESC"]],
+    });
+
+    userData.currentStatus = 0;
+    userData.socket_id = null;
+    await userData.save();
+
+    // if (time_data) {
+    let logged_out_time = new Date();
+    let [loginHours, loginMinutes] = time_data?.logged_in_time
+      .split(":")
+      .map(Number);
+    let loginTimeInMinutes = loginHours * 60 + loginMinutes;
+    let logoutHours = logged_out_time.getHours();
+    let logoutMinutes = logged_out_time.getMinutes();
+    let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
+
+    let duration = logoutTimeInMinutes - loginTimeInMinutes;
+    let active_time =
+      parseInt(duration) -
+      parseInt(time_data?.spare_time) -
+      parseInt(time_data?.idle_time);
+
+    await time_data.update({
+      logged_out_time: `${logoutHours}:${logoutMinutes}`,
+      active_time,
+    });
+    // }
   });
 };
 
@@ -1031,7 +1212,14 @@ const getUserSettings = async (socket) => {
   try {
     let user = await User.findOne({
       where: { id: socket.user.userId },
-      attributes: ["screen_capture_time", "broswer_capture_time", "app_capture_time","screen_capture", "broswer_capture", "app_capture"],
+      attributes: [
+        "screen_capture_time",
+        "broswer_capture_time",
+        "app_capture_time",
+        "screen_capture",
+        "broswer_capture",
+        "app_capture",
+      ],
     });
     if (!user) {
       return { error: "User not found" };
@@ -1071,7 +1259,10 @@ const notifyAdmin = async (id, type, time, url) => {
         title: type == 1 ? "Login successful" : "Logout successful",
         company_id,
         date: today,
-        message: type == 1 ? `${user?.fullname} login successfully` : `${user?.fullname} logout successfully`,
+        message:
+          type == 1
+            ? `${user?.fullname} login successfully`
+            : `${user?.fullname} logout successfully`,
       });
     } else if (type == 3) {
       if (!time) {
