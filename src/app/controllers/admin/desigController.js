@@ -82,7 +82,7 @@ class desigController {
 
       // ___________---------- Designation Add ----------_______________
       const addNewDesig = await designation.create({ name: name, company_id: req.user.company_id }, { transaction: dbTransaction });
-      if (addNewDesig) return helper.failed(res, variables.ValidationError, "Error occured while creating designation");
+      if (!addNewDesig) return helper.failed(res, variables.ValidationError, "Error occured while creating designation");
 
       await dbTransaction.commit();
       return helper.success(res, variables.Success, "Designation Added Successfully!");
