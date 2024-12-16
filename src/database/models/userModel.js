@@ -89,18 +89,18 @@ const User = sequelize.define(
      type: DataTypes.INTEGER,
      defaultValue: 60, 
     },
-    screen_capture: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: 1,
-    },
-    broswer_capture: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: 1,
-    },
-    app_capture: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: 1,
-    }
+    // screen_capture: {
+    //   type: DataTypes.BOOLEAN,
+    //   defaultValue: 1,
+    // },
+    // broswer_capture: {
+    //   type: DataTypes.BOOLEAN,
+    //   defaultValue: 1,
+    // },
+    // app_capture: {
+    //   type: DataTypes.BOOLEAN,
+    //   defaultValue: 1,
+    // }
 },
 {
     timestamps: true,
@@ -112,9 +112,9 @@ const User = sequelize.define(
           "screen_capture_time",
           "broswer_capture_time",
           "app_capture_time",
-          "screen_capture",
-          "broswer_capture",
-          "app_capture",
+          // "screen_capture",
+          // "broswer_capture",
+          // "app_capture",
         ];
         let fieldsChangeds = options.fields.some((field) =>
           monitoredFieldss.includes(field)
@@ -125,9 +125,9 @@ const User = sequelize.define(
             screen_capture_time: user.screen_capture_time,
             broswer_capture_time: user.broswer_capture_time,
             app_capture_time: user.app_capture_time,
-            screen_capture: user.screen_capture,
-            broswer_capture: user.broswer_capture,
-            app_capture: user.app_capture,
+            // screen_capture: user.screen_capture,
+            // broswer_capture: user.broswer_capture,
+            // app_capture: user.app_capture,
           });
         }
 

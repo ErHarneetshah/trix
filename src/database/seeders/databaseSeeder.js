@@ -15,6 +15,9 @@ import { BlockedWebsites } from "../models/BlockedWebsite.js";
 import { Device } from "../models/device.js";
 import ProductiveWebsite from "../models/ProductiveWebsite.js";
 import { ProductiveApp } from "../models/ProductiveApp.js";
+import workReports from "../models/workReportsModel.js";
+import { UserHistory } from "../models/UserHistory.js";
+import TimeLog from "../models/timeLogsModel.js";
 
 export default async function seedDatabase() {
   try {
@@ -1076,6 +1079,47 @@ export default async function seedDatabase() {
             updatedAt: `${currentDate} 11:02:35`,
           },
         ]);
+
+        let rootWorkReports = await workReports.bulkCreate([
+          {
+            company_id: a,
+            user_id: id,
+            description: "Project Name:- Blazecoint1)Create a api for get admin profile info.2)Create a api for update admin information.3)Create a api for adding blocked websites.",
+            status: 2,
+            remarks: "",
+            date: currentDate,
+          },
+          {
+            company_id: a,
+            user_id: id,
+            description: "Project Name:- Emonitrix 1)Create a api for get admin profile info.2)Create a api for update admin information.3)Create a api for adding blocked websites.",
+            status: 1,
+            remarks: "",
+            date: currentDate,
+          },
+          {
+            company_id: a,
+            user_id: id,
+            description: "Project Name:- DBank 1)Create a api for get admin profile info.2)Create a api for update admin information.3)Create a api for adding blocked websites.",
+            status: 1,
+            remarks: "",
+            date: currentDate,
+          },
+        ]);
+
+        let rootUserHistories = await UserHistory.bulkCreate([
+          {
+            userId: id,
+            company_id: a,
+            date: currentDate,
+            website_name: "lbmsolutions.keka.com",
+            url: "https://lbmsolutions.keka.com/#/me/attendance/logs",
+            title: "Me | Attendance | Logs",
+            visitTime: `${currentDate} 11:01:59`,
+            createdAt: `${currentDate} 11:02:34`,
+            updatedAt: `${currentDate} 11:02:34`,
+          },
+        ]);
       });
 
       deptIds.forEach(async (deptId) => {
@@ -1130,6 +1174,11 @@ export default async function seedDatabase() {
         { company_id: a, department_id: deptId, app_name: "tytyty", app_logo: "1734085805813.png" },
         { company_id: a, department_id: deptId, app_name: "dsgf", app_logo: "1734085850035.png" },
         { company_id: a, department_id: deptId, app_name: "gjhgj", app_logo: "1734086183986.png" },
+      ]);
+      
+
+      let rootTimeLogs = await TimeLog.bulkCreate([
+        { user_id: id, shift_Id: 1, company_id: a, logged_in_time: '10:17', active_time: 0, late_coming_duration: 0, logged_out_time: NULL, late_coming: 1, early_going: 0, spare_time: 0, idle_time: 0, date: '2024-12-10'},
       ]);
 
       //! For loop of COMPANY Ends here

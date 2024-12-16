@@ -31,6 +31,10 @@ const TimeLog = sequelize.define('timelogs',{
       type: DataTypes.STRING,
       allowNull: true
     },
+    early_going: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 0,
+    },
     late_coming: {
       type: DataTypes.BOOLEAN,
       defaultValue: 0,
@@ -55,29 +59,29 @@ const TimeLog = sequelize.define('timelogs',{
 );
 
 
-TimeLog.afterUpdate(async (timeLog) => {
- if(timeLog){
-  let { logged_in_time, logged_out_time } = timeLog;
+// TimeLog.afterUpdate(async (timeLog) => {
+//  if(timeLog){
+//   let { logged_in_time, logged_out_time } = timeLog;
 
-  // Ensure both logged_in_time and logged_out_time are present
-  if (logged_in_time && logged_out_time) {
-    let [loginHours, loginMinutes] = logged_in_time.split(":").map(Number);
-    let [logoutHours, logoutMinutes] = logged_out_time.split(":").map(Number);
+//   // Ensure both logged_in_time and logged_out_time are present
+//   if (logged_in_time && logged_out_time) {
+//     let [loginHours, loginMinutes] = logged_in_time.split(":").map(Number);
+//     let [logoutHours, logoutMinutes] = logged_out_time.split(":").map(Number);
 
-    let loginTimeInMinutes = loginHours * 60 + loginMinutes;
-    let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
+//     let loginTimeInMinutes = loginHours * 60 + loginMinutes;
+//     let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
 
-    let totalDurationInMinutes = logoutTimeInMinutes - loginTimeInMinutes;
+//     let totalDurationInMinutes = logoutTimeInMinutes - loginTimeInMinutes;
 
-    let totalHours = Math.floor(totalDurationInMinutes / 60);
-    let totalMinutes = totalDurationInMinutes % 60;
-    await TimeLog.update(
-      { total_active_duration: `${totalHours}:${totalMinutes}` },
-      { where: { id: timeLog.id } }
-    );
-  }
- }
-});
+//     let totalHours = Math.floor(totalDurationInMinutes / 60);
+//     let totalMinutes = totalDurationInMinutes % 60;
+//     await TimeLog.update(
+//       { active_time: `${totalHours}:${totalMinutes}` },
+//       { where: { id: timeLog.id } }
+//     );
+//   }
+//  }
+// });
 
 await TimeLog.sync({ alter: 1 });
 

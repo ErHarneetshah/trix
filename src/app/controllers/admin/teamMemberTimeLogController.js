@@ -43,7 +43,7 @@ class teamMemberTimeLogController {
         where: logWhere, // Filters for `workReports`
         offset,
         limit,
-        attributes: ["id", "total_active_duration", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
+        attributes: ["id", "active_time", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
         include: [
           {
             model: User,
