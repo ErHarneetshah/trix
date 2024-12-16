@@ -80,5 +80,5 @@ const company = sequelize.define(
   }
 );
 
-await company.sync({ alter: 1 });
+// await company.sync({ alter: 1 });
 export default company;
