@@ -3,6 +3,7 @@ import authMiddleware from "../../app/middlewares/authMiddleware.js";
 import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.js";
 import settingsController from "../../app/controllers/admin/settingsController.js";
 import emailGatewayController from "../../app/controllers/admin/emailGatewayController.js";
+import languageController from "../../app/controllers/admin/languageController.js";
 import fileUpload from "../../utils/file-upload.js";
 
 const router = express.Router();
@@ -47,6 +48,11 @@ router.get('/get-email-list', authMiddleware, verifyAdminMiddleware, emailGatewa
 //add productive websites
 router.post('/add-productive-websites', authMiddleware, verifyAdminMiddleware, settingsController.addProductiveWebsites);
 router.get('/get-productive-websites', authMiddleware, verifyAdminMiddleware, settingsController.getProductiveWebsites);
+
+//language settings routes
+router.get('/get-language-dropdown', authMiddleware, verifyAdminMiddleware, languageController.getLanguageDropdown);
+router.put('/update-language', authMiddleware, verifyAdminMiddleware, languageController.updateLanguage);
+router.get('/get-theme-status', authMiddleware, verifyAdminMiddleware, languageController.getThemeStatus);
 
 
 export default router;

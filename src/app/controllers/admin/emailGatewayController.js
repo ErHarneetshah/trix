@@ -131,7 +131,7 @@ const checkEmailServer = async (req, res) => {
     if (sendmail.success) {
         return helper.success(res, variables.Success, sendmail.message);
     } else {
-        return helper.failed(res, variables.BadRequest, sendmail.message);
+        return helper.failed(res, variables.BadRequest, "PLease check the credentials first.");
     }
 };
 

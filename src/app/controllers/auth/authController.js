@@ -23,6 +23,7 @@ import { QueryTypes } from "@sequelize/core";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 import { Notification } from "../../../database/models/Notification.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
+import languageSettings from "../../../database/models/languageSettingsModel.js";
 
 class authController extends jwtService {
   companyRegister = async (req, res) => {
@@ -166,6 +167,21 @@ class authController extends jwtService {
       if (!createTeam || !createTeam.id) {
         if (dbTransaction) await dbTransaction.rollback();
         throw new Error("Unable to Create Team Record for this company.");
+      }
+
+      const createLanguages = await languageSettings.create(
+        {
+          user_id: req.user.id,
+          company_id: createCompany.id,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
+
+      if (!createLanguages || !createLanguages.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Language Settings for this Company");
       }
 
       const createUser = await User.create(
