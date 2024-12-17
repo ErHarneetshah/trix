@@ -14,6 +14,8 @@ import AppHistoryEntry  from "../models/AppHistoryEntry.js";
 import ProductiveWebsite from "../models/ProductiveWebsite.js";
 import company from "../models/company.js";
 import { Device } from "../models/device.js";
+import languageSettings from "../models/languageSettingsModel.js";
+import languageDropdown from "../models/languageModel.js";
 
 // User Relationships here
 User.belongsTo(department, { as: "department", foreignKey: "departmentId" });
@@ -53,6 +55,9 @@ User.hasMany(Device, { foreignKey: "user_id" });
 
 User.belongsTo(department, { foreignKey: "departmentId" });
 User.belongsTo(designation, { foreignKey: "designationId" });
+
+User.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "productivity" });
+languageSettings.belongsTo(languageDropdown, { as: "language", foreignKey: "language_id" });
 
 
 export default {}
