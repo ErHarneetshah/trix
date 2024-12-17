@@ -87,14 +87,14 @@ class teamMemberTimeLogController {
         startOfDay.setHours(0, 0, 0, 0);
         endOfDay = new Date(date);
         endOfDay.setHours(23, 59, 59, 999);
-        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
       } else {
         startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
         endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
 
-        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
       }
 
       if (tab) {
@@ -117,7 +117,6 @@ class teamMemberTimeLogController {
             model: User,
             as: "user",
             where: userWhere,
-            required: true,
             attributes: ["id", "fullname"],
             include: [
               {
@@ -141,9 +140,6 @@ class teamMemberTimeLogController {
         ],
         order: [["createdAt", "DESC"]],
       });
-
-console.log(alldata,"alldataalldataalldataalldataalldata");
-
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
