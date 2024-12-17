@@ -8,6 +8,8 @@ import designation from "../../../database/models/designationModel.js";
 import role from "../../../database/models/roleModel.js";
 import team from "../../../database/models/teamModel.js";
 import { Op } from "sequelize";
+import H from "../../../utils/Mail.js";
+import bcrypt from 'bcrypt';
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
@@ -81,9 +83,10 @@ class teamMemberController {
         return helper.failed(res, variables.Unauthorized, "User already exists with this mail!");
       }
 
-      const password = "$2b$10$moBYrpFMk0DJemIgdUqlgO4LXj5nUj0FK1zzV7GpEEmqh2yhcShVK"; // Test@123
+      const plainTextPassword = await helper.generatePass();
+      const hashedPassword = await bcrypt.hash(plainTextPassword, 10);
 
-      requestData.password = password;
+      requestData.password = hashedPassword;
       requestData.screen_capture_time = 60;
       requestData.app_capture_time = 60;
       requestData.broswer_capture_time = 60;
@@ -93,7 +96,19 @@ class teamMemberController {
         transaction: dbTransaction,
       });
 
+
       if (teamMember) {
+
+        const textMessage = `Hello ${teamMember.fullname},\n\nYour account has been created successfully!\n\nHere are your login details:\n\nUsername: ${teamMember.fullname}\nEmail: ${teamMember.email}\nPassword: ${plainTextPassword}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
+
+        const subject = "Emonitrix-Your Credentials"
+        const sendmail = await H.sendM(requestData.email, subject, textMessage);
+
+        if (!sendmail.success) {
+          // If email fails, rollback the transaction
+          await dbTransaction.rollback();
+          return helper.failed(res, variables.BadRequest, sendmail.message);
+        }
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Team Member Added Successfully", {
           note: "This response is just for testing purposes for now",
