@@ -112,13 +112,11 @@ class teamMemberTimeLogController {
         where: logWhere,
         offset,
         limit,
-        attributes: ["id", "active_time", "logged_in_time", "logged_out_time", "late_coming_duration", "late_coming", "early_going", "spare_time", "idle_time"],
         include: [
           {
             model: User,
             as: "user",
             where: userWhere,
-            required: true,
             attributes: ["id", "fullname"],
             include: [
               {
@@ -126,15 +124,13 @@ class teamMemberTimeLogController {
                 as: "productivity",
                 attributes: [
                   "userId",
-                  [Sequelize.literal(`
-                    (SELECT SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)) 
-                     FROM app_histories 
-                     WHERE app_histories.userId = user.id)
-                  `), "total_seconds_spent"]
+                  [Sequelize.fn('SUM', Sequelize.literal('TIMESTAMPDIFF(SECOND, startTime, endTime)')), 'total_seconds_spent']
                 ],
-                required: false
-              }
-            ]
+                required: false,
+                group: ['productivity.userId']
+      
+              },
+            ],
           },
           {
             model: shift,
@@ -144,6 +140,7 @@ class teamMemberTimeLogController {
         ],
         order: [["createdAt", "DESC"]],
       });
+
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
