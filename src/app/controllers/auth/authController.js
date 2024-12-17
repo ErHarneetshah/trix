@@ -48,7 +48,7 @@ class authController extends jwtService {
       const createCompany = await company.create(
         {
           name: requestData.name,
-          // email: requestData.email,
+          email: requestData.email,
           employeeNumber: requestData.employeeNumber,
         },
         {
@@ -199,6 +199,7 @@ class authController extends jwtService {
           screen_capture_time: 60,
           app_capture_time: 60,
           broswer_capture_time: 60,
+          next_reports_schedule_date: new Date(new Date().setMonth(new Date().getMonth() + 1)),
         },
         {
           transaction: dbTransaction,
