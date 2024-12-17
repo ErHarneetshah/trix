@@ -8,7 +8,7 @@ import role from "../../database/models/roleModel.js";
 
 async function buildUserTree(parentDept, companyId, level = 0) {
   try {
-    console.log("Building tree...");
+    console.log({parentDeptId: parentDept.id, company_id: companyId});
 
     // Fetch all child departments
     let children = await department.findAll({
@@ -17,13 +17,17 @@ async function buildUserTree(parentDept, companyId, level = 0) {
         {
           model: team,
           as: "department",
+          required:false,
           include: {
             model: User,
             as: "children",
+            required:false,
+
             include: [
               {
-                model: role,
+                model: role, 
                 as: "role",
+                required:false
               },
               
             ],
@@ -36,6 +40,8 @@ async function buildUserTree(parentDept, companyId, level = 0) {
             {
               model: role,
               as: "role",
+              required:false
+
             },
           ],
         },
@@ -81,7 +87,7 @@ async function getUserTree(parentDept, companyId) {
 
 const viewTreeStructure = async (req, res, next) => {
   try {
-    const companyId = 101;
+    const companyId = 1;
 
     let tree = {};
     if (myCache.has(`company_${companyId}`)) {
@@ -100,13 +106,15 @@ const viewTreeStructure = async (req, res, next) => {
               {
                 model: role,
                 as: "role",
+                required:false
+
               },
             ],
           },
         ],
         //   raw: true,
       });
-      console.log({ root_dept });
+      // console.log({ root_dept });
       if (!root_dept) {
         return helper.failed(res, variables.Success, "please add department first", {});
       }
