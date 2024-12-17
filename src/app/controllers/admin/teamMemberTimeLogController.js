@@ -40,7 +40,7 @@ class teamMemberTimeLogController {
 
       logWhere.company_id = req.user.company_id;
       const alldata = await TimeLog.findAndCountAll({
-        where: logWhere, // Filters for `workReports`
+        where: logWhere,
         offset,
         limit,
         attributes: ["id", "active_time", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
