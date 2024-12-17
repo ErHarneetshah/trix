@@ -409,8 +409,6 @@ class authController extends jwtService {
         // let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
         let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
 
-        console.log(endHours, endMinutes, currentHours, currentMinutes);
-
         if (
           currentHours > endHours || (currentHours == endHours && currentMinutes > endMinutes)
         ) {
@@ -687,20 +685,20 @@ class authController extends jwtService {
       } = req.body;
 
       const validations = [
-        { key: "screen_capture", value: screen_capture, validValues: [0, 1] },
-        { key: "broswer_capture", value: broswer_capture, validValues: [0, 1] },
-        { key: "app_capture", value: app_capture, validValues: [0, 1] },
+        { key: "screen_capture", value: screen_capture, validValues: [0, 1,true,false] },
+        { key: "broswer_capture", value: broswer_capture, validValues: [0, 1,true,false] },
+        { key: "app_capture", value: app_capture, validValues: [0, 1,true,false] },
         {
           key: "screen_capture_time",
           value: screen_capture_time,
-          minValue: 60,
+          minValue: 30,
         },
         {
           key: "broswer_capture_time",
           value: broswer_capture_time,
-          minValue: 60,
+          minValue: 30,
         },
-        { key: "app_capture_time", value: app_capture_time, minValue: 60 },
+        { key: "app_capture_time", value: app_capture_time, minValue: 30 },
       ];
 
       for (const validation of validations) {

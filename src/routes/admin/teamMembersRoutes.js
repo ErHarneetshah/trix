@@ -10,5 +10,6 @@ router.get("/getAllTeamMembers",  authMiddleware,verifyAdminMiddleware,   teamMe
 router.post("/addTeamMembers",  authMiddleware,verifyAdminMiddleware,   teamMemberInstance.addTeamMembers);
 router.put("/updateTeamMembers", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updateTeamMembers);
 router.put("/updateTeamMembersSettings", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updateSettings);
-router.put('/update',  authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updateSettings)
+router.put('/update',  authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updateSettings);
+router.get("/get-team-member",authMiddleware,teamMemberInstance.getTeamlist);
 export default router;
