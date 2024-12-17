@@ -21,6 +21,7 @@ import { UserHistory } from '../models/UserHistory.js';
 import userSetting from '../models/userSettingModel.js';
 import workReports from '../models/workReportsModel.js';
 import shift from '../models/shiftModel.js';
+import reportSettings from "../models/reportSettingsModel.js";
 
 (async () => {
   try {
