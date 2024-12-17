@@ -118,7 +118,6 @@ class teamMemberTimeLogController {
             model: User,
             as: "user",
             where: userWhere,
-            required: true,
             attributes: ["id", "fullname"],
             include: [
               {
