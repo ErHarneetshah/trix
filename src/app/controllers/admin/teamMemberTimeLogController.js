@@ -110,8 +110,8 @@ class teamMemberTimeLogController {
 
       const alldata = await TimeLog.findAndCountAll({
         where: logWhere,
-        // offset: offset,
-        // limit: limit,
+        offset: offset,
+        limit: limit,
         include: [
           {
             model: User,
@@ -122,13 +122,7 @@ class teamMemberTimeLogController {
               {
                 model: AppHistoryEntry,
                 as: "productivity",
-                attributes: [
-                  "userId",
-                  [Sequelize.fn('SUM', Sequelize.literal('TIMESTAMPDIFF(SECOND, startTime, endTime)')), 'total_seconds_spent']
-                ],
-                required: true,
-                group: ['productivity.userId']
-      
+                required: false,
               },
             ],
           },
@@ -143,7 +137,9 @@ class teamMemberTimeLogController {
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+      const result = this.createResponse(alldata.count,alldata.rows);
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", {count:alldata.count, rows:result});
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -226,6 +222,51 @@ class teamMemberTimeLogController {
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
+  };
+
+  // used to map response in a certain response
+  createResponse = (count,inputData) => {
+    return inputData.map((data) => {
+      const totalSecondsSpent = data.user.productivity.reduce((total, item) => {
+        const timeSpent = this.calculateTimeInSeconds(item.startTime, item.endTime).toString();
+        const seconds = parseInt(timeSpent, 10);
+        return isNaN(seconds) ? total : total + seconds; // Skip invalid values
+      }, 0);
+  
+      const outputData ={
+        id: data.id,
+        user_id: data.user_id,
+        shift_id: data.shift_id,
+        company_id: data.company_id,
+        logged_in_time: data.logged_in_time,
+        active_time: data.active_time,
+        late_coming_duration: data.late_coming_duration,
+        logged_out_time: data.logged_out_time,
+        early_going: data.early_going,
+        late_coming: data.late_coming,
+        spare_time: data.spare_time,
+        idle_time: data.idle_time,
+        date: data.date,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        user: {
+          id: data.user.id,
+          fullname: data.user.fullname,
+          // Use the computed total seconds spent
+          total_seconds_spent: totalSecondsSpent.toString(),
+        },
+        shift: data.shift,
+      };
+  
+      return outputData;
+    });
+  };
+  
+
+  calculateTimeInSeconds = (startTime, endTime) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    return Math.floor((end - start) / 1000); // Convert milliseconds to seconds
   };
 }
 

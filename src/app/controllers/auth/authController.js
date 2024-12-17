@@ -31,6 +31,8 @@ class authController extends jwtService {
     try {
       const requestData = req.body;
 
+      console.log(requestData);
+
       // Validating request body
       const validationResult = await authValidation.companyRegisterValid(requestData, res);
       if (!validationResult.status) return helper.sendResponse(res, variables.ValidationError, 0, {}, validationResult.message);
@@ -48,7 +50,7 @@ class authController extends jwtService {
       const createCompany = await company.create(
         {
           name: requestData.name,
-          // email: requestData.email,
+          email: requestData.email,
           employeeNumber: requestData.employeeNumber,
         },
         {
@@ -152,6 +154,7 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Shift for this Company");
       }
 
+
       const createTeam = await team.create(
         {
           name: "Upper Management Team",
@@ -167,21 +170,6 @@ class authController extends jwtService {
       if (!createTeam || !createTeam.id) {
         if (dbTransaction) await dbTransaction.rollback();
         throw new Error("Unable to Create Team Record for this company.");
-      }
-
-      const createLanguages = await languageSettings.create(
-        {
-          user_id: req.user.id,
-          company_id: createCompany.id,
-        },
-        {
-          transaction: dbTransaction,
-        }
-      );
-
-      if (!createLanguages || !createLanguages.id) {
-        if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Language Settings for this Company");
       }
 
       const createUser = await User.create(
@@ -208,6 +196,21 @@ class authController extends jwtService {
       if (!createUser || !createUser.id) {
         if (dbTransaction) await dbTransaction.rollback();
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create User for this Company");
+      }
+
+      const createLanguages = await languageSettings.create(
+        {
+          user_id: createUser.id,
+          company_id: createCompany.id,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
+
+      if (!createLanguages || !createLanguages.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Language Settings for this Company");
       }
 
       const token = this.generateToken(createUser.id.toString(), createUser.isAdmin, createUser.company_id, "1d");
