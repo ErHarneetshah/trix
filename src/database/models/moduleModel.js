@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import sequelize  from '../queries/dbConnection.js';
 
-const module = sequelize.define('modules', {
+const app_modules = sequelize.define('modules', {
   id: {
     type: DataTypes.INTEGER,
       primaryKey: true,
@@ -20,4 +20,4 @@ const module = sequelize.define('modules', {
 
 // await module.sync({alter:1});
 
-export default module;
+export default app_modules;

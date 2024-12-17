@@ -1,5 +1,5 @@
 import sequelize from '../queries/dbConnection.js';
-import module from '../models/moduleModel.js';
+import app_modules from '../models/moduleModel.js';
 
 const generateDummyData = async (transaction) => {
   const moduleData = [
@@ -21,7 +21,7 @@ const generateDummyData = async (transaction) => {
   
   // Insert into the database
   for (const requestData of moduleData) {
-    await module.create({
+    await app_modules.create({
       name:requestData
     }, { transaction });
   }

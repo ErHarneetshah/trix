@@ -5,7 +5,8 @@ import TimeLog from "../../../database/models/timeLogsModel.js";
 import { group } from "console";
 import shift from "../../../database/models/shiftModel.js";
 import User from "../../../database/models/userModel.js";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
+import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
 
 class teamMemberTimeLogController {
   getAllTeamMemberLog = async (req, res) => {
@@ -40,7 +41,7 @@ class teamMemberTimeLogController {
 
       logWhere.company_id = req.user.company_id;
       const alldata = await TimeLog.findAndCountAll({
-        where: logWhere, // Filters for `workReports`
+        where: logWhere,
         offset,
         limit,
         attributes: ["id", "active_time", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
@@ -86,15 +87,14 @@ class teamMemberTimeLogController {
         startOfDay.setHours(0, 0, 0, 0);
         endOfDay = new Date(date);
         endOfDay.setHours(23, 59, 59, 999);
-
-        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
       } else {
         startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
         endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
 
-        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
       }
 
       if (tab) {
@@ -110,16 +110,27 @@ class teamMemberTimeLogController {
 
       const alldata = await TimeLog.findAndCountAll({
         where: logWhere,
-        offset,
-        limit,
-        attributes: ["id", "total_active_duration", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
+        offset: offset,
+        limit: limit,
         include: [
           {
             model: User,
             as: "user",
             where: userWhere,
-            required: true,
             attributes: ["id", "fullname"],
+            include: [
+              {
+                model: AppHistoryEntry,
+                as: "productivity",
+                attributes: [
+                  "userId",
+                  [Sequelize.fn('SUM', Sequelize.literal('TIMESTAMPDIFF(SECOND, startTime, endTime)')), 'total_seconds_spent']
+                ],
+                required: true,
+                group: ['productivity.userId']
+      
+              },
+            ],
           },
           {
             model: shift,
@@ -129,6 +140,9 @@ class teamMemberTimeLogController {
         ],
         order: [["createdAt", "DESC"]],
       });
+
+
+      
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);

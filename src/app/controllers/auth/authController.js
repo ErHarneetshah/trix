@@ -14,7 +14,7 @@ import designation from "../../../database/models/designationModel.js";
 import role from "../../../database/models/roleModel.js";
 import team from "../../../database/models/teamModel.js";
 import shift from "../../../database/models/shiftModel.js";
-import module from "../../../database/models/moduleModel.js";
+import app_modules from "../../../database/models/moduleModel.js";
 import rolePermissionController from "../admin/rolePermissionController.js";
 import { Device } from "../../../database/models/device.js";
 import { io } from "../../../../app.js";
@@ -122,7 +122,7 @@ class authController extends jwtService {
       }
 
       const permissionInstance = new rolePermissionController();
-      const createPermissionModules = await module.findAll({
+      const createPermissionModules = await app_modules.findAll({
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       for (const module of createPermissionModules) {
@@ -484,23 +484,26 @@ class authController extends jwtService {
   // };
   advanced_setting = async (req, res) => {
     try {
-      const { screen_capture, broswer_capture, app_capture, screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
+      let { screen_capture, broswer_capture, app_capture, screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
+
+      // Normalize boolean inputs (convert string 'true'/'false' to actual booleans)
+      const normalizeBoolean = (value) => {
+        if (value === "true") return true;
+        if (value === "false") return false;
+        return value;
+      };
+
+      screen_capture = normalizeBoolean(screen_capture);
+      broswer_capture = normalizeBoolean(broswer_capture);
+      app_capture = normalizeBoolean(app_capture);
 
       const validations = [
-        { key: "screen_capture", value: screen_capture, validValues: [0, 1] },
-        { key: "broswer_capture", value: broswer_capture, validValues: [0, 1] },
-        { key: "app_capture", value: app_capture, validValues: [0, 1] },
-        {
-          key: "screen_capture_time",
-          value: screen_capture_time,
-          minValue: 60,
-        },
-        {
-          key: "broswer_capture_time",
-          value: broswer_capture_time,
-          minValue: 60,
-        },
-        { key: "app_capture_time", value: app_capture_time, minValue: 60 },
+        { key: "screen_capture", value: screen_capture, validValues: [0, 1, true, false] },
+        { key: "broswer_capture", value: broswer_capture, validValues: [0, 1, true, false] },
+        { key: "app_capture", value: app_capture, validValues: [0, 1, true, false] },
+        { key: "screen_capture_time", value: screen_capture_time, minValue: 30 },
+        { key: "broswer_capture_time", value: broswer_capture_time, minValue: 30 },
+        { key: "app_capture_time", value: app_capture_time, minValue: 30 },
       ];
 
       for (const validation of validations) {
@@ -535,6 +538,7 @@ class authController extends jwtService {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
+
   get_advanced_setting = async (req, res) => {
     try {
       let id = req.user.id;

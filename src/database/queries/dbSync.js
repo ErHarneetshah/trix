@@ -10,7 +10,7 @@ import designation from '../models/designationModel.js';
 import { Device } from '../models/device.js';
 import emailGateway from '../models/emailGatewayModel.js';
 import { ImageUpload } from '../models/ImageUpload.js';
-import module from '../models/moduleModel.js';
+import app_modules from '../models/moduleModel.js';
 import { Notification } from '../models/Notification.js';
 import rolePermission from '../models/rolePermissionModel.js';
 import { ProductiveApp } from '../models/ProductiveApp.js';

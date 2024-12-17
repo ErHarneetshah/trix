@@ -2,7 +2,7 @@ import role from "../../../database/models/roleModel.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
-import module from "../../../database/models/moduleModel.js";
+import app_modules from "../../../database/models/moduleModel.js";
 import { Op } from "sequelize";
 import rolePermissionController from "./rolePermissionController.js";
 import rolePermission from "../../../database/models/rolePermissionModel.js";
@@ -86,7 +86,7 @@ class roleController {
         return helper.failed(res, variables.InternalServerError, "Unable to create role!");
       }
 
-      const permissionModules = await module.findAll({
+      const permissionModules = await app_modules.findAll({
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       for (const module of permissionModules) {

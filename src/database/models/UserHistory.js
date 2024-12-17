@@ -39,9 +39,21 @@ export const UserHistory = sequelize.define("user_history", {
 
 UserHistory.beforeCreate(async (data) => {
   try {
-    let parsed = new URL(data.url);
-    data.website_name = parsed.hostname;
+    let url = data.url;   
+    if (!/^https?:\/\//i.test(url)) {
+      url = "http://" + url; 
+    }
+  
+    let parsed = new URL(url); 
+    data.website_name = parsed.hostname; 
   } catch (error) {
     console.error("Error setting website_name:", error.message);
   }
+  
+  // try {
+  //   let parsed = new URL(data.url);
+  //   data.website_name = parsed.hostname;
+  // } catch (error) {
+  //   console.error("Error setting website_name:", error.message);
+  // }
 });
