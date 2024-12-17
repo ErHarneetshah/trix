@@ -39,61 +39,6 @@ const addEmailGateeways = async (req, res) => {
 };
 
 
-// const addEmailGateeways = async (req, res) => {
-//     try {
-//         const { protocol, host, username, password, port, encryption } = req.body;
-
-//         // Default encryption type
-//         const defaultEncryption = "TLS";
-//         const encryptionOptions = ["TLS", "SSL", "None"];
-
-//         const rules = {
-//             protocol: "required|string|min:2|max:50",
-//             host: "required|string|min:2|max:50",
-//             username: "required|string|min:1|max:100", 
-//             password: "required|string|min:6",
-//             port: "required|numeric|min:1|max:65535",
-//             encryption: `string|in:${encryptionOptions.join(",")}`,
-//         };
-
-//         const { status, message } = await validate(req.body, rules);
-//         if (status === 0) {
-//             return helper.failed(res, variables.ValidationError, message);
-//         }
-
-//         const selectedEncryption = encryptionOptions.includes(encryption)
-//             ? encryption
-//             : defaultEncryption;
-
-//         const replaceExisting = req.body.replaceExisting || false;
-
-//         if (replaceExisting) {
-//             await emailGateway.destroy({ where: {} });
-//             await sequelize.query(
-//                 `ALTER TABLE \`${emailGateway.getTableName()}\` AUTO_INCREMENT = 1;`
-//             );
-//         }
-
-//         const gateway = await emailGateway.create({
-//             protocol,
-//             host,
-//             username,
-//             password,
-//             port,
-//             encryption: selectedEncryption,
-//         });
-
-//         return helper.success(
-//             res,
-//             variables.Created,
-//             "Created the Email Gateway Successfully",
-//             gateway
-//         );
-//     } catch (error) {
-//         console.error("Error while creating the email gateway setup:", error);
-//         return helper.failed(res, variables.BadRequest, error.message);
-//     }
-// };
 const checkEmailServer = async (req, res) => {
     const { to, subject, message } = req.body;
 
