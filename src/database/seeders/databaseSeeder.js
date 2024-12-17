@@ -74,6 +74,10 @@ export default async function seedDatabase() {
       { name: "productiveApp" },
       { name: "reportSettings" },
       { name: "user" },
+      { name: "dashboard" },
+      { name: "allTeamMemberDashboard" },
+
+
     ]);
 
     for (let a = 1; a <= 4; a++) {

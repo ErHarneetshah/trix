@@ -5,7 +5,8 @@ import TimeLog from "../../../database/models/timeLogsModel.js";
 import { group } from "console";
 import shift from "../../../database/models/shiftModel.js";
 import User from "../../../database/models/userModel.js";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
+import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
 
 class teamMemberTimeLogController {
   getAllTeamMemberLog = async (req, res) => {
@@ -86,7 +87,6 @@ class teamMemberTimeLogController {
         startOfDay.setHours(0, 0, 0, 0);
         endOfDay = new Date(date);
         endOfDay.setHours(23, 59, 59, 999);
-
         logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
       } else {
         startOfDay = new Date();
@@ -112,7 +112,7 @@ class teamMemberTimeLogController {
         where: logWhere,
         offset,
         limit,
-        attributes: ["id", "total_active_duration", "logged_in_time", "logged_out_time", "late_coming", "early_going"],
+        attributes: ["id", "active_time", "logged_in_time", "logged_out_time", "late_coming_duration", "late_coming", "early_going", "spare_time", "idle_time"],
         include: [
           {
             model: User,
@@ -120,6 +120,21 @@ class teamMemberTimeLogController {
             where: userWhere,
             required: true,
             attributes: ["id", "fullname"],
+            include: [
+              {
+                model: AppHistoryEntry,
+                as: "productivity",
+                attributes: [
+                  "userId",
+                  [Sequelize.literal(`
+                    (SELECT SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)) 
+                     FROM app_histories 
+                     WHERE app_histories.userId = user.id)
+                  `), "total_seconds_spent"]
+                ],
+                required: false
+              }
+            ]
           },
           {
             model: shift,
