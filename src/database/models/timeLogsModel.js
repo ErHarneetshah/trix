@@ -39,6 +39,10 @@ const TimeLog = sequelize.define('timelogs',{
       type: DataTypes.BOOLEAN,
       defaultValue: 0,
     },
+    early_going:{
+      type: DataTypes.BOOLEAN,
+      defaultValue: 0,
+    },
     spare_time:{
       type: DataTypes.INTEGER,
       allowNull: true
@@ -62,6 +66,10 @@ const TimeLog = sequelize.define('timelogs',{
 //  if(timeLog){
 //   let { logged_in_time, logged_out_time } = timeLog;
 
+// TimeLog.afterUpdate(async (timeLog) => {
+//  if(timeLog){
+//   let { logged_in_time, logged_out_time } = timeLog;
+
 //   // Ensure both logged_in_time and logged_out_time are present
 //   if (logged_in_time && logged_out_time) {
 //     let [loginHours, loginMinutes] = logged_in_time.split(":").map(Number);
@@ -75,7 +83,7 @@ const TimeLog = sequelize.define('timelogs',{
 //     let totalHours = Math.floor(totalDurationInMinutes / 60);
 //     let totalMinutes = totalDurationInMinutes % 60;
 //     await TimeLog.update(
-//       { active_time: `${totalHours}:${totalMinutes}` },
+//       { total_active_duration: `${totalHours}:${totalMinutes}` },
 //       { where: { id: timeLog.id } }
 //     );
 //   }
