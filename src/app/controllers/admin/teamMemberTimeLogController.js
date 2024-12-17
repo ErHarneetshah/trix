@@ -137,9 +137,9 @@ class teamMemberTimeLogController {
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
-      const result = this.createResponse(alldata.count,alldata.rows);
+      const result = this.createResponse(alldata.count, alldata.rows);
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", {count:alldata.count, rows:result});
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: alldata.count, rows: result });
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -225,15 +225,19 @@ class teamMemberTimeLogController {
   };
 
   // used to map response in a certain response
-  createResponse = (count,inputData) => {
+  createResponse = (count, inputData) => {
     return inputData.map((data) => {
       const totalSecondsSpent = data.user.productivity.reduce((total, item) => {
         const timeSpent = this.calculateTimeInSeconds(item.startTime, item.endTime).toString();
         const seconds = parseInt(timeSpent, 10);
         return isNaN(seconds) ? total : total + seconds; // Skip invalid values
       }, 0);
-  
-      const outputData ={
+
+      const { hours, minutes, seconds } = this.convertSecondsToHMS(totalSecondsSpent);
+
+      const formattedTime = `${hours}h ${minutes}m ${seconds}s`;
+
+      const outputData = {
         id: data.id,
         user_id: data.user_id,
         shift_id: data.shift_id,
@@ -252,21 +256,27 @@ class teamMemberTimeLogController {
         user: {
           id: data.user.id,
           fullname: data.user.fullname,
-          // Use the computed total seconds spent
-          total_seconds_spent: totalSecondsSpent.toString(),
+          total_seconds_spent: formattedTime,
         },
         shift: data.shift,
       };
-  
+
       return outputData;
     });
   };
-  
 
   calculateTimeInSeconds = (startTime, endTime) => {
     const start = new Date(startTime);
     const end = new Date(endTime);
     return Math.floor((end - start) / 1000); // Convert milliseconds to seconds
+  };
+
+  convertSecondsToHMS = (totalSeconds) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return { hours, minutes, seconds };
   };
 }
 
