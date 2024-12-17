@@ -220,7 +220,7 @@ class authController extends jwtService {
       await createAccessToken(createUser.id, createUser.isAdmin, createUser.company_id, token, expireTime, dbTransaction);
 
       await dbTransaction.commit();
-      return helper.success(res, variables.Success, "Register Successfully");
+      return helper.success(res, variables.Success, "Register Successfully", { token: token, user: createUser });
     } catch (error) {
       console.log(error.message);
       if (dbTransaction) await dbTransaction.rollback();
