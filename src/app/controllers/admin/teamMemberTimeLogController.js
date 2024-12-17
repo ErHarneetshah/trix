@@ -110,8 +110,8 @@ class teamMemberTimeLogController {
 
       const alldata = await TimeLog.findAndCountAll({
         where: logWhere,
-        offset: offset,
-        limit: limit,
+        // offset: offset,
+        // limit: limit,
         include: [
           {
             model: User,
@@ -141,6 +141,9 @@ class teamMemberTimeLogController {
         ],
         order: [["createdAt", "DESC"]],
       });
+
+console.log(alldata,"alldataalldataalldataalldataalldata");
+
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
