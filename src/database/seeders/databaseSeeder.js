@@ -8,7 +8,7 @@ import User from "../models/userModel.js";
 import company from "../models/company.js";
 import rolePermission from "../models/rolePermissionModel.js";
 import reportSettings from "../models/reportSettingsModel.js";
-import module from "../models/moduleModel.js";
+import app_modules from "../models/moduleModel.js";
 import AppHistoryEntry from "../models/AppHistoryEntry.js";
 import { UpdatedAt } from "@sequelize/core/decorators-legacy";
 import { BlockedWebsites } from "../models/BlockedWebsite.js";
@@ -56,10 +56,10 @@ export default async function seedDatabase() {
     await reportSettings.destroy({ where: {} });
     await sequelize.query(`ALTER TABLE ${reportSettings.getTableName()} AUTO_INCREMENT=1`);
 
-    await module.destroy({ where: {} });
-    await sequelize.query(`ALTER TABLE ${module.getTableName()} AUTO_INCREMENT=1`);
+    await app_modules.destroy({ where: {} });
+    await sequelize.query(`ALTER TABLE ${app_modules.getTableName()} AUTO_INCREMENT=1`);
 
-    const rootModules = await module.bulkCreate([
+    const rootModules = await app_modules.bulkCreate([
       { name: "role" },
       { name: "reportingManager" },
       { name: "team" },

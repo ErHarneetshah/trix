@@ -3,6 +3,7 @@ import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
 import rolePermission from "../../../database/models/rolePermissionModel.js";
 import role from "../../../database/models/roleModel.js";
+import app_modules from "../../../database/models/moduleModel.js";
 
 class rolePermissionController {
   getAllRolePermissions = async (req, res) => {
@@ -14,7 +15,7 @@ class rolePermissionController {
         include: [
           {
             model: role,
-            as: "role", 
+            as: "role",
             attributes: ["name"],
           },
         ],
@@ -41,7 +42,7 @@ class rolePermissionController {
           };
           acc.push(existingModule);
         }
-   
+
         existingModule.roleDetails.push({
           roleName: roleName,
           permissions: permissions,
@@ -73,7 +74,7 @@ class rolePermissionController {
 
   addRolePermissions = async (module, roleId, company_id, transaction) => {
     try {
-      if(isNaN(roleId)) throw new Error("Role Id must be in number");
+      if (isNaN(roleId)) throw new Error("Role Id must be in number");
       const permissionData = {
         roleId,
         modules: module.name,
@@ -96,7 +97,7 @@ class rolePermissionController {
 
   addSuperAdminPermissions = async (module, roleId, company_id, transaction) => {
     try {
-      if(isNaN(roleId)) throw new Error("Role Id must be in number");
+      if (isNaN(roleId)) throw new Error("Role Id must be in number");
       const permissionData = {
         roleId,
         modules: module.name,
@@ -117,34 +118,190 @@ class rolePermissionController {
     }
   };
 
-  updateRolePermission = async (req, res) => {
+  // updateSingleRolePermission = async (req, res) => {
+  //   const dbTransaction = await sequelize.transaction();
+  //   try {
+  //     const { roleName, moduleName, permissions } = req.body;
+  //     if (!roleName || typeof roleName !== "string") return helper.failed(res, variables.NotFound, "Role Name is required!");
+  //     if (!moduleName || typeof moduleName !== "string") return helper.failed(res, variables.NotFound, "Module name is required!");
+  //     if (!permissions || typeof permissions == "undefined") return helper.failed(res, variables.NotFound, "Permissions are required!");
+
+  //     if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {
+  //       return helper.failed(res, variables.BadRequest, "Permissions must be a valid object.");
+  //     }
+
+  //     const requiredKeys = ["GET", "POST", "PUT", "DELETE"];
+
+  //     for (const key of requiredKeys) {
+  //       if (!(key in permissions)) {
+  //         return helper.failed(res, variables.BadRequest, `Permissions must include this Exact key: ${key}`);
+  //       }
+  //       if (typeof permissions[key] !== "boolean") {
+  //         return helper.failed(res, variables.BadRequest, `The value for ${key} in permissions must be true or false.`);
+  //       }
+  //     }
+
+  //     for (const [key, value] of Object.entries(permissions)) {
+  //       if (value !== true && value !== false) {
+  //         return helper.failed(res, variables.BadRequest, `Invalid value for permission "${key}". Only 'true' or 'false' are allowed.`);
+  //       }
+  //     }
+
+  //     const existRole = await role.findOne({
+  //       where: { name: roleName, company_id: req.user.company_id },
+  //       attributes: ["id"],
+  //       transaction: dbTransaction,
+  //     });
+  //     if (!existRole) return helper.failed(res, variables.ValidationError, "Role Name Does not exists in Roles!");
+
+  //     const existingRolePermission = await rolePermission.findOne({
+  //       where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
+  //       transaction: dbTransaction,
+  //     });
+  //     if (!existingRolePermission) return helper.failed(res, variables.ValidationError, "Role Permission does not exists!");
+
+  //     // when there is actually something to update
+  //     const updated = await rolePermission.update(
+  //       {
+  //         permissions: permissions,
+  //       },
+  //       {
+  //         where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
+  //         transaction: dbTransaction,
+  //       }
+  //     );
+
+  //     if (updated) {
+  //       await dbTransaction.commit();
+  //       return helper.success(res, variables.Success, "Role permissions Updated Successfully!");
+  //     } else {
+  //       if (dbTransaction) await dbTransaction.rollback();
+  //       return helper.failed(res, variables.UnknownError, "Unable to update the role permissions!");
+  //     }
+  //   } catch (error) {
+  //     if (dbTransaction) await dbTransaction.rollback();
+  //     return helper.failed(res, variables.BadRequest, error.message);
+  //   }
+  // };
+
+
+  updateMultipleRolePermission = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const { roleName, moduleName, permissions } = req.body;
+      const { rolesModulesPermissions } = req.body;
+  
+      if (!rolesModulesPermissions || !Array.isArray(rolesModulesPermissions)) {
+        return helper.failed(res, variables.NotFound, "Roles and their module permissions are required and must be an array!");
+      }
+  
+      // Loop through each role's module permissions
+      for (const roleModules of rolesModulesPermissions) {
+        const { roleName, modulesPermissions } = roleModules;
+  
+        if (!roleName || typeof roleName !== "string") {
+          return helper.failed(res, variables.NotFound, "Role Name is required!");
+        }
+  
+        if (!modulesPermissions || !Array.isArray(modulesPermissions)) {
+          return helper.failed(res, variables.NotFound, "Modules and Permissions are required and must be an array!");
+        }
+  
+        // Validate each module's permissions
+        for (const module of modulesPermissions) {
+          const { moduleName, permissions } = module;
+  
+          if (!moduleName || typeof moduleName !== "string") {
+            return helper.failed(res, variables.NotFound, "Module name is required!");
+          }
+  
+          if (!permissions || typeof permissions == "undefined") {
+            return helper.failed(res, variables.NotFound, "Permissions are required!");
+          }
+  
+          if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {
+            return helper.failed(res, variables.BadRequest, "Permissions must be a valid object.");
+          }
+  
+          // Validate required permission keys and boolean values
+          const requiredKeys = ["GET", "POST", "PUT", "DELETE"];
+          for (const key of requiredKeys) {
+            if (!(key in permissions)) {
+              return helper.failed(res, variables.BadRequest, `Permissions must include the key: ${key}`);
+            }
+            if (typeof permissions[key] !== "boolean") {
+              return helper.failed(res, variables.BadRequest, `The value for ${key} in permissions must be true or false.`);
+            }
+          }
+  
+          // Validate individual permission values
+          for (const [key, value] of Object.entries(permissions)) {
+            if (value !== true && value !== false) {
+              return helper.failed(res, variables.BadRequest, `Invalid value for permission "${key}". Only 'true' or 'false' are allowed.`);
+            }
+          }
+        }
+  
+        // Check if the role exists
+        const existRole = await role.findOne({
+          where: { name: roleName, company_id: req.user.company_id },
+          attributes: ["id"],
+          transaction: dbTransaction,
+        });
+        if (!existRole) return helper.failed(res, variables.ValidationError, `Role ${roleName} does not exist!`);
+  
+        // Loop through each module and update the permissions for the role
+        for (const module of modulesPermissions) {
+          const { moduleName, permissions } = module;
+  
+          const existingRolePermission = await rolePermission.findOne({
+            where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
+            transaction: dbTransaction,
+          });
+          if (!existingRolePermission) {
+            return helper.failed(res, variables.ValidationError, `Role Permission does not exist for module: ${moduleName}`);
+          }
+  
+          const updated = await rolePermission.update(
+            {
+              permissions: permissions,
+            },
+            {
+              where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
+              transaction: dbTransaction,
+            }
+          );
+  
+          if (!updated) {
+            if (dbTransaction) await dbTransaction.rollback();
+            return helper.failed(res, variables.UnknownError, `Unable to update permissions for module: ${moduleName}`);
+          }
+        }
+      }
+  
+      await dbTransaction.commit();
+      return helper.success(res, variables.Success, "Role permissions updated successfully!");
+  
+    } catch (error) {
+      if (dbTransaction) await dbTransaction.rollback();
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+  
+
+  updateMultipleRolePermissionOnce = async (req, res) => {
+    const dbTransaction = await sequelize.transaction();
+    try {
+      const { roleName, allTrue } = req.body;
       if (!roleName || typeof roleName !== "string") return helper.failed(res, variables.NotFound, "Role Name is required!");
-      if (!moduleName || typeof moduleName !== "string") return helper.failed(res, variables.NotFound, "Module name is required!");
-      if (!permissions || typeof permissions == "undefined") return helper.failed(res, variables.NotFound, "Permissions are required!");
+      if (!allTrue || isNaN(allTrue)) return helper.failed(res, variables.NotFound, "Check is Required and in numbers!");
 
-      if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {
-        return helper.failed(res, variables.BadRequest, "Permissions must be a valid object.");
+      if (!["0", "1"].includes(String(allTrue))) {
+        return helper.failed(res, variables.ValidationError, "Invalid allTrue check. Only values 0 and 1 are allowed");
       }
 
-      const requiredKeys = ["GET", "POST", "PUT", "DELETE"];
-
-      for (const key of requiredKeys) {
-        if (!(key in permissions)) {
-          return helper.failed(res, variables.BadRequest, `Permissions must include this Exact key: ${key}`);
-        }
-        if (typeof permissions[key] !== "boolean") {
-          return helper.failed(res, variables.BadRequest, `The value for ${key} in permissions must be true or false.`);
-        }
-      }
-
-      for (const [key, value] of Object.entries(permissions)) {
-        if (value !== true && value !== false) {
-        return helper.failed(res, variables.BadRequest, `Invalid value for permission "${key}". Only 'true' or 'false' are allowed.`);
-      }
-      }
+      const moduleNames = await app_modules.findAll({
+        attributes: ["name"],
+      });
 
       const existRole = await role.findOne({
         where: { name: roleName, company_id: req.user.company_id },
@@ -153,23 +310,54 @@ class rolePermissionController {
       });
       if (!existRole) return helper.failed(res, variables.ValidationError, "Role Name Does not exists in Roles!");
 
+      let updated;
 
-      const existingRolePermission = await rolePermission.findOne({
-        where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
-        transaction: dbTransaction,
-      });
-      if (!existingRolePermission) return helper.failed(res, variables.ValidationError, "Role Permission does not exists!");
-
-      // when there is actually something to update
-      const updated = await rolePermission.update(
-        {
-          permissions: permissions,
-        },
-        {
-          where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
+      for (const moduleName of moduleNames) {
+        const existingRolePermission = await rolePermission.findOne({
+          where: {
+            roleId: existRole.id,
+            modules: moduleName.name,
+            company_id: req.user.company_id,
+          },
           transaction: dbTransaction,
+        });
+
+        if (!existingRolePermission) {
+          return helper.failed(res, variables.ValidationError, `Role Permission does not exist for module ${moduleName.name}!`);
         }
-      );
+
+        if (allTrue) {
+          updated = await rolePermission.update(
+            {
+              permissions: {
+                POST: true,
+                GET: true,
+                PUT: true,
+                DELETE: true,
+              },
+            },
+            {
+              where: { roleId: existRole.id, modules: moduleName.name, company_id: req.user.company_id },
+              transaction: dbTransaction,
+            }
+          );
+        } else {
+          updated = await rolePermission.update(
+            {
+              permissions: {
+                POST: false,
+                GET: false,
+                PUT: false,
+                DELETE: false,
+              },
+            },
+            {
+              where: { roleId: existRole.id, modules: moduleName.name, company_id: req.user.company_id },
+              transaction: dbTransaction,
+            }
+          );
+        }
+      }
 
       if (updated) {
         await dbTransaction.commit();
