@@ -110,13 +110,14 @@ class teamMemberTimeLogController {
 
       const alldata = await TimeLog.findAndCountAll({
         where: logWhere,
-        offset,
-        limit,
+        offset: offset,
+        limit: limit,
         include: [
           {
             model: User,
             as: "user",
             where: userWhere,
+            required: true,
             attributes: ["id", "fullname"],
             include: [
               {
@@ -126,7 +127,7 @@ class teamMemberTimeLogController {
                   "userId",
                   [Sequelize.fn('SUM', Sequelize.literal('TIMESTAMPDIFF(SECOND, startTime, endTime)')), 'total_seconds_spent']
                 ],
-                required: false,
+                required: true,
                 group: ['productivity.userId']
       
               },
