@@ -225,7 +225,7 @@ class teamMemberTimeLogController {
   };
 
   // used to map response in a certain response
-  createResponse = (count, inputData) => {
+  createResponse = (inputData) => {
     return inputData.map((data) => {
       const totalSecondsSpent = data.user.productivity.reduce((total, item) => {
         const timeSpent = this.calculateTimeInSeconds(item.startTime, item.endTime).toString();

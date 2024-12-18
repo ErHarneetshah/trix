@@ -68,7 +68,7 @@ class teamMemberController {
       let { id } = req.query;
 
       const alldata = await User.findOne({
-        where: {id: id, company_id: req.user.company_id},
+        where: { id: id, company_id: req.user.company_id },
         attributes: {
           exclude: ["password", "isAdmin", "createdAt", "updatedAt", "status"],
         },
@@ -102,7 +102,6 @@ class teamMemberController {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
-
 
   addTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
@@ -166,8 +165,7 @@ class teamMemberController {
   updateTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const {id} = req.query;
-      const { ...updateFields } = req.body;
+      const { id, ...updateFields } = req.body;
       if (!id || isNaN(id)) return helper.failed(res, variables.ValidationError, "Id is required and in numbers");
       const existingTeamMember = await User.findOne({
         where: { id: id, company_id: req.user.company_id },
@@ -175,7 +173,7 @@ class teamMemberController {
       });
 
       if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists in your company data");
-      if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
+      // if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
 
       // Remove the 'password' field if it exists in updateFields
       if (updateFields.hasOwnProperty("password")) {
@@ -213,8 +211,7 @@ class teamMemberController {
 
   updateSettings = async (req, res) => {
     try {
-      let id = req.query.id;
-      let { screen_capture_time, broswer_capture_time, app_capture_time, screen_capture, broswer_capture, app_capture } = req.body;
+      let { id, screen_capture_time, broswer_capture_time, app_capture_time, screen_capture, broswer_capture, app_capture } = req.body;
 
       if (!id || isNaN(id)) {
         return helper.failed(res, variables.ValidationError, "ID is Required and in numbers");
@@ -292,11 +289,19 @@ class teamMemberController {
 
   getTeamlist = async (req, res) => {
     try {
+      // ___________---------- Search, Limit, Pagination ----------_______________
+      let { limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      // ___________-----------------------------------------------_______________
+
       let data = await User.findAndCountAll({
         where: {
           [Op.or]: [{ departmentId: req.user.departmentId }, { teamId: req.user.teamId }],
           company_id: req.user.company_id,
         },
+        offset: offset,
+        limit: limit,
         attributes: ["id", "fullname"],
         include: [
           {
