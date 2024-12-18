@@ -60,9 +60,10 @@ const getThemeStatus = async(req,res) => {
                 },
               ]
         });
+        console.log("theme",theme);
         const themeMapping = { 1: "LTR", 2: "RTL"};
-        const themeType = themeMapping[theme.theme_id] || "unknown";
-        if (!theme || theme.length === 0) return helper.failed(res, variables.Success, "Theme status Not found");
+        const themeType = theme ?  themeMapping[theme.theme_id] : "unknown";
+        if (!theme || theme.length === 0 || theme.theme_id === undefined) return helper.failed(res, variables.NotFound, "Theme status Not found");
         return helper.success(res, variables.Success, "Theme Status Retrieved Successfully", theme, { themeType });
 
     } catch (error) {
