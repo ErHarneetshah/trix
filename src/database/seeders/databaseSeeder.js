@@ -62,7 +62,7 @@ export default async function seedDatabase() {
     await sequelize.query(`ALTER TABLE ${app_modules.getTableName()} AUTO_INCREMENT=1`);
 
     await TimeLog.destroy({ where: {} });
-    await TimeLog.query(`ALTER TABLE ${exportReports.getTableName()} AUTO_INCREMENT=1`);
+    await sequelize.query(`ALTER TABLE ${TimeLog.getTableName()} AUTO_INCREMENT=1`);
 
     await exportReports.destroy({ where: {} });
     await sequelize.query(`ALTER TABLE ${exportReports.getTableName()} AUTO_INCREMENT=1`);
