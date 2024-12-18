@@ -7,6 +7,7 @@ import shift from "../../../database/models/shiftModel.js";
 import User from "../../../database/models/userModel.js";
 import { Op, Sequelize } from "sequelize";
 import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
+import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 
 class teamMemberTimeLogController {
   getAllTeamMemberLog = async (req, res) => {
@@ -117,12 +118,19 @@ class teamMemberTimeLogController {
             model: User,
             as: "user",
             where: userWhere,
-            attributes: ["id", "fullname"],
+            attributes: ["id", "fullname", "currentStatus"],
             include: [
               {
                 model: AppHistoryEntry,
                 as: "productivity",
                 required: false,
+                // include: [
+                //   {
+                //     model: ProductiveApp,
+                //     as: "productiveApps",
+                //     required: true,
+                //   },
+                // ],
               },
             ],
           },
@@ -137,7 +145,7 @@ class teamMemberTimeLogController {
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
-      const result = this.createResponse(alldata.count, alldata.rows);
+      const result = this.createResponse(alldata.rows);
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: alldata.count, rows: result });
     } catch (error) {
@@ -225,20 +233,47 @@ class teamMemberTimeLogController {
   };
 
   // used to map response in a certain response
-  createResponse = (count, inputData) => {
+  createResponse = (inputData) => {
     return inputData.map((data) => {
-      const totalSecondsSpent = data.user.productivity.reduce((total, item) => {
-        const timeSpent = this.calculateTimeInSeconds(item.startTime, item.endTime).toString();
-        const seconds = parseInt(timeSpent, 10);
-        return isNaN(seconds) ? total : total + seconds; // Skip invalid values
-      }, 0);
+      let productiveTime;
+      let totalProductiveTime;
+      let nonProductiveTime;
+      let totalNonProductiveTime;
 
-      const { hours, minutes, seconds } = this.convertSecondsToHMS(totalSecondsSpent);
+      const activeTimeThreshold = Math.floor((data.active_time + data.spare_time + data.idle_time) * 60 * 0.6);
+      const idleTimeThreshold = Math.floor((data.active_time + data.spare_time + data.idle_time) * 0.4);
+      const isProductive = totalSecondsSpent >= activeTimeThreshold;
+      const isSlacking = data.idle_time >= idleTimeThreshold;
 
-      const formattedTime = `${hours}h ${minutes}m ${seconds}s`;
+      if (data.user.productivity) {
+        if (data.user.isProductive) {
+          totalProductiveTime = data.user.productivity.reduce((total, item) => {
+            const timeSpent = this.calculateTimeInSeconds(item.startTime, item.endTime).toString();
+            const seconds = parseInt(timeSpent, 10);
+            return isNaN(seconds) ? total : total + seconds;
+          }, 0);
+
+          const { hours, minutes, seconds } = this.convertSecondsToHMS(totalProductiveTime);
+
+          productiveTime = `${hours}h ${minutes}m ${seconds}s`;
+        } else {
+          totalNonProductiveTime = data.user.productivity.reduce((total, item) => {
+            const timeSpent = this.calculateTimeInSeconds(item.startTime, item.endTime).toString();
+            const seconds = parseInt(timeSpent, 10);
+            return isNaN(seconds) ? total : total + seconds;
+          }, 0);
+
+          const { hours, minutes, seconds } = this.convertSecondsToHMS(totalProductiveTime);
+
+          productiveTime = `${hours}h ${minutes}m ${seconds}s`;
+        }
+      } else {
+        totalSecondsSpent = 0;
+        formattedTime = "0h 0m 0s";
+      }
 
       const outputData = {
-        id: data.id,
+        // id: data.id,
         user_id: data.user_id,
         shift_id: data.shift_id,
         company_id: data.company_id,
@@ -250,15 +285,18 @@ class teamMemberTimeLogController {
         late_coming: data.late_coming,
         spare_time: data.spare_time,
         idle_time: data.idle_time,
-        date: data.date,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
+        // date: data.date,
         user: {
           id: data.user.id,
           fullname: data.user.fullname,
-          total_seconds_spent: formattedTime,
+          currentStatus: data.user.currentStatus,
+          productiveTime: formattedTime,
+          is_productive: isProductive,
+          is_slacking: isSlacking,
         },
         shift: data.shift,
+        activeTimeThreshold: activeTimeThreshold,
+        idleTimeThreshold: idleTimeThreshold,
       };
 
       return outputData;
