@@ -34,4 +34,27 @@ async function uploadPhotos(req, res, folder, imageArr) {
         throw new Error('Upload failed: ' + error.message);
     }
 }
-export default { uploadPhotos }
+
+const getNextMonthDate = () => {
+    const today = new Date();
+    const nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    nextMonthDate.setHours(0, 0, 0, 0);
+    return nextMonthDate.toISOString().split('T')[0];
+  };
+  
+  const getNextMondayDate = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysUntilNextMonday = (8 - dayOfWeek) % 7; // Calculate days until next Monday
+    const nextMondayDate = new Date(today);
+    nextMondayDate.setDate(today.getDate() + daysUntilNextMonday);
+    return nextMondayDate.toISOString().split('T')[0];
+  };
+  
+  const getTomorrowDate = () => {
+    const today = new Date();
+    const tomorrowDate = new Date(today);
+    tomorrowDate.setDate(today.getDate() + 1);
+    return tomorrowDate.toISOString().split('T')[0];
+  };
+export default { uploadPhotos,getNextMonthDate,getNextMondayDate,getTomorrowDate }

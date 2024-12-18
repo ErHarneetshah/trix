@@ -37,6 +37,8 @@ workReports.belongsTo(User, { as: "user", foreignKey: "user_id" });
 // Time Log relationships here
 TimeLog.belongsTo(User, { as: "user", foreignKey: "user_id" });
 TimeLog.belongsTo(shift, { as: "shift", foreignKey: "shift_id" });
+TimeLog.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "appHistory" });
+
 
 // Role Permissions relationships here
 rolePermission.belongsTo(role, { as: "role", foreignKey: "roleId" });

@@ -18,6 +18,8 @@ import { ProductiveApp } from "../models/ProductiveApp.js";
 import workReports from "../models/workReportsModel.js";
 import { UserHistory } from "../models/UserHistory.js";
 import TimeLog from "../models/timeLogsModel.js";
+import { addMonths } from 'date-fns';
+
 
 export default async function seedDatabase() {
   try {
@@ -370,7 +372,8 @@ export default async function seedDatabase() {
       const teamIds = rootTeam.map((team) => team.id);
 
       console.log("Teams Data Created successfully.");
-
+      const today = new Date();
+      const nextMonthDate = addMonths(today, 1);
       //*________________--------------- USERS -------------_____________________
       const rootUser = await User.bulkCreate([
         {
@@ -388,6 +391,7 @@ export default async function seedDatabase() {
           screen_capture_time: 60,
           browser_capture_time: 60,
           app_capture_time: 60,
+          next_reports_schedule_date: nextMonthDate.toLocaleDateString(),
         },
         {
           company_id: a,
@@ -1149,7 +1153,7 @@ export default async function seedDatabase() {
         ]);
 
         let rootProductiveApps = await ProductiveApp.bulkCreate([
-          { company_id: a, department_id: deptId, app_name: "spotify"},
+          { company_id: a, department_id: deptId, app_name: "spotify" },
           { company_id: a, department_id: deptId, app_name: "test" },
           { company_id: a, department_id: deptId, app_name: "testing2" },
           { company_id: a, department_id: deptId, app_name: "testing5" },
@@ -1178,7 +1182,7 @@ export default async function seedDatabase() {
         ]);
       });
 
-      
+
 
       // let rootTimeLogs = await TimeLog.bulkCreate([
       //   { user_id: id, shift_Id: 1, company_id: a, logged_in_time: '10:17', active_time: 0, late_coming_duration: 0, logged_out_time: NULL, late_coming: 1, early_going: 0, spare_time: 0, idle_time: 0, date: '2024-12-10'},

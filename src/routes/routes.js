@@ -18,6 +18,8 @@ import dashboardDataRouter from './admin/dashboardRoutes.js';
 import aiRoutes from './admin/aiRoutes.js';
 
 
+import cronFunctions from '../cron/cronFunctions.js'
+
 const router = express.Router();
 
 router.get('/', (req, res) => {
@@ -26,6 +28,9 @@ router.get('/', (req, res) => {
         success: true,
     });
 });
+
+// testing route
+router.get('/test', cronFunctions.sendEmailWithReports);
 router.use('/auth', authRouter);
 router.use('/admin/dept', deptRouter);
 router.use('/admin/desig', desigRouter);
