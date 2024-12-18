@@ -18,8 +18,8 @@ import { ProductiveApp } from "../models/ProductiveApp.js";
 import workReports from "../models/workReportsModel.js";
 import { UserHistory } from "../models/UserHistory.js";
 import TimeLog from "../models/timeLogsModel.js";
-import { addMonths } from 'date-fns';
-
+import { addMonths } from "date-fns";
+import exportReports from "../models/exportReportsModel.js";
 
 export default async function seedDatabase() {
   try {
@@ -61,6 +61,9 @@ export default async function seedDatabase() {
     await app_modules.destroy({ where: {} });
     await sequelize.query(`ALTER TABLE ${app_modules.getTableName()} AUTO_INCREMENT=1`);
 
+    await exportReports.destroy({ where: {} });
+    await sequelize.query(`ALTER TABLE ${exportReports.getTableName()} AUTO_INCREMENT=1`);
+
     const rootModules = await app_modules.bulkCreate([
       { name: "role" },
       { name: "reportingManager" },
@@ -78,8 +81,39 @@ export default async function seedDatabase() {
       { name: "user" },
       { name: "dashboard" },
       { name: "allTeamMemberDashboard" },
+    ]);
 
-
+    const rootExportReports = await exportReports.bulkCreate([
+      {
+        name: "Productivity Report",
+        content:
+          "The Productive Report provides an analysis of user activity, highlighting the time spent on productive applications and tasks, compared against total logged time, to determine user productivity levels within a specified time period",
+      },
+      {
+        name: "Attendance Report",
+        content:
+          "The Attendance Report presents a detailed overview of user attendance, including logged-in and logged-out times, late arrivals, early departures, idle durations, and overall active time, to evaluate punctuality and presence during a specified time period.",
+      },
+      {
+        name: "Browser Activity Report",
+        content:
+          "The **Browser Activity Report** provides a comprehensive summary of users' browsing activities, detailing visited websites, time spent on each, and categorizing usage into productive and non-productive activities for deeper insights into online behavior during working hours.",
+      },
+      {
+        name: "Application Usage",
+        content:
+          "The Application Usage Report provides an overview of the applications used by users, including the time spent on each app, categorization into productive and non-productive usage, and insights into application habits during working hours.",
+      },
+      {
+        name: "Department Performance Report",
+        content:
+          "The Department Performance Report evaluates the overall productivity and efficiency of each department, highlighting metrics such as total active time, idle time, productive versus non-productive time, and comparisons across teams to identify top-performing and underperforming departments.",
+      },
+      {
+        name: "Unauthorized Websites Access Report",
+        content:
+          "The Unauthorized Websites Access Report tracks and identifies instances where users accessed websites categorized as unauthorized or restricted during working hours, detailing the frequency, duration, and user information to ensure compliance with company policies.",
+      },
     ]);
 
     for (let a = 1; a <= 4; a++) {
@@ -1181,8 +1215,6 @@ export default async function seedDatabase() {
           { company_id: a, department_id: deptId, app_name: "gjhgj", app_logo: "1734086183986.png" },
         ]);
       });
-
-
 
       // let rootTimeLogs = await TimeLog.bulkCreate([
       //   { user_id: id, shift_Id: 1, company_id: a, logged_in_time: '10:17', active_time: 0, late_coming_duration: 0, logged_out_time: NULL, late_coming: 1, early_going: 0, spare_time: 0, idle_time: 0, date: '2024-12-10'},
