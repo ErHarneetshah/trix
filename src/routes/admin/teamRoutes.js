@@ -8,6 +8,7 @@ const teamInstance = new teamController();
 
 router.get("/getAllTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.getAllTeam);
 router.get("/getTeamDropdown",  authMiddleware,verifyAdminMiddleware,   teamInstance.getTeamDropdown);
+router.get("/getTeamUserDropdown",  authMiddleware,verifyAdminMiddleware,   teamInstance.getTeamUserDropdown);
 router.get("/getSpecificTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.getSpecificTeam);
 router.post("/addTeam",  authMiddleware,verifyAdminMiddleware,   teamInstance.addTeam);
 router.put("/updateTeam", authMiddleware,verifyAdminMiddleware,   teamInstance.updateTeam);
