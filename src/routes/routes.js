@@ -16,6 +16,7 @@ import teamStructure from './admin/structureRoutes.js';
 import chartRouter from './admin/chartRoutes.js';
 import dashboardDataRouter from './admin/dashboardRoutes.js';
 import aiRoutes from './admin/aiRoutes.js';
+import exportReportRoutes from './admin/exportReportRoutes.js';
 
 
 import cronFunctions from '../cron/cronFunctions.js'
@@ -43,6 +44,8 @@ router.use('/admin/settings', settingRouter);
 router.use('/admin/rolePermission', rolePermissionRouter);
 router.use('/admin/workReports', reportRouter);
 router.use('/admin/teamTimeLog', teamTimeLogRouter);
+router.use('/admin/exportReports', exportReportRoutes);
+
 // router.use('/admin/dashboard',dashboardRoutes)
 router.use('/client/reports', userReportRouter);
 router.use('/admin/tree', teamStructure);
