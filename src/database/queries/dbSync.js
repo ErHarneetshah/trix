@@ -24,6 +24,7 @@ import shift from '../models/shiftModel.js';
 import reportSettings from "../models/reportSettingsModel.js";
 import languageDropdown from "../models/languageModel.js";
 import languageSettings from "../models/languageSettingsModel.js";
+import exportReports from "../models/exportReportsModel.js";
 
 (async () => {
   try {

@@ -87,32 +87,32 @@ export default async function seedDatabase() {
       {
         name: "Productivity Report",
         content:
-          "The Productive Report provides an analysis of user activity, highlighting the time spent on productive applications and tasks, compared against total logged time, to determine user productivity levels within a specified time period",
+          "The Productive Report provides an analysis of user activity, highlighting the time spent on productive applications and tasks.",
       },
       {
         name: "Attendance Report",
         content:
-          "The Attendance Report presents a detailed overview of user attendance, including logged-in and logged-out times, late arrivals, early departures, idle durations, and overall active time, to evaluate punctuality and presence during a specified time period.",
+          "The Attendance Report presents a detailed overview of user attendance, including logged-in and logged-out times, etc.",
       },
       {
         name: "Browser Activity Report",
         content:
-          "The **Browser Activity Report** provides a comprehensive summary of users' browsing activities, detailing visited websites, time spent on each, and categorizing usage into productive and non-productive activities for deeper insights into online behavior during working hours.",
+          "The Browser Activity Report provides a comprehensive summary of users' browsing activities.",
       },
       {
         name: "Application Usage",
         content:
-          "The Application Usage Report provides an overview of the applications used by users, including the time spent on each app, categorization into productive and non-productive usage, and insights into application habits during working hours.",
+          "The Application Usage Report provides an overview of the applications used by users, including the time spent on each app.",
       },
       {
         name: "Department Performance Report",
         content:
-          "The Department Performance Report evaluates the overall productivity and efficiency of each department, highlighting metrics such as total active time, idle time, productive versus non-productive time, and comparisons across teams to identify top-performing and underperforming departments.",
+          "The Department Performance Report evaluates the overall productivity and efficiency of each department.",
       },
       {
         name: "Unauthorized Websites Access Report",
         content:
-          "The Unauthorized Websites Access Report tracks and identifies instances where users accessed websites categorized as unauthorized or restricted during working hours, detailing the frequency, duration, and user information to ensure compliance with company policies.",
+          "The Unauthorized Websites Access Report tracks and identifies instances where users accessed websites categorized as unauthorized or restricted.",
       },
     ]);
 
