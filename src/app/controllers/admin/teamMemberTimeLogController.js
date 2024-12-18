@@ -4,7 +4,7 @@ import variables from "../../config/variableConfig.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
 import shift from "../../../database/models/shiftModel.js";
 import User from "../../../database/models/userModel.js";
-import { Op, Sequelize } from "sequelize";
+import { Op, Sequelize, QueryTypes } from "sequelize";
 import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 
@@ -72,11 +72,12 @@ class teamMemberTimeLogController {
     try {
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page, date, tab } = req.query;
-      let searchable = ["$user.fullname$"];
+      // let searchable = ["$user.fullname$"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-      let logWhere = await helper.searchCondition(searchParam, searchable);
+      // let logWhere = await helper.searchCondition(searchParam, searchable);
       let userWhere = {};
+      let logWhere = {};
       // ___________---------- Search, Limit, Pagination ----------_______________
 
       let startOfDay;
@@ -107,7 +108,6 @@ class teamMemberTimeLogController {
           {
             model: User,
             as: "user",
-            // where: userWhere,
             attributes: ["id", "fullname", "currentStatus"],
             include: [
               {
@@ -130,6 +130,11 @@ class teamMemberTimeLogController {
 
       let result = this.createResponse(alldata.rows);
 
+      if (searchParam) {
+        const regex = new RegExp(searchParam, "i");
+        result = result.filter((item) => regex.test(item.user.fullname));
+      }
+
       if (tab) {
         if (tab.toLowerCase() === "working") {
           result = result.filter((item) => item.logged_out_time === null && item.user.currentStatus === true);
@@ -140,9 +145,9 @@ class teamMemberTimeLogController {
         } else if (tab.toLowerCase() === "slacking") {
           result = result.filter((item) => item.user.is_slacking === true);
         } else if (tab.toLowerCase() === "productive") {
-          result = result.filter((item) => item.user.is_productive === true);
+          result = result.filter((item) => item.user.is_productive === true && item.user.productiveTime != 0 && item.user.nonProductiveTime != 0);
         } else if (tab.toLowerCase() === "nonProductive") {
-          result = result.filter((item) => item.user.is_productive === false);
+          result = result.filter((item) => item.user.is_productive === false && item.user.nonProductiveTime != 0 && item.user.productiveTime != 0);
         }
       }
 
@@ -235,7 +240,11 @@ class teamMemberTimeLogController {
         },
       });
 
-      const productiveResult = await sequelize.query(`
+      console.log({ startOfDay });
+      let date_string = new Date(startOfDay).toISOString().split("T")[0];
+
+      const [productiveResult] = await sequelize.query(
+        `
         SELECT COUNT(*) AS count
         FROM (
           SELECT 
@@ -248,26 +257,47 @@ class teamMemberTimeLogController {
             ON timelogs.user_id = appHistory.userId
           WHERE 
             timelogs.company_id = :company_id
-            AND timelogs.createdAt BETWEEN :startOfDay AND :endOfDay
-            AND appHistory.is_productive = 1
+            AND timelogs.createdAt like "%${date_string}%" AND appHistory.is_productive = 1
+          GROUP BY timelogs.user_id
+          HAVING totalTimeSpent >= 0.6 * totalTimeLog
+        ) AS productiveEntries;`,
+        {
+          replacements: {
+            company_id: req.user.company_id,
+          },
+          type: QueryTypes.SELECT,
+        }
+      );
+
+      const productiveCount = productiveResult.count;
+
+      const [nonProductiveResult] = await sequelize.query(
+        `
+        SELECT COUNT(*) AS count
+        FROM (
+          SELECT 
+            timelogs.id, 
+            timelogs.user_id, 
+            (timelogs.idle_time + timelogs.active_time + timelogs.spare_time) AS totalTimeLog,
+            SUM(TIMESTAMPDIFF(MINUTE, appHistory.startTime, appHistory.endTime)) AS totalTimeSpent
+          FROM timelogs
+          INNER JOIN app_histories AS appHistory
+            ON timelogs.user_id = appHistory.userId
+          WHERE 
+            timelogs.company_id = :company_id
+            AND timelogs.createdAt like "%${date_string}%" AND appHistory.is_productive = 1
           GROUP BY timelogs.user_id
           HAVING totalTimeSpent <= 0.6 * totalTimeLog
-        ) AS productiveEntries;
-      `, {
-        replacements: {
-          company_id: req.user.company_id,
-          startOfDay,
-          endOfDay,
-        },
-        type: sequelize.QueryTypes.SELECT,
-      });
+        ) AS productiveEntries;`,
+        {
+          replacements: {
+            company_id: req.user.company_id,
+          },
+          type: QueryTypes.SELECT,
+        }
+      );
 
-      console.log(productiveResult);
-      console.log('above');
-      const productiveCount = productiveResult.count;
-      
-      const nonProductiveCount = workingCount - productiveCount;
-        
+      const nonProductiveCount = nonProductiveResult.count;
 
       const countsData = [
         { count: employeeCount, name: "employee" },
@@ -311,11 +341,33 @@ class teamMemberTimeLogController {
         totalProductiveTime = totalTime.productiveTime;
         totalNonProductiveTime = totalTime.nonProductiveTime;
 
-        const { hours: prodhours, minutes: prodminutes, seconds: prodseconds } = this.convertSecondsToHMS(totalProductiveTime);
-        const { hours: nonprodhours, minutes: nonprodminutes, seconds: nonprodseconds } = this.convertSecondsToHMS(totalNonProductiveTime);
+        const prodresult = this.convertSecondsToHMS(totalProductiveTime);
+        const nonProdresult = this.convertSecondsToHMS(totalNonProductiveTime);
 
-        productiveTime = `${prodhours}h ${prodminutes}m ${prodseconds}s`;
-        nonProductiveTime = `${nonprodhours}h ${nonprodminutes}m ${nonprodseconds}s`;
+        let prodhours, prodminutes, prodseconds;
+        let nonProdhours, nonProdminutes, nonProdseconds;
+
+        //Productive
+        if (prodresult == 0) {
+          productiveTime = 0;
+        } else {
+          prodhours = prodresult.hours;
+          prodminutes = prodresult.minutes;
+          prodseconds = prodresult.seconds;
+
+          productiveTime = `${prodhours}h ${prodminutes}m ${prodseconds}s`;
+        }
+
+        //Non productive
+        if (nonProdresult == 0) {
+          nonProductiveTime = 0;
+        } else {
+          nonProdhours = nonProdresult.hours;
+          nonProdminutes = nonProdresult.minutes;
+          nonProdseconds = nonProdresult.seconds;
+
+          nonProductiveTime = `${nonProdhours}h ${nonProdminutes}m ${nonProdseconds}s`;
+        }
 
         activeTimeThreshold = Math.floor((data.active_time + data.spare_time + data.idle_time) * 60 * 0.6);
         idleTimeThreshold = Math.floor((data.active_time + data.spare_time + data.idle_time) * 0.4);
@@ -324,8 +376,8 @@ class teamMemberTimeLogController {
       } else {
         totalProductiveTime = 0;
         totalNonProductiveTime = 0;
-        productiveTime = "0h 0m 0s";
-        nonProductiveTime = "0h 0m 0s";
+        productiveTime = 0;
+        nonProductiveTime = 0;
 
         activeTimeThreshold = Math.floor((data.active_time + data.spare_time + data.idle_time) * 60 * 0.6);
         idleTimeThreshold = Math.floor((data.active_time + data.spare_time + data.idle_time) * 0.4);
