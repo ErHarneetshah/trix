@@ -18,8 +18,11 @@ const getLanguageDropdown = async (req, res) => {
 const updateLanguage = async (req, res) => {
     try {
         let { language_id, theme_id } = req.body;
-        language_id = language_id ? language_id : 1;
-        theme_id = theme_id ? theme_id : 1;
+        // get previous theme status
+        const getPreviousThemeStatus = await languageSettings.findOne({  where: { user_id: req.user.id ,company_id : req.user.company_id }, attributes: ["id", "language_id", "theme_id"] });
+        
+        language_id = language_id ? language_id : getPreviousThemeStatus.language_id;
+        theme_id = theme_id ? theme_id : getPreviousThemeStatus.theme_id;
         
         if ( typeof language_id == "string"  ) return helper.failed(res, variables.ValidationError, "Please provide valid language id and in numbers");
         if ( typeof theme_id == "string"  ) return helper.failed(res, variables.ValidationError, "Please provide valid theme id and in numbers");
