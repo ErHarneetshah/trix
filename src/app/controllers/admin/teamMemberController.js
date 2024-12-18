@@ -165,7 +165,7 @@ class teamMemberController {
   updateTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      const {id, ...updateFields } = req.body;
+      const { id, ...updateFields } = req.body;
       if (!id || isNaN(id)) return helper.failed(res, variables.ValidationError, "Id is required and in numbers");
       const existingTeamMember = await User.findOne({
         where: { id: id, company_id: req.user.company_id },
@@ -186,7 +186,9 @@ class teamMemberController {
           transaction: dbTransaction,
         });
 
-        if (existingTeamMemberWithEmail) return helper.failed(res, variables.BadRequest, "Email is already used in system");
+        if (id != existingTeamMemberWithEmail.id) {
+          if (existingTeamMemberWithEmail) return helper.failed(res, variables.BadRequest, "Email is already used in system");
+        }
       }
 
       // Perform the update operation
@@ -211,7 +213,7 @@ class teamMemberController {
 
   updateSettings = async (req, res) => {
     try {
-      let {id, screen_capture_time, broswer_capture_time, app_capture_time, screen_capture, broswer_capture, app_capture } = req.body;
+      let { id, screen_capture_time, broswer_capture_time, app_capture_time, screen_capture, broswer_capture, app_capture } = req.body;
 
       if (!id || isNaN(id)) {
         return helper.failed(res, variables.ValidationError, "ID is Required and in numbers");
