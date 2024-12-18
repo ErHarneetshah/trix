@@ -186,7 +186,9 @@ class teamMemberController {
           transaction: dbTransaction,
         });
 
-        if (existingTeamMemberWithEmail) return helper.failed(res, variables.BadRequest, "Email is already used in system");
+        if (id != existingTeamMemberWithEmail.id) {
+          if (existingTeamMemberWithEmail) return helper.failed(res, variables.BadRequest, "Email is already used in system");
+        }
       }
 
       // Perform the update operation
