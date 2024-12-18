@@ -100,6 +100,9 @@ const User = sequelize.define(
     app_capture: {
       type: DataTypes.BOOLEAN,
       defaultValue: 1,
+    },
+    next_reports_schedule_date: {
+      type: DataTypes.DATE,
     }
   },
   {

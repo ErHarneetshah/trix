@@ -8,6 +8,10 @@ const emailGateway = sequelize.define('email_gateways', {
         autoIncrement: true,
         allowNull: false,
     },
+    company_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
     protocol: {
         type: DataTypes.STRING,
         allowNull: false,

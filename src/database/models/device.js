@@ -37,6 +37,6 @@ export const Device = sequelize.define("device", {
   underscored: false,
 });
 
-await Device.sync({ alter: 1 });
+// await Device.sync({ alter: 1 });
 
 

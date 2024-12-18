@@ -38,5 +38,5 @@ const ProductiveWebsite = sequelize.define("productive_website",
   }
 );
 
-await ProductiveWebsite.sync({ alter: 1 });
+// await ProductiveWebsite.sync({ alter: 1 });
 export default ProductiveWebsite;

@@ -1,35 +1,43 @@
-import { DataTypes } from 'sequelize';
-import sequelize  from '../queries/dbConnection.js';
+import { DataTypes } from "sequelize";
+import sequelize from "../queries/dbConnection.js";
 
 // Define TimeLog model
-const TimeLog = sequelize.define('timelogs',{
+const TimeLog = sequelize.define(
+  "timelogs",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
     user_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     shift_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
-    company_id:{
+    company_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     logged_in_time: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     active_time: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
     },
     late_coming_duration: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
     },
     logged_out_time: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     early_going: {
       type: DataTypes.BOOLEAN,
@@ -39,11 +47,15 @@ const TimeLog = sequelize.define('timelogs',{
       type: DataTypes.BOOLEAN,
       defaultValue: 0,
     },
-    spare_time:{
-      type: DataTypes.INTEGER,
-      allowNull: true
+    early_going: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: 0,
     },
-    idle_time:{
+    spare_time: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    idle_time: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
@@ -62,6 +74,10 @@ const TimeLog = sequelize.define('timelogs',{
 //  if(timeLog){
 //   let { logged_in_time, logged_out_time } = timeLog;
 
+// TimeLog.afterUpdate(async (timeLog) => {
+//  if(timeLog){
+//   let { logged_in_time, logged_out_time } = timeLog;
+
 //   // Ensure both logged_in_time and logged_out_time are present
 //   if (logged_in_time && logged_out_time) {
 //     let [loginHours, loginMinutes] = logged_in_time.split(":").map(Number);
@@ -75,13 +91,13 @@ const TimeLog = sequelize.define('timelogs',{
 //     let totalHours = Math.floor(totalDurationInMinutes / 60);
 //     let totalMinutes = totalDurationInMinutes % 60;
 //     await TimeLog.update(
-//       { active_time: `${totalHours}:${totalMinutes}` },
+//       { total_active_duration: `${totalHours}:${totalMinutes}` },
 //       { where: { id: timeLog.id } }
 //     );
 //   }
 //  }
 // });
 
-await TimeLog.sync({ alter: 1 });
+// await TimeLog.sync({ alter: 1 });
 
 export default TimeLog;

@@ -14,7 +14,7 @@ import designation from "../../../database/models/designationModel.js";
 import role from "../../../database/models/roleModel.js";
 import team from "../../../database/models/teamModel.js";
 import shift from "../../../database/models/shiftModel.js";
-import module from "../../../database/models/moduleModel.js";
+import app_modules from "../../../database/models/moduleModel.js";
 import rolePermissionController from "../admin/rolePermissionController.js";
 import { Device } from "../../../database/models/device.js";
 import { io } from "../../../../app.js";
@@ -23,12 +23,16 @@ import { QueryTypes } from "@sequelize/core";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 import { Notification } from "../../../database/models/Notification.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
+import languageSettings from "../../../database/models/languageSettingsModel.js";
+import { addMonths } from 'date-fns';
 
 class authController extends jwtService {
   companyRegister = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const requestData = req.body;
+
+      console.log(requestData);
 
       // Validating request body
       const validationResult = await authValidation.companyRegisterValid(requestData, res);
@@ -47,7 +51,7 @@ class authController extends jwtService {
       const createCompany = await company.create(
         {
           name: requestData.name,
-          // email: requestData.email,
+          email: requestData.email,
           employeeNumber: requestData.employeeNumber,
         },
         {
@@ -121,7 +125,7 @@ class authController extends jwtService {
       }
 
       const permissionInstance = new rolePermissionController();
-      const createPermissionModules = await module.findAll({
+      const createPermissionModules = await app_modules.findAll({
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       for (const module of createPermissionModules) {
@@ -151,6 +155,7 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Shift for this Company");
       }
 
+
       const createTeam = await team.create(
         {
           name: "Upper Management Team",
@@ -168,6 +173,9 @@ class authController extends jwtService {
         throw new Error("Unable to Create Team Record for this company.");
       }
 
+      const today = new Date();
+      const nextMonthDate = addMonths(today, 1); 
+      
       const createUser = await User.create(
         {
           company_id: createCompany.id,
@@ -183,6 +191,7 @@ class authController extends jwtService {
           screen_capture_time: 60,
           app_capture_time: 60,
           broswer_capture_time: 60,
+          next_reports_schedule_date: nextMonthDate.toLocaleDateString(),
         },
         {
           transaction: dbTransaction,
@@ -194,6 +203,21 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create User for this Company");
       }
 
+      const createLanguages = await languageSettings.create(
+        {
+          user_id: createUser.id,
+          company_id: createCompany.id,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
+
+      if (!createLanguages || !createLanguages.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Language Settings for this Company");
+      }
+
       const token = this.generateToken(createUser.id.toString(), createUser.isAdmin, createUser.company_id, "1d");
       if (!token) return helper.failed(res, variables.serviceUnavailabe, "Unable to create access token");
 
@@ -201,7 +225,7 @@ class authController extends jwtService {
       await createAccessToken(createUser.id, createUser.isAdmin, createUser.company_id, token, expireTime, dbTransaction);
 
       await dbTransaction.commit();
-      return helper.success(res, variables.Success, "Register Successfully");
+      return helper.success(res, variables.Success, "Register Successfully", { token: token, user: createUser });
     } catch (error) {
       console.log(error.message);
       if (dbTransaction) await dbTransaction.rollback();
@@ -248,12 +272,12 @@ class authController extends jwtService {
         ],
       }); // checking whether user exists
       if (!user) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Invalid Credentials");
       }
 
       let comparePwd = await bcrypt.compare(password, user.password); // comparing passwords
       if (!comparePwd) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Incorrect Credentials!!!");
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Incorrect Credentials!!!");
       }
 
       // checking whether user is active or not
@@ -267,44 +291,28 @@ class authController extends jwtService {
         token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
         await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
-
-       
       } else {
         let now = new Date();
         let currentHours = now.getHours();
         let currentMinutes = now.getMinutes();
 
-        let shiftData = await getShiftData(user.teamId); 
+        let shiftData = await getShiftData(user.teamId);
 
-        let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
+        // let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
         let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
-        if (
-          currentHours > endHours &&
-          currentHours === endHours &&
-          currentMinutes > endMinutes
-        ) {
-          return helper.sendResponse(
-            res,
-            variables.Forbidden,
-            0,
-            {},
-            "Your shift is over. You cannot log in at this time."
-          );
+
+        console.log(endHours, endMinutes, currentHours, currentMinutes);
+
+        if (currentHours > endHours || (currentHours == endHours && currentMinutes > endMinutes)) {
+          return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
         }
 
-        token = this.generateToken(
-          user.id.toString(),
-          user.isAdmin,
-          user.company_id,
-          "1d"
-        );
+        token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
 
         const generatedToken = await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
 
         if (!generatedToken) return helper.sendResponse(res, variables.BadRequest, 0, null, "Token Did not saved in db");
-
-       
       }
       await dbTransaction.commit();
       return helper.sendResponse(res, variables.Success, 1, { token: token, user: user }, "Login Successfully");
@@ -317,12 +325,9 @@ class authController extends jwtService {
   //* Logout Function -----------------------------------------------------------------
   logout = async (req, res) => {
     try {
-      let userData = await User.findOne({ where: { id: req.user.id } }); 
+      let userData = await User.findOne({ where: { id: req.user.id } });
       let token = await accessToken.findOne({ where: { token: req.sessionToken } }); // checking if the token exists in system
       if (!token) return helper.failed(res, variables.NotFound, "Already Logout");
-
-      if (!token)
-        return helper.failed(res, variables.NotFound, "Already Logout");
 
       await token.destroy(); // token destroyed here
 
@@ -375,11 +380,7 @@ class authController extends jwtService {
         create = await Device.findOne({ where: { user_id: id } });
       }
       io.to(`Admin_${req.user.company_id}`).emit("getSystemDetail", create);
-      return helper.success(
-        res,
-        variables.Success,
-        "system configration add successfully"
-      );
+      return helper.success(res, variables.Success, "system configration add successfully");
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -430,12 +431,10 @@ class authController extends jwtService {
         return helper.success(res, variables.Success, "No unread notifications found.");
       }
       await Notification.update({ is_read: 1 }, { where: { is_read: 0 } });
-      io.to(`Admin_${req.user.company_id}`).emit("newNotification", { notificationCount: 0 });
-      return helper.success(
-        res,
-        variables.Success,
-        "Notification Data cleared successfully"
-      );
+      io.to(`Admin_${req.user.company_id}`).emit("newNotification", {
+        notificationCount: 0,
+      });
+      return helper.success(res, variables.Success, "Notification Data cleared successfully");
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -492,15 +491,26 @@ class authController extends jwtService {
   // };
   advanced_setting = async (req, res) => {
     try {
-      const { screen_capture, broswer_capture, app_capture, screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
+      let { screen_capture, broswer_capture, app_capture, screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
+
+      // Normalize boolean inputs (convert string 'true'/'false' to actual booleans)
+      const normalizeBoolean = (value) => {
+        if (value === "true") return true;
+        if (value === "false") return false;
+        return value;
+      };
+
+      screen_capture = normalizeBoolean(screen_capture);
+      broswer_capture = normalizeBoolean(broswer_capture);
+      app_capture = normalizeBoolean(app_capture);
 
       const validations = [
-        { key: "screen_capture", value: screen_capture, validValues: [0, 1] },
-        { key: "broswer_capture", value: broswer_capture, validValues: [0, 1] },
-        { key: "app_capture", value: app_capture, validValues: [0, 1] },
-        { key: "screen_capture_time", value: screen_capture_time, minValue: 60 },
-        { key: "broswer_capture_time", value: broswer_capture_time, minValue: 60 },
-        { key: "app_capture_time", value: app_capture_time, minValue: 60 },
+        { key: "screen_capture", value: screen_capture, validValues: [0, 1, true, false] },
+        { key: "broswer_capture", value: broswer_capture, validValues: [0, 1, true, false] },
+        { key: "app_capture", value: app_capture, validValues: [0, 1, true, false] },
+        { key: "screen_capture_time", value: screen_capture_time, minValue: 30 },
+        { key: "broswer_capture_time", value: broswer_capture_time, minValue: 30 },
+        { key: "app_capture_time", value: app_capture_time, minValue: 30 },
       ];
 
       for (const validation of validations) {
@@ -535,10 +545,14 @@ class authController extends jwtService {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
+
   get_advanced_setting = async (req, res) => {
     try {
       let id = req.user.id;
-      let data = await User.findOne({ where: { id }, attributes: ["screen_capture_time", "broswer_capture_time", "app_capture_time", "screen_capture", "broswer_capture", "app_capture"] });
+      let data = await User.findOne({
+        where: { id },
+        attributes: ["screen_capture_time", "broswer_capture_time", "app_capture_time", "screen_capture", "broswer_capture", "app_capture"],
+      });
       if (!data) {
         return helper.failed(res, variables.NotFound, "Data Not Found!!");
       }
