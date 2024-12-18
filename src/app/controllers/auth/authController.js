@@ -267,12 +267,12 @@ class authController extends jwtService {
         ],
       }); // checking whether user exists
       if (!user) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Invalid Credentials");
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Invalid Credentials");
       }
 
       let comparePwd = await bcrypt.compare(password, user.password); // comparing passwords
       if (!comparePwd) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Incorrect Credentials!!!");
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Incorrect Credentials!!!");
       }
 
       // checking whether user is active or not

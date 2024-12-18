@@ -68,7 +68,7 @@ class teamMemberController {
       let { id } = req.query;
 
       const alldata = await User.findOne({
-        where: {id: id, company_id: req.user.company_id},
+        where: { id: id, company_id: req.user.company_id },
         attributes: {
           exclude: ["password", "isAdmin", "createdAt", "updatedAt", "status"],
         },
@@ -102,7 +102,6 @@ class teamMemberController {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
-
 
   addTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
@@ -290,11 +289,19 @@ class teamMemberController {
 
   getTeamlist = async (req, res) => {
     try {
+      // ___________---------- Search, Limit, Pagination ----------_______________
+      let { limit, page } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      // ___________-----------------------------------------------_______________
+
       let data = await User.findAndCountAll({
         where: {
           [Op.or]: [{ departmentId: req.user.departmentId }, { teamId: req.user.teamId }],
           company_id: req.user.company_id,
         },
+        offset: offset,
+        limit: limit,
         attributes: ["id", "fullname"],
         include: [
           {
