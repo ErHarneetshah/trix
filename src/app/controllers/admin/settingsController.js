@@ -12,6 +12,7 @@ import designation from "../../../database/models/designationModel.js";
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 import uploadPhotos from "../../../utils/services/commonfuncitons.js";
+import commonfuncitons from "../../../utils/services/commonfuncitons.js";
 
 const getAdminDetails = async (req, res) => {
   try {
@@ -325,9 +326,21 @@ const updateReportSettings = async (req, res) => {
     }
 
     const [updatedPreviousStatus] = await reportSettings.update({ status: exportType }, { where: { company_id: req.user.company_id } });
-
     if (updatedPreviousStatus === 0) {
       return helper.failed(res, variables.NotFound, "No report settings found for the specified company.");
+    }
+
+
+    // Update the user's `next_reports_schedule_date`
+    let resultDate = (exportType === 1) ? commonfuncitons.getNextMonthDate() : (exportType === 2) ? commonfuncitons.getNextMondayDate() : (exportType === 3) ? commonfuncitons.getTomorrowDate() : "Unknown Error";
+
+    const [updatedUsers] = await User.update(
+      { next_reports_schedule_date: resultDate },
+      { where: { id: req.user.id } }
+    );
+
+    if (updatedUsers === 0) {
+      return helper.failed(res, variables.NotFound, "No users found for the specified company.");
     }
 
     return helper.success(res, variables.Success, "Report Settings Updated Successfully");

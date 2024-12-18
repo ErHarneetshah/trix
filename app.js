@@ -14,6 +14,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import importAndSyncAllModels from "./src/app/config/ImportDependencies/ImportModels.js";
 import sequelize from "./src/database/queries/dbConnection.js";
+import './src/cron/cron-settings.js'; 
 
 const app = express();
 const httpServer = createServer(app);
@@ -41,6 +42,9 @@ const updatedPath = path.join(__dirname, "assets"); // Adjusted to join the path
 app.get("/image/:type/:path", (req, res) => {
   res.sendFile(updatedPath + "/" + req.params.type + "/" + req.params.path);
 });
+
+
+
 
 // importAndSyncAllModels();
 // sequelize.sync();
