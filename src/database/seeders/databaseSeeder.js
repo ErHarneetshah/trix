@@ -61,10 +61,32 @@ export default async function seedDatabase() {
     await app_modules.destroy({ where: {} });
     await sequelize.query(`ALTER TABLE ${app_modules.getTableName()} AUTO_INCREMENT=1`);
 
+    await TimeLog.destroy({ where: {} });
+    await TimeLog.query(`ALTER TABLE ${exportReports.getTableName()} AUTO_INCREMENT=1`);
+
     await exportReports.destroy({ where: {} });
     await sequelize.query(`ALTER TABLE ${exportReports.getTableName()} AUTO_INCREMENT=1`);
 
     const rootModules = await app_modules.bulkCreate([
+      { name: "role" },
+      { name: "reportingManager" },
+      { name: "team" },
+      { name: "shifts" },
+      { name: "teamMembers" },
+      { name: "department" },
+      { name: "designation" },
+      { name: "adminAuth" },
+      { name: "userSettings" },
+      { name: "permissions" },
+      { name: "blockedWebsite" },
+      { name: "productiveApp" },
+      { name: "reportSettings" },
+      { name: "user" },
+      { name: "dashboard" },
+      { name: "allTeamMemberDashboard" },
+    ]);
+
+    const rootTimeLogs = await TimeLog.bulkCreate([
       { name: "role" },
       { name: "reportingManager" },
       { name: "team" },

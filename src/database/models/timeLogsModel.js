@@ -1,35 +1,43 @@
-import { DataTypes } from 'sequelize';
-import sequelize  from '../queries/dbConnection.js';
+import { DataTypes } from "sequelize";
+import sequelize from "../queries/dbConnection.js";
 
 // Define TimeLog model
-const TimeLog = sequelize.define('timelogs',{
+const TimeLog = sequelize.define(
+  "timelogs",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
     user_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     shift_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
-    company_id:{
+    company_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     logged_in_time: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     active_time: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
     },
     late_coming_duration: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
     },
     logged_out_time: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     early_going: {
       type: DataTypes.BOOLEAN,
@@ -39,15 +47,15 @@ const TimeLog = sequelize.define('timelogs',{
       type: DataTypes.BOOLEAN,
       defaultValue: 0,
     },
-    early_going:{
+    early_going: {
       type: DataTypes.BOOLEAN,
       defaultValue: 0,
     },
-    spare_time:{
+    spare_time: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
     },
-    idle_time:{
+    idle_time: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
