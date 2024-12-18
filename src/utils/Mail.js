@@ -2,7 +2,7 @@ import nodeMailer from 'nodemailer'
 import emailGateway from "../database/models/emailGatewayModel.js";
 
 
-const sendM = async (to, subject, message, cc = '', from = "") => {
+const sendM = async (to, subject, message, cc = '', from = "", attachment = null) => {
     try {
         const activeEmailServer = await emailGateway.findOne({
             where: { is_active: 1 }
@@ -32,7 +32,8 @@ const sendM = async (to, subject, message, cc = '', from = "") => {
                 to: to,
                 subject: subject || 'Test',
                 text: message,
-                html: '<b>' + message + '</b>'
+                html: '<b>' + message + '</b>',
+                attachments: attachment ? [attachment] : [],
             };
             const info = await transporter.sendMail(mailOptions);
             if (info.messageId) {
