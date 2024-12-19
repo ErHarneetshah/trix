@@ -8,6 +8,7 @@ import TimeLog from "../../../../database/models/timeLogsModel.js";
 
 const topFiveProductiveAppsUsers = async (req, res, next) => {
   try {
+    const {company_id}=req.user;
     // Define the SQL query
     const query = `
         SELECT 
@@ -19,11 +20,11 @@ const topFiveProductiveAppsUsers = async (req, res, next) => {
         INNER JOIN 
           productive_apps AS ap 
         ON 
-          ap.app_name = ah.appName
+          ap.app_name = ah.appName and ap.company_id=:companyId
         LEFT JOIN 
           users AS u 
         ON 
-          ah.userId = u.id
+          ah.userId = u.id and u.company_id=:companyId where ah.company_id=:companyId
         GROUP BY 
           ah.userId
         ORDER BY 
@@ -32,6 +33,7 @@ const topFiveProductiveAppsUsers = async (req, res, next) => {
       `;
 
     const results = await sequelize.query(query, {
+      replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
       logging: false,
     });
@@ -56,6 +58,7 @@ const topFiveProductiveAppsUsers = async (req, res, next) => {
 
 const topFiveUnProductiveAppsUsers = async (req, res, next) => {
   try {
+    const {company_id}=req.user;
     const query = `
         SELECT 
           u.fullname AS user_name,
@@ -66,9 +69,9 @@ const topFiveUnProductiveAppsUsers = async (req, res, next) => {
         LEFT JOIN 
           users AS u 
         ON 
-          u.id = ah.userId
+          u.id = ah.userId and u.company_id=:companyId
         WHERE 
-          ah.appName NOT IN (SELECT app_name FROM productive_apps)
+          ah.appName NOT IN (SELECT app_name FROM productive_apps where company_id=:companyId) and ah.company_id=:companyId
         GROUP BY 
           ah.userId
         ORDER BY 
@@ -77,6 +80,7 @@ const topFiveUnProductiveAppsUsers = async (req, res, next) => {
       `;
 
     const results = await sequelize.query(query, {
+      replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
       logging: false, // Set to `true` for debugging during development
     });
@@ -104,6 +108,8 @@ const topFiveUnProductiveAppsUsers = async (req, res, next) => {
 
 const topFiveEffectiveUsers = async (req, res, next) => {
   try {
+    const {company_id}=req.user;
+
     const query = `
     WITH 
 
@@ -117,9 +123,9 @@ const topFiveEffectiveUsers = async (req, res, next) => {
         LEFT JOIN 
             users AS u 
         ON 
-            u.id = ah.userId 
+            u.id = ah.userId and u.company_id=:companyId
         WHERE 
-            appName NOT IN (SELECT app_name FROM productive_apps) 
+            appName NOT IN (SELECT app_name FROM productive_apps where company_id=:companyId)  and ah.company_id=:companyId
         GROUP BY 
             ah.userId
     ),
@@ -135,11 +141,11 @@ const topFiveEffectiveUsers = async (req, res, next) => {
         INNER JOIN 
             productive_apps AS ap 
         ON 
-            ap.app_name = ah.appName 
+            ap.app_name = ah.appName and ap.company_id=:companyId
         LEFT JOIN 
             users AS u 
         ON 
-            ah.userId = u.id 
+            ah.userId = u.id and u.company_id=:companyId where ah.company_id=:companyId
         GROUP BY 
             ah.userId
     )
@@ -156,12 +162,13 @@ const topFiveEffectiveUsers = async (req, res, next) => {
     INNER JOIN 
         unproductive_time AS u 
     ON 
-        p.userId = u.userId
+        p.userId = u.userId 
     ORDER BY 
         net_productivity_seconds DESC limit 5;
       `;
 
     const results = await sequelize.query(query, {
+      replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
       logging: false,
     });
@@ -179,7 +186,7 @@ const topFiveEffectiveUsers = async (req, res, next) => {
   } catch (error) {
     console.error("Error in topFiveEffectiveUsers:", error);
 
-    return helper.failed(res, 500, "Failed to fetch data");
+    return helper.failed(res, 500, error.message);
   }
 };
 
@@ -187,6 +194,8 @@ const topFiveEffectiveUsers = async (req, res, next) => {
 
 const topFiveAbsentUsers = async (req, res, next) => {
   try {
+    const {company_id}=req.user;
+
     const query = `
       SELECT 
         u.fullname, 
@@ -197,7 +206,7 @@ const topFiveAbsentUsers = async (req, res, next) => {
       LEFT JOIN 
         users AS u 
       ON 
-        u.id = tl.user_id 
+        u.id = tl.user_id and u.company_id=:companyId and u.isAdmin=0 where tl.company_id=:companyId
       GROUP BY 
         tl.user_id 
       ORDER BY 
@@ -206,6 +215,7 @@ const topFiveAbsentUsers = async (req, res, next) => {
     `;
 
     const results = await sequelize.query(query, {
+      replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
       logging: false, // Disable logging for cleaner console output
     });
@@ -239,6 +249,7 @@ const topFiveAbsentUsers = async (req, res, next) => {
 
 const topFiveLateComingUsers = async (req, res, next) => {
   try {
+    const {company_id}=req.user;
     // SQL query to fetch the top 5 users with the highest total late-coming duration
     const query = `
       SELECT 
@@ -250,7 +261,7 @@ const topFiveLateComingUsers = async (req, res, next) => {
       LEFT JOIN 
         users AS u 
       ON 
-        u.id = tl.user_id 
+        u.id = tl.user_id and u.company_id=:companyId where tl.company_id=:companyId
       GROUP BY 
         tl.user_id 
       HAVING 
@@ -262,6 +273,7 @@ const topFiveLateComingUsers = async (req, res, next) => {
 
     // Execute the query using Sequelize
     const results = await sequelize.query(query, {
+      replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
       logging: false, // Disable query logging for cleaner console output
     });
@@ -299,6 +311,8 @@ const topFiveLateComingUsers = async (req, res, next) => {
 const getTopFiveOfflineLoggedUsers = async (req, res, next) => {
   try {
     // SQL query to fetch the top 5 users with the highest total offline idle time
+    const {company_id}=req.user;
+
     const query = `
       SELECT 
         u.fullname, 
@@ -309,7 +323,7 @@ const getTopFiveOfflineLoggedUsers = async (req, res, next) => {
       LEFT JOIN 
         users AS u 
       ON 
-        u.id = tl.user_id 
+        u.id = tl.user_id and u.company_id=:companyId where tl.company_id=:companyId
       GROUP BY 
         tl.user_id 
       HAVING 
@@ -321,6 +335,7 @@ const getTopFiveOfflineLoggedUsers = async (req, res, next) => {
 
     // Execute the query using Sequelize
     const results = await sequelize.query(query, {
+      replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
       logging: false, // Disable query logging for a cleaner console
     });
@@ -364,6 +379,7 @@ const getCompanyStats = async (companyId, date) => {
       where: {
         company_id: companyId,
         status: 1,
+        isAdmin:0,
         [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
       },
     });
@@ -387,6 +403,7 @@ const getCompanyStats = async (companyId, date) => {
     const absentUsers = await User.count({
       where: {
         company_id: companyId,
+        isAdmin:0,
         status: 1,
         [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
         id: {
@@ -409,6 +426,7 @@ const getCompanyStats = async (companyId, date) => {
     const totalActivated = await User.count({
       where: {
         company_id: companyId,
+        isAdmin:0,
         [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
       },
 

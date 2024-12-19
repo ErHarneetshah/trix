@@ -193,4 +193,21 @@ const getActiveTime = async (timelogId) => {
 };
 
 
-export default { getCompareReportsData };
+const getAllUsers = async (req, res, next) => {
+    try {
+        const { company_id } = req.user;
+        const query = `SELECT u.id,u.fullname,d.name FROM users as u left join departments as d on u.departmentId=d.id where u.company_id=:companyId and  u.status=1 and u.isAdmin=0;`;
+        const result = await sequelize.query(query, {
+            type: Sequelize.QueryTypes.SELECT,
+            replacements: { companyId: company_id },
+        })
+
+        // const transformedResult = result.map(item => `${item.fullname}-${item.name}-${item.id}`);
+        return helper.success(res, variables.Success, "All Users Fetched Successfully", result);
+
+    } catch (error) {
+        return helper.failed(res, variables.badGateway, error.message);
+    }
+}
+
+export default { getCompareReportsData, getAllUsers };
