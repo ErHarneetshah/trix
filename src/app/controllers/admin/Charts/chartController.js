@@ -191,7 +191,6 @@ const productiveChart = async (req, res) => {
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
 
       valueArray.push({
@@ -241,7 +240,6 @@ const topApplicationChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log,
     });
 
     const pieChartData = results.map(result => ({
@@ -287,7 +285,6 @@ const topWebsiteChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log,
     });
 
     const pieChartData = results.map(result => ({
@@ -392,7 +389,6 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
 
       valueArray.push({
@@ -480,7 +476,6 @@ const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) =>
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
       valueArray.push({
         period: item.day || item.start || item.month,
@@ -570,7 +565,6 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
 
       // Push the result into the value array
@@ -660,7 +654,6 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
       valueArray.push({
         period: item.day || item.start || item.month,
@@ -887,20 +880,20 @@ const activityData = async (req, res, next) => {
 
 
 
+
+
+
+//tested(helper function)
 const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    // Extract `userId` and `date` based on the type of request
     const { userId, date } = type === 'api' ? req.query : obj;
-    const companyId = 101;
-
-    // Validate required parameters
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
     if (!userId || !date) {
       const message = "userId and date are required.";
       return type === 'api' ? helper.failed(res, 400, message) : false;
     }
 
-    // Fetch user information
-    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
     if (!userInfo) {
       const message = "User does not exist.";
       return type === 'api' ? helper.failed(res, 404, message) : false;
@@ -908,7 +901,7 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
 
     // Fetch team information
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -917,7 +910,7 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
 
     // Fetch shift information
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -932,11 +925,11 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
       FROM
           app_histories AS ah
       INNER JOIN
-          productive_apps ap ON ap.app_name = ah.appName
+          productive_apps ap ON ap.app_name = ah.appName and ap.department_id=:department_id
       WHERE
           DATE(ah.createdAt) = :date
           AND ah.userId = :userId
-          AND ah.company_id = :companyId
+          AND ah.company_id = :company_id
       GROUP BY
           DATE_FORMAT(ah.startTime, '%H:00')
       ORDER BY
@@ -945,9 +938,8 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
 
     // Execute query with replacements
     const results = await sequelize.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, company_id, department_id: departmentId },
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log
     });
 
     // Format results for pie chart data
@@ -970,12 +962,13 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
   }
 };
 
-
+//tested(helper function)
 const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
   try {
     // Extract `userId` and `date` based on the type of request
+    console.log(req.user);
     const { userId, date } = type === 'api' ? req.query : obj;
-    const companyId = 101;
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
 
     // Validate required parameters
     if (!userId || !date) {
@@ -984,7 +977,7 @@ const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj 
     }
 
     // Fetch user information
-    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
     if (!userInfo) {
       const message = "User does not exist.";
       return type === 'api' ? helper.failed(res, 404, message) : false;
@@ -992,7 +985,7 @@ const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj 
 
     // Fetch team information
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -1001,7 +994,7 @@ const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj 
 
     // Fetch shift information
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -1017,13 +1010,13 @@ FROM
     app_histories AS ah
 WHERE
     ah.appName NOT IN (
-        SELECT appName
+        SELECT app_name
         FROM productive_apps
-        WHERE company_id = :companyId
+        WHERE company_id = :company_id and department_id=:department_id
     )
  AND date(createdAt)=:date
     AND ah.userId = 2
-    AND ah.company_id = :companyId
+    AND ah.company_id = :company_id
 GROUP BY
     DATE_FORMAT(ah.startTime, '%H:00')
 ORDER BY
@@ -1032,9 +1025,8 @@ ORDER BY
 
     // Execute query with replacements
     const results = await sequelize.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, company_id, department_id: departmentId },
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log
     });
 
     // Format results for pie chart data
@@ -1058,12 +1050,11 @@ ORDER BY
 };
 
 
-
+//tested(helper function)
 const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj = {}) => {
   try {
     const { userId, date } = type === 'api' ? req.query : obj;
-    const companyId = 101; // Use environment variable for flexibility
-
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
     // Validate required parameters
     if (!userId || !date) {
       const message = "userId and date are required.";
@@ -1071,7 +1062,7 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
     }
 
     // Fetch user information
-    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
     if (!userInfo) {
       const message = "User does not exist.";
       return type === 'api' ? helper.failed(res, 404, message) : false;
@@ -1079,7 +1070,7 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
 
     // Fetch team information
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -1088,7 +1079,7 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
 
     // Fetch shift information
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -1102,10 +1093,10 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
         DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
       FROM user_histories AS uh 
       INNER JOIN productive_websites AS pw 
-        ON pw.website_name = uh.website_name 
+        ON pw.website_name = uh.website_name and pw.department_id=:department_id
       WHERE 
         uh.userId = :userId 
-        AND uh.company_id = :companyId 
+        AND uh.company_id = :company_id 
         AND DATE(uh.createdAt) = :date 
       GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
       ORDER BY hour;
@@ -1113,7 +1104,7 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
 
     // Execute query with replacements
     const results = await sequelize.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, company_id, department_id: departmentId },
       type: Sequelize.QueryTypes.SELECT,
     });
 
@@ -1132,29 +1123,27 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
     // Log error with context
     console.error("Error fetching productive website data:", {
       message: error.message,
-      date,
     });
     return type === 'api'
-      ? helper.failed(res, 500, "An error occurred while fetching data.")
+      ? helper.failed(res, 500, error.message)
       : false;
   }
 };
 
 
-
+// tested(helper function)
 const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', obj = {}) => {
   try {
     const { userId, date } = type === 'api' ? req.query : obj;
-    const companyId = 101; // Use environment variable for flexibility
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
 
-    // Validate required parameters
     if (!userId || !date) {
       const message = "userId and date are required.";
       return type === 'api' ? helper.failed(res, 400, message) : false;
     }
 
     // Fetch user information
-    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
     if (!userInfo) {
       const message = "User does not exist.";
       return type === 'api' ? helper.failed(res, 404, message) : false;
@@ -1162,7 +1151,7 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
 
     // Fetch team information
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -1171,7 +1160,7 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
 
     // Fetch shift information
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -1184,9 +1173,9 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
     DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
   FROM user_histories AS uh 
    
-  WHERE uh.website_name not in(select website_name from productive_websites where company_id=:companyId) and
+  WHERE uh.website_name not in(select website_name from productive_websites where company_id=:company_id and department_id=:department_id) and
     uh.userId = :userId
-    AND uh.company_id = :companyId
+    AND uh.company_id = :company_id
     AND DATE(uh.createdAt) = :date
   GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
   ORDER BY hour;
@@ -1194,8 +1183,9 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
 
     // Execute query with replacements
     const results = await sequelize.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, company_id, department_id: departmentId },
       type: Sequelize.QueryTypes.SELECT,
+      logging: console.log
     });
 
     // Format results for pie chart data
@@ -1213,54 +1203,23 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
     // Log error with context
     console.error("Error fetching non productive website data:", {
       message: error.message,
-      date,
     });
     return type === 'api'
-      ? helper.failed(res, 500, "An error occurred while fetching data.")
+      ? helper.failed(res, 500, error.message)
       : false;
   }
 };
 
 
-
-//function for productive apps and productive websites chart
-// const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, next) => {
-//   try {
-//     const { userId, date } = req.query;
-
-//     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date });
-//     const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date });
-
-//     console.log(nonProductiveWebsitesData);
-//     console.log(productiveWebsitesData);
-//     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {
-//       return helper.failed(res, 400, "Invalid data format", []);
-//     }
-
-//     const combinedData = nonProductiveWebsitesData.map(item1 => {
-//       const item2 = productiveWebsitesData.find(item => item.period === item1.period); // Match by period
-//       return {
-//         period: item1.name,
-//         non_productive_websites_total_time: parseFloat(item1.value || '0.0'),
-//         productive_websites_value: parseFloat(item2?.value || '0.0')
-//       };
-//     });
-
-//     // Success response
-//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
-//   } catch (error) {
-//     console.error("Error in singleUserProductiveWebsitesAndNonproductiveWebsites:", error);
-//     return helper.failed(res, 500, "Internal Server Error", []);
-//   }
-// };
-
+//hourly productive and non productive website chart data
 const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, next) => {
   try {
     const { userId, date } = req.query;
 
+    const { company_id, departmentId } = req.user;
     // Fetch data for non-productive and productive websites
-    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date });
-    const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date });
+    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date,company_id,departmentId });
+    const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date,company_id,departmentId });
 
     console.log(nonProductiveWebsitesData);
     console.log(productiveWebsitesData);
@@ -1296,49 +1255,18 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, ne
   }
 };
 
-
-//function for productive apps and non productive apps chart
-// const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
-//   try {
-//     const { userId, date } = req.query;
-
-//     const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date });
-//     const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date });
-
-//     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
-//       return helper.failed(res, 400, "Invalid data format", []);
-//     }
-
-//     const combinedData = nonProductiveAppsData.map(item1 => {
-//       const item2 = productiveAppsData.find(item => item.period === item1.period); // Match by period
-//       return {
-//         period: item1.name,
-//         non_productive_apps_total_time: parseFloat(item1.value || '0.0'),
-//         productive_apps_value: parseFloat(item2?.value || '0.0')
-//       };
-//     });
-
-//     // Success response
-//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
-//   } catch (error) {
-//     console.error("Error in productiveAppsAndproductiveapps:", error);
-//     return helper.failed(res, 500, "Internal Server Error", []);
-//   }
-// };
+//hourly productive app and non productive chart data 
 const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
   try {
     const { userId, date } = req.query;
+    const { company_id, departmentId } = req.user;
+    const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date,company_id,departmentId });
+    const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date,company_id,departmentId });
 
-    // Fetch data from both functions
-    const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date });
-    const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date });
-
-    // Validate data format
     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       return helper.failed(res, 400, "Invalid data format", []);
     }
 
-    // Determine which array has the higher count
     const [primaryData, secondaryData, primaryKey, secondaryKey] =
       nonProductiveAppsData.length >= productiveAppsData.length
         ? [nonProductiveAppsData, productiveAppsData, 'non_productive_apps_total_time', 'productive_apps_value']
@@ -1366,4 +1294,4 @@ const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
 
 
 
-export default { productiveChart, topApplicationChart, topWebsiteChart, productiveAppsChart, productiveWebsiteChart, NonProductiveWebsiteChart, nonProductiveAppsChart, productiveAppsAndproductiveWebsites, productiveWebsiteAndNonproductiveWebsites, productiveAppAndNonproductiveApps, activityData, singleUserProductiveAppData, singleUserNonProductiveAppData, singleUserProductiveWebsiteData, singleUserNonProductiveWebsiteData,singleUserProductiveAppAndNonproductiveApps,singleUserProductiveWebsitesAndNonproductiveWebsites };
+export default { productiveChart, topApplicationChart, topWebsiteChart, productiveAppsChart, productiveWebsiteChart, NonProductiveWebsiteChart, nonProductiveAppsChart, productiveAppsAndproductiveWebsites, productiveWebsiteAndNonproductiveWebsites, productiveAppAndNonproductiveApps, activityData, singleUserProductiveAppData, singleUserNonProductiveAppData, singleUserProductiveWebsiteData, singleUserNonProductiveWebsiteData, singleUserProductiveAppAndNonproductiveApps, singleUserProductiveWebsitesAndNonproductiveWebsites };
