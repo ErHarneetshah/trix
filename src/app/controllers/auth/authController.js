@@ -25,6 +25,7 @@ import { Notification } from "../../../database/models/Notification.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
 import languageSettings from "../../../database/models/languageSettingsModel.js";
 import { addMonths } from 'date-fns';
+import commonfuncitons from "../../../utils/services/commonfuncitons.js";
 
 class authController extends jwtService {
   companyRegister = async (req, res) => {
@@ -173,8 +174,8 @@ class authController extends jwtService {
         throw new Error("Unable to Create Team Record for this company.");
       }
 
-      const today = new Date();
-      const nextMonthDate = addMonths(today, 1); 
+      // const today = new Date();
+      // const nextMonthDate = addMonths(today, 1); 
       
       const createUser = await User.create(
         {
@@ -191,7 +192,7 @@ class authController extends jwtService {
           screen_capture_time: 60,
           app_capture_time: 60,
           broswer_capture_time: 60,
-          next_reports_schedule_date: nextMonthDate.toLocaleDateString(),
+          next_reports_schedule_date: commonfuncitons.getNextMonthDate(),
         },
         {
           transaction: dbTransaction,

@@ -304,7 +304,7 @@ const getReportStatus = async (req, res) => {
   }
 
   const statusMapping = { 1: "Monthly", 2: "Weekly", 3: "Daily" };
-  const statusType = statusMapping[getStatus.status] || "unknown";
+  const statusType = getStatus ? statusMapping[getStatus.status] : "unknown";
   return helper.success(res, variables.Success, "Report settings retrieved successfully.", getStatus, { statusType });
 };
 
@@ -333,12 +333,12 @@ const updateReportSettings = async (req, res) => {
 
     // Update the user's `next_reports_schedule_date`
     let resultDate = (exportType === 1) ? commonfuncitons.getNextMonthDate() : (exportType === 2) ? commonfuncitons.getNextMondayDate() : (exportType === 3) ? commonfuncitons.getTomorrowDate() : "Unknown Error";
-
+    console.log("----", resultDate)
     const [updatedUsers] = await User.update(
       { next_reports_schedule_date: resultDate },
       { where: { id: req.user.id } }
     );
-
+    console.log(req.user.id, "admin");
     if (updatedUsers === 0) {
       return helper.failed(res, variables.NotFound, "No users found for the specified company.");
     }

@@ -33,6 +33,7 @@ const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.p
     host: dbConfig.host,
     dialect: 'mysql',
     logging: false,
+    timezone: '+05:30', // Asia/Kolkata timezone
     pool: {
         max: 20,
         min: 2,
@@ -40,6 +41,7 @@ const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.p
         idle: 60000,
     },
 });
+
 
 try {
     await sequelize.authenticate();

@@ -14,7 +14,10 @@ const languageDropdown = sequelize.define('languages', {
         validate: {
             notEmpty: true,
         },
-    }
+    },image:{
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
 }, {
     timestamps: true,
     underscored: false,
