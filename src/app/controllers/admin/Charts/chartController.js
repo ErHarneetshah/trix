@@ -1218,8 +1218,8 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, ne
 
     const { company_id, departmentId } = req.user;
     // Fetch data for non-productive and productive websites
-    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date,company_id,departmentId });
-    const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date,company_id,departmentId });
+    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date, company_id, departmentId });
+    const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date, company_id, departmentId });
 
     console.log(nonProductiveWebsitesData);
     console.log(productiveWebsitesData);
@@ -1260,8 +1260,8 @@ const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
   try {
     const { userId, date } = req.query;
     const { company_id, departmentId } = req.user;
-    const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date,company_id,departmentId });
-    const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date,company_id,departmentId });
+    const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date, company_id, departmentId });
+    const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date, company_id, departmentId });
 
     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       return helper.failed(res, 400, "Invalid data format", []);
