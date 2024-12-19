@@ -102,10 +102,7 @@ async function getOpenAIResponse(userId, question, date) {
   });
   
   let productive_app = await ProductiveApp.findAll({where:{company_id:user.company_id,department_id:user.departmentId}});
-  let productive_website = await ProductiveWebsite.findAll({where:{company_id:user.company_id,department_id:user.departmentId}});
-
-  console.log({appData,siteUsageData});
-  
+  let productive_website = await ProductiveWebsite.findAll({where:{company_id:user.company_id,department_id:user.departmentId}});  
   
   const prompt = `
   Act as a professional AI assistant. Respond to user questions based on the provided data.
