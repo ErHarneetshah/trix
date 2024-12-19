@@ -854,7 +854,7 @@ export default async function seedDatabase() {
         await department.update({ parentDeptId: update.parentDeptId }, { where: { name: update.name, company_id: a } });
       }
 
-      console.log("Departments Data created successfully.");
+      //console.log("Departments Data created successfully.");
 
       //*________________--------------- DESIGNATIONS -------------_____________________
       const rootDesignations = await designation.bulkCreate(
@@ -893,7 +893,7 @@ export default async function seedDatabase() {
 
       const designationIds = rootDesignations.map((designation) => designation.id);
 
-      console.log("Designations Data Created successfully.");
+      //console.log("Designations Data Created successfully.");
       //*________________--------------- SHIFTS -------------_____________________
       const rootShift = await shift.bulkCreate([
         {
@@ -969,7 +969,7 @@ export default async function seedDatabase() {
 
       const shiftIds = rootShift.map((shift) => shift.id);
 
-      console.log("Shifts Data Created successfully.");
+      //console.log("Shifts Data Created successfully.");
       //*________________--------------- TEAMS -------------_____________________
       const rootTeam = await team.bulkCreate([
         {
@@ -1035,7 +1035,7 @@ export default async function seedDatabase() {
 
       const teamIds = rootTeam.map((team) => team.id);
 
-      console.log("Teams Data Created successfully.");
+      //console.log("Teams Data Created successfully.");
       const today = new Date();
       const nextMonthDate = addMonths(today, 1);
       //*________________--------------- USERS -------------_____________________
@@ -1200,11 +1200,11 @@ export default async function seedDatabase() {
         companyId: user.company_id, // Replace `company_id` with the actual key in your data if different
       }));
 
-      console.log("User Data Created successfully.");
+      //console.log("User Data Created successfully.");
 
       //*________________--------------- REPORT SETTINGS -------------_____________________
       const rootReportSettings = await reportSettings.bulkCreate([{ company_id: a }]);
-      console.log("Report Settings Data Created successfully.");
+      //console.log("Report Settings Data Created successfully.");
 
       //*________________--------------- APP HISTORY -------------_____________________
 

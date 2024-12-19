@@ -32,7 +32,7 @@ const generateDummyData = async (transaction) => {
     },
    { transaction });
   }
-  console.log("Dummy data inserted successfully!");
+  //console.log("Dummy data inserted successfully!");
 };
 
 const generateLanguageSeeder = async (transaction) => {

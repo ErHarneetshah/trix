@@ -42,7 +42,7 @@ const addEmailGateeways = async (req, res) => {
   try {
     let { protocol, host, username, password, port, encryption } = req.body;
 
-    console.log(req.body);
+    //console.log(req.body);
     // Default encryption type
     const defaultEncryption = "tls";
     const encryptionOptions = ["tls", "ssl"];

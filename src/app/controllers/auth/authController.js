@@ -33,21 +33,22 @@ class authController extends jwtService {
     try {
       const requestData = req.body;
 
-      console.log(requestData);
-
       // Validating request body
       const validationResult = await authValidation.companyRegisterValid(requestData, res);
       if (!validationResult.status) return helper.sendResponse(res, variables.ValidationError, 0, {}, validationResult.message);
 
+      //console.log("1");
+
       // Check if the user already exists
       const existingCompany = await company.findOne({
-        where: { name: requestData.name /*email: requestData.email*/ },
+        where: { name: requestData.name },
         transaction: dbTransaction,
       });
       if (existingCompany) {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Company already exists with this Name and Email!");
       }
 
+      //console.log("2");
       //* Step1
       const createCompany = await company.create(
         {
@@ -65,6 +66,8 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Register Company");
       }
 
+      //console.log("3");
+
       const createReportSettings = await reportSettings.create(
         {
           company_id: createCompany.id,
@@ -78,6 +81,8 @@ class authController extends jwtService {
         if (dbTransaction) await dbTransaction.rollback();
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Report Settings for this Company");
       }
+
+      //console.log("4");
 
       const createDepartment = await department.create(
         {
@@ -95,6 +100,8 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Department for this Company");
       }
 
+      //console.log("5");
+
       const createDesignation = await designation.create(
         {
           name: "MD (Managing Director)",
@@ -109,6 +116,8 @@ class authController extends jwtService {
         if (dbTransaction) await dbTransaction.rollback();
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Designation for this Company");
       }
+      //console.log("6");
+
 
       const createRole = await role.create(
         {
@@ -124,6 +133,8 @@ class authController extends jwtService {
         if (dbTransaction) await dbTransaction.rollback();
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Role for this Company");
       }
+      //console.log("7");
+
 
       const permissionInstance = new rolePermissionController();
       const createPermissionModules = await app_modules.findAll({
@@ -136,6 +147,9 @@ class authController extends jwtService {
           return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Role Permission for this Company");
         }
       }
+
+      //console.log("8");
+
 
       const createShift = await shift.create(
         {
@@ -156,6 +170,9 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Shift for this Company");
       }
 
+      //console.log("9");
+
+
 
       const createTeam = await team.create(
         {
@@ -173,6 +190,9 @@ class authController extends jwtService {
         if (dbTransaction) await dbTransaction.rollback();
         throw new Error("Unable to Create Team Record for this company.");
       }
+
+      //console.log("10");
+
 
       // const today = new Date();
       // const nextMonthDate = addMonths(today, 1); 
@@ -204,6 +224,36 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create User for this Company");
       }
 
+      //console.log("11");
+
+
+      const updateDept = await department.update(
+        {
+          reportingManagerId: createUser.id,
+        },
+        {
+          where: {
+            id: createDepartment.id,
+            company_id: createCompany.id,
+          },
+          transaction: dbTransaction, // Included transaction in the same options object
+        }
+      );
+      
+      if (!updateDept || updateDept[0] === 0) { // Sequelize's update returns an array, [number of affected rows]
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(
+          res,
+          variables.BadRequest,
+          0,
+          null,
+          "Unable to Add Reporting Manager for Department"
+        );
+      }      
+
+      //console.log("12");
+
+      
       const createLanguages = await languageSettings.create(
         {
           user_id: createUser.id,
@@ -219,6 +269,8 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Create Language Settings for this Company");
       }
 
+      //console.log(createUser);
+
       const token = this.generateToken(createUser.id.toString(), createUser.isAdmin, createUser.company_id, "1d");
       if (!token) return helper.failed(res, variables.serviceUnavailabe, "Unable to create access token");
 
@@ -228,7 +280,6 @@ class authController extends jwtService {
       await dbTransaction.commit();
       return helper.success(res, variables.Success, "Register Successfully", { token: token, user: createUser });
     } catch (error) {
-      console.log(error.message);
       if (dbTransaction) await dbTransaction.rollback();
       return helper.sendResponse(res, variables.BadRequest, 0, null, error.message);
     }
@@ -302,7 +353,7 @@ class authController extends jwtService {
         // let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
         let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
 
-        console.log(endHours, endMinutes, currentHours, currentMinutes);
+        //console.log(endHours, endMinutes, currentHours, currentMinutes);
 
         if (currentHours > endHours || (currentHours == endHours && currentMinutes > endMinutes)) {
           return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");

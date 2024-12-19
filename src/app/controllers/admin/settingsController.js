@@ -330,12 +330,12 @@ const updateReportSettings = async (req, res) => {
 
     // Update the user's `next_reports_schedule_date`
     let resultDate = (exportType === 1) ? commonfuncitons.getNextMonthDate() : (exportType === 2) ? commonfuncitons.getNextMondayDate() : (exportType === 3) ? commonfuncitons.getTomorrowDate() : "Unknown Error";
-    console.log("----", resultDate)
+    //console.log("----", resultDate)
     const [updatedUsers] = await User.update(
       { next_reports_schedule_date: resultDate },
       { where: { id: req.user.id } }
     );
-    console.log(req.user.id, "admin");
+    //console.log(req.user.id, "admin");
     if (updatedUsers === 0) {
       return helper.failed(res, variables.NotFound, "No users found for the specified company.");
     }

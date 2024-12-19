@@ -48,12 +48,13 @@ const createReport = async (req, res) => {
     if (existingReport) {
       return helper.failed(res, variables.ValidationError, "You have already submitted a report for today.");
     }
+      
 
     await workReports.create({
       company_id: companyId,
       user_id: req.user.id,
       description: description,
-      date: new Date().toISOString().split("T")[0],
+      // date: formattedDateTime.toString(),
     });
 
     return helper.success(res, variables.Success, "Your report submitted successfully");

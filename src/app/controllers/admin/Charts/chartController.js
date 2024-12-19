@@ -686,8 +686,8 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
 
 //     const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
 //     const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-//     console.log(productiveAppsData);
-//     console.log(productiveWebsiteData);
+//     //console.log(productiveAppsData);
+//     //console.log(productiveWebsiteData);
 
 //     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
 //       return helper.failed(res, 400, "Invalid data format", []);
@@ -718,8 +718,8 @@ const productiveAppsAndproductiveWebsites = async (req, res, next) => {
     const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
     const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
 
-    console.log(productiveAppsData);
-    console.log(productiveWebsiteData);
+    //console.log(productiveAppsData);
+    //console.log(productiveWebsiteData);
 
     // Validate data format
     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
@@ -966,7 +966,7 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
 const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
   try {
     // Extract `userId` and `date` based on the type of request
-    console.log(req.user);
+    //console.log(req.user);
     const { userId, date } = type === 'api' ? req.query : obj;
     const { company_id, departmentId } = type === 'api' ? req.user : obj;
 
@@ -1185,7 +1185,7 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
     const results = await sequelize.query(query, {
       replacements: { date, userId, company_id, department_id: departmentId },
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log
+      // logging: console.log
     });
 
     // Format results for pie chart data
@@ -1221,8 +1221,8 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, ne
     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date,company_id,departmentId });
     const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date,company_id,departmentId });
 
-    console.log(nonProductiveWebsitesData);
-    console.log(productiveWebsitesData);
+    //console.log(nonProductiveWebsitesData);
+    //console.log(productiveWebsitesData);
 
     // Validate data format
     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {

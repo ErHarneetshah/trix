@@ -18,7 +18,7 @@ const rolePermissionMiddleware = async (req, res, next) => {
     const permissions = getPermission.dataValues.permissions;
     if (reqMethod in permissions) {
       if (permissions[reqMethod]) {
-        // console.log("The Middleware is working");
+        // //console.log("The Middleware is working");
         next();
       } else {
         return helper.failed(res, variables.BadRequest, "You Are Not Allowed to Access It");

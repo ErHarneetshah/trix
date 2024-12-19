@@ -26,7 +26,7 @@ const sendEmailWithReports = async (req, res) => {
 
             if (admins.length === 0) {
                 if (offset === 0) {
-                    console.log("No admins found, skipping sending reports via email.");
+                    //console.log("No admins found, skipping sending reports via email.");
                 }
                 hasMoreData = false;
                 break;
@@ -60,9 +60,9 @@ const sendEmailWithReports = async (req, res) => {
                             { where: { id: admin.id } }
                         );
 
-                        console.log("Report Send Successfully.");
+                        //console.log("Report Send Successfully.");
                     } else {
-                        console.log("Error while sending the reports to the admin");
+                        //console.log("Error while sending the reports to the admin");
                     }
                 } catch (error) {
                     console.error(`Failed to send email to ${admin.email}:`, error.message);

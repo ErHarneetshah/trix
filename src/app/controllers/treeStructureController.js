@@ -8,7 +8,7 @@ import role from "../../database/models/roleModel.js";
 
 async function buildUserTree(parentDept, companyId, level = 0) {
   try {
-    console.log({parentDeptId: parentDept.id, company_id: companyId});
+    // //console.log({parentDeptId: parentDept.id, company_id: companyId});
 
     // Fetch all child departments
     let children = await department.findAll({
@@ -51,7 +51,7 @@ async function buildUserTree(parentDept, companyId, level = 0) {
 
     // Convert Sequelize object to plain JSON
     children = JSON.parse(JSON.stringify(children));
-    console.log({ children });
+    // //console.log({ children });
 
     // Add children to parent department
     Object.assign(parentDept, { level });
@@ -79,7 +79,7 @@ async function buildUserTree(parentDept, companyId, level = 0) {
 async function getUserTree(parentDept, companyId) {
   const userTree = await buildUserTree(parentDept, companyId);
 
-  console.log({ userTree });
+  // //console.log({ userTree });
   return userTree;
 }
 
@@ -114,7 +114,7 @@ const viewTreeStructure = async (req, res, next) => {
         ],
         //   raw: true,
       });
-      // console.log({ root_dept });
+      // //console.log({ root_dept });
       if (!root_dept) {
         return helper.failed(res, variables.Success, "please add department first", {});
       }
@@ -127,7 +127,7 @@ const viewTreeStructure = async (req, res, next) => {
 
     return helper.success(res, variables.Success, "tree fetched successfully", tree);
   } catch (error) {
-    console.log({ error });
+    //console.log({ error });
 
     return helper.failed(res, variables.InternalServerError, error.message, {});
   }
@@ -154,7 +154,7 @@ const viewTreeStructure = async (req, res, next) => {
 //                 ],
 //                 //   raw: true,
 //             });
-//             // console.log({root})
+//             // //console.log({root})
 //             if (!root_dept) {
 //                 return null;
 //             }
@@ -167,7 +167,7 @@ const viewTreeStructure = async (req, res, next) => {
 
 //         return res.json(tree);
 //     } catch (error) {
-//         console.log({ error });
+//         //console.log({ error });
 //     }
 // });
 

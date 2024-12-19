@@ -10,7 +10,7 @@ const emitUserDataToSpecificAdmins = async (targetUserId) => {
     if (!io) return;
     const targetUser = await User.findById(targetUserId);
     if (!targetUser) {
-        console.log("here returbning", targetUser);
+        //console.log("here returbning", targetUser);
         return;
     }
     try {
@@ -106,7 +106,7 @@ const emitUserDataToSpecificAdmins = async (targetUserId) => {
             },
         });
     } catch (error) {
-        console.log("Error Occured emitUserDataToSpecificAdmins -", error);
+        //console.log("Error Occured emitUserDataToSpecificAdmins -", error);
         io.to(`user_${targetUser.userId}`).emit("error", {
             message: `Error Occoured ${error} `,
         });
@@ -175,7 +175,7 @@ const emitUserDataToSpecificAdmins = async (targetUserId) => {
 //             }
 
 //         } catch (error) {
-//             console.log("error in connection ", error);
+//             //console.log("error in connection ", error);
 //         }
 
 //         // User disconnect socket :
@@ -241,7 +241,7 @@ const emitUserDataToSpecificAdmins = async (targetUserId) => {
 //                     userId: socket.data.user.userId,
 //                 })
 //             } catch (error) {
-//                 console.log("error in connection ", error);
+//                 //console.log("error in connection ", error);
 //             }
 //         });
 
@@ -249,7 +249,7 @@ const emitUserDataToSpecificAdmins = async (targetUserId) => {
 //             try {
 
 //             } catch (error) {
-//                 console.log("error in connection ", error);
+//                 //console.log("error in connection ", error);
 //             }
 //         })
 
@@ -264,7 +264,7 @@ const emitUserDataToSpecificAdmins = async (targetUserId) => {
 //         //             });
 //         //         } else {
 //         //             0;
-//         //             console.log("here");
+//         //             //console.log("here");
 //         //             socket.emit("listeningError", { message: "Unauthorized access" });
 //         //         }
 //         //     } catch (error) {
@@ -281,7 +281,7 @@ const emitUserDataToSpecificAdmins = async (targetUserId) => {
 //         //         const user = await User.findOne({ userId });
 
 //         //         if (!images || images.length === 0) {
-//         //             console.log("Invalid data received from the client");
+//         //             //console.log("Invalid data received from the client");
 //         //             socket.emit("imageError", { message: "Invalid data" });
 //         //             return;
 //         //         }
@@ -506,7 +506,7 @@ const emitUserDataToSpecificAdmins = async (targetUserId) => {
 //     });
 
 //     // httpServer.listen(Number(SOCKET_PORT), () => {
-//     //     console.log(`Socket is running on port ${SOCKET_PORT}`);
+//     //     //console.log(`Socket is running on port ${SOCKET_PORT}`);
 //     // });
 // }
 
@@ -542,7 +542,7 @@ socket.emit("login",data)
 
     // Ensure events fire only once
     socket.once("disconnect", async () => {
-        console.log(`User disconnected: ${socket.data.user.userId}`);
+        //console.log(`User disconnected: ${socket.data.user.userId}`);
         await Notification.create({
             userId: socket.data.user.userId,
             message: "User Logout successfully",
@@ -576,10 +576,10 @@ socket.emit("login",data)
 
 //     io.on("connection", async (socket) => {
 //         try {
-//             console.log(`User connected: ${socket.data.user.userId}  \n token ->  ${socket.handshake.headers.authorization}`);
+//             //console.log(`User connected: ${socket.data.user.userId}  \n token ->  ${socket.handshake.headers.authorization}`);
 //             const userId = socket.data.user.userId;
 //             const user = await User.findOne({ userId });
-//             console.log(user);
+//             //console.log(user);
 
 
 //             if (!user) {
@@ -598,7 +598,7 @@ socket.emit("login",data)
 //             });
 //             socket.join(`${user._id}`);
 //         } catch (error) {
-//             console.log("error in connection ", error);
+//             //console.log("error in connection ", error);
 //         }
 //         // Allow admins to listen to specific users
 //         socket.on("admin:listenToUser", (targetUserId) => {
@@ -610,7 +610,7 @@ socket.emit("login",data)
 //                     });
 //                 } else {
 //                     0;
-//                     console.log("here");
+//                     //console.log("here");
 //                     socket.emit("listeningError", { message: "Unauthorized access" });
 //                 }
 //             } catch (error) {
@@ -635,7 +635,7 @@ socket.emit("login",data)
         // offset: parseInt(offset),
       });
 //                 if (!images || images.length === 0) {
-//                     console.log("Invalid data received from the client");
+//                     //console.log("Invalid data received from the client");
 //                     socket.emit("imageError", { message: "Invalid data" });
 //                     return;
 //                 }
@@ -859,12 +859,12 @@ socket.emit("login",data)
 //         });
 
 //         socket.on("disconnect", () => {
-//             console.log(`User disconnected: ${socket.data.user.userId}  \n token ->  ${socket.handshake.headers.authorization}`);
+//             //console.log(`User disconnected: ${socket.data.user.userId}  \n token ->  ${socket.handshake.headers.authorization}`);
 //         });
 //     });
 
 //     httpServer.listen(Number(SOCKET_PORT), () => {
-//         console.log(`Socket is running on port ${SOCKET_PORT}`);
+//         //console.log(`Socket is running on port ${SOCKET_PORT}`);
 //     });
 // }
 

@@ -90,14 +90,14 @@ const setupSocketIO = (io) => {
   io.on("connection", async (socket) => {
     socket.join(`Admin_${socket.user.company_id}`);
     if (socket.user.isAdmin) {
-      console.log(`Admin ID ${socket.user.userId} connected `);
+      //console.log(`Admin ID ${socket.user.userId} connected `);
       let userData = await User.findOne({ where: { id: socket.user.userId } });
       userData.socket_id = socket.id;
       userData.currentStatus = 1;
       userData.save();
       handleAdminSocket(socket, io);
     } else {
-      console.log(`User ID ${socket.user.userId} connected `);
+      //console.log(`User ID ${socket.user.userId} connected `);
       let today = new Date().toISOString().split("T")[0];
 
       let user = await User.findOne({ where: { id: socket.user.userId } });
@@ -133,7 +133,7 @@ const setupSocketIO = (io) => {
         order: [["createdAt", "DESC"]],
       });
       // if (timeLog) {
-      //   console.log(timeLog.dataValues);
+      //   //console.log(timeLog.dataValues);
       // }
 
       let lateComing = 0;
@@ -155,7 +155,7 @@ const setupSocketIO = (io) => {
       //   user.save();
       if (timeLog) {
         if (timeLog.logged_out_time != null) {
-          console.log("Time loh hai and logout null nhi hai");
+          //console.log("Time loh hai and logout null nhi hai");
           const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
           let logoutTime = new Date();
           logoutTime.setHours(hours, mins, 0, 0);
@@ -163,7 +163,7 @@ const setupSocketIO = (io) => {
           timeLog.spare_time =
             parseInt(timeLog.spare_time) + parseInt(spareMinutes);
         } else {
-          console.log("Time loh hai and logout null hai");
+          //console.log("Time loh hai and logout null hai");
           timeLog.spare_time = parseInt(timeLog.spare_time || 0);
         }
         timeLog.logged_out_time = null;
@@ -264,7 +264,7 @@ const handleAdminSocket = async (socket, io) => {
   });
 
   socket.on("disconnect", async () => {
-    console.log(`Admin ID ${socket.user.userId} disconnected `);
+    //console.log(`Admin ID ${socket.user.userId} disconnected `);
     let userData = await User.findOne({ where: { id: socket.user.userId } });
     userData.currentStatus = 0;
     userData.socket_id = null;
@@ -384,7 +384,7 @@ const getUserStats = async (io, socket) => {
     await adminController.updateAppsStats(io, socket);
     await adminController.updateURLHostStats(io, socket);
   } catch (error) {
-    console.log("Error fetching admin getuserstats:", error);
+    //console.log("Error fetching admin getuserstats:", error);
   }
 };
 
@@ -457,7 +457,7 @@ const getUserReport = async (data, io, socket) => {
           productiveAndNonProductiveWebData || [],
       },
     };
-    // console.log(response);
+    // //console.log(response);
 
     return response;
   } catch (error) {
@@ -881,7 +881,7 @@ export const adminController = {
       });
       io.to(`Admin_${socket.user.company_id}`).emit("appUsageStats", findAll);
     } catch (error) {
-      console.log("Error updating app stats:", error);
+      //console.log("Error updating app stats:", error);
     }
   },
 
@@ -960,7 +960,7 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("uploadHistory", async (data) => {
     try {
-      console.log("uploadHistory");
+      //console.log("uploadHistory");
 
       let { url, title, visitTime } = data;
       let userId = socket.user.userId;
@@ -1006,7 +1006,7 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("uploadImage", async (data) => {
     try {
-      console.log("uploadImage");
+      //console.log("uploadImage");
 
       let today = new Date().toISOString().split("T")[0];
       let userId = socket.user.userId;
@@ -1039,14 +1039,14 @@ const handleUserSocket = async (socket, io) => {
       );
       socket.emit("imageSuccess", { message: "Images uploaded successfully" });
     } catch (error) {
-      console.log("Error uploading images:", error);
+      //console.log("Error uploading images:", error);
       socket.emit("imageError", { message: "Failed to upload images" });
     }
   });
 
   socket.on("uploadAppHistory", async (data) => {
     try {
-      console.log("uploadAppHistory");
+      //console.log("uploadAppHistory");
 
       let { histories } = data;
       let userId = socket.user.userId;
@@ -1112,7 +1112,7 @@ const handleUserSocket = async (socket, io) => {
   });
 
   socket.on("disconnect", async () => {
-    console.log(`User ID ${socket.user.userId} disconnected`);
+    //console.log(`User ID ${socket.user.userId} disconnected`);
 
     let userData = await User.findOne({ where: { id: socket.user.userId } });
     let time_data = await TimeLog.findOne({
@@ -1382,7 +1382,7 @@ export default setupSocketIO;
 //     const results = await sequelize.query(query, {
 //       replacements: { date, userId, companyId },
 //       type: Sequelize.QueryTypes.SELECT,
-//       logging: console.log
+//       logging: //console.log
 //     });
 
 //     // Format results for pie chart data
@@ -1468,7 +1468,7 @@ export default setupSocketIO;
 //     const results = await sequelize.query(query, {
 //       replacements: { date, userId, companyId },
 //       type: Sequelize.QueryTypes.SELECT,
-//       logging: console.log
+//       logging: //console.log
 //     });
 
 //     // Format results for pie chart data
