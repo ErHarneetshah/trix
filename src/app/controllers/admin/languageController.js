@@ -6,30 +6,9 @@ import variables from "../../config/variableConfig.js";
 
 const getLanguageDropdown = async (req, res) => {
     try {
-        const getLanguageData = await languageDropdown.findAll({ attributes: ["id", "language"] });
+        const getLanguageData = await languageDropdown.findAll({ attributes: ["id", "language","image"] });
         if (!getLanguageData || getLanguageData.length === 0) return helper.failed(res, variables.Success, "Please add the data in the database to see the languages data");
-
-        const languageToCountryCode = {
-            English: "gb",
-            Spanish: "es",
-            Hindi: "in",
-            French: "fr",
-            Punjabi: "in",
-        };
-
-        const flagBaseUrl = "https://flagcdn.com/w320";
-
-        const languagesWithImages = getLanguageData.map(lang => {
-            const countryCode = languageToCountryCode[lang.language];
-            return {
-                id: lang.id,
-                language: lang.language,
-                image: countryCode
-                    ? `${flagBaseUrl}/${countryCode}.png` 
-                    : "/images/default_logo.png", 
-            };
-        });
-        return helper.success(res, variables.Success, "Language Dropdown Retrieved Successfully", languagesWithImages);
+        return helper.success(res, variables.Success, "Language Dropdown Retrieved Successfully", getLanguageData);
     } catch (error) {
         console.error("Error fetching languages:", error);
         return helper.failed(res, variables.BadRequest, error.message);
