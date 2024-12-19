@@ -31,30 +31,30 @@ const company = sequelize.define(
       defaultValue: 1,
       comment: "0 for Inactive, 1 for active",
     },
-    screen_capture_time: {
-      type: DataTypes.STRING,
-      defaultValue: 60,
-    },
-    broswer_capture_time: {
-      type: DataTypes.STRING,
-      defaultValue: 60,
-    },
-    app_capture_time: {
-      type: DataTypes.STRING,
-      defaultValue: 60,
-    },
-    screen_capture: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: 1,
-    },
-    broswer_capture: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: 1,
-    },
-    app_capture: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: 1,
-    },
+    // screen_capture_time: {
+    //   type: DataTypes.STRING,
+    //   defaultValue: 60,
+    // },
+    // broswer_capture_time: {
+    //   type: DataTypes.STRING,
+    //   defaultValue: 60,
+    // },
+    // app_capture_time: {
+    //   type: DataTypes.STRING,
+    //   defaultValue: 60,
+    // },
+    // screen_capture: {
+    //   type: DataTypes.BOOLEAN,
+    //   defaultValue: 1,
+    // },
+    // broswer_capture: {
+    //   type: DataTypes.BOOLEAN,
+    //   defaultValue: 1,
+    // },
+    // app_capture: {
+    //   type: DataTypes.BOOLEAN,
+    //   defaultValue: 1,
+    // },
   },
   {
     timestamps: true,

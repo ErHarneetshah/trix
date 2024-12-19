@@ -112,7 +112,7 @@ class authController extends jwtService {
 
       const createRole = await role.create(
         {
-          name: "Super Admin",
+          name: "Admin",
           company_id: createCompany.id,
         },
         {

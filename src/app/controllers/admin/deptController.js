@@ -120,7 +120,7 @@ class deptController {
       let { id, name, parentDeptId } = req.body;
       if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is Required!");
       if ((!name || typeof name !== "string") && (!parentDeptId || isNaN(parentDeptId))) return helper.failed(res, variables.NotFound, "Either Name (String) or parentDeptId (Number) is Required");
-      if (parentDeptId) if (id == parentDeptId) return helper.failed(res, variables.Unauthorized, "Both Id and ParentDeptId cannot be same");
+      if (parentDeptId) if (id == parentDeptId) return helper.failed(res, variables.BadRequest, "Both Id and ParentDeptId cannot be same");
 
       // ___________-------- Dept exists or not ---------________________
       const existingDept = await department.findOne({
