@@ -21,7 +21,7 @@ const topFiveProductiveAppsUsers = async (req, res, next) => {
           productive_apps AS ap 
         ON 
           ap.app_name = ah.appName and ap.company_id=:companyId
-        LEFT JOIN 
+        INNER JOIN 
           users AS u 
         ON 
           ah.userId = u.id and u.company_id=:companyId where ah.company_id=:companyId
@@ -66,7 +66,7 @@ const topFiveUnProductiveAppsUsers = async (req, res, next) => {
           SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_time
         FROM 
           app_histories AS ah
-        LEFT JOIN 
+        INNER JOIN 
           users AS u 
         ON 
           u.id = ah.userId and u.company_id=:companyId
@@ -120,7 +120,7 @@ const topFiveEffectiveUsers = async (req, res, next) => {
             SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_unproductive_time_seconds 
         FROM 
             app_histories AS ah 
-        LEFT JOIN 
+        INNER JOIN 
             users AS u 
         ON 
             u.id = ah.userId and u.company_id=:companyId
@@ -203,7 +203,7 @@ const topFiveAbsentUsers = async (req, res, next) => {
         tl.user_id 
       FROM 
         timelogs AS tl 
-      LEFT JOIN 
+      INNER JOIN 
         users AS u 
       ON 
         u.id = tl.user_id and u.company_id=:companyId and u.isAdmin=0 where tl.company_id=:companyId
@@ -258,7 +258,7 @@ const topFiveLateComingUsers = async (req, res, next) => {
         SUM(tl.late_coming_duration) AS total_late_duration 
       FROM 
         timelogs AS tl 
-      LEFT JOIN 
+      INNER JOIN 
         users AS u 
       ON 
         u.id = tl.user_id and u.company_id=:companyId where tl.company_id=:companyId
@@ -320,7 +320,7 @@ const getTopFiveOfflineLoggedUsers = async (req, res, next) => {
         SUM(tl.idle_time) AS total_idle_time 
       FROM 
         timelogs AS tl 
-      LEFT JOIN 
+      INNER JOIN 
         users AS u 
       ON 
         u.id = tl.user_id and u.company_id=:companyId where tl.company_id=:companyId
