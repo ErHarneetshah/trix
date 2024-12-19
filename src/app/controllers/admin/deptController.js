@@ -19,7 +19,7 @@ class deptController {
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       let searchable = ["name"];
-      limit = parseInt(limit) || 10;
+      limit = parseInt(limit) || 2;
       let offset = (page - 1) * limit || 0;
       let where = await helper.searchCondition(searchParam, searchable);
       where.company_id = req.user.company_id;
@@ -192,14 +192,14 @@ class deptController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;
-      if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is Required and in numbers!");
+      if (!id || isNaN(id)) return helper.failed(res, variables.BadRequest, "Id is Required and in numbers!");
 
       // ___________-------- Dept Exists or not ---------________________
       const existingDept = await department.findOne({
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingDept) return helper.failed(res, variables.NotFound, "Department does not found in our system");
+      if (!existingDept) return helper.failed(res, variables.BadRequest, "Department does not found in our system");
 
       // ___________-------- Dept Used in order or not ---------________________
       const isUsedInUsers = await User.findOne({ where: { departmentId: id } });
@@ -207,7 +207,7 @@ class deptController {
       const isUsedInTeams = await team.findOne({ where: { departmentId: id } });
 
       if (isUsedInTeams || isUsedInProductiveAndNonApps || isUsedInUsers) {
-        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
+        return helper.failed(res, variables.BadRequest, "Cannot Delete this Department as it is referred in other tables");
       }
 
       // ___________-------- Delete Department ---------________________
@@ -221,7 +221,7 @@ class deptController {
         return helper.success(res, variables.Success, "Department Successfully Deleted");
       } else {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unable to delete department");
+        return helper.failed(res, variables.BadRequest, "Unable to delete department");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();

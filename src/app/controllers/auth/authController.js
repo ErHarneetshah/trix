@@ -144,7 +144,7 @@ class authController extends jwtService {
           start_time: "09:00",
           end_time: "18:00",
           total_hours: 9,
-          days: ["mon", "tue", "wed", "thu", "fri"],
+          days: ["Mon","Tue","Wed","Thu","Fri"],
         },
         {
           transaction: dbTransaction,
@@ -512,7 +512,7 @@ class authController extends jwtService {
         { key: "screen_capture_time", value: screen_capture_time, minValue: 30 },
         { key: "broswer_capture_time", value: broswer_capture_time, minValue: 30 },
         { key: "app_capture_time", value: app_capture_time, minValue: 30 },
-      ];
+    ];
 
       for (const validation of validations) {
         if (validation.validValues && !validation.validValues.includes(validation.value)) {

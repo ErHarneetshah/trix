@@ -143,7 +143,7 @@ class roleController {
         return helper.success(res, variables.Success, "Role Updated Successfully!");
       } else {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unable to update the role!");
+        return helper.failed(res, variables.BadRequest, "Unable to update the role!");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
@@ -165,7 +165,7 @@ class roleController {
 
       const isUsedInUsers = await User.findOne({ where: { roleId: id } });
       if (isUsedInUsers) {
-        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Role as it is referred in other tables");
+        return helper.failed(res, variables.BadRequest, "Cannot Delete this Role as it is referred in other tables");
       }
 
       // Create and save the new user
