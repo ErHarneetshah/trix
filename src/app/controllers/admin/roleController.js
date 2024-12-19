@@ -165,7 +165,7 @@ class roleController {
 
       const isUsedInUsers = await User.findOne({ where: { roleId: id } });
       if (isUsedInUsers) {
-        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Role as it is referred in other tables");
+        return helper.failed(res, variables.BadRequest, "Cannot Delete this Role as it is referred in other tables");
       }
 
       // Create and save the new user

@@ -63,7 +63,7 @@ class reportingManagerController {
 
   //* ________-------- POST Add Report Managers ---------______________
   addReportManager = async (req, res) => {
-    return helper.failed(res, variables.Unauthorized, "This API is for development Purposes only. It is not for front end or project's main purposes");
+    return helper.failed(res, variables.BadRequest, "This API is for development Purposes only. It is not for front end or project's main purposes");
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, reportManagerId } = req.body;
@@ -126,7 +126,7 @@ class reportingManagerController {
         transaction: dbTransaction,
       });
       if (!existingUser) return helper.failed(res, variables.ValidationError, "User does not exists in system!");
-      if (existingUser.isAdmin) return helper.failed(res, variables.Unauthorized, "Not allowed to assign to this Id");
+      if (existingUser.isAdmin) return helper.failed(res, variables.BadRequest, "Not allowed to assign to this Id");
 
       // ________-------- Update Department ---------______________
       const updated = await department.update(
@@ -155,7 +155,7 @@ class reportingManagerController {
 
   //* ________-------- DELETE Report Managers ---------______________
   deleteReportManager = async (req, res) => {
-    return helper.failed(res, variables.Unauthorized, "This API is for development Purposes only. It is not for front end or project's main purposes");
+    return helper.failed(res, variables.BadRequest, "This API is for development Purposes only. It is not for front end or project's main purposes");
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;

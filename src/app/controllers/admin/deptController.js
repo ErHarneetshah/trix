@@ -207,7 +207,7 @@ class deptController {
       const isUsedInTeams = await team.findOne({ where: { departmentId: id } });
 
       if (isUsedInTeams || isUsedInProductiveAndNonApps || isUsedInUsers) {
-        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Department as it is referred in other tables");
+        return helper.failed(res, variables.BadRequest, "Cannot Delete this Department as it is referred in other tables");
       }
 
       // ___________-------- Delete Department ---------________________

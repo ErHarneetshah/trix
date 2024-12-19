@@ -262,7 +262,7 @@ class teamController {
 
       const isUsedInUsers = await User.findOne({ where: { teamId: id } });
       if (isUsedInUsers) {
-        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Team as it is referred in other tables");
+        return helper.failed(res, variables.BadRequest, "Cannot Delete this Team as it is referred in other tables");
       }
 
       // Create and save the new user

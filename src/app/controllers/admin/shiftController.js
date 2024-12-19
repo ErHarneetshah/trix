@@ -227,7 +227,7 @@ class shiftController {
 
       const isUsedInTeams = await team.findOne({ where: { shiftId: id } });
       if (isUsedInTeams) {
-        return helper.failed(res, variables.Unauthorized, "Cannot Delete this Shift as it is referred in other tables");
+        return helper.failed(res, variables.BadRequest, "Cannot Delete this Shift as it is referred in other tables");
       }
 
       // Create and save the new user

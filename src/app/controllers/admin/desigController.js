@@ -162,7 +162,7 @@ class desigController {
 
       // ___________---------- Designation Used in other table or not ----------_______________
       const isUsedInUsers = await User.findOne({ where: { designationId: id } });
-      if (isUsedInUsers) return helper.failed(res, variables.Unauthorized, "Cannot Delete this Designation as it is referred in other tables");
+      if (isUsedInUsers) return helper.failed(res, variables.BadRequest, "Cannot Delete this Designation as it is referred in other tables");
 
       // ___________---------- Designation Destroy ----------_______________
       const deleteDesig = await designation.destroy({

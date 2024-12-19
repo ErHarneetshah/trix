@@ -45,7 +45,7 @@ class authController extends jwtService {
         transaction: dbTransaction,
       });
       if (existingCompany) {
-        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Company already exists with this Name and Email!");
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Company already exists with this Name and Email!");
       }
 
       //* Step1
