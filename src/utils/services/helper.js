@@ -79,7 +79,7 @@ export default {
       });
       if (generatedPass) return generatedPass;
 
-      return this.failed(res, variables.Unauthorized, "Unable to generate password for team member!");
+      return this.failed(res, variables.BadRequest, "Unable to generate password for team member!");
     } catch (error) {
       return this.failed(res, variables.UnknownError, error.message);
     }

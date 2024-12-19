@@ -21,16 +21,16 @@ const rolePermissionMiddleware = async (req, res, next) => {
         // console.log("The Middleware is working");
         next();
       } else {
-        return helper.failed(res, variables.Unauthorized, "You Are Not Allowed to Access It");
+        return helper.failed(res, variables.BadRequest, "You Are Not Allowed to Access It");
       }
     } else {
-      return helper.failed(res, variables.Unauthorized, "Permission does not exists");
+      return helper.failed(res, variables.BadRequest, "Permission does not exists");
     }
   } catch (e) {
     if (e.name === "TokenExpiredError") {
-      return helper.failed(res, variables.Unauthorized, "Token Expired. Please login again");
+      return helper.failed(res, variables.BadRequest, "Token Expired. Please login again");
     }
-    return helper.failed(res, variables.Unauthorized, e.message);
+    return helper.failed(res, variables.BadRequest, e.message);
   }
 };
 

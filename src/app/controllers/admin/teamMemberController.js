@@ -110,7 +110,33 @@ class teamMemberController {
 
       // Validating request body
       const validationResult = await teamsValidationSchema.teamMemberValid(requestData, res);
-      if (!validationResult.status) return helper.failed(res, variables.Unauthorized, validationResult.message);
+      if (!validationResult.status) return helper.failed(res, variables.BadRequest, validationResult.message);
+
+      const existsDept = await department.findOne({
+        where: {id: requestData.departmentId, company_id: req.user.company_id}
+      })
+      if(!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
+
+      const existsDesig = await designation.findOne({
+        where: {id: requestData.designation, company_id: req.user.company_id}
+      })
+      if(!existsDesig) return helper.failed(res, variables.BadRequest, "Designation Does Not Exists");
+
+      const existsRole = await role.findOne({
+        where: {id: requestData.role, company_id: req.user.company_id}
+      })
+      if(!existsRole) return helper.failed(res, variables.BadRequest, "Role Does Not Exists");
+
+      const existsTeam = await team.findOne({
+        where: {id: requestData.teamId, company_id: req.user.company_id}
+      })
+      if(!existsTeam) return helper.failed(res, variables.BadRequest, "Team Does Not Exists");
+
+      const existsTeamInDept = await team.findOne({
+        where: {id: requestData.teamId, departmentId:requestData.departmentId, company_id: req.user.company_id}
+      })
+      if(!existsTeamInDept) return helper.failed(res, variables.BadRequest, "Team Does Not Exists in Department");
+      
 
       // Check if the user already exists
       const existingUser = await User.findOne({
@@ -119,7 +145,7 @@ class teamMemberController {
       });
 
       if (existingUser) {
-        return helper.failed(res, variables.Unauthorized, "User already exists with this mail!");
+        return helper.failed(res, variables.BadRequest, "User already exists with this mail!");
       }
 
       const plainTextPassword = await helper.generatePass();
@@ -173,7 +199,7 @@ class teamMemberController {
       });
 
       if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists in your company data");
-      // if (existingTeamMember.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized to made this change");
+      // if (existingTeamMember.isAdmin) return helper.failed(res, variables.BadRequest, "You are not authorized to made this change");
 
       // Remove the 'password' field if it exists in updateFields
       if (updateFields.hasOwnProperty("password")) {
@@ -190,6 +216,31 @@ class teamMemberController {
           if (existingTeamMemberWithEmail) return helper.failed(res, variables.BadRequest, "Email is already used in system");
         }
       }
+
+      const existsDept = await department.findOne({
+        where: {id: updateFields.departmentId, company_id: req.user.company_id}
+      })
+      if(!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
+
+      const existsDesig = await designation.findOne({
+        where: {id: updateFields.designation, company_id: req.user.company_id}
+      })
+      if(!existsDesig) return helper.failed(res, variables.BadRequest, "Designation Does Not Exists");
+
+      const existsRole = await role.findOne({
+        where: {id: updateFields.role, company_id: req.user.company_id}
+      })
+      if(!existsRole) return helper.failed(res, variables.BadRequest, "Role Does Not Exists");
+
+      const existsTeam = await team.findOne({
+        where: {id: updateFields.teamId, company_id: req.user.company_id}
+      })
+      if(!existsTeam) return helper.failed(res, variables.BadRequest, "Team Does Not Exists");
+
+      const existsTeamInDept = await team.findOne({
+        where: {id: updateFields.teamId, departmentId:updateFields.departmentId, company_id: req.user.company_id}
+      })
+      if(!existsTeamInDept) return helper.failed(res, variables.BadRequest, "Team Does Not Exists in Department");
 
       // Perform the update operation
       const [updatedRows] = await User.update(updateFields, {
