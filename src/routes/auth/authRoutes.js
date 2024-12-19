@@ -21,6 +21,6 @@ router.get("/absent",authMiddleware,authInstance.absent);
 router.get('/getBlockedWebsite',authMiddleware,authInstance.blockedlist);
 router.post("/markall_notification",authMiddleware, authInstance.markAsRead);
 router.get("/get_notification",authMiddleware, authInstance.notification_page);
-router.put("/advanced_setting",authMiddleware, authInstance.advanced_setting)
-
+router.put("/advanced_setting",authMiddleware, authInstance.advanced_setting);
+router.get("/get_advanced_setting",authMiddleware, authInstance.get_advanced_setting);
 export default router;

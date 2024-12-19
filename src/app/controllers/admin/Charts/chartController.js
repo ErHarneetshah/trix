@@ -218,12 +218,13 @@ const productiveChart = async (req, res) => {
 //   ];
 const topApplicationChart = async (req, res, next) => {
   const { filterType } = req.query;
+  const { company_id } = req.user;
   let dateCondition = "";
 
   if (filterType === "weekly") {
-    dateCondition = "WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+    dateCondition = `WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) and ah.company_id=${company_id}`;
   } else if (filterType === "monthly") {
-    dateCondition = "WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)";
+    dateCondition = `WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) and ah.company_id=${company_id}`;
   }
 
   const query = `
@@ -253,22 +254,17 @@ const topApplicationChart = async (req, res, next) => {
   }
 };
 
-//*top websites chart 
-// const pieChartData = [
-//   { name: "Team A", value: 24.9 },
-//   { name: "Team B", value: 31.1 },
-//   { name: "Team C", value: 7.3 },
-//   { name: "Team D", value: 24.3 },
-//   { name: "Team E", value: 12.4 },
-//   ];
+
 const topWebsiteChart = async (req, res, next) => {
   const { filterType } = req.query;
+  const { company_id } = req.user;
+
   let dateCondition = "";
 
   if (filterType === "weekly") {
-    dateCondition = "WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+    dateCondition = `WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) and uh.company_id=${company_id}`;
   } else if (filterType === "monthly") {
-    dateCondition = "WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)";
+    dateCondition = `WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) and uh.company_id=${company_id}`;
   }
 
   const query = `
@@ -285,6 +281,8 @@ const topWebsiteChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
+      logging: console.log
+
     });
 
     const pieChartData = results.map(result => ({
@@ -304,13 +302,16 @@ const topWebsiteChart = async (req, res, next) => {
 
 const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
-    if (type === 'api') {
-      ({ filterType, dateOption } = req.query); // Destructure from req.query
+
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
+      ({ filterType, dateOption } = req.query);
+
     } else {
-      ({ filterType, dateOption } = obj); // Destructure from obj
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -351,8 +352,8 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
           INNER JOIN 
             productive_apps AS ap 
           ON 
-            ap.app_name = ah.appName
-          WHERE DATE(ah.createdAt) = :date
+            ap.app_name = ah.appName and ap.company_id=:companyId
+          WHERE ah.company_id=:companyId and DATE(ah.createdAt) = :date 
         `;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
@@ -365,8 +366,8 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
           INNER JOIN 
             productive_apps AS ap 
           ON 
-            ap.app_name = ah.appName
-          WHERE DATE(ah.createdAt) BETWEEN :start AND :end
+            ap.app_name = ah.appName and ap.company_id=:companyId
+          WHERE ah.company_id=:companyId and DATE(ah.createdAt) BETWEEN :start AND :end 
         `;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
@@ -380,8 +381,8 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
           INNER JOIN 
             productive_apps AS ap 
           ON 
-            ap.app_name = ah.appName
-          WHERE MONTH(ah.createdAt) = :month
+            ap.app_name = ah.appName and ap.company_id=:companyId
+          WHERE ah.company_id=:companyId and MONTH(ah.createdAt) = :month
           AND YEAR(ah.createdAt) = :year
         `;
       }
@@ -389,6 +390,7 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
+        logging: console.log
       });
 
       valueArray.push({
@@ -416,14 +418,15 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
 
 const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
-
-    if (type === 'api') {
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
       ({ filterType, dateOption } = req.query);
+
     } else {
-      ({ filterType, dateOption } = obj);
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -455,20 +458,20 @@ const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) =>
       if (filterType === 'weekly') {
         queryParams.date = item.date;
         query = `
-        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites) and DATE(uh.createdAt)=:date
+        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and DATE(uh.createdAt)=:date
         `;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
         queryParams.end = item.end;
         query = `
-        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites) and DATE(uh.createdAt) BETWEEN :start AND :end
+        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId  and DATE(uh.createdAt) BETWEEN :start AND :end
         `;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
         queryParams.month = month;
         queryParams.year = year;
         query = `
-        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites) and MONTH(uh.createdAt)= :month
+        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites where company_id=:companyId) and uh.company_id =:companyId and  MONTH(uh.createdAt)= :month
           AND YEAR(uh.createdAt) = :year
         `;
       }
@@ -503,14 +506,15 @@ const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) =>
 
 const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
+      ({ filterType, dateOption } = req.query);
 
-    if (type === 'api') {
-      ({ filterType, dateOption } = req.query); // Destructure from req.query
     } else {
-      ({ filterType, dateOption } = obj); // Destructure from obj
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -536,27 +540,26 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
     }
 
     const valueArray = [];
-
     for (const item of dateInstances) {
       let query;
       if (filterType === 'weekly') {
         queryParams.date = item.date;
         query = `
         SELECT ah.appName, 
-    COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps) and DATE(ah.createdAt) = :date`;
+    COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps where company_id=:companyId) and  ah.company_id=:companyId and DATE(ah.createdAt) = :date`;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
         queryParams.end = item.end;
         query = `
         SELECT ah.appName, 
-        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps) and DATE(ah.createdAt) BETWEEN :start AND :end`;
+        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps where company_id=:companyId) and ah.company_id=:companyId and DATE(ah.createdAt) BETWEEN :start AND :end`;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
         queryParams.month = month;
         queryParams.year = year;
         query = `
         SELECT ah.appName, 
-        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps) and MONTH(ah.createdAt) = :month
+        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps where company_id=:companyId) and ah.company_id=:companyId and MONTH(ah.createdAt) = :month
           AND YEAR(ah.createdAt) = :year
         `;
       }
@@ -565,6 +568,7 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
+        logging:console.log
       });
 
       // Push the result into the value array
@@ -597,14 +601,15 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
 
 const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
+      ({ filterType, dateOption } = req.query);
 
-    if (type === 'api') {
-      ({ filterType, dateOption } = req.query); // Destructure from req.query
     } else {
-      ({ filterType, dateOption } = obj); // Destructure from obj
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -635,18 +640,18 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
       let query;
       if (filterType === 'weekly') {
         queryParams.date = item.date;
-        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites) and DATE(uh.createdAt)=:date
+        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and DATE(uh.createdAt)=:date
         `;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
         queryParams.end = item.end;
-        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites) and DATE(uh.createdAt) BETWEEN :start AND :end
+        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and DATE(uh.createdAt) BETWEEN :start AND :end
         `;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
         queryParams.month = month;
         queryParams.year = year;
-        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites) and MONTH(uh.createdAt)= :month
+        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and MONTH(uh.createdAt)= :month
           AND YEAR(uh.createdAt) = :year
         `;
       }
@@ -679,44 +684,14 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
 
 
 
-//function for productive apps and productive websites chart
-// const productiveAppsAndproductiveWebsites = async (req, res, next) => {
-//   try {
-//     const { filterType, dateOption } = req.query;
-
-//     const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
-//     const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-//     console.log(productiveAppsData);
-//     console.log(productiveWebsiteData);
-
-//     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
-//       return helper.failed(res, 400, "Invalid data format", []);
-//     }
-
-//     const combinedData = productiveAppsData.map(item1 => {
-//       const item2 = productiveWebsiteData.find(item => item.period === item1.period); // Match by period
-//       return {
-//         period: item1.period,
-//         productive_apps_total_time: parseFloat(item1.total_time || '0.0'),
-//         productive_websites_total_time: parseFloat(item2?.total_time || '0.0')
-//       };
-//     });
-
-//     // Success response
-//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
-//   } catch (error) {
-//     console.error("Error in productiveAppsAndproductiveWebsites:", error);
-//     return helper.failed(res, 500, "Internal Server Error", []);
-//   }
-// };
-
 const productiveAppsAndproductiveWebsites = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const {company_id}=req.user;
 
     // Fetch data for productive apps and websites
-    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
+    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
 
     console.log(productiveAppsData);
     console.log(productiveWebsiteData);
@@ -758,10 +733,11 @@ const productiveAppsAndproductiveWebsites = async (req, res, next) => {
 const productiveWebsiteAndNonproductiveWebsites = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const { company_id } = req.user;
 
     // Fetch data for non-productive and productive websites
-    const nonProductiveWebsitesData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
+    const nonProductiveWebsitesData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption, company_id });
+    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption, company_id });
 
     // Validate data format
     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsiteData)) {
@@ -800,11 +776,13 @@ const productiveWebsiteAndNonproductiveWebsites = async (req, res, next) => {
 const productiveAppAndNonproductiveApps = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const { company_id } = req.user;
 
     // Fetch data for non-productive and productive apps
-    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
+    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption, company_id });
+    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption, company_id });
 
+    console.log(nonProductiveAppsData);
     // Validate data format
     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       return helper.failed(res, 400, "Invalid data format", []);
@@ -850,14 +828,14 @@ const transformData = (response, name) => {
 const activityData = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const { company_id } = req.user;
 
 
 
-
-    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const nonProductiveWebsiteData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
+    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const nonProductiveWebsiteData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
 
     const periods = productiveAppsData.map((item) => item.period);
     // Transform data for seriesData

@@ -16,6 +16,11 @@ import teamStructure from './admin/structureRoutes.js';
 import chartRouter from './admin/chartRoutes.js';
 import dashboardDataRouter from './admin/dashboardRoutes.js';
 import compareReportRouter from './admin/compareReportRoutes.js';
+import aiRoutes from './admin/aiRoutes.js';
+import exportReportRoutes from './admin/exportReportRoutes.js';
+
+
+import cronFunctions from '../cron/cronFunctions.js'
 
 const router = express.Router();
 
@@ -25,6 +30,9 @@ router.get('/', (req, res) => {
         success: true,
     });
 });
+
+// testing route
+router.get('/test', cronFunctions.sendEmailWithReports);
 router.use('/auth', authRouter);
 router.use('/admin/dept', deptRouter);
 router.use('/admin/desig', desigRouter);
@@ -37,11 +45,14 @@ router.use('/admin/settings', settingRouter);
 router.use('/admin/rolePermission', rolePermissionRouter);
 router.use('/admin/workReports', reportRouter);
 router.use('/admin/teamTimeLog', teamTimeLogRouter);
+router.use('/admin/exportReports', exportReportRoutes);
+
 // router.use('/admin/dashboard',dashboardRoutes)
 router.use('/client/reports', userReportRouter);
 router.use('/admin/tree', teamStructure);
 router.use('/charts', chartRouter);
 router.use('/dashboard', dashboardDataRouter);
 router.use('/admin/compare',compareReportRouter );
+router.use('/admin/ai',aiRoutes)
 
 export default router;

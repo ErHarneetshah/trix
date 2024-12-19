@@ -6,29 +6,27 @@ import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.j
 // router.get('/productiveApps',chartController.productiveChart);
 
 //ROUTER FOR TOP APPS CHART DATA
-router.get('/topApps', chartController.topApplicationChart);
+router.get('/topApps', authMiddleware,chartController.topApplicationChart);
 
 //ROUTER FOR TOP WEBSITE CHART DATA
-router.get('/topWebsites', chartController.topWebsiteChart);
+router.get('/topWebsites', authMiddleware,chartController.topWebsiteChart);
 
-router.get('/productiveApps', chartController.productiveAppsChart);
-router.get('/productiveWebsites', chartController.productiveWebsiteChart);
-router.get('/nonProductiveApps', chartController.nonProductiveAppsChart);
-router.get('/nonProductiveWebsites', chartController.NonProductiveWebsiteChart);
+router.get('/productiveApps', authMiddleware,chartController.productiveAppsChart);
+router.get('/productiveWebsites',authMiddleware, chartController.productiveWebsiteChart);
+router.get('/nonProductiveApps', authMiddleware,chartController.nonProductiveAppsChart);
+router.get('/nonProductiveWebsites', authMiddleware,chartController.NonProductiveWebsiteChart);
 
 //ROUTE FOR PRODUCTIVE DATA LIKE PRODUCTIVE WEBSITE AND PRODUCTIVE APPS
-router.get('/productiveData', chartController.productiveAppsAndproductiveWebsites);
+router.get('/productiveData',authMiddleware, chartController.productiveAppsAndproductiveWebsites);
 
 //ROUTE FOR PRODUCTIVE AND NON PRODUCTIVE WEBSITE CHART DATA
-router.get('/proAndNonProWebsiteData', chartController.productiveWebsiteAndNonproductiveWebsites);
+router.get('/proAndNonProWebsiteData', authMiddleware,chartController.productiveWebsiteAndNonproductiveWebsites);
 
 // ROUTE FOR PRODUCTIVE AND NON PRODUCTIVE APPS CHART DATA
-router.get('/proAndNonProAppsData', chartController.productiveAppAndNonproductiveApps);
+router.get('/proAndNonProAppsData',authMiddleware, chartController.productiveAppAndNonproductiveApps);
 
 //ROUTER FOR ACTIVITY TRENDS FOR ALL ACTIVITY
-
-
-router.get('/activityData', chartController.activityData);
+router.get('/activityData', authMiddleware,chartController.activityData);
 
 router.get('/singleUserProductiveAppData', authMiddleware, chartController.singleUserProductiveAppData);//fixing this
 router.get('/singleUserNonProductiveAppData', authMiddleware, chartController.singleUserNonProductiveAppData);
@@ -37,13 +35,6 @@ router.get('/singleUserNonProductiveWebsiteData', authMiddleware, chartControlle
 
 router.get('/singleUserProductiveAppAndNonproductiveApps',authMiddleware, chartController.singleUserProductiveAppAndNonproductiveApps);
 router.get('/singleUserProductiveWebsitesAndNonproductiveWebsites',authMiddleware, chartController.singleUserProductiveWebsitesAndNonproductiveWebsites);
-
-
-
-
-
-
-
 
 
 

@@ -10,7 +10,7 @@ import designation from '../models/designationModel.js';
 import { Device } from '../models/device.js';
 import emailGateway from '../models/emailGatewayModel.js';
 import { ImageUpload } from '../models/ImageUpload.js';
-import module from '../models/moduleModel.js';
+import app_modules from '../models/moduleModel.js';
 import { Notification } from '../models/Notification.js';
 import rolePermission from '../models/rolePermissionModel.js';
 import { ProductiveApp } from '../models/ProductiveApp.js';
@@ -21,22 +21,23 @@ import { UserHistory } from '../models/UserHistory.js';
 import userSetting from '../models/userSettingModel.js';
 import workReports from '../models/workReportsModel.js';
 import shift from '../models/shiftModel.js';
+import reportSettings from "../models/reportSettingsModel.js";
+import languageDropdown from "../models/languageModel.js";
+import languageSettings from "../models/languageSettingsModel.js";
+import exportReports from "../models/exportReportsModel.js";
 
 (async () => {
   try {
-    // Log database connection status
     console.log('Initializing database connection...');
 
-    // Synchronize models with the database
-    const forceSync = process.argv.includes('--force'); // Use `--force` argument to drop and recreate tables
+    const forceSync = process.argv.includes('--force');
     console.log(`Synchronizing models${forceSync ? ' with force' : ''}...`);
-    await sequelize.sync({ force: forceSync });
+    await sequelize.sync({ force: forceSync, alter: true });
 
     console.log(`Models synchronized successfully${forceSync ? ' (forced)' : ''}.`);
   } catch (error) {
     console.error('Error synchronizing models:', error);
   } finally {
-    // Close the database connection
     await sequelize.close();
     console.log('Database connection closed.');
   }

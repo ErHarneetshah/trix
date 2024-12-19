@@ -11,30 +11,14 @@ import User from "../../../database/models/userModel.js";
 class teamController {
   getAllTeam = async (req, res) => {
     try {
+      // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-
-      let where = {};
-      let search = [];
-
       let searchable = ["name", "$department.name$", "$shift.name$"];
-
-      if (searchParam) {
-        searchable.forEach((key) => {
-          search.push({
-            [key]: {
-              [Op.substring]: searchParam,
-            },
-          });
-        });
-
-        where = {
-          [Op.or]: search,
-        };
-      }
-
+      let where = await helper.searchCondition(searchParam, searchable);
       where.company_id = req.user.company_id;
+      // ___________-----------------------------------------------_______________
 
       const alldata = await team.findAndCountAll({
         where: where,
@@ -69,6 +53,29 @@ class teamController {
       const alldata = await team.findAll({
         where: { status: true, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt", "status", "departmentId", "shiftId"] },
+      });
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getTeamUserDropdown = async (req, res) => {
+    try {
+      let {id} = req.body;
+      const alldata = await User.findAll({
+        where: { status: true, company_id: req.user.company_id, teamId: id},
+        attributes: ["id", "fullname"],
+        include: [
+          {
+            model: team,
+            as: "team",
+            required: true,
+            attributes: []
+          }
+        ]
       });
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
@@ -206,22 +213,21 @@ class teamController {
         if (alreadySameTeam) return helper.success(res, variables.Success, "Team Re-Updated Successfully!");
       }
 
-        if (updateFields.departmentId) {
-          const existingDept = await department.findOne({
-            where: { id: updateFields.departmentId, company_id: req.user.company_id },
-            transaction: dbTransaction,
-          });
-          if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists in your company data");
-        }
+      if (updateFields.departmentId) {
+        const existingDept = await department.findOne({
+          where: { id: updateFields.departmentId, company_id: req.user.company_id },
+          transaction: dbTransaction,
+        });
+        if (!existingDept) return helper.failed(res, variables.ValidationError, "Department does not exists in your company data");
+      }
 
-        if (updateFields.shiftId) {
-          const existingShift = await shift.findOne({
-            where: { id: updateFields.shiftId, company_id: req.user.company_id },
-            transaction: dbTransaction,
-          });
-          if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in your company data");
-        }
-      
+      if (updateFields.shiftId) {
+        const existingShift = await shift.findOne({
+          where: { id: updateFields.shiftId, company_id: req.user.company_id },
+          transaction: dbTransaction,
+        });
+        if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in your company data");
+      }
 
       const [updatedRows] = await team.update(updateFields, {
         where: { id: id, company_id: req.user.company_id },
