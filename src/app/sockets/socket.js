@@ -1,4 +1,7 @@
-import { getShiftData, verifyToken } from "../../utils/validations/socketValidation.js";
+import {
+  getShiftData,
+  verifyToken,
+} from "../../utils/validations/socketValidation.js";
 import { Notification } from "../../database/models/Notification.js";
 import { UserHistory } from "../../database/models/UserHistory.js";
 import User from "../../database/models/userModel.js";
@@ -35,14 +38,11 @@ const userData = async (id) => {
 
   // Fetch productive and non-productive app data
   const productiveAndNonProductiveData =
-  await singleUserProductiveAppAndNonproductiveApps(id, today);
+    await singleUserProductiveAppAndNonproductiveApps(id, today);
 
-// Fetch productive and non-productive website data
-const productiveAndNonProductiveWebData =
-  await singleUserProductiveWebsitesAndNonproductiveWebsites(
-    id,
-    today
-  );
+  // Fetch productive and non-productive website data
+  const productiveAndNonProductiveWebData =
+    await singleUserProductiveWebsitesAndNonproductiveWebsites(id, today);
 
   if (!user) {
     return socket.emit("error", {
@@ -58,7 +58,8 @@ const productiveAndNonProductiveWebData =
       userHistories,
       appHistories,
       productiveAndNonProductiveData: productiveAndNonProductiveData || [],
-      productiveAndNonProductiveWebData:productiveAndNonProductiveWebData || [],
+      productiveAndNonProductiveWebData:
+        productiveAndNonProductiveWebData || [],
     },
   };
   return response;
@@ -87,12 +88,11 @@ const setupSocketIO = (io) => {
 
   // Connection event:
   io.on("connection", async (socket) => {
-    
     socket.join(`Admin_${socket.user.company_id}`);
     if (socket.user.isAdmin) {
       console.log(`Admin ID ${socket.user.userId} connected `);
       let userData = await User.findOne({ where: { id: socket.user.userId } });
-      userData.socket_id = socket.id
+      userData.socket_id = socket.id;
       userData.currentStatus = 1;
       userData.save();
       handleAdminSocket(socket, io);
@@ -106,8 +106,8 @@ const setupSocketIO = (io) => {
       let currentHours = now.getHours();
       let currentMinutes = now.getMinutes();
 
-      let shiftData = await getShiftData(user.teamId); 
-      
+      let shiftData = await getShiftData(user.teamId);
+
       let [shiftHours, shiftMinutes] = shiftData.start_time
         .split(":")
         .map(Number);
@@ -132,21 +132,44 @@ const setupSocketIO = (io) => {
         },
         order: [["createdAt", "DESC"]],
       });
+      // if (timeLog) {
+      //   console.log(timeLog.dataValues);
+      // }
+
       let lateComing = 0;
       let lateComingDuration = "00:00";
       let lateMinutes = 0;
 
-      if (timeLog && timeLog.logged_out_time != null) {
-        const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
-        let logoutTime = new Date();
-        logoutTime.setHours(hours, mins, 0, 0);
-        let spareMinutes = Math.floor((now - logoutTime) / 60000);
-        timeLog.spare_time =
-          parseInt(timeLog.spare_time) + parseInt(spareMinutes);
+      // if (timeLog && timeLog.logged_out_time == null) {
+      //   const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
+      //   let logoutTime = new Date();
+      //   logoutTime.setHours(hours, mins, 0, 0);
+      //   let spareMinutes = Math.floor((now - logoutTime) / 60000);
+      //   timeLog.spare_time =
+      //     parseInt(timeLog.spare_time) + parseInt(spareMinutes);
+      //   timeLog.logged_out_time = null;
+      //   timeLog.early_going= 0;
+      //   timeLog.save();
+      //   user.socket_id = socket.id
+      //   user.currentStatus = 1;
+      //   user.save();
+      if (timeLog) {
+        if (timeLog.logged_out_time != null) {
+          console.log("Time loh hai and logout null nhi hai");
+          const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
+          let logoutTime = new Date();
+          logoutTime.setHours(hours, mins, 0, 0);
+          let spareMinutes = Math.floor((now - logoutTime) / 60000);
+          timeLog.spare_time =
+            parseInt(timeLog.spare_time) + parseInt(spareMinutes);
+        } else {
+          console.log("Time loh hai and logout null hai");
+          timeLog.spare_time = parseInt(timeLog.spare_time || 0);
+        }
         timeLog.logged_out_time = null;
-        timeLog.early_going= 0;
+        timeLog.early_going = 0;
         timeLog.save();
-        user.socket_id = socket.id
+        user.socket_id = socket.id;
         user.currentStatus = 1;
         user.save();
       } else {
@@ -163,7 +186,7 @@ const setupSocketIO = (io) => {
         }
         const [lateHours, lateMins] = lateComingDuration.split(":").map(Number);
         lateMinutes = lateHours * 60 + lateMins;
-        user.socket_id = socket.id
+        user.socket_id = socket.id;
         user.currentStatus = 1;
         user.save();
 
@@ -435,9 +458,9 @@ const getUserReport = async (data, io, socket) => {
       },
     };
     // console.log(response);
-    
+
     return response;
-  } catch (error) {    
+  } catch (error) {
     console.error("Error getting user report:", error.message);
     return { error: "Error getting user report" };
   }
@@ -534,7 +557,7 @@ const singleUserNonProductiveAppData = async ({ userId, date }) => {
           ah.appName NOT IN (
               SELECT appName
               FROM productive_apps
-              WHERE company_id = :companyId
+              WHERE company_id = :companyId and department_id=:department_id
           )
           AND DATE(ah.createdAt) = :date
           AND ah.userId = :userId
@@ -545,8 +568,9 @@ const singleUserNonProductiveAppData = async ({ userId, date }) => {
           hour;
     `;
     let companyId = userInfo.company_id;
+    let department_id = userInfo.departmentId;
     const results = await Model.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, companyId, department_id },
       type: Sequelize.QueryTypes.SELECT,
     });
 
@@ -582,7 +606,7 @@ const singleUserProductiveAppData = async ({ userId, date }) => {
       FROM
           app_histories AS ah
       INNER JOIN
-          productive_apps ap ON ap.app_name = ah.appName
+          productive_apps ap ON ap.app_name = ah.appName and ap.department_id=:department_id
       WHERE
           DATE(ah.createdAt) = :date
           AND ah.userId = :userId
@@ -593,8 +617,10 @@ const singleUserProductiveAppData = async ({ userId, date }) => {
           hour;
     `;
     let companyId = userInfo.company_id;
+    let department_id = userInfo.departmentId;
+
     const results = await Model.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, companyId, department_id },
       type: Sequelize.QueryTypes.SELECT,
     });
 
@@ -713,7 +739,7 @@ const singleUserNonProductiveWebsiteData = async ({ userId, date }) => {
     DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
     FROM user_histories AS uh 
     WHERE uh.website_name NOT IN (
-      SELECT website_name FROM productive_websites WHERE company_id=:companyId
+      SELECT website_name FROM productive_websites WHERE company_id=:companyId and department_id=:department_id
     )
     AND uh.userId = :userId
     AND uh.company_id = :companyId
@@ -721,9 +747,12 @@ const singleUserNonProductiveWebsiteData = async ({ userId, date }) => {
     GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
     ORDER BY hour;
     `;
+
     let companyId = userInfo.company_id;
+    let department_id = userInfo.departmentId;
+
     const results = await Model.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, companyId, department_id },
       type: Sequelize.QueryTypes.SELECT,
     });
 
@@ -787,7 +816,7 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
         DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
       FROM user_histories AS uh 
       INNER JOIN productive_websites AS pw 
-        ON pw.website_name = uh.website_name 
+        ON pw.website_name = uh.website_name  and pw.department_id=:department_id
       WHERE 
         uh.userId = :userId 
         AND uh.company_id = :companyId 
@@ -795,9 +824,11 @@ const singleUserProductiveWebsiteData = async ({ userId, date }) => {
       GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
       ORDER BY hour;
     `;
+
+    let department_id = userInfo.departmentId;
     let companyId = userInfo.company_id;
     const results = await Model.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, companyId, department_id },
       type: Sequelize.QueryTypes.SELECT,
     });
 
@@ -883,10 +914,6 @@ export const adminController = {
     }
   },
 };
-
-
-
-
 
 ////////////////////////-------- USER SOCKET FUNCTION ------------/////////////////////////////////////
 
@@ -1002,7 +1029,7 @@ const handleUserSocket = async (socket, io) => {
             userId,
             date: today,
             company_id,
-            content: `data:image/png;base64,${image.data}`
+            content: `data:image/png;base64,${image.data}`,
           })
         )
       );
@@ -1086,7 +1113,7 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("disconnect", async () => {
     console.log(`User ID ${socket.user.userId} disconnected`);
-    
+
     let userData = await User.findOne({ where: { id: socket.user.userId } });
     let time_data = await TimeLog.findOne({
       where: { user_id: socket.user.userId },
@@ -1098,38 +1125,42 @@ const handleUserSocket = async (socket, io) => {
     await userData.save();
 
     if (time_data) {
-        let loggedOutTime = new Date();
-        let logoutHours = loggedOutTime.getHours();
-        let logoutMinutes = loggedOutTime.getMinutes();
+      let loggedOutTime = new Date();
+      let logoutHours = loggedOutTime.getHours();
+      let logoutMinutes = loggedOutTime.getMinutes();
 
-        let logoutTimeInMinutes = (logoutHours * 60) + logoutMinutes;
+      let logoutTimeInMinutes = logoutHours * 60 + logoutMinutes;
 
-        let shiftData = await getShiftData(userData.teamId);
-        let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
+      let shiftData = await getShiftData(userData.teamId);
+      let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
 
-        let shiftEndTimeInMinutes = (endHours * 60) + endMinutes;
+      let shiftEndTimeInMinutes = endHours * 60 + endMinutes;
 
-        let [loginHours, loginMinutes] = time_data.logged_in_time.split(":").map(Number);
-        let loginTimeInMinutes = (loginHours * 60) + loginMinutes;
+      let [loginHours, loginMinutes] = time_data.logged_in_time
+        .split(":")
+        .map(Number);
+      let loginTimeInMinutes = loginHours * 60 + loginMinutes;
 
-        let duration = logoutTimeInMinutes - loginTimeInMinutes;
-        let activeTime =
-          parseInt(duration) -
-          parseInt(time_data.spare_time || 0) -
-          parseInt(time_data.idle_time || 0);
+      let duration = logoutTimeInMinutes - loginTimeInMinutes;
+      let activeTime =
+        parseInt(duration) -
+        parseInt(time_data.spare_time || 0) -
+        parseInt(time_data.idle_time || 0);
 
-        let earlyGoing = logoutTimeInMinutes < shiftEndTimeInMinutes ? 1 : 0;
+      let earlyGoing = logoutTimeInMinutes < shiftEndTimeInMinutes ? 1 : 0;
 
-        let formattedLogoutTime = `${String(logoutHours).padStart(2, "0")}:${String(logoutMinutes).padStart(2, "0")}`;
+      let formattedLogoutTime = `${String(logoutHours).padStart(
+        2,
+        "0"
+      )}:${String(logoutMinutes).padStart(2, "0")}`;
 
-        await time_data.update({
-          logged_out_time: formattedLogoutTime,
-          active_time: activeTime,
-          early_going: earlyGoing,
-        });
+      await time_data.update({
+        logged_out_time: formattedLogoutTime,
+        active_time: activeTime,
+        early_going: earlyGoing,
+      });
     }
-});
-
+  });
 };
 
 // User specific function:
