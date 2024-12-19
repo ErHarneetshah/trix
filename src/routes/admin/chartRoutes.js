@@ -1,7 +1,8 @@
 import express from "express";
 const router = express.Router();
 import chartController from "../../app/controllers/admin/Charts/chartController.js";
-
+import authMiddleware from "../../app/middlewares/authMiddleware.js";
+import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.js";
 // router.get('/productiveApps',chartController.productiveChart);
 
 //ROUTER FOR TOP APPS CHART DATA
@@ -29,13 +30,13 @@ router.get('/proAndNonProAppsData', chartController.productiveAppAndNonproductiv
 
 router.get('/activityData', chartController.activityData);
 
-router.get('/singleUserProductiveAppData', chartController.singleUserProductiveAppData);
-router.get('/singleUserNonProductiveAppData', chartController.singleUserNonProductiveAppData);
-router.get('/singleUserProductiveWebsiteData', chartController.singleUserProductiveWebsiteData);
-router.get('/singleUserNonProductiveWebsiteData', chartController.singleUserNonProductiveWebsiteData);
+router.get('/singleUserProductiveAppData', authMiddleware, chartController.singleUserProductiveAppData);//fixing this
+router.get('/singleUserNonProductiveAppData', authMiddleware, chartController.singleUserNonProductiveAppData);
+router.get('/singleUserProductiveWebsiteData', authMiddleware, chartController.singleUserProductiveWebsiteData); //tested
+router.get('/singleUserNonProductiveWebsiteData', authMiddleware, chartController.singleUserNonProductiveWebsiteData);//tested 
 
-router.get('/singleUserProductiveAppAndNonproductiveApps', chartController.singleUserProductiveAppAndNonproductiveApps);
-router.get('/singleUserProductiveWebsitesAndNonproductiveWebsites', chartController.singleUserProductiveWebsitesAndNonproductiveWebsites);
+router.get('/singleUserProductiveAppAndNonproductiveApps',authMiddleware, chartController.singleUserProductiveAppAndNonproductiveApps);
+router.get('/singleUserProductiveWebsitesAndNonproductiveWebsites',authMiddleware, chartController.singleUserProductiveWebsitesAndNonproductiveWebsites);
 
 
 

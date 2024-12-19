@@ -1,6 +1,6 @@
 import helper from "../../../../utils/services/helper.js";
 import sequelize from "../../../../database/queries/dbConnection.js";
-import { Sequelize,Op, fn, col, where, literal  } from "sequelize";
+import { Sequelize, Op, fn, col, where, literal } from "sequelize";
 import variables from "../../../config/variableConfig.js";
 import User from "../../../../database/models/userModel.js";
 import TimeLog from "../../../../database/models/timeLogsModel.js";
@@ -89,7 +89,7 @@ const topFiveUnProductiveAppsUsers = async (req, res, next) => {
       res,
       variables.Success,
       "Top Non Productive Users Fetched Successfully",
-      
+
       results
     );
   } catch (error) {
@@ -355,37 +355,44 @@ const getTopFiveOfflineLoggedUsers = async (req, res, next) => {
   }
 };
 
-const getCompanyStats = async (companyId) => {
+const getCompanyStats = async (companyId, date) => {
   try {
-    const currentDate = new Date();
+
+    const formattedDate = new Date(date).toISOString().split('T')[0]; // Format as 'YYYY-MM-DD'
 
     const totalEmployees = await User.count({
-      where: { company_id: companyId },
+      where: {
+        company_id: companyId,
+        status: 1,
+        [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
+      },
     });
-
     const totalWorkingEmployees = await TimeLog.count({
       where: {
         company_id: companyId,
         logged_out_time: null,
-        createdAt: { [Op.gte]: fn('DATE', fn('NOW')) },
+        [Op.and]: Sequelize.literal(`DATE(createdAt) = '${formattedDate}'`),
       },
+
     });
 
     const totalNotWorkingEmployees = await TimeLog.count({
       where: {
         company_id: companyId,
         logged_out_time: { [Op.ne]: null },
-        createdAt: { [Op.gte]: fn('DATE', fn('NOW')) },
+        [Op.and]: Sequelize.literal(`DATE(createdAt) = '${formattedDate}'`),
       },
     });
 
     const absentUsers = await User.count({
       where: {
         company_id: companyId,
+        status: 1,
+        [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
         id: {
           [Op.notIn]: literal(`(
             SELECT user_id FROM timelogs 
-            WHERE DATE(createdAt) = CURDATE() AND company_id = ${companyId}
+            WHERE DATE(createdAt) = '${formattedDate}' AND company_id = ${companyId}
           )`),
         },
       },
@@ -395,24 +402,36 @@ const getCompanyStats = async (companyId) => {
       where: {
         company_id: companyId,
         late_coming_duration: { [Op.gt]: 0 },
-        createdAt: { [Op.gte]: fn('DATE', fn('NOW')) },
+        [Op.and]: Sequelize.literal(`DATE(createdAt) = '${formattedDate}'`),
       },
     });
 
     const totalActivated = await User.count({
-      where: { company_id: companyId },
+      where: {
+        company_id: companyId,
+        [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
+      },
+
     });
+
 
     const totalSlackingEmployees = await TimeLog.count({
       where: {
         company_id: companyId,
         idle_time: { [Op.gt]: 0 },
-        createdAt: { [Op.gte]: fn('DATE', fn('NOW')) },
+        [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
+        idle_time: {
+          [Op.gt]: Sequelize.literal("(0.4 * (active_time + spare_time + idle_time))"),
+        },
       },
     });
 
     const totalDectivated = await User.count({
-      where: { company_id: companyId, status: 0 },
+      where: {
+        company_id: companyId, status: 0,
+        [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
+
+      },
     });
 
     return {
@@ -443,11 +462,18 @@ const getCompanyStats = async (companyId) => {
 const getDashbaordData = async (req, res, next) => {
 
   try {
-    const companyStats = await getCompanyStats(101);
+    const { company_id } = req.user;
+    const { date } = req.query;
+
+    // Check if the date is valid
+    if (!date || isNaN(new Date(date).getTime())) {
+      return res.status(400).json({ error: 'Invalid or missing date parameter.' });
+    }
+    const companyStats = await getCompanyStats(company_id, date);
     return helper.success(res, variables.Success, "Data Fetched Successfully", companyStats);
 
   } catch (error) {
-    return helper.failed(res, 400, "Invalid data format", []);
+    return helper.failed(res, 400, error.message, []);
 
   }
 }
@@ -455,4 +481,4 @@ const getDashbaordData = async (req, res, next) => {
 
 
 
-export default { topFiveProductiveAppsUsers, topFiveUnProductiveAppsUsers, topFiveEffectiveUsers,topFiveAbsentUsers,topFiveLateComingUsers,getTopFiveOfflineLoggedUsers,getDashbaordData }
+export default { topFiveProductiveAppsUsers, topFiveUnProductiveAppsUsers, topFiveEffectiveUsers, topFiveAbsentUsers, topFiveLateComingUsers, getTopFiveOfflineLoggedUsers, getDashbaordData }

@@ -15,6 +15,7 @@ import userReportRouter from './client/dailyReportRoutes.js';
 import teamStructure from './admin/structureRoutes.js';
 import chartRouter from './admin/chartRoutes.js';
 import dashboardDataRouter from './admin/dashboardRoutes.js';
+import compareReportRouter from './admin/compareReportRoutes.js';
 
 const router = express.Router();
 
@@ -41,5 +42,6 @@ router.use('/client/reports', userReportRouter);
 router.use('/admin/tree', teamStructure);
 router.use('/charts', chartRouter);
 router.use('/dashboard', dashboardDataRouter);
+router.use('/admin/compare',compareReportRouter );
 
 export default router;
