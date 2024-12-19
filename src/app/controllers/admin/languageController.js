@@ -77,7 +77,7 @@ const getThemeStatus = async (req, res) => {
                 {
                     model: languageDropdown,
                     as: "language",
-                    attributes: ["language"],
+                    attributes: ["language", "image"],
                 },
             ]
         });

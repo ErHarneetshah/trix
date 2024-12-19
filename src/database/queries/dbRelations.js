@@ -27,39 +27,39 @@ User.hasMany(UserHistory, { foreignKey: "userId", as: "web" });
 User.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "app" });
 
 // Department relationships here
-department.belongsTo(User, { as: "reportingManager", foreignKey: "reportingManagerId" });
-department.hasMany(team, { as: 'department', foreignKey: 'departmentId' });
-department.belongsTo(department, { as: "parentDept", foreignKey: "parentDeptId" });
+// department.belongsTo(User, { as: "reportingManager", foreignKey: "reportingManagerId" });
+// department.hasMany(team, { as: 'department', foreignKey: 'departmentId' });
+// department.belongsTo(department, { as: "parentDept", foreignKey: "parentDeptId" });
 
-// Work Reports relationships here
-workReports.belongsTo(User, { as: "user", foreignKey: "user_id" });
+// // Work Reports relationships here
+// workReports.belongsTo(User, { as: "user", foreignKey: "user_id" });
 
-// Time Log relationships here
-TimeLog.belongsTo(User, { as: "user", foreignKey: "user_id" });
-TimeLog.belongsTo(shift, { as: "shift", foreignKey: "shift_id" });
-TimeLog.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "appHistory" });
-
-
-// Role Permissions relationships here
-rolePermission.belongsTo(role, { as: "role", foreignKey: "roleId" });
-BlockedWebsites.belongsTo(department, { as: "department", foreignKey: "departmentId" });
-ProductiveApp.belongsTo(department, { as: "department", foreignKey: "department_id" });
-ProductiveWebsite.belongsTo(department, { as: "department", foreignKey: "department_id" });
-
-// Team Relations here
-team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
-team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
-team.hasMany(User, { as: 'children', foreignKey: 'teamId' });
-
-Device.belongsTo(User, { foreignKey: "user_id" });  
-User.hasMany(Device, { foreignKey: "user_id" });
+// // Time Log relationships here
+// TimeLog.belongsTo(User, { as: "user", foreignKey: "user_id" });
+// TimeLog.belongsTo(shift, { as: "shift", foreignKey: "shift_id" });
+// TimeLog.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "appHistory" });
 
 
-User.belongsTo(department, { foreignKey: "departmentId" });
-User.belongsTo(designation, { foreignKey: "designationId" });
+// // Role Permissions relationships here
+// rolePermission.belongsTo(role, { as: "role", foreignKey: "roleId" });
+// BlockedWebsites.belongsTo(department, { as: "department", foreignKey: "departmentId" });
+// ProductiveApp.belongsTo(department, { as: "department", foreignKey: "department_id" });
+// ProductiveWebsite.belongsTo(department, { as: "department", foreignKey: "department_id" });
 
-User.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "productivity" });
-languageSettings.belongsTo(languageDropdown, { as: "language", foreignKey: "language_id" });
+// // Team Relations here
+// team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
+// team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
+// team.hasMany(User, { as: 'children', foreignKey: 'teamId' });
+
+// Device.belongsTo(User, { foreignKey: "user_id" });  
+// User.hasMany(Device, { foreignKey: "user_id" });
+
+
+// User.belongsTo(department, { foreignKey: "departmentId" });
+// User.belongsTo(designation, { foreignKey: "designationId" });
+
+// User.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "productivity" });
+// languageSettings.belongsTo(languageDropdown, { as: "language", foreignKey: "language_id" });
 
 
 export default {}
