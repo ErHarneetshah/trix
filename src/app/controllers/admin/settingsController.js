@@ -304,7 +304,7 @@ const getReportStatus = async (req, res) => {
   }
 
   const statusMapping = { 1: "Monthly", 2: "Weekly", 3: "Daily" };
-  const statusType = statusMapping[getStatus.status] || "unknown";
+  const statusType = getStatus ? statusMapping[getStatus.status] : "unknown";
   return helper.success(res, variables.Success, "Report settings retrieved successfully.", getStatus, { statusType });
 };
 
