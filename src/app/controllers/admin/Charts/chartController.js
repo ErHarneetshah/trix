@@ -191,7 +191,6 @@ const productiveChart = async (req, res) => {
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
 
       valueArray.push({
@@ -219,12 +218,13 @@ const productiveChart = async (req, res) => {
 //   ];
 const topApplicationChart = async (req, res, next) => {
   const { filterType } = req.query;
+  const { company_id } = req.user;
   let dateCondition = "";
 
   if (filterType === "weekly") {
-    dateCondition = "WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+    dateCondition = `WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) and ah.company_id=${company_id}`;
   } else if (filterType === "monthly") {
-    dateCondition = "WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)";
+    dateCondition = `WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) and ah.company_id=${company_id}`;
   }
 
   const query = `
@@ -241,7 +241,6 @@ const topApplicationChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log,
     });
 
     const pieChartData = results.map(result => ({
@@ -255,22 +254,17 @@ const topApplicationChart = async (req, res, next) => {
   }
 };
 
-//*top websites chart 
-// const pieChartData = [
-//   { name: "Team A", value: 24.9 },
-//   { name: "Team B", value: 31.1 },
-//   { name: "Team C", value: 7.3 },
-//   { name: "Team D", value: 24.3 },
-//   { name: "Team E", value: 12.4 },
-//   ];
+
 const topWebsiteChart = async (req, res, next) => {
   const { filterType } = req.query;
+  const { company_id } = req.user;
+
   let dateCondition = "";
 
   if (filterType === "weekly") {
-    dateCondition = "WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+    dateCondition = `WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) and uh.company_id=${company_id}`;
   } else if (filterType === "monthly") {
-    dateCondition = "WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)";
+    dateCondition = `WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) and uh.company_id=${company_id}`;
   }
 
   const query = `
@@ -287,7 +281,8 @@ const topWebsiteChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log,
+      logging: console.log
+
     });
 
     const pieChartData = results.map(result => ({
@@ -307,13 +302,16 @@ const topWebsiteChart = async (req, res, next) => {
 
 const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
-    if (type === 'api') {
-      ({ filterType, dateOption } = req.query); // Destructure from req.query
+
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
+      ({ filterType, dateOption } = req.query);
+
     } else {
-      ({ filterType, dateOption } = obj); // Destructure from obj
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -354,8 +352,8 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
           INNER JOIN 
             productive_apps AS ap 
           ON 
-            ap.app_name = ah.appName
-          WHERE DATE(ah.createdAt) = :date
+            ap.app_name = ah.appName and ap.company_id=:companyId
+          WHERE ah.company_id=:companyId and DATE(ah.createdAt) = :date 
         `;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
@@ -368,8 +366,8 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
           INNER JOIN 
             productive_apps AS ap 
           ON 
-            ap.app_name = ah.appName
-          WHERE DATE(ah.createdAt) BETWEEN :start AND :end
+            ap.app_name = ah.appName and ap.company_id=:companyId
+          WHERE ah.company_id=:companyId and DATE(ah.createdAt) BETWEEN :start AND :end 
         `;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
@@ -383,8 +381,8 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
           INNER JOIN 
             productive_apps AS ap 
           ON 
-            ap.app_name = ah.appName
-          WHERE MONTH(ah.createdAt) = :month
+            ap.app_name = ah.appName and ap.company_id=:companyId
+          WHERE ah.company_id=:companyId and MONTH(ah.createdAt) = :month
           AND YEAR(ah.createdAt) = :year
         `;
       }
@@ -392,7 +390,7 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
+        logging: console.log
       });
 
       valueArray.push({
@@ -420,14 +418,15 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
 
 const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
-
-    if (type === 'api') {
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
       ({ filterType, dateOption } = req.query);
+
     } else {
-      ({ filterType, dateOption } = obj);
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -459,20 +458,20 @@ const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) =>
       if (filterType === 'weekly') {
         queryParams.date = item.date;
         query = `
-        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites) and DATE(uh.createdAt)=:date
+        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and DATE(uh.createdAt)=:date
         `;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
         queryParams.end = item.end;
         query = `
-        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites) and DATE(uh.createdAt) BETWEEN :start AND :end
+        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId  and DATE(uh.createdAt) BETWEEN :start AND :end
         `;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
         queryParams.month = month;
         queryParams.year = year;
         query = `
-        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites) and MONTH(uh.createdAt)= :month
+        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites where company_id=:companyId) and uh.company_id =:companyId and  MONTH(uh.createdAt)= :month
           AND YEAR(uh.createdAt) = :year
         `;
       }
@@ -480,7 +479,6 @@ const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) =>
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
       valueArray.push({
         period: item.day || item.start || item.month,
@@ -508,14 +506,15 @@ const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) =>
 
 const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
+      ({ filterType, dateOption } = req.query);
 
-    if (type === 'api') {
-      ({ filterType, dateOption } = req.query); // Destructure from req.query
     } else {
-      ({ filterType, dateOption } = obj); // Destructure from obj
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -541,27 +540,26 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
     }
 
     const valueArray = [];
-
     for (const item of dateInstances) {
       let query;
       if (filterType === 'weekly') {
         queryParams.date = item.date;
         query = `
         SELECT ah.appName, 
-    COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps) and DATE(ah.createdAt) = :date`;
+    COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps where company_id=:companyId) and  ah.company_id=:companyId and DATE(ah.createdAt) = :date`;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
         queryParams.end = item.end;
         query = `
         SELECT ah.appName, 
-        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps) and DATE(ah.createdAt) BETWEEN :start AND :end`;
+        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps where company_id=:companyId) and ah.company_id=:companyId and DATE(ah.createdAt) BETWEEN :start AND :end`;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
         queryParams.month = month;
         queryParams.year = year;
         query = `
         SELECT ah.appName, 
-        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps) and MONTH(ah.createdAt) = :month
+        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps where company_id=:companyId) and ah.company_id=:companyId and MONTH(ah.createdAt) = :month
           AND YEAR(ah.createdAt) = :year
         `;
       }
@@ -570,7 +568,7 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
+        logging:console.log
       });
 
       // Push the result into the value array
@@ -603,14 +601,15 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
 
 const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
+      ({ filterType, dateOption } = req.query);
 
-    if (type === 'api') {
-      ({ filterType, dateOption } = req.query); // Destructure from req.query
     } else {
-      ({ filterType, dateOption } = obj); // Destructure from obj
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -641,18 +640,18 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
       let query;
       if (filterType === 'weekly') {
         queryParams.date = item.date;
-        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites) and DATE(uh.createdAt)=:date
+        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and DATE(uh.createdAt)=:date
         `;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
         queryParams.end = item.end;
-        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites) and DATE(uh.createdAt) BETWEEN :start AND :end
+        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and DATE(uh.createdAt) BETWEEN :start AND :end
         `;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
         queryParams.month = month;
         queryParams.year = year;
-        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites) and MONTH(uh.createdAt)= :month
+        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and MONTH(uh.createdAt)= :month
           AND YEAR(uh.createdAt) = :year
         `;
       }
@@ -660,7 +659,6 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
       valueArray.push({
         period: item.day || item.start || item.month,
@@ -686,47 +684,17 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
 
 
 
-//function for productive apps and productive websites chart
-// const productiveAppsAndproductiveWebsites = async (req, res, next) => {
-//   try {
-//     const { filterType, dateOption } = req.query;
-
-//     const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
-//     const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-//     console.log(productiveAppsData);
-//     console.log(productiveWebsiteData);
-
-//     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
-//       return helper.failed(res, 400, "Invalid data format", []);
-//     }
-
-//     const combinedData = productiveAppsData.map(item1 => {
-//       const item2 = productiveWebsiteData.find(item => item.period === item1.period); // Match by period
-//       return {
-//         period: item1.period,
-//         productive_apps_total_time: parseFloat(item1.total_time || '0.0'),
-//         productive_websites_total_time: parseFloat(item2?.total_time || '0.0')
-//       };
-//     });
-
-//     // Success response
-//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
-//   } catch (error) {
-//     console.error("Error in productiveAppsAndproductiveWebsites:", error);
-//     return helper.failed(res, 500, "Internal Server Error", []);
-//   }
-// };
-
 const productiveAppsAndproductiveWebsites = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const {company_id}=req.user;
 
     // Fetch data for productive apps and websites
-    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
+    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
 
-    console.log(productiveAppsData);
-    console.log(productiveWebsiteData);
+    //console.log(productiveAppsData);
+    //console.log(productiveWebsiteData);
 
     // Validate data format
     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
@@ -765,10 +733,11 @@ const productiveAppsAndproductiveWebsites = async (req, res, next) => {
 const productiveWebsiteAndNonproductiveWebsites = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const { company_id } = req.user;
 
     // Fetch data for non-productive and productive websites
-    const nonProductiveWebsitesData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
+    const nonProductiveWebsitesData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption, company_id });
+    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption, company_id });
 
     // Validate data format
     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsiteData)) {
@@ -807,11 +776,13 @@ const productiveWebsiteAndNonproductiveWebsites = async (req, res, next) => {
 const productiveAppAndNonproductiveApps = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const { company_id } = req.user;
 
     // Fetch data for non-productive and productive apps
-    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
+    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption, company_id });
+    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption, company_id });
 
+    console.log(nonProductiveAppsData);
     // Validate data format
     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       return helper.failed(res, 400, "Invalid data format", []);
@@ -857,14 +828,14 @@ const transformData = (response, name) => {
 const activityData = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const { company_id } = req.user;
 
 
 
-
-    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const nonProductiveWebsiteData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
+    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const nonProductiveWebsiteData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
 
     const periods = productiveAppsData.map((item) => item.period);
     // Transform data for seriesData
@@ -887,20 +858,20 @@ const activityData = async (req, res, next) => {
 
 
 
+
+
+
+//tested(helper function)
 const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    // Extract `userId` and `date` based on the type of request
     const { userId, date } = type === 'api' ? req.query : obj;
-    const companyId = 101;
-
-    // Validate required parameters
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
     if (!userId || !date) {
       const message = "userId and date are required.";
       return type === 'api' ? helper.failed(res, 400, message) : false;
     }
 
-    // Fetch user information
-    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
     if (!userInfo) {
       const message = "User does not exist.";
       return type === 'api' ? helper.failed(res, 404, message) : false;
@@ -908,7 +879,7 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
 
     // Fetch team information
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -917,7 +888,7 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
 
     // Fetch shift information
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -932,11 +903,11 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
       FROM
           app_histories AS ah
       INNER JOIN
-          productive_apps ap ON ap.app_name = ah.appName
+          productive_apps ap ON ap.app_name = ah.appName and ap.department_id=:department_id
       WHERE
           DATE(ah.createdAt) = :date
           AND ah.userId = :userId
-          AND ah.company_id = :companyId
+          AND ah.company_id = :company_id
       GROUP BY
           DATE_FORMAT(ah.startTime, '%H:00')
       ORDER BY
@@ -945,9 +916,8 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
 
     // Execute query with replacements
     const results = await sequelize.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, company_id, department_id: departmentId },
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log
     });
 
     // Format results for pie chart data
@@ -970,12 +940,13 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
   }
 };
 
-
+//tested(helper function)
 const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
   try {
     // Extract `userId` and `date` based on the type of request
+    //console.log(req.user);
     const { userId, date } = type === 'api' ? req.query : obj;
-    const companyId = 101;
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
 
     // Validate required parameters
     if (!userId || !date) {
@@ -984,7 +955,7 @@ const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj 
     }
 
     // Fetch user information
-    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
     if (!userInfo) {
       const message = "User does not exist.";
       return type === 'api' ? helper.failed(res, 404, message) : false;
@@ -992,7 +963,7 @@ const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj 
 
     // Fetch team information
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -1001,7 +972,7 @@ const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj 
 
     // Fetch shift information
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -1017,13 +988,13 @@ FROM
     app_histories AS ah
 WHERE
     ah.appName NOT IN (
-        SELECT appName
+        SELECT app_name
         FROM productive_apps
-        WHERE company_id = :companyId
+        WHERE company_id = :company_id and department_id=:department_id
     )
  AND date(createdAt)=:date
     AND ah.userId = 2
-    AND ah.company_id = :companyId
+    AND ah.company_id = :company_id
 GROUP BY
     DATE_FORMAT(ah.startTime, '%H:00')
 ORDER BY
@@ -1032,9 +1003,8 @@ ORDER BY
 
     // Execute query with replacements
     const results = await sequelize.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, company_id, department_id: departmentId },
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log
     });
 
     // Format results for pie chart data
@@ -1058,12 +1028,11 @@ ORDER BY
 };
 
 
-
+//tested(helper function)
 const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj = {}) => {
   try {
     const { userId, date } = type === 'api' ? req.query : obj;
-    const companyId = 101; // Use environment variable for flexibility
-
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
     // Validate required parameters
     if (!userId || !date) {
       const message = "userId and date are required.";
@@ -1071,7 +1040,7 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
     }
 
     // Fetch user information
-    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
     if (!userInfo) {
       const message = "User does not exist.";
       return type === 'api' ? helper.failed(res, 404, message) : false;
@@ -1079,7 +1048,7 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
 
     // Fetch team information
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -1088,7 +1057,7 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
 
     // Fetch shift information
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -1102,10 +1071,10 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
         DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
       FROM user_histories AS uh 
       INNER JOIN productive_websites AS pw 
-        ON pw.website_name = uh.website_name 
+        ON pw.website_name = uh.website_name and pw.department_id=:department_id
       WHERE 
         uh.userId = :userId 
-        AND uh.company_id = :companyId 
+        AND uh.company_id = :company_id 
         AND DATE(uh.createdAt) = :date 
       GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
       ORDER BY hour;
@@ -1113,7 +1082,7 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
 
     // Execute query with replacements
     const results = await sequelize.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, company_id, department_id: departmentId },
       type: Sequelize.QueryTypes.SELECT,
     });
 
@@ -1132,29 +1101,27 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
     // Log error with context
     console.error("Error fetching productive website data:", {
       message: error.message,
-      date,
     });
     return type === 'api'
-      ? helper.failed(res, 500, "An error occurred while fetching data.")
+      ? helper.failed(res, 500, error.message)
       : false;
   }
 };
 
 
-
+// tested(helper function)
 const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', obj = {}) => {
   try {
     const { userId, date } = type === 'api' ? req.query : obj;
-    const companyId = 101; // Use environment variable for flexibility
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
 
-    // Validate required parameters
     if (!userId || !date) {
       const message = "userId and date are required.";
       return type === 'api' ? helper.failed(res, 400, message) : false;
     }
 
     // Fetch user information
-    const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
     if (!userInfo) {
       const message = "User does not exist.";
       return type === 'api' ? helper.failed(res, 404, message) : false;
@@ -1162,7 +1129,7 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
 
     // Fetch team information
     const teamInfo = await team.findOne({
-      where: { id: userInfo.teamId, status: 1, company_id: companyId },
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
     });
     if (!teamInfo) {
       const message = "Team is invalid or inactive.";
@@ -1171,7 +1138,7 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
 
     // Fetch shift information
     const shiftInfo = await shift.findOne({
-      where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
     });
     if (!shiftInfo) {
       const message = "Shift is invalid or inactive.";
@@ -1184,9 +1151,9 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
     DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
   FROM user_histories AS uh 
    
-  WHERE uh.website_name not in(select website_name from productive_websites where company_id=:companyId) and
+  WHERE uh.website_name not in(select website_name from productive_websites where company_id=:company_id and department_id=:department_id) and
     uh.userId = :userId
-    AND uh.company_id = :companyId
+    AND uh.company_id = :company_id
     AND DATE(uh.createdAt) = :date
   GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
   ORDER BY hour;
@@ -1194,8 +1161,9 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
 
     // Execute query with replacements
     const results = await sequelize.query(query, {
-      replacements: { date, userId, companyId },
+      replacements: { date, userId, company_id, department_id: departmentId },
       type: Sequelize.QueryTypes.SELECT,
+      // logging: console.log
     });
 
     // Format results for pie chart data
@@ -1213,57 +1181,26 @@ const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', 
     // Log error with context
     console.error("Error fetching non productive website data:", {
       message: error.message,
-      date,
     });
     return type === 'api'
-      ? helper.failed(res, 500, "An error occurred while fetching data.")
+      ? helper.failed(res, 500, error.message)
       : false;
   }
 };
 
 
-
-//function for productive apps and productive websites chart
-// const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, next) => {
-//   try {
-//     const { userId, date } = req.query;
-
-//     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date });
-//     const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date });
-
-//     console.log(nonProductiveWebsitesData);
-//     console.log(productiveWebsitesData);
-//     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {
-//       return helper.failed(res, 400, "Invalid data format", []);
-//     }
-
-//     const combinedData = nonProductiveWebsitesData.map(item1 => {
-//       const item2 = productiveWebsitesData.find(item => item.period === item1.period); // Match by period
-//       return {
-//         period: item1.name,
-//         non_productive_websites_total_time: parseFloat(item1.value || '0.0'),
-//         productive_websites_value: parseFloat(item2?.value || '0.0')
-//       };
-//     });
-
-//     // Success response
-//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
-//   } catch (error) {
-//     console.error("Error in singleUserProductiveWebsitesAndNonproductiveWebsites:", error);
-//     return helper.failed(res, 500, "Internal Server Error", []);
-//   }
-// };
-
+//hourly productive and non productive website chart data
 const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, next) => {
   try {
     const { userId, date } = req.query;
 
+    const { company_id, departmentId } = req.user;
     // Fetch data for non-productive and productive websites
-    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date });
-    const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date });
+    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date, company_id, departmentId });
+    const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date, company_id, departmentId });
 
-    console.log(nonProductiveWebsitesData);
-    console.log(productiveWebsitesData);
+    //console.log(nonProductiveWebsitesData);
+    //console.log(productiveWebsitesData);
 
     // Validate data format
     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {
@@ -1296,49 +1233,18 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, ne
   }
 };
 
-
-//function for productive apps and non productive apps chart
-// const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
-//   try {
-//     const { userId, date } = req.query;
-
-//     const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date });
-//     const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date });
-
-//     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
-//       return helper.failed(res, 400, "Invalid data format", []);
-//     }
-
-//     const combinedData = nonProductiveAppsData.map(item1 => {
-//       const item2 = productiveAppsData.find(item => item.period === item1.period); // Match by period
-//       return {
-//         period: item1.name,
-//         non_productive_apps_total_time: parseFloat(item1.value || '0.0'),
-//         productive_apps_value: parseFloat(item2?.value || '0.0')
-//       };
-//     });
-
-//     // Success response
-//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
-//   } catch (error) {
-//     console.error("Error in productiveAppsAndproductiveapps:", error);
-//     return helper.failed(res, 500, "Internal Server Error", []);
-//   }
-// };
+//hourly productive app and non productive chart data 
 const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
   try {
     const { userId, date } = req.query;
+    const { company_id, departmentId } = req.user;
+    const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date, company_id, departmentId });
+    const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date, company_id, departmentId });
 
-    // Fetch data from both functions
-    const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date });
-    const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date });
-
-    // Validate data format
     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       return helper.failed(res, 400, "Invalid data format", []);
     }
 
-    // Determine which array has the higher count
     const [primaryData, secondaryData, primaryKey, secondaryKey] =
       nonProductiveAppsData.length >= productiveAppsData.length
         ? [nonProductiveAppsData, productiveAppsData, 'non_productive_apps_total_time', 'productive_apps_value']
@@ -1366,4 +1272,4 @@ const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
 
 
 
-export default { productiveChart, topApplicationChart, topWebsiteChart, productiveAppsChart, productiveWebsiteChart, NonProductiveWebsiteChart, nonProductiveAppsChart, productiveAppsAndproductiveWebsites, productiveWebsiteAndNonproductiveWebsites, productiveAppAndNonproductiveApps, activityData, singleUserProductiveAppData, singleUserNonProductiveAppData, singleUserProductiveWebsiteData, singleUserNonProductiveWebsiteData,singleUserProductiveAppAndNonproductiveApps,singleUserProductiveWebsitesAndNonproductiveWebsites };
+export default { productiveChart, topApplicationChart, topWebsiteChart, productiveAppsChart, productiveWebsiteChart, NonProductiveWebsiteChart, nonProductiveAppsChart, productiveAppsAndproductiveWebsites, productiveWebsiteAndNonproductiveWebsites, productiveAppAndNonproductiveApps, activityData, singleUserProductiveAppData, singleUserNonProductiveAppData, singleUserProductiveWebsiteData, singleUserNonProductiveWebsiteData, singleUserProductiveAppAndNonproductiveApps, singleUserProductiveWebsitesAndNonproductiveWebsites };

@@ -6,7 +6,7 @@ class authValidationSchema {
   static companyRegisterValid = async (data, res) => {
     try {
       const { status, message } = await CValidator(data, {
-        name: "required|regex:/^[a-zA-Z]*$/",
+        name: "required|regex:/^[a-zA-Z-' ]+$/",
         email: "required|email",
         password: "required|min:8|max:50",
         confirmPassword: "required|same:password",
@@ -40,8 +40,8 @@ class authValidationSchema {
         isAdmin: "required",
       });
 
-      // console.log("Register Validation -------------------------");
-      // console.log(status);
+      // //console.log("Register Validation -------------------------");
+      // //console.log(status);
       if (!status) {
         return helper.failed(res, variables.ValidationError, message);
       }
@@ -61,7 +61,7 @@ class authValidationSchema {
       });
 
       if (!status) {
-        // console.log("Login Validation Error");
+        // //console.log("Login Validation Error");
         return {status:false, message: message};
       }
 

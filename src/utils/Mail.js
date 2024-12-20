@@ -21,7 +21,7 @@ const sendM = async (to, subject, message, cc = '', from = "", attachment = null
 
             try {
                 await transporter.verify();
-                console.log("SMTP server is ready to take our messages.");
+                //console.log("SMTP server is ready to take our messages.");
             } catch (verifyError) {
                 console.error("SMTP server verification failed:", verifyError.message);
                 return { success: false, message: "SMTP server verification failed.", error: verifyError };
@@ -43,7 +43,7 @@ const sendM = async (to, subject, message, cc = '', from = "", attachment = null
             return { success: false, message: "Failed to send email." };
         }
     } catch (error) {
-        console.log({ 'mailer_error': error });
+        //console.log({ 'mailer_error': error });
         return 0;
     }
 

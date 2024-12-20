@@ -24,15 +24,15 @@ async function deleteExpireAccessToken() {
         },
       },
     });
-    console.log("Delete Expire Token Worked Properly");
+    //console.log("Delete Expire Token Worked Properly");
   } catch (error) {
-    console.log("Delete Expire Access Token Scheduler Error: ---------------------");
-    console.log(error.message);
+    //console.log("Delete Expire Access Token Scheduler Error: ---------------------");
+    //console.log(error.message);
     }
 }
 
 export const job1 = schedule.scheduleJob("* * * * *", deleteExpireAccessToken); // Runs every minute
 
 job1.on("error", (err) => {
-  console.log("Error", err);
+  //console.log("Error", err);
 });

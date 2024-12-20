@@ -126,7 +126,7 @@ const User = sequelize.define(
         let monitoredFields = ["currentStatus"];
         let fieldsChanged = options.fields.some((field) => monitoredFields.includes(field));
 
-        // console.log({options , fieldsChanged , monitoredFields})
+        // //console.log({options , fieldsChanged , monitoredFields})
 
         if (fieldsChanged) {
           const whereCondition = { companyId: user.company_id };

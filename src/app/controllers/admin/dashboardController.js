@@ -35,7 +35,7 @@ class dashboardController {
   //       dashboard
   //     );
   //   } catch (error) {
-  //     console.log({ error });
+  //     //console.log({ error });
   //     return helper.failed(
   //       res,
   //       variables.BadRequest,

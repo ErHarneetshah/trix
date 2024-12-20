@@ -1,4 +1,4 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, Sequelize } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
 
 const workReports = sequelize.define(
@@ -37,7 +37,8 @@ const workReports = sequelize.define(
     },
     date: {
       type: DataTypes.DATE,
-      allowNull: true,
+      allowNull: true, // Accepts null values
+      defaultValue: Sequelize.NOW, // Sets the current date and time by default
     },
   },
   {

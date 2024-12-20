@@ -40,7 +40,7 @@ export default {
       result["data"] = data;
     }
 
-    console.log({ result });
+    //console.log({ result });
 
     return res.status(statusCode).json(result);
   },
@@ -59,11 +59,11 @@ export default {
         if (err) {
           console.error("Failed to delete file", err);
         } else {
-          console.log("File deleted successfully.");
+          //console.log("File deleted successfully.");
         }
       });
     } catch (error) {
-      console.log({ del_file_error: error });
+      //console.log({ del_file_error: error });
       return { message: `Unable to delete file at this moment`, status: 0 };
     }
   },
@@ -79,7 +79,7 @@ export default {
       });
       if (generatedPass) return generatedPass;
 
-      return this.failed(res, variables.Unauthorized, "Unable to generate password for team member!");
+      return this.failed(res, variables.BadRequest, "Unable to generate password for team member!");
     } catch (error) {
       return this.failed(res, variables.UnknownError, error.message);
     }
@@ -115,11 +115,11 @@ export default {
         if (err) {
           console.error("Failed to delete file", err);
         } else {
-          console.log("File deleted successfully.");
+          //console.log("File deleted successfully.");
         }
       });
     } catch (error) {
-      console.log({ del_file_error: error });
+      //console.log({ del_file_error: error });
       return { message: `Unable to delete file at this moment`, status: 0 };
     }
   },

@@ -185,9 +185,10 @@ class teamMemberTimeLogController {
 
       userWhere.currentStatus = 1;
 
-      const employeeCount = await User.count({
+      const employeeCount = await TimeLog.count({
         where: {
           company_id: req.user.company_id,
+          createdAt: { [Op.between]: [startOfDay, endOfDay] },
         },
       });
 
@@ -240,7 +241,7 @@ class teamMemberTimeLogController {
         },
       });
 
-      console.log({ startOfDay });
+      //console.log({ startOfDay });
       let date_string = new Date(startOfDay).toISOString().split("T")[0];
 
       const [productiveResult] = await sequelize.query(
