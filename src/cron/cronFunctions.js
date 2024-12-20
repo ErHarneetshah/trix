@@ -9,6 +9,8 @@ import commonfuncitons from '../utils/services/commonfuncitons.js';
 const sendEmailWithReports = async (req, res) => {
     try {
         const date = new Date();
+        // const todayDate = '2025-01-01';
+
         const todayDate = date.toISOString().split('T')[0];
 
         const limit = 1000;

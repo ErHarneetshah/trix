@@ -37,6 +37,8 @@ async function uploadPhotos(req, res, folder, imageArr) {
 
 const getNextMonthDate = () => {
     const today = new Date();
+    // const today = new Date('Wed Jan 01 2025 00:00:00 GMT+0530');
+    
     const nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
      return nextMonthDate.toLocaleDateString('en-CA');
 };
