@@ -8,9 +8,8 @@ import TimeLog from "../../../database/models/timeLogsModel.js";
 
 const getCompareReportsData = async (req, res, next) => {
     try {
-        const { company_id, createdAt } = req.user;
+        const { company_id, createdAt, departmentId } = req.user;
         const { userId, date } = req.query;
-
         if (!date || isNaN(new Date(date)) || isNaN(new Date(createdAt))) {
             throw new Error('Invalid date or user joining date.');
         }
@@ -37,6 +36,7 @@ const getCompareReportsData = async (req, res, next) => {
         }
 
         const replacements = {
+            departmentId: departmentId,
             companyId: company_id,
             userId: userId,
             createdAt: formattedDate
@@ -48,7 +48,7 @@ const getCompareReportsData = async (req, res, next) => {
                     SELECT ah.appName, 
                         SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)) AS total_time_minutes
                     FROM app_histories AS ah
-                    INNER JOIN productive_apps AS ap ON ap.app_name = ah.appName
+                    INNER JOIN productive_apps AS ap ON ap.app_name = ah.appName and ap.department_id=:departmentId
                     WHERE DATE(ah.createdAt) = :createdAt 
                     AND ah.company_id = :companyId 
                     AND ah.userId = :userId
@@ -62,7 +62,7 @@ const getCompareReportsData = async (req, res, next) => {
                         SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)) AS total_time_minutes
                     FROM app_histories AS ah
                     WHERE ah.appName NOT IN (
-                        SELECT app_name FROM productive_apps WHERE company_id = :companyId
+                        SELECT app_name FROM productive_apps WHERE company_id = :companyId and department_id=:departmentId
                     )
                     AND ah.company_id = :companyId 
                     AND ah.userId = :userId 
@@ -76,7 +76,7 @@ const getCompareReportsData = async (req, res, next) => {
                     SELECT COALESCE(COUNT(uh.id), 0) AS total_counts, uh.website_name 
                     FROM user_histories AS uh
                     INNER JOIN productive_websites AS pw 
-                    ON uh.website_name = pw.website_name
+                    ON uh.website_name = pw.website_name  and pw.department_id=:departmentId
                     WHERE uh.company_id = :companyId 
                     AND uh.userId = :userId 
                     AND DATE(uh.createdAt) = :createdAt
@@ -91,7 +91,7 @@ const getCompareReportsData = async (req, res, next) => {
                     WHERE uh.website_name NOT IN (
                         SELECT website_name 
                         FROM productive_websites 
-                        WHERE company_id = :companyId
+                        WHERE company_id = :companyId and department_id=:departmentId
                     )
                     AND uh.company_id = :companyId 
                     AND uh.userId = :userId 
@@ -193,4 +193,21 @@ const getActiveTime = async (timelogId) => {
 };
 
 
-export default { getCompareReportsData };
+const getAllUsers = async (req, res, next) => {
+    try {
+        const { company_id } = req.user;
+        const query = `SELECT u.id,u.fullname,d.name FROM users as u left join departments as d on u.departmentId=d.id where u.company_id=:companyId and  u.status=1 and u.isAdmin=0;`;
+        const result = await sequelize.query(query, {
+            type: Sequelize.QueryTypes.SELECT,
+            replacements: { companyId: company_id },
+        })
+
+        // const transformedResult = result.map(item => `${item.fullname}-${item.name}-${item.id}`);
+        return helper.success(res, variables.Success, "All Users Fetched Successfully", result);
+
+    } catch (error) {
+        return helper.failed(res, variables.badGateway, error.message);
+    }
+}
+
+export default { getCompareReportsData, getAllUsers };

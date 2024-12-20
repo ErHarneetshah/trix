@@ -5,6 +5,8 @@ import authMiddleware from "../../app/middlewares/authMiddleware.js";
 import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.js";
 
 router.get('/getCompareReportsData', authMiddleware,compareReportsController.getCompareReportsData);
+router.get('/getAllUsers', authMiddleware,compareReportsController.getAllUsers);
+
 
 
 export default router;
