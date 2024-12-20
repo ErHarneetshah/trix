@@ -7,14 +7,15 @@ import { UserHistory } from "../../../database/models/UserHistory.js";
 import { Op } from "sequelize";
 import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
+import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
+import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 async function getOpenAIResponse(userId, question, date) {
-  // const prompt = `User ID: ${userId}\nQuestion: ${question}\nDate: ${date}\n\nPlease provide a helpful response.`;
-
+  
   let user = await User.findOne({ where: { id: userId } });
   if (!user) {
     return { message: "User not found", status: 0 };
@@ -100,7 +101,9 @@ async function getOpenAIResponse(userId, question, date) {
     };
   });
   
-
+  let productive_app = await ProductiveApp.findAll({where:{company_id:user.company_id,department_id:user.departmentId}});
+  let productive_website = await ProductiveWebsite.findAll({where:{company_id:user.company_id,department_id:user.departmentId}});  
+  
   const prompt = `
   Act as a professional AI assistant. Respond to user questions based on the provided data.
   The question is: "${question}"
@@ -109,10 +112,12 @@ async function getOpenAIResponse(userId, question, date) {
   Username: ${user.fullname}
   User Status: ${user.currentStatus}
   App Usage Data: ${JSON.stringify(appData)}
+  Productive App : ${JSON.stringify(productive_app)}
   URL Host Usage Data: ${JSON.stringify(siteUsageData)}
+  Productive Website : ${JSON.stringify(productive_website)}
   Time Log Data: ${JSON.stringify(timedata)}
   (Total time spent for apps and totalDuration in timelogs is in minutes)
-  i want text report of given user data given all type measurment.
+  I Want Text Response based on given data
   `;
 
   try {
