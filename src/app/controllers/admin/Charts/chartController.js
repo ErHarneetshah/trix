@@ -19,6 +19,8 @@ import {
   startOfYear,
   addMonths
 } from 'date-fns';
+import team from "../../../../database/models/teamModel.js";
+import shift from "../../../../database/models/shiftModel.js";
 
 // Get weeks for a specific month
 function getWeeksInMonth(year = '2024', month = '12') {
@@ -189,7 +191,6 @@ const productiveChart = async (req, res) => {
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
 
       valueArray.push({
@@ -217,12 +218,13 @@ const productiveChart = async (req, res) => {
 //   ];
 const topApplicationChart = async (req, res, next) => {
   const { filterType } = req.query;
+  const { company_id } = req.user;
   let dateCondition = "";
 
   if (filterType === "weekly") {
-    dateCondition = "WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+    dateCondition = `WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) and ah.company_id=${company_id}`;
   } else if (filterType === "monthly") {
-    dateCondition = "WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)";
+    dateCondition = `WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) and ah.company_id=${company_id}`;
   }
 
   const query = `
@@ -239,7 +241,6 @@ const topApplicationChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log,
     });
 
     const pieChartData = results.map(result => ({
@@ -253,22 +254,17 @@ const topApplicationChart = async (req, res, next) => {
   }
 };
 
-//*top websites chart 
-// const pieChartData = [
-//   { name: "Team A", value: 24.9 },
-//   { name: "Team B", value: 31.1 },
-//   { name: "Team C", value: 7.3 },
-//   { name: "Team D", value: 24.3 },
-//   { name: "Team E", value: 12.4 },
-//   ];
+
 const topWebsiteChart = async (req, res, next) => {
   const { filterType } = req.query;
+  const { company_id } = req.user;
+
   let dateCondition = "";
 
   if (filterType === "weekly") {
-    dateCondition = "WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+    dateCondition = `WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) and uh.company_id=${company_id}`;
   } else if (filterType === "monthly") {
-    dateCondition = "WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)";
+    dateCondition = `WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) and uh.company_id=${company_id}`;
   }
 
   const query = `
@@ -285,7 +281,8 @@ const topWebsiteChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log,
+      // logging: console.log
+
     });
 
     const pieChartData = results.map(result => ({
@@ -305,13 +302,16 @@ const topWebsiteChart = async (req, res, next) => {
 
 const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
-    if (type === 'api') {
-      ({ filterType, dateOption } = req.query); // Destructure from req.query
+
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
+      ({ filterType, dateOption } = req.query);
+
     } else {
-      ({ filterType, dateOption } = obj); // Destructure from obj
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -352,8 +352,8 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
           INNER JOIN 
             productive_apps AS ap 
           ON 
-            ap.app_name = ah.appName
-          WHERE DATE(ah.createdAt) = :date
+            ap.app_name = ah.appName and ap.company_id=:companyId
+          WHERE ah.company_id=:companyId and DATE(ah.createdAt) = :date 
         `;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
@@ -366,8 +366,8 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
           INNER JOIN 
             productive_apps AS ap 
           ON 
-            ap.app_name = ah.appName
-          WHERE DATE(ah.createdAt) BETWEEN :start AND :end
+            ap.app_name = ah.appName and ap.company_id=:companyId
+          WHERE ah.company_id=:companyId and DATE(ah.createdAt) BETWEEN :start AND :end 
         `;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
@@ -381,8 +381,8 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
           INNER JOIN 
             productive_apps AS ap 
           ON 
-            ap.app_name = ah.appName
-          WHERE MONTH(ah.createdAt) = :month
+            ap.app_name = ah.appName and ap.company_id=:companyId
+          WHERE ah.company_id=:companyId and MONTH(ah.createdAt) = :month
           AND YEAR(ah.createdAt) = :year
         `;
       }
@@ -390,7 +390,7 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
+        // logging: console.log
       });
 
       valueArray.push({
@@ -418,14 +418,15 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
 
 const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
-
-    if (type === 'api') {
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
       ({ filterType, dateOption } = req.query);
+
     } else {
-      ({ filterType, dateOption } = obj);
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -457,20 +458,20 @@ const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) =>
       if (filterType === 'weekly') {
         queryParams.date = item.date;
         query = `
-        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites) and DATE(uh.createdAt)=:date
+        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and DATE(uh.createdAt)=:date
         `;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
         queryParams.end = item.end;
         query = `
-        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites) and DATE(uh.createdAt) BETWEEN :start AND :end
+        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId  and DATE(uh.createdAt) BETWEEN :start AND :end
         `;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
         queryParams.month = month;
         queryParams.year = year;
         query = `
-        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites) and MONTH(uh.createdAt)= :month
+        select COALESCE(count(id),0) as total_counts from user_histories as uh where uh.website_name in(select website_name from productive_websites where company_id=:companyId) and uh.company_id =:companyId and  MONTH(uh.createdAt)= :month
           AND YEAR(uh.createdAt) = :year
         `;
       }
@@ -478,7 +479,6 @@ const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) =>
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
       valueArray.push({
         period: item.day || item.start || item.month,
@@ -506,14 +506,15 @@ const productiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) =>
 
 const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
+      ({ filterType, dateOption } = req.query);
 
-    if (type === 'api') {
-      ({ filterType, dateOption } = req.query); // Destructure from req.query
     } else {
-      ({ filterType, dateOption } = obj); // Destructure from obj
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -539,27 +540,26 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
     }
 
     const valueArray = [];
-
     for (const item of dateInstances) {
       let query;
       if (filterType === 'weekly') {
         queryParams.date = item.date;
         query = `
         SELECT ah.appName, 
-    COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps) and DATE(ah.createdAt) = :date`;
+    COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps where company_id=:companyId) and  ah.company_id=:companyId and DATE(ah.createdAt) = :date`;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
         queryParams.end = item.end;
         query = `
         SELECT ah.appName, 
-        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps) and DATE(ah.createdAt) BETWEEN :start AND :end`;
+        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps where company_id=:companyId) and ah.company_id=:companyId and DATE(ah.createdAt) BETWEEN :start AND :end`;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
         queryParams.month = month;
         queryParams.year = year;
         query = `
         SELECT ah.appName, 
-        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps) and MONTH(ah.createdAt) = :month
+        COALESCE(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)),0) AS total_time_seconds FROM app_histories as ah where appName not in(select app_name from productive_apps where company_id=:companyId) and ah.company_id=:companyId and MONTH(ah.createdAt) = :month
           AND YEAR(ah.createdAt) = :year
         `;
       }
@@ -568,7 +568,7 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
+        // logging:console.log
       });
 
       // Push the result into the value array
@@ -601,14 +601,15 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
 
 const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {}) => {
   try {
-    let filterType, dateOption;
+    let filterType, dateOption, company_id;
+    if (type === "api") {
+      ({ company_id } = req.user);
+      ({ filterType, dateOption } = req.query);
 
-    if (type === 'api') {
-      ({ filterType, dateOption } = req.query); // Destructure from req.query
     } else {
-      ({ filterType, dateOption } = obj); // Destructure from obj
+      ({ filterType, dateOption, company_id } = obj);
     }
-    let queryParams = {};
+    let queryParams = { companyId: company_id };
     let dateInstances = [];
 
     if (filterType === 'weekly') {
@@ -639,18 +640,18 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
       let query;
       if (filterType === 'weekly') {
         queryParams.date = item.date;
-        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites) and DATE(uh.createdAt)=:date
+        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and DATE(uh.createdAt)=:date
         `;
       } else if (filterType === 'monthly' && dateOption === 'weeks') {
         queryParams.start = item.start;
         queryParams.end = item.end;
-        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites) and DATE(uh.createdAt) BETWEEN :start AND :end
+        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and DATE(uh.createdAt) BETWEEN :start AND :end
         `;
       } else if (filterType === 'monthly' && dateOption === 'months') {
         const [year, month] = item.date.split('-');
         queryParams.month = month;
         queryParams.year = year;
-        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites) and MONTH(uh.createdAt)= :month
+        query = `SELECT count(uh.id) as total_counts FROM user_histories as uh where website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id=:companyId and MONTH(uh.createdAt)= :month
           AND YEAR(uh.createdAt) = :year
         `;
       }
@@ -658,7 +659,6 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log,
       });
       valueArray.push({
         period: item.day || item.start || item.month,
@@ -684,26 +684,38 @@ const NonProductiveWebsiteChart = async (req, res, next, type = 'api', obj = {})
 
 
 
-//function for productive apps and productive websites chart
 const productiveAppsAndproductiveWebsites = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const {company_id}=req.user;
 
-    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-    console.log(productiveAppsData);
-    console.log(productiveWebsiteData);
+    // Fetch data for productive apps and websites
+    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
 
+    //console.log(productiveAppsData);
+    //console.log(productiveWebsiteData);
+
+    // Validate data format
     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
       return helper.failed(res, 400, "Invalid data format", []);
     }
 
-    const combinedData = productiveAppsData.map(item1 => {
-      const item2 = productiveWebsiteData.find(item => item.period === item1.period); // Match by period
+    // Determine which dataset is larger and iterate over it
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      productiveAppsData.length >= productiveWebsiteData.length
+        ? [productiveAppsData, productiveWebsiteData, 'productive_apps_total_time', 'productive_websites_total_time']
+        : [productiveWebsiteData, productiveAppsData, 'productive_websites_total_time', 'productive_apps_total_time'];
+
+    // Combine data based on the larger dataset
+    const combinedData = primaryData.map(primaryItem => {
+      const matchingSecondaryItem = secondaryData.find(
+        secondaryItem => secondaryItem.period === primaryItem.period // Match by period
+      );
       return {
-        period: item1.period,
-        productive_apps_total_time: parseFloat(item1.total_time || '0.0'),
-        productive_websites_total_time: parseFloat(item2?.total_time || '0.0')
+        period: primaryItem.period,
+        [primaryKey]: parseFloat(primaryItem.total_time || '0.0'),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.total_time || '0.0'),
       };
     });
 
@@ -716,55 +728,537 @@ const productiveAppsAndproductiveWebsites = async (req, res, next) => {
 };
 
 
-
 //function for productive apps and productive websites chart
+//browser history 
 const productiveWebsiteAndNonproductiveWebsites = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const { company_id } = req.user;
 
-    const nonProductiveWebsitesData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
+    // Fetch data for non-productive and productive websites
+    const nonProductiveWebsitesData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption, company_id });
+    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption, company_id });
 
+    // Validate data format
     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsiteData)) {
       return helper.failed(res, 400, "Invalid data format", []);
     }
 
-    const combinedData = nonProductiveWebsitesData.map(item1 => {
-      const item2 = productiveWebsiteData.find(item => item.period === item1.period); // Match by period
+    // Determine which dataset is larger and iterate over it
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      nonProductiveWebsitesData.length >= productiveWebsiteData.length
+        ? [nonProductiveWebsitesData, productiveWebsiteData, 'non_productive_websites_total_time', 'productive_websites_total_time']
+        : [productiveWebsiteData, nonProductiveWebsitesData, 'productive_websites_total_time', 'non_productive_websites_total_time'];
+
+    // Combine data based on the larger dataset
+    const combinedData = primaryData.map(primaryItem => {
+      const matchingSecondaryItem = secondaryData.find(
+        secondaryItem => secondaryItem.period === primaryItem.period // Match by period
+      );
       return {
-        period: item1.period,
-        non_productive_websites_total_time: parseFloat(item1.total_time || '0.0'),
-        productive_websites_total_time: parseFloat(item2?.total_time || '0.0')
+        period: primaryItem.period,
+        [primaryKey]: parseFloat(primaryItem.total_time || '0.0'),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.total_time || '0.0'),
       };
     });
 
     // Success response
     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
   } catch (error) {
-    console.error("Error in productiveAppsAndproductiveWebsites:", error);
+    console.error("Error in productiveWebsiteAndNonproductiveWebsites:", error);
     return helper.failed(res, 500, "Internal Server Error", []);
   }
 };
+
 
 
 //function for productive apps and non productive apps chart
 const productiveAppAndNonproductiveApps = async (req, res, next) => {
   try {
     const { filterType, dateOption } = req.query;
+    const { company_id } = req.user;
 
-    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
+    // Fetch data for non-productive and productive apps
+    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption, company_id });
+    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption, company_id });
+
+    console.log(nonProductiveAppsData);
+    // Validate data format
+    if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
+      return helper.failed(res, 400, "Invalid data format", []);
+    }
+
+    // Determine which dataset is larger and iterate over it
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      nonProductiveAppsData.length >= productiveAppsData.length
+        ? [nonProductiveAppsData, productiveAppsData, 'non_productive_apps_total_time', 'productive_apps_total_time']
+        : [productiveAppsData, nonProductiveAppsData, 'productive_apps_total_time', 'non_productive_apps_total_time'];
+
+    // Combine data based on the larger dataset
+    const combinedData = primaryData.map(primaryItem => {
+      const matchingSecondaryItem = secondaryData.find(
+        secondaryItem => secondaryItem.period === primaryItem.period // Match by period
+      );
+      return {
+        period: primaryItem.period,
+        [primaryKey]: parseFloat(primaryItem.total_time || '0.0'),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.total_time || '0.0'),
+      };
+    });
+
+    // Success response
+    return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
+  } catch (error) {
+    console.error("Error in productiveAppAndNonproductiveApps:", error);
+    return helper.failed(res, 500, "Internal Server Error", []);
+  }
+};
+
+
+
+//helper function for transform data
+const transformData = (response, name) => {
+  return {
+    name: name,
+    data: response.map((item) => parseFloat(item.total_time)),
+  };
+};
+//function for activity type trends
+
+const activityData = async (req, res, next) => {
+  try {
+    const { filterType, dateOption } = req.query;
+    const { company_id } = req.user;
+
+
+
+    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
+    const nonProductiveWebsiteData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
+
+    const periods = productiveAppsData.map((item) => item.period);
+    // Transform data for seriesData
+    const seriesData = [
+      transformData(productiveAppsData, "Productive Apps Data"),
+      transformData(productiveWebsiteData, "Productive Website Data"),
+      transformData(nonProductiveAppsData, "Non-Productive Apps Data"),
+      transformData(nonProductiveWebsiteData, "Non-Productive Website Data"),
+    ];
+
+    // return { periods, seriesData };
+
+    // Success response
+    return helper.success(res, variables.Success, "Data Fetched Successfully", { periods, seriesData });
+  } catch (error) {
+    console.error("Error in productiveAppsAndproductiveapps:", error);
+    return helper.failed(res, 500, "Internal Server Error", []);
+  }
+};
+
+
+
+
+
+
+//tested(helper function)
+const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
+  try {
+    const { userId, date } = type === 'api' ? req.query : obj;
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
+    if (!userId || !date) {
+      const message = "userId and date are required.";
+      return type === 'api' ? helper.failed(res, 400, message) : false;
+    }
+
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch team information
+    const teamInfo = await team.findOne({
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
+    });
+    if (!teamInfo) {
+      const message = "Team is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch shift information
+    const shiftInfo = await shift.findOne({
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
+    });
+    if (!shiftInfo) {
+      const message = "Shift is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // SQL query to fetch productive app data grouped by hour
+    const query = `
+      SELECT
+          DATE_FORMAT(ah.startTime, '%H:00') AS hour,
+          SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_duration
+      FROM
+          app_histories AS ah
+      INNER JOIN
+          productive_apps ap ON ap.app_name = ah.appName and ap.department_id=:department_id
+      WHERE
+          DATE(ah.createdAt) = :date
+          AND ah.userId = :userId
+          AND ah.company_id = :company_id
+      GROUP BY
+          DATE_FORMAT(ah.startTime, '%H:00')
+      ORDER BY
+          hour;
+    `;
+
+    // Execute query with replacements
+    const results = await sequelize.query(query, {
+      replacements: { date, userId, company_id, department_id: departmentId },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    // Format results for pie chart data
+    const pieChartData = results.map((result) => ({
+      name: result.hour,
+      value: result.total_duration ? parseFloat((result.total_duration)) : 0, // Convert seconds to hours
+    }));
+
+    // Return success response
+    const successMessage = "Productive app data fetched successfully.";
+    return type === 'api'
+      ? helper.success(res, variables.Success, successMessage, pieChartData)
+      : pieChartData;
+  } catch (error) {
+    // Log error and return failure response
+    console.error("Error fetching productive app data:", error.message);
+    return type === 'api'
+      ? helper.failed(res, 500, error.message)
+      : false;
+  }
+};
+
+//tested(helper function)
+const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
+  try {
+    // Extract `userId` and `date` based on the type of request
+    //console.log(req.user);
+    const { userId, date } = type === 'api' ? req.query : obj;
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
+
+    // Validate required parameters
+    if (!userId || !date) {
+      const message = "userId and date are required.";
+      return type === 'api' ? helper.failed(res, 400, message) : false;
+    }
+
+    // Fetch user information
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch team information
+    const teamInfo = await team.findOne({
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
+    });
+    if (!teamInfo) {
+      const message = "Team is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch shift information
+    const shiftInfo = await shift.findOne({
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
+    });
+    if (!shiftInfo) {
+      const message = "Shift is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // SQL query to fetch productive app data grouped by hour
+    const query = `
+    SELECT
+    DATE_FORMAT(ah.startTime, '%H:00') AS hour,
+    SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_duration
+FROM
+    app_histories AS ah
+WHERE
+    ah.appName NOT IN (
+        SELECT app_name
+        FROM productive_apps
+        WHERE company_id = :company_id and department_id=:department_id
+    )
+ AND date(createdAt)=:date
+    AND ah.userId = 2
+    AND ah.company_id = :company_id
+GROUP BY
+    DATE_FORMAT(ah.startTime, '%H:00')
+ORDER BY
+    hour;
+    `;
+
+    // Execute query with replacements
+    const results = await sequelize.query(query, {
+      replacements: { date, userId, company_id, department_id: departmentId },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    // Format results for pie chart data
+    const pieChartData = results.map((result) => ({
+      name: result.hour,
+      value: result.total_duration ? parseFloat((result.total_duration)) : 0, // Convert seconds to hours
+    }));
+
+    // Return success response
+    const successMessage = "Non Productive app data fetched successfully.";
+    return type === 'api'
+      ? helper.success(res, variables.Success, successMessage, pieChartData)
+      : pieChartData;
+  } catch (error) {
+    // Log error and return failure response
+    console.error("Error fetching non productive app data:", error.message);
+    return type === 'api'
+      ? helper.failed(res, 500, error.message)
+      : false;
+  }
+};
+
+
+//tested(helper function)
+const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj = {}) => {
+  try {
+    const { userId, date } = type === 'api' ? req.query : obj;
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
+    // Validate required parameters
+    if (!userId || !date) {
+      const message = "userId and date are required.";
+      return type === 'api' ? helper.failed(res, 400, message) : false;
+    }
+
+    // Fetch user information
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch team information
+    const teamInfo = await team.findOne({
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
+    });
+    if (!teamInfo) {
+      const message = "Team is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch shift information
+    const shiftInfo = await shift.findOne({
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
+    });
+    if (!shiftInfo) {
+      const message = "Shift is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // SQL query to fetch productive website data grouped by hour
+    const query = `
+      SELECT 
+        COUNT(uh.id) AS total_counts,
+        DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
+      FROM user_histories AS uh 
+      INNER JOIN productive_websites AS pw 
+        ON pw.website_name = uh.website_name and pw.department_id=:department_id
+      WHERE 
+        uh.userId = :userId 
+        AND uh.company_id = :company_id 
+        AND DATE(uh.createdAt) = :date 
+      GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
+      ORDER BY hour;
+    `;
+
+    // Execute query with replacements
+    const results = await sequelize.query(query, {
+      replacements: { date, userId, company_id, department_id: departmentId },
+      type: Sequelize.QueryTypes.SELECT,
+    });
+
+    // Format results for pie chart data
+    const pieChartData = results.map((result) => ({
+      name: result.hour,
+      value: result.total_counts ? parseInt(result.total_counts, 10) : 0,
+    }));
+
+    // Return success response
+    const successMessage = "Productive website data fetched successfully.";
+    return type === 'api'
+      ? helper.success(res, variables.Success, successMessage, pieChartData)
+      : pieChartData;
+  } catch (error) {
+    // Log error with context
+    console.error("Error fetching productive website data:", {
+      message: error.message,
+    });
+    return type === 'api'
+      ? helper.failed(res, 500, error.message)
+      : false;
+  }
+};
+
+
+// tested(helper function)
+const singleUserNonProductiveWebsiteData = async (req, res, next, type = 'api', obj = {}) => {
+  try {
+    const { userId, date } = type === 'api' ? req.query : obj;
+    const { company_id, departmentId } = type === 'api' ? req.user : obj;
+
+    if (!userId || !date) {
+      const message = "userId and date are required.";
+      return type === 'api' ? helper.failed(res, 400, message) : false;
+    }
+
+    // Fetch user information
+    const userInfo = await User.findOne({ where: { id: userId, company_id: company_id } });
+    if (!userInfo) {
+      const message = "User does not exist.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch team information
+    const teamInfo = await team.findOne({
+      where: { id: userInfo.teamId, status: 1, company_id: company_id },
+    });
+    if (!teamInfo) {
+      const message = "Team is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    // Fetch shift information
+    const shiftInfo = await shift.findOne({
+      where: { id: teamInfo.shiftId, status: 1, company_id: company_id },
+    });
+    if (!shiftInfo) {
+      const message = "Shift is invalid or inactive.";
+      return type === 'api' ? helper.failed(res, 404, message) : false;
+    }
+
+    const query = `
+    SELECT 
+    COUNT(uh.id) AS total_counts,
+    DATE_FORMAT(uh.visitTime, '%H:00') AS hour 
+  FROM user_histories AS uh 
+   
+  WHERE uh.website_name not in(select website_name from productive_websites where company_id=:company_id and department_id=:department_id) and
+    uh.userId = :userId
+    AND uh.company_id = :company_id
+    AND DATE(uh.createdAt) = :date
+  GROUP BY DATE_FORMAT(uh.visitTime, '%H:00') 
+  ORDER BY hour;
+    `;
+
+    // Execute query with replacements
+    const results = await sequelize.query(query, {
+      replacements: { date, userId, company_id, department_id: departmentId },
+      type: Sequelize.QueryTypes.SELECT,
+      // logging: console.log
+    });
+
+    // Format results for pie chart data
+    const pieChartData = results.map((result) => ({
+      name: result.hour,
+      value: result.total_counts ? parseInt(result.total_counts, 10) : 0,
+    }));
+
+    // Return success response
+    const successMessage = "Non Productive website data fetched successfully.";
+    return type === 'api'
+      ? helper.success(res, variables.Success, successMessage, pieChartData)
+      : pieChartData;
+  } catch (error) {
+    // Log error with context
+    console.error("Error fetching non productive website data:", {
+      message: error.message,
+    });
+    return type === 'api'
+      ? helper.failed(res, 500, error.message)
+      : false;
+  }
+};
+
+
+//hourly productive and non productive website chart data
+const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, next) => {
+  try {
+    const { userId, date } = req.query;
+
+    const { company_id, departmentId } = req.user;
+    // Fetch data for non-productive and productive websites
+    const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date, company_id, departmentId });
+    const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date, company_id, departmentId });
+
+    //console.log(nonProductiveWebsitesData);
+    //console.log(productiveWebsitesData);
+
+    // Validate data format
+    if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {
+      return helper.failed(res, 400, "Invalid data format", []);
+    }
+
+    // Determine which dataset is larger and iterate over it
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      nonProductiveWebsitesData.length >= productiveWebsitesData.length
+        ? [nonProductiveWebsitesData, productiveWebsitesData, 'non_productive_websites_total_time', 'productive_websites_value']
+        : [productiveWebsitesData, nonProductiveWebsitesData, 'productive_websites_value', 'non_productive_websites_total_time'];
+
+    // Combine data based on the larger dataset
+    const combinedData = primaryData.map(primaryItem => {
+      const matchingSecondaryItem = secondaryData.find(
+        secondaryItem => secondaryItem.name === primaryItem.name // Match by period
+      );
+      return {
+        period: primaryItem.name,
+        [primaryKey]: parseFloat(primaryItem.value || '0.0'),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.value || '0.0'),
+      };
+    });
+
+    // Success response
+    return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
+  } catch (error) {
+    console.error("Error in singleUserProductiveWebsitesAndNonproductiveWebsites:", error);
+    return helper.failed(res, 500, "Internal Server Error", []);
+  }
+};
+
+//hourly productive app and non productive chart data 
+const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
+  try {
+    const { userId, date } = req.query;
+    const { company_id, departmentId } = req.user;
+    const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date, company_id, departmentId });
+    const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date, company_id, departmentId });
 
     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       return helper.failed(res, 400, "Invalid data format", []);
     }
 
-    const combinedData = nonProductiveAppsData.map(item1 => {
-      const item2 = productiveAppsData.find(item => item.period === item1.period); // Match by period
+    const [primaryData, secondaryData, primaryKey, secondaryKey] =
+      nonProductiveAppsData.length >= productiveAppsData.length
+        ? [nonProductiveAppsData, productiveAppsData, 'non_productive_apps_total_time', 'productive_apps_value']
+        : [productiveAppsData, nonProductiveAppsData, 'productive_apps_value', 'non_productive_apps_total_time'];
+
+    // Combine data based on the larger array
+    const combinedData = primaryData.map(primaryItem => {
+      const matchingSecondaryItem = secondaryData.find(
+        secondaryItem => secondaryItem.name === primaryItem.name // Match by period
+      );
       return {
-        period: item1.period,
-        non_productive_apps_total_time: parseFloat(item1.total_time || '0.0'),
-        productive_apps_total_time: parseFloat(item2?.total_time || '0.0')
+        period: primaryItem.name,
+        [primaryKey]: parseFloat(primaryItem.value || '0.0'),
+        [secondaryKey]: parseFloat(matchingSecondaryItem?.value || '0.0'),
       };
     });
 
@@ -776,47 +1270,6 @@ const productiveAppAndNonproductiveApps = async (req, res, next) => {
   }
 };
 
-//function for activity type trends
-
-const activityData = async (req, res, next) => {
-  try {
-    const { filterType, dateOption } = req.query;
 
 
-
-
-    const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-    const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption });
-    const nonProductiveWebsiteData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption });
-
-
-
-    // if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
-    //   return helper.failed(res, 400, "Invalid data format", []);
-    // }
-
-    // const combinedData = nonProductiveAppsData.map(item1 => {
-    //   const item2 = productiveAppsData.find(item => item.period === item1.period); // Match by period
-    //   return {
-    //     period: item1.period,
-    //     non_productive_apps_total_time: parseFloat(item1.total_time || '0.0'),
-    //     productive_apps_total_time: parseFloat(item2?.total_time || '0.0')
-    //   };
-    // });
-
-    // Success response
-    return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
-  } catch (error) {
-    console.error("Error in productiveAppsAndproductiveapps:", error);
-    return helper.failed(res, 500, "Internal Server Error", []);
-  }
-};
-
-
-
-
-
-
-
-export default { productiveChart, topApplicationChart, topWebsiteChart, productiveAppsChart, productiveWebsiteChart, NonProductiveWebsiteChart, nonProductiveAppsChart, productiveAppsAndproductiveWebsites, productiveWebsiteAndNonproductiveWebsites, productiveAppAndNonproductiveApps };
+export default { productiveChart, topApplicationChart, topWebsiteChart, productiveAppsChart, productiveWebsiteChart, NonProductiveWebsiteChart, nonProductiveAppsChart, productiveAppsAndproductiveWebsites, productiveWebsiteAndNonproductiveWebsites, productiveAppAndNonproductiveApps, activityData, singleUserProductiveAppData, singleUserNonProductiveAppData, singleUserProductiveWebsiteData, singleUserNonProductiveWebsiteData, singleUserProductiveAppAndNonproductiveApps, singleUserProductiveWebsitesAndNonproductiveWebsites };

@@ -4,14 +4,18 @@ import designation from "../models/designationModel.js";
 import role from "../models/roleModel.js";
 import team from "../models/teamModel.js";
 import workReports from "../models/workReportsModel.js";
-import TimeLog from "../models/teamLogsModel.js";
+import TimeLog from "../models/timeLogsModel.js";
 import shift from "../models/shiftModel.js";
 import rolePermission from "../models/rolePermissionModel.js";
 import {BlockedWebsites} from "../models/BlockedWebsite.js";
 import { ProductiveApp }from "../models/ProductiveApp.js";
 import { UserHistory } from "../models/UserHistory.js";
- import AppHistoryEntry  from "../models/AppHistoryEntry.js";
+import AppHistoryEntry  from "../models/AppHistoryEntry.js";
 import ProductiveWebsite from "../models/ProductiveWebsite.js";
+import company from "../models/company.js";
+import { Device } from "../models/device.js";
+import languageSettings from "../models/languageSettingsModel.js";
+import languageDropdown from "../models/languageModel.js";
 
 // User Relationships here
 User.belongsTo(department, { as: "department", foreignKey: "departmentId" });
@@ -33,6 +37,8 @@ workReports.belongsTo(User, { as: "user", foreignKey: "user_id" });
 // Time Log relationships here
 TimeLog.belongsTo(User, { as: "user", foreignKey: "user_id" });
 TimeLog.belongsTo(shift, { as: "shift", foreignKey: "shift_id" });
+TimeLog.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "appHistory" });
+
 
 // Role Permissions relationships here
 rolePermission.belongsTo(role, { as: "role", foreignKey: "roleId" });
@@ -43,8 +49,17 @@ ProductiveWebsite.belongsTo(department, { as: "department", foreignKey: "departm
 // Team Relations here
 team.belongsTo(department,{ as: 'department', foreignKey: 'departmentId' });
 team.belongsTo(shift, { as: 'shift', foreignKey: 'shiftId' });
-team.hasMany(User, { as: 'members', foreignKey: 'teamId' });
+team.hasMany(User, { as: 'children', foreignKey: 'teamId' });
 
+Device.belongsTo(User, { foreignKey: "user_id" });  
+User.hasMany(Device, { foreignKey: "user_id" });
+
+
+User.belongsTo(department, { foreignKey: "departmentId" });
+User.belongsTo(designation, { foreignKey: "designationId" });
+
+User.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "productivity" });
+languageSettings.belongsTo(languageDropdown, { as: "language", foreignKey: "language_id" });
 
 
 export default {}

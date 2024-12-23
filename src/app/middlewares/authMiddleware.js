@@ -10,44 +10,39 @@ const jwtConfig = new appConfig().getJwtConfig();
 
 const authMiddleware = async (req, res, next) => {
   try {
-    // console.log("Auth Middleware ---------------1--------------");
     const authHeader = req.header("Authorization");
+
     if (!authHeader)
-      return helper.failed(res, variables.Unauthorized, "Access Denied. No Token Provided");
+      return helper.failed(res, variables.BadRequest, "Access Denied. No Token Provided");
 
     const token = authHeader.replace("Bearer ", "");
-    // console.log(token);
 
     const access_token = await accessToken.findOne({ where: {token: token } });
-    // console.log(access_token);
-    // console.log("------------1---------------------");
     if (access_token) {
       if (new Date() > access_token.expiry_time) {
         await accessToken.destroy({ where: { token: token } });
-        return helper.failed(res, variables.Unauthorized, "Token Expired. Please log in again");
+        return helper.failed(res, variables.BadRequest, "Token Expired. Please log in again");
       }
     }
 
     // Verify the token
     const decoded = jwt.verify(token, jwtConfig);
-    // console.log("------------2---------------------");
 
-    // Fetch the full user object, excluding the password
     const user = await User.findOne({
       where: { id: decoded.userId },
       attributes: { exclude: ["password"] }, // Exclude password from result
     });
     if (!user) return helper.failed(res, variables.NotFound, "User not found in system!");
-    // console.log("------------3---------------------");
 
 
     req.user = user;
+    req.sessionToken = token;
     next();
   } catch (e) {
     if (e.name === "TokenExpiredError") {
-      return helper.failed(res, variables.Unauthorized, e.message);
+      return helper.failed(res, variables.BadRequest, e.message);
     }
-    return helper.failed(res, variables.Unauthorized, e.message);
+    return helper.failed(res, variables.BadRequest, e.message);
   }
 };
 

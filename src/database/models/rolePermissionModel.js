@@ -14,9 +14,6 @@ const rolePermission = sequelize.define(
     company_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
     },
     roleId: {
       type: DataTypes.INTEGER,
@@ -33,11 +30,9 @@ const rolePermission = sequelize.define(
   },
   {
     timestamps: true,
-    // Prevent Sequelize from auto-creating foreign keys
     underscored: false,
   }
 );
 
-// await rolePermission.sync({alter:1});
 
 export default rolePermission;

@@ -6,25 +6,23 @@ class authValidationSchema {
   static companyRegisterValid = async (data, res) => {
     try {
       const { status, message } = await CValidator(data, {
-        name: "required|regex:/^[a-zA-Z]*$/",
+        name: "required|regex:/^[a-zA-Z-' ]+$/",
         email: "required|email",
         password: "required|min:8|max:50",
         confirmPassword: "required|same:password",
-        employeeNumber: "required|integer",
+        employeeNumber: "required|numeric",
         mobile: "required|numeric|digits:10"
         // companyName: "required|regex:/^[a-zA-Z ]*$/|min:3|max:50",
         // companyAddress: "required|string|min:10",
       });
-
-      // console.log("Company Register Validation -------------------------");
-      // console.log(status);
+   
       if (!status) {
-        return helper.failed(res, variables.ValidationError, message);
+        return {status:false, message:message};
       }
 
-      return { status: true };
+      return {status: true};
     } catch (error) {
-      console.error("Validation error:", error.message);
+      console.error("Validation error:", error);
       return helper.failed(res, variables.InternalServerError, error.message);
     }
   };
@@ -42,8 +40,8 @@ class authValidationSchema {
         isAdmin: "required",
       });
 
-      // console.log("Register Validation -------------------------");
-      // console.log(status);
+      // //console.log("Register Validation -------------------------");
+      // //console.log(status);
       if (!status) {
         return helper.failed(res, variables.ValidationError, message);
       }
@@ -63,11 +61,11 @@ class authValidationSchema {
       });
 
       if (!status) {
-        // console.log("Login Validation Error");
-        return helper.failed(res, variables.ValidationError, message);
+        // //console.log("Login Validation Error");
+        return {status:false, message: message};
       }
 
-      return true;
+      return {status:true};
     } catch (error) {
       console.error("Validation error:", error);
       return helper.failed(res, variables.InternalServerError, error.message);

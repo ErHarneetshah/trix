@@ -8,7 +8,7 @@ import { Op } from "sequelize";
 import appConfig from "../../app/config/appConfig.js";
 import JWT from "jsonwebtoken";
 import { parse } from "tldts";
-
+import moment from "moment";
 // const ACCESS_TOKEN = new appConfig().getJwtConfig();
 
 export default {
@@ -40,7 +40,7 @@ export default {
       result["data"] = data;
     }
 
-    console.log({ result });
+    //console.log({ result });
 
     return res.status(statusCode).json(result);
   },
@@ -59,11 +59,11 @@ export default {
         if (err) {
           console.error("Failed to delete file", err);
         } else {
-          console.log("File deleted successfully.");
+          //console.log("File deleted successfully.");
         }
       });
     } catch (error) {
-      console.log({ del_file_error: error });
+      //console.log({ del_file_error: error });
       return { message: `Unable to delete file at this moment`, status: 0 };
     }
   },
@@ -79,7 +79,7 @@ export default {
       });
       if (generatedPass) return generatedPass;
 
-      return this.failed(res, variables.Unauthorized, "Unable to generate password for team member!");
+      return this.failed(res, variables.BadRequest, "Unable to generate password for team member!");
     } catch (error) {
       return this.failed(res, variables.UnknownError, error.message);
     }
@@ -115,11 +115,11 @@ export default {
         if (err) {
           console.error("Failed to delete file", err);
         } else {
-          console.log("File deleted successfully.");
+          //console.log("File deleted successfully.");
         }
       });
     } catch (error) {
-      console.log({ del_file_error: error });
+      //console.log({ del_file_error: error });
       return { message: `Unable to delete file at this moment`, status: 0 };
     }
   },
@@ -133,4 +133,60 @@ export default {
       return null;
     }
   },
+
+   // Helper function to get the date range based on the option
+   getDateRange : async(option, customStart, customEnd) => {
+    const today = moment();
+    let startDate, endDate;
+
+    switch (option) {
+      case "yesterday":
+        startDate = endDate = today
+          .clone()
+          .subtract(1, "days")
+          .format("YYYY-MM-DD");
+        break;
+
+      case "previous_week":
+        endDate = today
+          .clone()
+          .startOf("week")
+          .subtract(1, "days")
+          .format("YYYY-MM-DD");
+        startDate = moment(endDate)
+          .subtract(6, "days")
+          .format("YYYY-MM-DD");
+        break;
+
+      case "previous_month":
+        const firstDayOfThisMonth = today.clone().startOf("month");
+        const lastDayOfPreviousMonth = firstDayOfThisMonth
+          .clone()
+          .subtract(1, "days");
+        startDate = lastDayOfPreviousMonth
+          .clone()
+          .startOf("month")
+          .format("YYYY-MM-DD");
+        endDate = lastDayOfPreviousMonth.format("YYYY-MM-DD");
+        break;
+
+      case "custom_range":
+        if (!customStart || !customEnd) {
+          throw new Error(
+            "Both customStart and customEnd must be provided for 'custom range'."
+          );
+        }
+        startDate = moment(customStart).format("YYYY-MM-DD");
+        endDate = moment(customEnd).format("YYYY-MM-DD");
+        break;
+
+      default:
+        // throw new Error(
+        //   "Invalid option. Valid options are 'yesterday', 'previous week', 'previous month', or 'custom range'."
+        // );
+        return {status:0 , message:"Invalid option!!!"}
+    }
+
+    return { startDate, endDate };
+  }
 };

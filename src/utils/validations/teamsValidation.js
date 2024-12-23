@@ -16,10 +16,10 @@ class teamsValidationSchema {
         teamId: "required",
       });
 
-      // console.log("Team Member Validation -------------------------");
-      // console.log(status);
+      // //console.log("Team Member Validation -------------------------");
+      // //console.log(status);
       if (!status) {
-        return helper.failed(res, variables.ValidationError, message);
+        return { status: false, message: message };
       }
 
       return { status: true };
@@ -31,18 +31,18 @@ class teamsValidationSchema {
 
   static shiftValid = async (data, res) => {
     try {
-      // console.log("Shift Validation -------------------------");
+      // //console.log("Shift Validation -------------------------");
       const { status, message } = await CValidator(data, {
         name: "required|string",
-        start_time: `required|string`,
-        end_time: `required|string`,
+        start_time: `required`,
+        end_time: `required`,
         days: "required|array",
         "days.*": "required|string|in:Mon,Tue,Wed,Thu,Fri,Sat,Sun",
       });
 
-      // console.log(status);
+      // //console.log(status);
       if (!status) {
-        return helper.failed(res, variables.ValidationError, message);
+        return { status: false, message: message };
       }
 
       return { status: true };
@@ -54,16 +54,16 @@ class teamsValidationSchema {
 
   static teamsValid = async (data, res) => {
     try {
-      // console.log("Teams Validation -------------------------");
+      // //console.log("Teams Validation -------------------------");
       const { status, message } = await CValidator(data, {
         name: "required|string",
         departmentId: "required|integer",
         shiftId: "required|integer"
       });
 
-      // console.log(status);
+      // //console.log(status);
       if (!status) {
-        return helper.failed(res, variables.ValidationError, message);
+        return { status: false, message: message };
       }
 
       return { status: true };

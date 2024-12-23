@@ -48,7 +48,6 @@ const shift = sequelize.define(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt columns
-    // Prevent Sequelize from auto-creating foreign keys
     underscored: false,
     hooks: {
       async beforeCreate(shift) {
@@ -65,12 +64,11 @@ const shift = sequelize.define(
         if (shift.changed("start_time") || shift.changed("end_time")) {
           try {
             let calTotalHrTime = await calTotalHr(shift.start_time, shift.end_time);
-            // console.log(calTotalHrTime);
-            if (calTotalHrTime < 5) throw new Error("Start Time and End Time Must have a difference of 5 hours or more");
+            if (calTotalHrTime < 5) throw new Error("Start & End Time Must have atleast 5 hours difference");
 
             shift.total_hours = calTotalHrTime;
           } catch (error) {
-            throw new Error("Error recalculating total hours: " + error.message);
+            throw new Error(error.message);
           }
         }
       },
@@ -92,7 +90,7 @@ const calTotalHr = async (start_time, end_time) => {
     totalMinutes = 24 * 60 - startTotalMinutes + endTotalMinutes;
   }
 
-  // console.log(totalMinutes/60);
+  // //console.log(totalMinutes/60);
   return totalMinutes / 60;
 };
 
