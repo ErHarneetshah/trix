@@ -13,7 +13,7 @@ const exportReports = sequelize.define('exportReports', {
     allowNull: false,
   },
   content:{
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT('long'),
     allowNull: false,
   },
   status:{
