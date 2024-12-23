@@ -1,23 +1,28 @@
-import { Sequelize, QueryTypes } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import exportReports from "../../../database/models/exportReportsModel.js";
-import department from "../../../database/models/departmentModel.js";
-import TimeLog from "../../../database/models/timeLogsModel.js";
+import team from "../../../database/models/teamModel.js";
 import User from "../../../database/models/userModel.js";
-import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
-import commonfuncitons from "../../../utils/services/commonfuncitons.js";
-import validate from "../../../utils/CustomValidation.js";
-import PDFDocument from "pdfkit";
-import ExcelJS from "exceljs";
+import { UserHistory } from "../../../database/models/UserHistory.js";
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
     try {
       const alldata = await exportReports.findAll();
-      if (!alldata) return helper.failed(res, variables.NotFound, "No Report Data Found in Table");
+      if (!alldata)
+        return helper.failed(
+          res,
+          variables.NotFound,
+          "No Report Data Found in Table"
+        );
 
-      return helper.success(res, variables.Success, "Reports Data Retrieved Successfully", alldata);
+      return helper.success(
+        res,
+        variables.Success,
+        "Reports Data Retrieved Successfully",
+        alldata
+      );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -26,6 +31,12 @@ class exportReportController {
   getReportsHistory = async (req, res) => {
     try {
       return helper.success(res, variables.Success, "Reports Data Retrieved Successfully", alldata);
+      return helper.success(
+        res,
+        variables.Success,
+        "Reports Data Retrieved Successfully",
+        alldata
+      );
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -37,7 +48,11 @@ class exportReportController {
       const { fromTime, toTime } = req.body;
 
       await dbTransaction.commit();
-      return helper.success(res, variables.Success, "User Updated Successfully");
+      return helper.success(
+        res,
+        variables.Success,
+        "User Updated Successfully"
+      );
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -84,6 +99,26 @@ class exportReportController {
         // await dbTransaction.commit();
         return helper.success(res, variables.Success, "User Updated Successfully", result);
       }
+      const {
+        fromTime,
+        toTime,
+        definedPeriod,
+        teamId,
+        userId,
+        format,
+        deptRequest,
+      } = req.body;
+
+      /**
+       * Employee name | Department | Date | login time | Logout time | Total active hours | Idle time | time on productive apps | Time on non productive apps | Productive websites | Non productive websites | Average productivity % | Most used productive app
+       */
+
+      await dbTransaction.commit();
+      return helper.success(
+        res,
+        variables.Success,
+        "User Updated Successfully"
+      );
     } catch (error) {
       // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -244,6 +279,26 @@ class exportReportController {
       await this.downloadFile(req, res, attendanceReport);
       // await dbTransaction.commit();
       // return helper.success(res, variables.Success, attendanceReport);
+      const {
+        fromTime,
+        toTime,
+        definedPeriod,
+        teamId,
+        userId,
+        format,
+        deptRequest,
+      } = req.body;
+
+      /**
+       * Employee name | Team | Date | Day | Attendance status | Shift time in | Time in | Shift Time out | Time out | Report(?)
+       */
+
+      await dbTransaction.commit();
+      return helper.success(
+        res,
+        variables.Success,
+        "User Updated Successfully"
+      );
     } catch (error) {
       // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -255,14 +310,26 @@ class exportReportController {
   getBrowserActivityReport = async (req, res) => {
     const dbTransaction = await Sequelize.transaction();
     try {
-      const { fromTime, toTime, definedPeriod, teamId, userId, format, deptRequest } = req.body;
+      const {
+        fromTime,
+        toTime,
+        definedPeriod,
+        teamId,
+        userId,
+        format,
+        deptRequest,
+      } = req.body;
 
       /**
        * Name | Dept. | URL | Productive/Non-productive | Time spent
        */
 
       await dbTransaction.commit();
-      return helper.success(res, variables.Success, "User Updated Successfully");
+      return helper.success(
+        res,
+        variables.Success,
+        "User Updated Successfully"
+      );
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -272,14 +339,26 @@ class exportReportController {
   getApplicationUsageReport = async (req, res) => {
     const dbTransaction = await Sequelize.transaction();
     try {
-      const { fromTime, toTime, definedPeriod, teamId, userId, format, deptRequest } = req.body;
+      const {
+        fromTime,
+        toTime,
+        definedPeriod,
+        teamId,
+        userId,
+        format,
+        deptRequest,
+      } = req.body;
 
       /**
        * Name | Dept. | Application | Productive/Non-Productive |
        */
 
       await dbTransaction.commit();
-      return helper.success(res, variables.Success, "User Updated Successfully");
+      return helper.success(
+        res,
+        variables.Success,
+        "User Updated Successfully"
+      );
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -289,14 +368,26 @@ class exportReportController {
   getDeptPerformReport = async (req, res) => {
     const dbTransaction = await Sequelize.transaction();
     try {
-      const { fromTime, toTime, definedPeriod, teamId, userId, format, deptRequest } = req.body;
+      const {
+        fromTime,
+        toTime,
+        definedPeriod,
+        teamId,
+        userId,
+        format,
+        deptRequest,
+      } = req.body;
 
       /**
        * Department | TL | Total employees | Avg Attendance rate | Avg Login time| Avg productive time (browser)| Avg non productive time (browser)| Avg productive time(app) | Avg non productive time (app) | Most non productive website | Most non productive app | Most productive (app) | Most non productive app
        */
 
       await dbTransaction.commit();
-      return helper.success(res, variables.Success, "User Updated Successfully");
+      return helper.success(
+        res,
+        variables.Success,
+        "User Updated Successfully"
+      );
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -306,15 +397,159 @@ class exportReportController {
   getUnauthorizedWebReport = async (req, res) => {
     const dbTransaction = await Sequelize.transaction();
     try {
-      const { fromTime, toTime, definedPeriod, teamId, userId, format, deptRequest } = req.body;
+      const {
+        fromTime,
+        toTime,
+        definedPeriod,
+        teamId,
+        userId,
+        format,
+        deptRequest,
+      } = req.body;
 
       /**
        * Name | Dept. | URL | time
        */
       await dbTransaction.commit();
-      return helper.success(res, variables.Success, "User Updated Successfully");
+      return helper.success(
+        res,
+        variables.Success,
+        "User Updated Successfully"
+      );
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getTeamList = async (req, res) => {
+    try {
+      const teamList = await team.findAll({
+        where: {
+          company_id: req.user.company_id,
+        },
+        attributes: ["id", "name"],
+      });
+      return helper.success(res, variables.Success, teamList);
+    } catch (error) {
+      console.log("Error while getting team list for report:", error);
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getMemberList = async (req, res) => {
+    try {
+      const teamList = await User.findAll({
+        where: {
+          company_id: req.user.company_id,
+          isAdmin: 0,
+        },
+        attributes: ["id", "fullname"],
+      });
+      return helper.success(res, variables.Success, teamList);
+    } catch (error) {
+      console.log("Error while getting team list for report:", error);
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getBrowserHistoryReport = async (req, res) => {
+    try {
+      let data = req.body;
+      if (!data.member_id) {
+        return helper.failed(
+          res,
+          variables.BadRequest,
+          "Please select team and member"
+        );
+      }
+   
+      const validOptions = [
+        "custom_range",
+        "yesterday",
+        "previous_week",
+        "previous_month",
+      ];
+
+      if (!data.option || !validOptions.includes(data.option)) {
+        return helper.failed(
+          res,
+          variables.BadRequest,
+          "Please select a valid date option"
+        );
+      }
+
+      let date;
+      if (data.option) {
+        if (data.option == "custom_range") {
+          if (!data.customStart || !data.customEnd) {
+            return helper.failed(
+              res,
+              variables.BadRequest,
+              "Please select start and end date"
+            );
+          }
+          date = await helper.getDateRange(data.option, data.customStart, data.customEnd);
+        } else {
+          date = await helper.getDateRange(data.option);
+        }
+      }
+      if (date && date.status == 0) {
+        return helper.failed(res, variables.BadRequest, date.message);
+      }
+
+      if (data.team_id && data.member_id) {
+        const team = await User.findOne({
+          where: {
+            teamId: data.team_id,
+            id: data.member_id,
+            company_id: req.user.company_id,
+            createdAt: {
+              [Op.between]: [date.startDate, date.endDate],
+            },
+          },
+        });
+        if (!team) {
+          return helper.failed(res, variables.BadRequest, "User not found!!!");
+        }
+        const browserHistroy = await UserHistory.findAll({
+          where: {
+            userId: data.member_id,
+            createdAt: {
+              [Op.between]: [date.startDate, date.endDate],
+            },
+          },
+        });
+        return helper.success(
+          res,
+          variables.Success,
+          "Browser Data Fetched successfully",
+          browserHistroy
+        );
+      } else {
+        const team = await User.findOne({
+          where: {
+            id: data.member_id,
+            company_id: req.user.company_id,
+          },
+        });
+        if (!team) {
+          return helper.failed(res, variables.BadRequest, "User not found!!!");
+        }
+        const browserHistroy = await UserHistory.findAll({
+          where: {
+            userId: data.member_id,
+          },
+        });
+        return helper.success(
+          res,
+          variables.Success,
+          "Browser Data Fetched successfully",
+          browserHistroy
+        );
+      }
+    } catch (error) {
+      console.log("Error while generating browser history report:", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };

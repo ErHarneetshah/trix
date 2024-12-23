@@ -14,6 +14,8 @@ router.post("/getAttendanceReport", authMiddleware,verifyAdminMiddleware,   expo
 router.post("/getBrowserActivityReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getBrowserActivityReport);
 router.post("/getApplicationUsageReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getApplicationUsageReport);
 router.post("/getUnauthorizedWebReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getUnauthorizedWebReport);
-
+router.get("/getTeamList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getTeamList);
+router.get("/getMemberList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getMemberList);
+router.post("/getBrowserHistoryReport",authMiddleware,verifyAdminMiddleware, exportReportInstance.getBrowserHistoryReport);
 
 export default router;

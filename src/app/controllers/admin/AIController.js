@@ -117,7 +117,7 @@ async function getOpenAIResponse(userId, question, date) {
   Productive Website : ${JSON.stringify(productive_website)}
   Time Log Data: ${JSON.stringify(timedata)}
   (Total time spent for apps and totalDuration in timelogs is in minutes)
-  I Want Text Response based on given data
+  Response in simple text
   `;
 
   try {
