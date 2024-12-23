@@ -54,9 +54,9 @@ const getThemeStatus = async (req, res) => {
             attributes: ["id", "language_id", "theme_id"],
             include: [
                 {
-                    model: languageDropdown,
-                    as: "language",
-                    attributes: ["language", "image"],
+                  model: languageDropdown,
+                  as: "language",
+                  attributes: ["language","image"],
                 },
             ]
         });

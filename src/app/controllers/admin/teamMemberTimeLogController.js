@@ -7,7 +7,7 @@ import User from "../../../database/models/userModel.js";
 import { Op, Sequelize, QueryTypes } from "sequelize";
 import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
-
+import commonfuncitons from "../../../utils/services/commonfuncitons.js";
 class teamMemberTimeLogController {
   getAllTeamMemberLog = async (req, res) => {
     try {
@@ -128,7 +128,7 @@ class teamMemberTimeLogController {
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
-      let result = this.createResponse(alldata.rows);
+      let result = commonfuncitons.createResponse(alldata.rows);
 
       if (searchParam) {
         const regex = new RegExp(searchParam, "i");
@@ -310,129 +310,10 @@ class teamMemberTimeLogController {
         { count: nonProductiveCount, name: "unproductive" },
       ];
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", countsData);
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", { countsData: countsData, other: {} });
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
-  };
-
-  // used to map response in a certain response
-  createResponse = (inputData) => {
-    return inputData.map((data) => {
-      let productiveTime, totalTime, totalProductiveTime, nonProductiveTime, totalNonProductiveTime, activeTimeThreshold, idleTimeThreshold, isProductive, isSlacking;
-
-      if (data.user.productivity.length != 0) {
-        totalTime = data.user.productivity.reduce(
-          (totals, item) => {
-            const timeSpent = this.calculateTimeInSeconds(item.startTime, item.endTime).toString();
-            const seconds = parseInt(timeSpent, 10);
-
-            if (!isNaN(seconds)) {
-              if (item.is_productive) {
-                totals.productiveTime += seconds; // Add to productive total
-              } else {
-                totals.nonProductiveTime += seconds; // Add to non-productive total
-              }
-            }
-            return totals;
-          },
-          { productiveTime: 0, nonProductiveTime: 0 } // Initial values for both totals
-        );
-
-        totalProductiveTime = totalTime.productiveTime;
-        totalNonProductiveTime = totalTime.nonProductiveTime;
-
-        const prodresult = this.convertSecondsToHMS(totalProductiveTime);
-        const nonProdresult = this.convertSecondsToHMS(totalNonProductiveTime);
-
-        let prodhours, prodminutes, prodseconds;
-        let nonProdhours, nonProdminutes, nonProdseconds;
-
-        //Productive
-        if (prodresult == 0) {
-          productiveTime = 0;
-        } else {
-          prodhours = prodresult.hours;
-          prodminutes = prodresult.minutes;
-          prodseconds = prodresult.seconds;
-
-          productiveTime = `${prodhours}h ${prodminutes}m ${prodseconds}s`;
-        }
-
-        //Non productive
-        if (nonProdresult == 0) {
-          nonProductiveTime = 0;
-        } else {
-          nonProdhours = nonProdresult.hours;
-          nonProdminutes = nonProdresult.minutes;
-          nonProdseconds = nonProdresult.seconds;
-
-          nonProductiveTime = `${nonProdhours}h ${nonProdminutes}m ${nonProdseconds}s`;
-        }
-
-        activeTimeThreshold = Math.floor((data.active_time + data.spare_time + data.idle_time) * 60 * 0.6);
-        idleTimeThreshold = Math.floor((data.active_time + data.spare_time + data.idle_time) * 0.4);
-        isProductive = totalProductiveTime >= activeTimeThreshold;
-        isSlacking = data.idle_time >= idleTimeThreshold;
-      } else {
-        totalProductiveTime = 0;
-        totalNonProductiveTime = 0;
-        productiveTime = 0;
-        nonProductiveTime = 0;
-
-        activeTimeThreshold = Math.floor((data.active_time + data.spare_time + data.idle_time) * 60 * 0.6);
-        idleTimeThreshold = Math.floor((data.active_time + data.spare_time + data.idle_time) * 0.4);
-        isProductive = totalProductiveTime >= activeTimeThreshold;
-        isSlacking = data.idle_time >= idleTimeThreshold;
-      }
-
-      const outputData = {
-        // id: data.id,
-        user_id: data.user_id,
-        shift_id: data.shift_id,
-        company_id: data.company_id,
-        logged_in_time: data.logged_in_time,
-        active_time: data.active_time,
-        // late_coming_duration: data.late_coming_duration,
-        logged_out_time: data.logged_out_time,
-        early_going: data.early_going,
-        late_coming: data.late_coming,
-        // spare_time: data.spare_time,
-        // idle_time: data.idle_time,
-        // date: data.date,
-        user: {
-          id: data.user.id,
-          fullname: data.user.fullname,
-          currentStatus: data.user.currentStatus,
-          productiveTime: productiveTime,
-          nonProductiveTime: nonProductiveTime,
-          is_productive: isProductive,
-          is_slacking: isSlacking,
-        },
-        shift: data.shift,
-      };
-
-      return outputData;
-    });
-  };
-
-  calculateTimeInSeconds = (startTime, endTime) => {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    return Math.floor((end - start) / 1000); // Convert milliseconds to seconds
-  };
-
-  convertSecondsToHMS = (totalSeconds) => {
-    let hours, minutes, seconds;
-    if (totalSeconds) {
-      hours = Math.floor(totalSeconds / 3600);
-      minutes = Math.floor((totalSeconds % 3600) / 60);
-      seconds = totalSeconds % 60;
-    } else {
-      return 0;
-    }
-
-    return { hours, minutes, seconds };
   };
 }
 

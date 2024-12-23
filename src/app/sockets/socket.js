@@ -410,7 +410,7 @@ const getUserReport = async (data, io, socket) => {
     }
 
     socket.join("privateRoom_" + data.id);
-    io.to(user.socket_id).socketsJoin("privateRoom");
+    io.to(user.socket_id).socketsJoin("privateRoom_" + data.id);
 
     let today = data.date
       ? new Date(data.date).toISOString().split("T")[0]

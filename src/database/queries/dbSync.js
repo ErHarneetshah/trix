@@ -18,7 +18,6 @@ import ProductiveWebsite from '../models/ProductiveWebsite.js';
 import role from '../models/roleModel.js';
 import team from '../models/teamModel.js';
 import { UserHistory } from '../models/UserHistory.js';
-import userSetting from '../models/userSettingModel.js';
 import workReports from '../models/workReportsModel.js';
 import shift from '../models/shiftModel.js';
 import reportSettings from "../models/reportSettingsModel.js";

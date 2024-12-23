@@ -168,7 +168,6 @@ class teamMemberController {
         const sendmail = await H.sendM(requestData.email, subject, textMessage);
 
         if (!sendmail.success) {
-          // If email fails, rollback the transaction
           await dbTransaction.rollback();
           return helper.failed(res, variables.BadRequest, sendmail.message);
         }
