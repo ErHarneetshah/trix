@@ -120,9 +120,9 @@ class exportReportController {
       const fileName = `Attendance_Report_${Date.now()}.pdf`;
       const __dirname = path.dirname(new URL(import.meta.url).pathname);
       const filePath = path.resolve(__dirname, '../../../storage/files', fileName);
+      console.log(filePath);
 
       if (format === "xls") {
-        // Add your XLS logic here...
         return;
       }
 
@@ -194,11 +194,7 @@ class exportReportController {
 
 
   getAttendanceReport = async (req, res) => {
-    // const dbTransaction = await Sequelize.transaction();
     try {
-      /**
-       * Employee name | Team | Date | Day | Attendance status | Shift time in | Time in | Shift Time out | Time out | Report(?)
-       */
       const { fromDate, toDate, definedPeriod, teamId, userId, limit, offset } = req.body;
       let startDate, endDate;
 
@@ -231,7 +227,6 @@ class exportReportController {
         startDate = new Date(fromDate);
         endDate = new Date(toDate);
 
-
       } else {
         return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
@@ -255,11 +250,11 @@ class exportReportController {
         JOIN users AS u ON timelog.user_id = u.id
         JOIN teams AS team ON u.teamId = team.id
         JOIN shifts AS shifts ON timelog.shift_id = shifts.id
-        WHERE timelog.date BETWEEN :startDate AND :endDate
+        WHERE timelog.date BETWEEN :startDate AND :endDate AND timelog.company_id = ${req.user.company_id} AND u.isAdmin = 0
         ${teamId ? "AND team.id = :teamId" : ""}
         ${userId ? "AND u.id = :userId" : ""}
         ORDER BY timelog.date DESC
-        LIMIT :limit OFFSET :offset`,
+        `,
         {
           replacements: {
             startDate: startDate.toISOString().split("T")[0],
@@ -272,6 +267,8 @@ class exportReportController {
           type: QueryTypes.SELECT,
         }
       );
+
+      console.log(attendanceReport);
 
       await this.downloadFile(req, res, attendanceReport);
       // await dbTransaction.commit();
@@ -423,7 +420,7 @@ class exportReportController {
         INNER JOIN users As u ON uh.userId = u.id
         INNER JOIN departments ON u.departmentId = departments.id
         WHERE uh.website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id = :companyId
-            AND uh.date BETWEEN :startDate AND :endDate   ${teamId ? "AND team.id = :teamId" : ""}
+            AND uh.date BETWEEN :startDate AND :endDate   ${teamId ? "AND team.id = :teamId" : ""} AND u.isAdmin = 0
         ${userId ? "AND u.id = :userId" : ""}
         ORDER BY uh.visitTime DESC`,
         {
