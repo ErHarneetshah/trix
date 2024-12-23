@@ -11,7 +11,7 @@ class desigController {
     try {
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
-      limit = parseInt(limit) || 10;
+      limit = parseInt(limit) || 1;
       let searchable = ["name", "status"];
       let offset = (page - 1) * limit || 0;
       let where = await helper.searchCondition(searchParam, searchable);
@@ -162,7 +162,7 @@ class desigController {
 
       // ___________---------- Designation Used in other table or not ----------_______________
       const isUsedInUsers = await User.findOne({ where: { designationId: id } });
-      if (isUsedInUsers) return helper.failed(res, variables.Unauthorized, "Cannot Delete this Designation as it is referred in other tables");
+      if (isUsedInUsers) return helper.failed(res, variables.BadRequest, "Cannot Delete this Designation as it is referred in other tables");
 
       // ___________---------- Designation Destroy ----------_______________
       const deleteDesig = await designation.destroy({
@@ -175,7 +175,7 @@ class desigController {
         return helper.success(res, variables.Success, "Designation deleted Successfully!");
       } else {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unable to delete designation!");
+        return helper.failed(res, variables.BadRequest, "Unable to delete designation!");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();

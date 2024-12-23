@@ -18,7 +18,6 @@ import ProductiveWebsite from '../models/ProductiveWebsite.js';
 import role from '../models/roleModel.js';
 import team from '../models/teamModel.js';
 import { UserHistory } from '../models/UserHistory.js';
-import userSetting from '../models/userSettingModel.js';
 import workReports from '../models/workReportsModel.js';
 import shift from '../models/shiftModel.js';
 import reportSettings from "../models/reportSettingsModel.js";
@@ -28,17 +27,17 @@ import exportReports from "../models/exportReportsModel.js";
 
 (async () => {
   try {
-    console.log('Initializing database connection...');
+    //console.log('Initializing database connection...');
 
     const forceSync = process.argv.includes('--force');
-    console.log(`Synchronizing models${forceSync ? ' with force' : ''}...`);
+    //console.log(`Synchronizing models${forceSync ? ' with force' : ''}...`);
     await sequelize.sync({ force: forceSync, alter: true });
 
-    console.log(`Models synchronized successfully${forceSync ? ' (forced)' : ''}.`);
+    //console.log(`Models synchronized successfully${forceSync ? ' (forced)' : ''}.`);
   } catch (error) {
     console.error('Error synchronizing models:', error);
   } finally {
     await sequelize.close();
-    console.log('Database connection closed.');
+    //console.log('Database connection closed.');
   }
 })();

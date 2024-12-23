@@ -17,9 +17,8 @@ import chartRouter from './admin/chartRoutes.js';
 import dashboardDataRouter from './admin/dashboardRoutes.js';
 import aiRoutes from './admin/aiRoutes.js';
 import exportReportRoutes from './admin/exportReportRoutes.js';
-
-
-import cronFunctions from '../cron/cronFunctions.js'
+import cronFunctions from '../cron/cronFunctions.js';
+import compareReportRouter from '../routes/admin/compareReportRoutes.js';
 
 const router = express.Router();
 
@@ -52,5 +51,6 @@ router.use('/admin/tree', teamStructure);
 router.use('/charts', chartRouter);
 router.use('/dashboard', dashboardDataRouter);
 router.use('/admin/ai',aiRoutes)
+router.use('/admin/compare',compareReportRouter );
 
 export default router;

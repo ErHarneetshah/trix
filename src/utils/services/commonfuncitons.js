@@ -37,15 +37,18 @@ async function uploadPhotos(req, res, folder, imageArr) {
 
 const getNextMonthDate = () => {
   const today = new Date();
+  // const today = new Date('Wed Jan 01 2025 00:00:00 GMT+0530');
+
   const nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  nextMonthDate.setHours(0, 0, 0, 0);
-  return nextMonthDate.toISOString().split("T")[0];
+  return nextMonthDate.toLocaleDateString("en-CA");
+  // nextMonthDate.setHours(0, 0, 0, 0);
+  // return nextMonthDate.toISOString().split("T")[0];
 };
 
 const getNextMondayDate = () => {
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  const daysUntilNextMonday = (8 - dayOfWeek) % 7; // Calculate days until next Monday
+  const dayOfWeek = today.getDay();
+  const daysUntilNextMonday = (8 - dayOfWeek) % 7;
   const nextMondayDate = new Date(today);
   nextMondayDate.setDate(today.getDate() + daysUntilNextMonday);
   return nextMondayDate.toISOString().split("T")[0];
@@ -164,15 +167,15 @@ const calculateTimeInSeconds = (startTime, endTime) => {
 };
 
 const convertSecondsToHMS = (totalSeconds) => {
-    if (!totalSeconds || totalSeconds < 0) {
-      return 0; // Handle invalid or negative input gracefully
-    }
-  
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-  
-    return { hours, minutes, seconds }; // Return an object with the calculated values
-  };
-  
+  if (!totalSeconds || totalSeconds < 0) {
+    return 0; // Handle invalid or negative input gracefully
+  }
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return { hours, minutes, seconds }; // Return an object with the calculated values
+};
+
 export default { uploadPhotos, getNextMonthDate, getNextMondayDate, getTomorrowDate, createResponse, convertSecondsToHMS, calculateTimeInSeconds };

@@ -17,9 +17,9 @@ async function ensureDatabaseExists() {
 
         if (!dbExists) {
             await connection.query(`CREATE DATABASE \`${database}\` CHARACTER SET utf8mb4 COLLATE ${collation};`);
-            console.log(`Database "${database}" created successfully with collation "${collation}".`);
+            //console.log(`Database "${database}" created successfully with collation "${collation}".`);
         } else {
-            console.log(`Database "${database}" already exists.`);
+            //console.log(`Database "${database}" already exists.`);
         }
     } finally {
         await connection.end();
@@ -33,6 +33,7 @@ const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.p
     host: dbConfig.host,
     dialect: 'mysql',
     logging: false,
+    timezone: '+05:30', // Asia/Kolkata timezone
     pool: {
         max: 20,
         min: 2,
@@ -41,9 +42,10 @@ const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.p
     },
 });
 
+
 try {
     await sequelize.authenticate();
-    console.log('Connection has been established successfully ----------------------');
+    //console.log('Connection has been established successfully ----------------------');
 } catch (error) {
     console.error('Unable to connect to the database:', error);
 }

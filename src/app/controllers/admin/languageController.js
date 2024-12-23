@@ -19,14 +19,14 @@ const updateLanguage = async (req, res) => {
     try {
         let { language_id, theme_id } = req.body;
         // get previous theme status
-        const getPreviousThemeStatus = await languageSettings.findOne({  where: { user_id: req.user.id ,company_id : req.user.company_id }, attributes: ["id", "language_id", "theme_id"] });
-        
+        const getPreviousThemeStatus = await languageSettings.findOne({ where: { user_id: req.user.id, company_id: req.user.company_id }, attributes: ["id", "language_id", "theme_id"] });
+
         language_id = language_id ? language_id : getPreviousThemeStatus.language_id;
         theme_id = theme_id ? theme_id : getPreviousThemeStatus.theme_id;
-        
-        if ( typeof language_id == "string"  ) return helper.failed(res, variables.ValidationError, "Please provide valid language id and in numbers");
-        if ( typeof theme_id == "string"  ) return helper.failed(res, variables.ValidationError, "Please provide valid theme id and in numbers");
-        
+
+        if (typeof language_id == "string") return helper.failed(res, variables.ValidationError, "Please provide valid language id and in numbers");
+        if (typeof theme_id == "string") return helper.failed(res, variables.ValidationError, "Please provide valid theme id and in numbers");
+
 
         const isLanguageExists = await languageDropdown.findByPk(language_id);
         if (!isLanguageExists) {
@@ -47,22 +47,21 @@ const updateLanguage = async (req, res) => {
     }
 };
 
-const getThemeStatus = async(req,res) => {
+const getThemeStatus = async (req, res) => {
     try {
         const theme = await languageSettings.findOne({
             where: { user_id: req.user.id },
-            attributes: ["id", "language_id", "theme_id"], 
+            attributes: ["id", "language_id", "theme_id"],
             include: [
                 {
                   model: languageDropdown,
                   as: "language",
                   attributes: ["language","image"],
                 },
-              ]
+            ]
         });
-        console.log("theme",theme);
-        const themeMapping = { 1: "LTR", 2: "RTL"};
-        const themeType = theme ?  themeMapping[theme.theme_id] : "unknown";
+        const themeMapping = { 1: "LTR", 2: "RTL" };
+        const themeType = theme ? themeMapping[theme.theme_id] : "unknown";
         if (!theme || theme.length === 0 || theme.theme_id === undefined) return helper.failed(res, variables.NotFound, "Theme status Not found");
         return helper.success(res, variables.Success, "Theme Status Retrieved Successfully", theme, { themeType });
 
@@ -73,6 +72,6 @@ const getThemeStatus = async(req,res) => {
 }
 
 
-export default { getLanguageDropdown, updateLanguage,getThemeStatus };
+export default { getLanguageDropdown, updateLanguage, getThemeStatus };
 
 

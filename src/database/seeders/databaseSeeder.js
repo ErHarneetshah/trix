@@ -854,7 +854,7 @@ export default async function seedDatabase() {
         await department.update({ parentDeptId: update.parentDeptId }, { where: { name: update.name, company_id: a } });
       }
 
-      console.log("Departments Data created successfully.");
+      //console.log("Departments Data created successfully.");
 
       //*________________--------------- DESIGNATIONS -------------_____________________
       const rootDesignations = await designation.bulkCreate(
@@ -893,7 +893,7 @@ export default async function seedDatabase() {
 
       const designationIds = rootDesignations.map((designation) => designation.id);
 
-      console.log("Designations Data Created successfully.");
+      //console.log("Designations Data Created successfully.");
       //*________________--------------- SHIFTS -------------_____________________
       const rootShift = await shift.bulkCreate([
         {
@@ -969,7 +969,7 @@ export default async function seedDatabase() {
 
       const shiftIds = rootShift.map((shift) => shift.id);
 
-      console.log("Shifts Data Created successfully.");
+      //console.log("Shifts Data Created successfully.");
       //*________________--------------- TEAMS -------------_____________________
       const rootTeam = await team.bulkCreate([
         {
@@ -1035,7 +1035,7 @@ export default async function seedDatabase() {
 
       const teamIds = rootTeam.map((team) => team.id);
 
-      console.log("Teams Data Created successfully.");
+      //console.log("Teams Data Created successfully.");
       const today = new Date();
       const nextMonthDate = addMonths(today, 1);
       //*________________--------------- USERS -------------_____________________
@@ -1200,11 +1200,11 @@ export default async function seedDatabase() {
         companyId: user.company_id, // Replace `company_id` with the actual key in your data if different
       }));
 
-      console.log("User Data Created successfully.");
+      //console.log("User Data Created successfully.");
 
       //*________________--------------- REPORT SETTINGS -------------_____________________
       const rootReportSettings = await reportSettings.bulkCreate([{ company_id: a }]);
-      console.log("Report Settings Data Created successfully.");
+      //console.log("Report Settings Data Created successfully.");
 
       //*________________--------------- APP HISTORY -------------_____________________
 
@@ -1214,7 +1214,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Postman`,
+            appName: `Postman`, is_productive:1,
             startTime: `${currentDate} 09:39:35`,
             endTime: `${currentDate} 09:40:35`,
             createdAt: `${currentDate} 09:39:35`,
@@ -1224,7 +1224,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Google Chrome`,
+            appName: `Google Chrome`, is_productive:0,
             startTime: `${currentDate} 09:39:35`,
             endTime: `${currentDate} 09:40:35`,
             createdAt: `${currentDate} 09:39:35`,
@@ -1234,7 +1234,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Android Studio`,
+            appName: `Android Studio`, is_productive:1,
             startTime: `${currentDate} 09:39:35`,
             endTime: `${currentDate} 09:40:35`,
             createdAt: `${currentDate} 09:39:35`,
@@ -1244,7 +1244,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Finder`,
+            appName: `Finder`, is_productive:0,
             startTime: `${currentDate} 09:39:35`,
             endTime: `${currentDate} 09:40:35`,
             createdAt: `${currentDate} 09:39:35`,
@@ -1254,7 +1254,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Cliq`,
+            appName: `Cliq`, is_productive:1,
             startTime: `${currentDate} 09:39:35`,
             endTime: `${currentDate} 09:40:35`,
             createdAt: `${currentDate} 09:39:35`,
@@ -1264,7 +1264,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `MongoDB Compass`,
+            appName: `MongoDB Compass`, is_productive:1,
             startTime: `${currentDate} 09:39:35`,
             endTime: `${currentDate} 09:40:35`,
             createdAt: `${currentDate} 09:39:35`,
@@ -1274,7 +1274,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Calendar`,
+            appName: `Calendar`, is_productive:0,
             startTime: `${currentDate} 09:39:35`,
             endTime: `${currentDate} 09:40:35`,
             createdAt: `${currentDate} 09:39:35`,
@@ -1284,7 +1284,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Code`,
+            appName: `Code`, is_productive:1,
             startTime: `${currentDate} 09:39:35`,
             endTime: `${currentDate} 09:40:35`,
             createdAt: `${currentDate} 09:39:35`,
@@ -1294,7 +1294,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `E-Monitrix`,
+            appName: `E-Monitrix`, is_productive:0,
             startTime: `${currentDate} 09:39:35`,
             endTime: `${currentDate} 09:40:35`,
             createdAt: `${currentDate} 09:39:35`,
@@ -1304,7 +1304,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Postman`,
+            appName: `Postman`, is_productive:1,
             startTime: `${currentDate} 09:40:59`,
             endTime: `${currentDate} 09:40:59`,
             createdAt: `${currentDate} 09:40:59`,
@@ -1314,7 +1314,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Google Chrome`,
+            appName: `Google Chrome`, is_productive:0,
             startTime: `${currentDate} 09:40:59`,
             endTime: `${currentDate} 09:40:59`,
             createdAt: `${currentDate} 09:40:59`,
@@ -1324,7 +1324,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Android Studio`,
+            appName: `Android Studio`, is_productive:1,
             startTime: `${currentDate} 09:40:59`,
             endTime: `${currentDate} 09:40:59`,
             createdAt: `${currentDate} 09:40:59`,
@@ -1334,7 +1334,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Finder`,
+            appName: `Finder`, is_productive:0,
             startTime: `${currentDate} 09:40:59`,
             endTime: `${currentDate} 09:40:59`,
             createdAt: `${currentDate} 09:40:59`,
@@ -1344,7 +1344,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Cliq`,
+            appName: `Cliq`, is_productive:1,
             startTime: `${currentDate} 09:40:59`,
             endTime: `${currentDate} 09:40:59`,
             createdAt: `${currentDate} 09:40:59`,
@@ -1354,7 +1354,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `MongoDB Compass`,
+            appName: `MongoDB Compass`, is_productive:1,
             startTime: `${currentDate} 09:40:59`,
             endTime: `${currentDate} 09:40:59`,
             createdAt: `${currentDate} 09:40:59`,
@@ -1364,7 +1364,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Calendar`,
+            appName: `Calendar`, is_productive:0,
             startTime: `${currentDate} 09:40:59`,
             endTime: `${currentDate} 09:40:59`,
             createdAt: `${currentDate} 09:40:59`,
@@ -1374,7 +1374,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Code`,
+            appName: `Code`, is_productive:1,
             startTime: `${currentDate} 09:40:59`,
             endTime: `${currentDate} 09:40:59`,
             createdAt: `${currentDate} 09:40:59`,
@@ -1384,7 +1384,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `E-Monitrix`,
+            appName: `E-Monitrix`, is_productive:0,
             startTime: `${currentDate} 09:40:59`,
             endTime: `${currentDate} 09:40:59`,
             createdAt: `${currentDate} 09:40:59`,
@@ -1394,7 +1394,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Postman`,
+            appName: `Postman`, is_productive:1,
             startTime: `${currentDate} 09:41:31`,
             endTime: `${currentDate} 09:44:31`,
             createdAt: `${currentDate} 09:41:31`,
@@ -1404,7 +1404,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Google Chrome`,
+            appName: `Google Chrome`, is_productive:0,
             startTime: `${currentDate} 09:41:31`,
             endTime: `${currentDate} 09:44:31`,
             createdAt: `${currentDate} 09:41:31`,
@@ -1414,7 +1414,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Android Studio`,
+            appName: `Android Studio`, is_productive:1,
             startTime: `${currentDate} 09:41:31`,
             endTime: `${currentDate} 09:44:31`,
             createdAt: `${currentDate} 09:41:31`,
@@ -1424,7 +1424,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Finder`,
+            appName: `Finder`, is_productive:0,
             startTime: `${currentDate} 09:41:31`,
             endTime: `${currentDate} 09:44:31`,
             createdAt: `${currentDate} 09:41:31`,
@@ -1434,7 +1434,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Cliq`,
+            appName: `Cliq`, is_productive:1,
             startTime: `${currentDate} 09:41:31`,
             endTime: `${currentDate} 09:44:31`,
             createdAt: `${currentDate} 09:41:31`,
@@ -1444,7 +1444,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `MongoDB Compass`,
+            appName: `MongoDB Compass`, is_productive:1,
             startTime: `${currentDate} 09:41:31`,
             endTime: `${currentDate} 09:44:31`,
             createdAt: `${currentDate} 09:41:31`,
@@ -1454,7 +1454,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Calendar`,
+            appName: `Calendar`, is_productive:0,
             startTime: `${currentDate} 09:41:31`,
             endTime: `${currentDate} 09:44:31`,
             createdAt: `${currentDate} 09:41:31`,
@@ -1464,7 +1464,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Code`,
+            appName: `Code`, is_productive:1,
             startTime: `${currentDate} 09:41:31`,
             endTime: `${currentDate} 09:44:31`,
             createdAt: `${currentDate} 09:41:31`,
@@ -1474,7 +1474,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `E-Monitrix`,
+            appName: `E-Monitrix`, is_productive:0,
             startTime: `${currentDate} 09:41:31`,
             endTime: `${currentDate} 09:44:31`,
             createdAt: `${currentDate} 09:41:32`,
@@ -1484,7 +1484,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Postman`,
+            appName: `Postman`, is_productive:1,
             startTime: `${currentDate} 09:47:48`,
             endTime: `${currentDate} 09:49:48`,
             createdAt: `${currentDate} 09:48:48`,
@@ -1494,7 +1494,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Google Chrome`,
+            appName: `Google Chrome`, is_productive:0,
             startTime: `${currentDate} 09:47:48`,
             endTime: `${currentDate} 09:49:48`,
             createdAt: `${currentDate} 09:48:48`,
@@ -1504,7 +1504,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Android Studio`,
+            appName: `Android Studio`, is_productive:1,
             startTime: `${currentDate} 09:47:48`,
             endTime: `${currentDate} 09:49:48`,
             createdAt: `${currentDate} 09:48:48`,
@@ -1514,7 +1514,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Finder`,
+            appName: `Finder`, is_productive:0,
             startTime: `${currentDate} 09:47:48`,
             endTime: `${currentDate} 09:49:48`,
             createdAt: `${currentDate} 09:48:48`,
@@ -1524,7 +1524,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Cliq`,
+            appName: `Cliq`, is_productive:1,
             startTime: `${currentDate} 09:47:48`,
             endTime: `${currentDate} 09:49:48`,
             createdAt: `${currentDate} 09:48:48`,
@@ -1534,7 +1534,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `MongoDB Compass`,
+            appName: `MongoDB Compass`, is_productive:1,
             startTime: `${currentDate} 09:47:48`,
             endTime: `${currentDate} 09:49:48`,
             createdAt: `${currentDate} 09:48:48`,
@@ -1544,7 +1544,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Calendar`,
+            appName: `Calendar`, is_productive:0,
             startTime: `${currentDate} 09:47:48`,
             endTime: `${currentDate} 09:49:48`,
             createdAt: `${currentDate} 09:48:48`,
@@ -1554,7 +1554,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Code`,
+            appName: `Code`, is_productive:1,
             startTime: `${currentDate} 09:47:48`,
             endTime: `${currentDate} 09:49:48`,
             createdAt: `${currentDate} 09:48:48`,
@@ -1564,7 +1564,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `E-Monitrix`,
+            appName: `E-Monitrix`, is_productive:0,
             startTime: `${currentDate} 09:47:48`,
             endTime: `${currentDate} 09:49:48`,
             createdAt: `${currentDate} 09:48:48`,
@@ -1594,7 +1594,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Cliq`,
+            appName: `Cliq`, is_productive:1,
             startTime: `${currentDate} 09:57:47`,
             endTime: `${currentDate} 09:57:47`,
             createdAt: `${currentDate} 09:57:47`,
@@ -1604,7 +1604,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Code`,
+            appName: `Code`, is_productive:1,
             startTime: `${currentDate} 09:57:47`,
             endTime: `${currentDate} 09:57:47`,
             createdAt: `${currentDate} 09:57:47`,
@@ -1634,7 +1634,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Postman`,
+            appName: `Postman`, is_productive:1,
             startTime: `${currentDate} 09:57:47`,
             endTime: `${currentDate} 09:57:47`,
             createdAt: `${currentDate} 09:57:47`,
@@ -1694,7 +1694,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Cliq`,
+            appName: `Cliq`, is_productive:1,
             startTime: `${currentDate} 11:01:34`,
             endTime: `${currentDate} 11:02:34`,
             createdAt: `${currentDate} 11:01:34`,
@@ -1704,7 +1704,7 @@ export default async function seedDatabase() {
             userId: id,
             company_id: a,
             date: currentDate,
-            appName: `Code`,
+            appName: `Code`, is_productive:1,
             startTime: `${currentDate} 11:01:34`,
             endTime: `${currentDate} 11:02:34`,
             createdAt: `${currentDate} 11:01:34`,

@@ -241,7 +241,7 @@ class teamMemberTimeLogController {
         },
       });
 
-      console.log({ startOfDay });
+      //console.log({ startOfDay });
       let date_string = new Date(startOfDay).toISOString().split("T")[0];
 
       const [productiveResult] = await sequelize.query(

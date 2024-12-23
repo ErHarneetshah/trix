@@ -26,4 +26,6 @@ const exportReports = sequelize.define('exportReports', {
   underscored: false,
 });
 
+await exportReports.sync({alter:1});
+
 export default exportReports;

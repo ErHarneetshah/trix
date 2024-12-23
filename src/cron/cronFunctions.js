@@ -9,6 +9,8 @@ import commonfuncitons from '../utils/services/commonfuncitons.js';
 const sendEmailWithReports = async (req, res) => {
     try {
         const date = new Date();
+        // const todayDate = '2025-01-01';
+
         const todayDate = date.toISOString().split('T')[0];
 
         const limit = 1000;
@@ -51,7 +53,7 @@ const sendEmailWithReports = async (req, res) => {
 
                     const sendmail = await H.sendM(admin.email, "Reports Data", message, '', '', attachment);
                     if (sendmail.success) {
-                        //get the report status and then after sending the mail update the users table next_reports_scheduling date
+                        //get the report status and then after sending the mail, update the users table next_reports_scheduling date
 
                         let resultDate = (admin.status === 1) ? commonfuncitons.getNextMonthDate() : (admin.status === 2) ? commonfuncitons.getNextMondayDate() : (admin.status === 3) ? commonfuncitons.getTomorrowDate() : "Unknown Error in sendEmailWithReports";
 
