@@ -6,7 +6,7 @@ import variables from "../../config/variableConfig.js";
 
 const getLanguageDropdown = async (req, res) => {
     try {
-        const getLanguageData = await languageDropdown.findAll({ attributes: ["id", "language"] });
+        const getLanguageData = await languageDropdown.findAll({ attributes: ["id", "language","image"] });
         if (!getLanguageData || getLanguageData.length === 0) return helper.failed(res, variables.Success, "Please add the data in the database to see the languages data");
         return helper.success(res, variables.Success, "Language Dropdown Retrieved Successfully", getLanguageData);
     } catch (error) {
@@ -56,7 +56,7 @@ const getThemeStatus = async(req,res) => {
                 {
                   model: languageDropdown,
                   as: "language",
-                  attributes: ["language"],
+                  attributes: ["language","image"],
                 },
               ]
         });

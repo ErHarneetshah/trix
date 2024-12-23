@@ -310,7 +310,7 @@ class teamMemberTimeLogController {
         { count: nonProductiveCount, name: "unproductive" },
       ];
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", { countsData: countsData, other: sameEntries });
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", { countsData: countsData, other: {} });
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
