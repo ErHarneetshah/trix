@@ -205,16 +205,17 @@ class exportReportController {
           shifts.end_time AS shift_time_out, 
           timelog.logged_out_time AS time_out
         FROM timelogs AS timelog
-        JOIN users AS u ON timelog.user_id = u.id
-        JOIN teams AS team ON u.teamId = team.id
-        JOIN shifts AS shifts ON timelog.shift_id = shifts.id
-        WHERE timelog.date BETWEEN :startDate AND :endDate
+        LEFT JOIN users AS u ON timelog.user_id = u.id
+       LEFT JOIN teams AS team ON u.teamId = team.id
+       LEFT JOIN shifts AS shifts ON timelog.shift_id = shifts.id
+        WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
         ${teamId ? "AND team.id = :teamId" : ""}
         ${userId ? "AND u.id = :userId" : ""}
         ORDER BY timelog.date DESC
         LIMIT :limit OFFSET :offset`,
         {
           replacements: {
+            company_id: req.user.company_id,
             startDate: startDate.toISOString().split("T")[0],
             endDate: endDate.toISOString().split("T")[0],
             teamId,
@@ -298,7 +299,7 @@ class exportReportController {
       const today = new Date();
       let startDate, endDate;
       let companyId = req.user.company_id;
-      const { fromDate, toDate,definedPeriod,teamId,userId } = req.body;
+      const { fromDate, toDate, definedPeriod, teamId, userId } = req.body;
 
       // Define period logic
       if (definedPeriod === 1) {
@@ -314,14 +315,14 @@ class exportReportController {
         startDate = lastSunday;
         endDate = lastSaturday;
 
-      
+
       } else if (definedPeriod === 3) {
         // Previous Month
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         startDate = lastMonth;
         endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
 
-       
+
       } else if (definedPeriod === 4) {
         // Custom
         const rules = { fromDate: "required", toDate: "required" };
@@ -332,7 +333,7 @@ class exportReportController {
         startDate = new Date(fromDate);
         endDate = new Date(toDate);
 
-      
+
       } else {
         return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
@@ -350,8 +351,10 @@ class exportReportController {
         ORDER BY uh.visitTime DESC`,
         {
           type: QueryTypes.SELECT,
-          replacements: { companyId,startDate: startDate.toISOString().split("T")[0],
-            endDate: endDate.toISOString().split("T")[0],teamId,userId  },
+          replacements: {
+            companyId, startDate: startDate.toISOString().split("T")[0],
+            endDate: endDate.toISOString().split("T")[0], teamId, userId
+          },
         }
       );
 
