@@ -99,26 +99,6 @@ class exportReportController {
         // await dbTransaction.commit();
         return helper.success(res, variables.Success, "User Updated Successfully", result);
       }
-      const {
-        fromTime,
-        toTime,
-        definedPeriod,
-        teamId,
-        userId,
-        format,
-        deptRequest,
-      } = req.body;
-
-      /**
-       * Employee name | Department | Date | login time | Logout time | Total active hours | Idle time | time on productive apps | Time on non productive apps | Productive websites | Non productive websites | Average productivity % | Most used productive app
-       */
-
-      await dbTransaction.commit();
-      return helper.success(
-        res,
-        variables.Success,
-        "User Updated Successfully"
-      );
     } catch (error) {
       // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -279,26 +259,6 @@ class exportReportController {
       await this.downloadFile(req, res, attendanceReport);
       // await dbTransaction.commit();
       // return helper.success(res, variables.Success, attendanceReport);
-      const {
-        fromTime,
-        toTime,
-        definedPeriod,
-        teamId,
-        userId,
-        format,
-        deptRequest,
-      } = req.body;
-
-      /**
-       * Employee name | Team | Date | Day | Attendance status | Shift time in | Time in | Shift Time out | Time out | Report(?)
-       */
-
-      await dbTransaction.commit();
-      return helper.success(
-        res,
-        variables.Success,
-        "User Updated Successfully"
-      );
     } catch (error) {
       // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
