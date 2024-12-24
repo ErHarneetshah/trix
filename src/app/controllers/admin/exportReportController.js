@@ -336,8 +336,9 @@ class exportReportController {
   //   }
   // };
 
-  downloadExportFile = async (filtePath, res) =>{
-    return res.download(filtePath, (err) => {
+  downloadExportReport = async (req, res) =>{
+    let {filePath} = req.query;
+    return res.download(filePath, (err) => {
       if (err) {
         console.error("Error sending XLS file:", err);
         return helper.failed(res, variables.BadRequest,"File download failed");
