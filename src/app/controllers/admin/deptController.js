@@ -16,6 +16,8 @@ class deptController {
   //* ________-------- GET All Departments ---------______________
   getAllDept = async (req, res) => {
     try {
+      const routeUrl = req.originalUrl;
+      console.log(routeUrl);
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       let searchable = ["name"];

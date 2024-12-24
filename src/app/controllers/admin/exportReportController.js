@@ -11,9 +11,9 @@ import TimeLog from "../../../database/models/timeLogsModel.js";
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import { UserHistory } from '../../../database/models/UserHistory.js';
-import department from "../../../../database/models/departmentModel.js";
+import department from '../../../database/models/departmentModel.js';
 import moment from "moment";
-import sequelize from "../../../../database/queries/dbConnection.js";
+import sequelize from '../../../database/queries/dbConnection.js';
 import GenerateReportHelper from '../../../utils/services/GenerateReportHelper.js';
 
 
