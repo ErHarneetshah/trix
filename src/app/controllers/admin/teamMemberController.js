@@ -68,7 +68,7 @@ class teamMemberController {
       let { id } = req.query;
 
       const alldata = await User.findOne({
-        where: { teamId: id, company_id: req.user.company_id },
+        where: { id: id, company_id: req.user.company_id },
         attributes: {
           exclude: ["password", "isAdmin", "createdAt", "updatedAt", "status"],
         },
@@ -94,6 +94,22 @@ class teamMemberController {
             attributes: ["name"],
           },
         ],
+      });
+
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getMembersInTeam = async (req, res) => {
+    try {
+      let { id } = req.query;
+
+      const alldata = await User.findAll({
+        where: { teamId: id, company_id: req.user.company_id },
+        attributes: ["id", "fullname"],
       });
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");

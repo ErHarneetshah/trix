@@ -4,7 +4,9 @@ import User from "../../../../database/models/userModel.js";
 import moment from "moment";
 import { Op, fn, col, Sequelize, literal } from "sequelize";
 import sequelize from "../../../../database/queries/dbConnection.js";
-import GenerateReportHelper from "../../../../utils/development/helpers/GenerateReportHelper.js";
+import GenerateReportHelper from "../../../../utils/services/GenerateReportHelper.js";
+import variables from "../../../config/variableConfig.js";
+import helper from "../../../../utils/services/helper.js";
 
 // Main function to get the department report with performance-wise
 const departmentPerformanceReport = async (req, res, next) => {
@@ -48,11 +50,11 @@ const departmentPerformanceReport = async (req, res, next) => {
             performanceArray.push(obj);
         }
 
-        return res.json(performanceArray);
+        return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
 
     } catch (error) {
         console.log(`departmentPerformanceReport ${error.message}`);
-        return res.status(500).json({ error: error.message });
+        return helper.failed(res, variables.BadRequest, error.message)
     }
 };
 
