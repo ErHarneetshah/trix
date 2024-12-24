@@ -11,7 +11,6 @@ router.post("/getAllReports",  authMiddleware,verifyAdminMiddleware,   exportRep
 router.post("/getProductiveReport",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getProductiveReport);
 router.post("/getDeptPerformReport",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getDeptPerformReport);
 router.post("/getAttendanceReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getAttendanceReport);
-router.post("/getBrowserActivityReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getBrowserActivityReport);
 router.post("/getApplicationUsageReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getApplicationUsageReport);
 router.post("/getUnauthorizedWebReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getUnauthorizedWebReport);
 router.get("/getTeamList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getTeamList);

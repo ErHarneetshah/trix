@@ -574,26 +574,26 @@ export default {
         return { status: true, message: "User's data retrived successfully", data: users };
       },
     
-      getProdWebCount: async (userId) => {
+      getProdWebCount: async (userIds) => {
         const query = `
                 SELECT 
-                    uh.userId,
-                    SUM(CASE WHEN pw.website_name IS NOT NULL THEN 1 ELSE 0 END) AS productive_count,
-                    SUM(CASE WHEN pw.website_name IS NULL THEN 1 ELSE 0 END) AS non_productive_count
-                FROM 
-                    user_histories uh
-                LEFT JOIN 
-                    productive_websites pw
-                ON 
-                    uh.website_name = pw.website_name
-                WHERE 
-                    uh.userId = :userId
-                GROUP BY 
-                    uh.userId
+    u.id AS userId,
+    SUM(CASE WHEN pw.website_name IS NOT NULL THEN 1 ELSE 0 END) AS productive_count,
+    SUM(CASE WHEN pw.website_name IS NULL THEN 1 ELSE 0 END) AS non_productive_count
+FROM 
+    users u
+LEFT JOIN 
+    user_histories uh ON u.id = uh.userId
+LEFT JOIN 
+    productive_websites pw ON uh.website_name = pw.website_name
+WHERE 
+    u.id IN (:userIds)
+
+
             `;
     
         const [results] = await sequelize.query(query, {
-          replacements: { userId },
+          replacements: { userIds },
           type: sequelize.QueryTypes.SELECT,
         });
     

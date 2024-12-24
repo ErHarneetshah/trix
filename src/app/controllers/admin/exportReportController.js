@@ -67,44 +67,49 @@ class exportReportController {
 
   getProductiveReport = async (req, res) => {
     try {
-      let { fromTime, toTime, definedPeriod, teamId, userId, format, allRequest } = req.body;
-      /**
-       * Employee name | Department | Date | login time | Logout time | Total active hours | Idle time | time on productive apps | Time on non productive apps | Productive websites | Non productive websites | Average productivity % | Most used productive app
-       */
-      if (allRequest) {
-      } else if (definedPeriod && [1, 2, 3].includes(definedPeriod)) {
-        const alldata = await TimeLog.findAndCountAll({
-          // where: logWhere, // add the definedPeriod Condition here
-          include: [
-            {
-              model: User,
-              as: "user",
-              required: true,
-              where: { teamId: teamId },
-              attributes: ["id", "fullname"],
-              include: [
-                {
-                  model: AppHistoryEntry,
-                  as: "productivity",
-                  required: false,
-                },
-                {
-                  model: department,
-                  as: "department",
-                  attributes: ["name"],
-                },
-              ],
-            },
-          ],
-          order: [["createdAt", "DESC"]],
-        });
-        if(!alldata) return helper.failed(res, variables.BadRequest, "Unable to retrieve the data");
+      let { fromTime, toTime, definedPeriod, teamId, userId, format } = req.body;
+      let startDate, endDate;
 
-        let result = commonfuncitons.createResponse(alldata.rows)
+      const today = new Date();
 
-        // await dbTransaction.commit();
-        return helper.success(res, variables.Success, "User Updated Successfully", result);
+      if (definedPeriod === 1) {
+        startDate = new Date(today.setDate(today.getDate() - 1));
+        endDate = new Date(startDate);
+      } else if (definedPeriod === 2) {
+        const lastSunday = new Date(today.setDate(today.getDate() - today.getDay() - 7));
+        const lastSaturday = new Date(lastSunday);
+        lastSaturday.setDate(lastSunday.getDate() + 6);
+        startDate = lastSunday;
+        endDate = lastSaturday;
+      } else if (definedPeriod === 3) {
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        startDate = lastMonth;
+        endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
+      } else if (definedPeriod === 4) {
+        const rules = { fromDate: "required", toDate: "required" };
+        const { status, message } = await validate(req.body, rules);
+        if (status === 0) {
+          return helper.failed(res, variables.ValidationError, message);
+        }
+        startDate = new Date(fromDate);
+        endDate = new Date(toDate);
+      } else {
+        return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
+
+
+      const users = await GenerateReportHelper.getUserInCompany(req.user.company_id);
+      let userIds = [];
+      for (const user of users.data) {
+        if (user.id) {
+          userIds.push(user.id);
+        }
+      }
+
+      let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds);
+
+
+        return helper.success(res, variables.Success, "User Updated Successfully", ProdWebCount);
     } catch (error) {
       // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -276,37 +281,6 @@ class exportReportController {
       // return helper.success(res, variables.Success, attendanceReport);
     } catch (error) {
       // if (dbTransaction) await dbTransaction.rollback();
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
-
-
-
-  getBrowserActivityReport = async (req, res) => {
-    const dbTransaction = await Sequelize.transaction();
-    try {
-      const {
-        fromTime,
-        toTime,
-        definedPeriod,
-        teamId,
-        userId,
-        format,
-        deptRequest,
-      } = req.body;
-
-      /**
-       * Name | Dept. | URL | Productive/Non-productive | Time spent
-       */
-
-      await dbTransaction.commit();
-      return helper.success(
-        res,
-        variables.Success,
-        "User Updated Successfully"
-      );
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
