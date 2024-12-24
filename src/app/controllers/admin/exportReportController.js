@@ -803,6 +803,15 @@ class exportReportController {
               [Op.between]: [date.startDate, date.endDate],
             },
           },
+          attributes:[
+            "id",
+            "userId",
+            "company_id",
+            "website_name",
+            "url",
+            "title",
+            "visitTime"
+          ]
         });
         return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
       } else {
@@ -818,7 +827,19 @@ class exportReportController {
         const browserHistroy = await UserHistory.findAll({
           where: {
             userId: data.member_id,
+            createdAt: {
+              [Op.between]: [date.startDate, date.endDate],
+            },
           },
+          attributes:[
+            "id",
+            "userId",
+            "company_id",
+            "website_name",
+            "url",
+            "title",
+            "visitTime"
+          ]
         });
 
         let headers = [
