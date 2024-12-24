@@ -103,6 +103,22 @@ class teamMemberController {
     }
   };
 
+  getMembersInTeam = async (req, res) => {
+    try {
+      let { id } = req.query;
+
+      const alldata = await User.findAll({
+        where: { teamId: id, company_id: req.user.company_id },
+        attributes: ["id", "fullname"],
+      });
+
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
   addTeamMembers = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
@@ -168,7 +184,6 @@ class teamMemberController {
         const sendmail = await H.sendM(requestData.email, subject, textMessage);
 
         if (!sendmail.success) {
-          // If email fails, rollback the transaction
           await dbTransaction.rollback();
           return helper.failed(res, variables.BadRequest, sendmail.message);
         }

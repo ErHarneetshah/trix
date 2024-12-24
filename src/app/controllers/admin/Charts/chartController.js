@@ -281,7 +281,7 @@ const topWebsiteChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
-      logging: console.log
+      // logging: console.log
 
     });
 
@@ -390,7 +390,7 @@ const productiveAppsChart = async (req, res, next, type = 'api', obj = {}) => {
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging: console.log
+        // logging: console.log
       });
 
       valueArray.push({
@@ -568,7 +568,7 @@ const nonProductiveAppsChart = async (req, res, next, type = 'api', obj = {}) =>
       const results = await sequelize.query(query, {
         replacements: queryParams,
         type: Sequelize.QueryTypes.SELECT,
-        logging:console.log
+        // logging:console.log
       });
 
       // Push the result into the value array
