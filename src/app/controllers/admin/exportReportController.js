@@ -120,7 +120,7 @@ class exportReportController {
       
       await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Productive Report", req.user.company_id, data, headers);
 
-      return helper.success(res, variables.Success, "User Updated Successfully", data);
+      // return helper.success(res, variables.Success, "User Updated Successfully", data);
     } catch (error) {
       // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -558,7 +558,7 @@ class exportReportController {
   };
 
   getApplicationUsageReport = async (req, res) => {
-    const dbTransaction = await Sequelize.transaction();
+    // const dbTransaction = await Sequelize.transaction();
     try {
       const { fromTime, toTime, definedPeriod, teamId, userId, format } = req.body;
       if(!fromTime || !toTime) return helper.failed(res, variables.ValidationError, "From Time and To time both are required")
@@ -574,8 +574,8 @@ class exportReportController {
       ]
       
       await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Application Usage Report", req.user.company_id, data, headers);
-      await dbTransaction.commit();
-      return helper.success(res, variables.Success, "User Updated Successfully");
+      // await dbTransaction.commit();
+      // return helper.success(res, variables.Success, "User Updated Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -645,7 +645,7 @@ class exportReportController {
       
       await this.downloadFileDynamically(res, dateRange.startDate, dateRange.endDate, format, "Department Performance Report", req.user.company_id, performanceArray, headers);
 
-      return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
+      // return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
     } catch (error) {
       console.log(`departmentPerformanceReport ${error.message}`);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -719,10 +719,10 @@ class exportReportController {
       
       await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0],endDate.toISOString().split("T")[0], format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
 
-      return res.status(200).json({ status: "success", data: unauthorizedAccessReport });
+      // return res.status(200).json({ status: "success", data: unauthorizedAccessReport });
     } catch (error) {
       console.error("Error fetching unauthorized access report:", error);
-      return res.status(500).json({ status: "error", message: error.message });
+      return helper.failed(res, variables.BadRequest,error.message);
     }
   };
 
@@ -852,7 +852,7 @@ class exportReportController {
         
         await this.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistroy, headers);
 
-        return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
+        // return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
       }
     } catch (error) {
       console.log("Error while generating browser history report:", error);
