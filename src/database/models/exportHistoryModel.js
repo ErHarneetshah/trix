@@ -8,6 +8,10 @@ const exportHistories = sequelize.define('exportHistories', {
         autoIncrement: true,
         allowNull: false,
     },
+    company_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
     reportName: {
         type: DataTypes.STRING,
         allowNull: true,

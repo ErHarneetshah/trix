@@ -6,15 +6,17 @@ import exportReportController from "../../app/controllers/admin/exportReportCont
 const router = express.Router();
 const exportReportInstance = new exportReportController();
 
-router.get("/getReportsDataSet",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getReportsDataSet);
+router.post("/getReportsDataSet",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getReportsDataSet);
 router.post("/getAllReports",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getAllReports);
 router.post("/getProductiveReport",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getProductiveReport);
 router.post("/getDeptPerformReport",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getDeptPerformReport);
 router.post("/getAttendanceReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getAttendanceReport);
 router.post("/getApplicationUsageReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getApplicationUsageReport);
 router.post("/getUnauthorizedWebReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getUnauthorizedWebReport);
-router.get("/getTeamList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getTeamList);
-router.get("/getMemberList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getMemberList);
+router.post("/getTeamList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getTeamList);
+router.post("/getMemberList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getMemberList);
 router.post("/getBrowserHistoryReport",authMiddleware,verifyAdminMiddleware, exportReportInstance.getBrowserHistoryReport);
+
+router.get("/getExportHistory",authMiddleware,verifyAdminMiddleware, exportReportInstance.getExportHistoryReport);
 
 export default router;
