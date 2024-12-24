@@ -68,7 +68,7 @@ class teamMemberController {
       let { id } = req.query;
 
       const alldata = await User.findOne({
-        where: { id: id, company_id: req.user.company_id },
+        where: { teamId: id, company_id: req.user.company_id },
         attributes: {
           exclude: ["password", "isAdmin", "createdAt", "updatedAt", "status"],
         },

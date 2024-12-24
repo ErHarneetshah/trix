@@ -41,18 +41,27 @@ class authController extends jwtService {
 
       // Check if the user already exists
       const existingCompany = await company.findOne({
-        where: { name: requestData.name },
+        where: { name: requestData.companyName },
         transaction: dbTransaction,
       });
       if (existingCompany) {
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Company already exists with this Name and Email!");
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Company already exists with this Name!");
       }
+
+      const existingCompanyWithEmail = await company.findOne({
+        where: { email: requestData.email },
+        transaction: dbTransaction,
+      });
+      if (existingCompany) {
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Company already exists with this Email!");
+      }
+
 
       //console.log("2");
       //* Step1
       const createCompany = await company.create(
         {
-          name: requestData.name,
+          name: requestData.companyName,
           email: requestData.email,
           employeeNumber: requestData.employeeNumber,
         },
@@ -200,7 +209,7 @@ class authController extends jwtService {
       const createUser = await User.create(
         {
           company_id: createCompany.id,
-          fullname: createCompany.name,
+          fullname: requestData.name,
           email: requestData.email,
           password: await bcrypt.hash(requestData.password, 10),
           mobile: requestData.mobile,
