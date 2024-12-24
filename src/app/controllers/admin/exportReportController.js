@@ -6,11 +6,13 @@ import variables from "../../config/variableConfig.js";
 import exportReports from "../../../database/models/exportReportsModel.js";
 import validate from "../../../utils/CustomValidation.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
-import { QueryTypes } from 'sequelize';
+import { QueryTypes, Op } from 'sequelize';
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import { UserHistory } from '../../../database/models/UserHistory.js';
-
+import { fileURLToPath } from "url";
+import User from '../../../database/models/userModel.js';
+import exportHistories from '../../../database/models/exportHistoryModel.js';
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
@@ -64,117 +66,249 @@ class exportReportController {
     }
   };
 
-
-
-
-  downloadFile = async (req, res, attendanceReport) => {
+  downloadFile = async (req, res, company_id, reportData, format, reportDescription, fromTime, toTime) => {
     try {
-      const { format } = req.body;
-      const fileName = `Attendance_Report_${Date.now()}.pdf`;
-      const __dirname = path.dirname(new URL(import.meta.url).pathname);
-      const filePath = path.resolve(__dirname, '../../../storage/files', fileName);
-
+      const fileName = `${reportDescription}_${company_id}_${Date.now()}.${format === "xls" ? "xlsx" : "pdf"}`;
+      const __dirname = path.dirname(fileURLToPath(import.meta.url));
+      const filePath = path.resolve(__dirname, "../../../storage/files", fileName);
       if (format === "xls") {
-        // Add your XLS logic here...
-        return;
-      }
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet(reportDescription);
 
-      // Generate PDF
-      const doc = new PDFDocument({ compress: false }); // Disable compression for debugging
+        if (reportDescription == "Attendance Report") {
+          worksheet.columns = [
+            { header: "Employee Name", key: "employee_name", width: 20 },
+            { header: "Team", key: "team", width: 15 },
+            { header: "Date", key: "date", width: 15 },
+            { header: "Day", key: "day", width: 10 },
+            { header: "Attendance Status", key: "attendance_status", width: 20 },
+            { header: "Shift Time In", key: "shift_time_in", width: 15 },
+            { header: "Time In", key: "time_in", width: 15 },
+            { header: "Shift Time Out", key: "shift_time_out", width: 15 },
+            { header: "Time Out", key: "time_out", width: 15 },
+          ];
+        } else if (reportDescription == "Productivity Report") {
+          worksheet.columns = [
+            { header: "Employee Name", key: "employee_name", width: 20 },
+            { header: "Department", key: "department", width: 15 },
+            { header: "Date", key: "date", width: 15 },
+            { header: "Total Active Hours", key: "total_active_hours", width: 10 },
+            { header: "Idle Time", key: "idle_time", width: 20 },
+            { header: "Time on Productive Apps", key: "productive_app_time", width: 15 },
+            { header: "Time on Non Prodcutive Apps", key: "nonProductive_app_time", width: 15 },
+            { header: "Productive Websites Count", key: "productive_website_count", width: 15 },
+            { header: "Non Productive Websites Count", key: "productive_website_count", width: 15 },
+            { header: "Average Productive Percentage", key: "average_productive", width: 15 },
+            { header: "Most Used Productive App", key: "most_used_productive_app", width: 15 },
+          ];
+        } else if (reportDescription == "Application Usage Report") {
+          worksheet.columns = [
+            { header: "Name", key: "name", width: 20 },
+            { header: "Department", key: "department", width: 15 },
+            { header: "Application", key: "applicationName", width: 15 },
+            { header: "Productive/NonProducitve", key: "isProductive", width: 10 },
+          ];
+        } else if (reportDescription == "Unauthorized Report") {
+          worksheet.columns = [
+            { header: "Name", key: "name", width: 20 },
+            { header: "Department", key: "department", width: 15 },
+            { header: "URL", key: "url", width: 15 },
+            { header: "Time", key: "time", width: 10 },
+          ];
+        } else if (reportDescription == "Department Performance Report") {
+          worksheet.columns = [
+            { header: "Employee Name", key: "employee_name", width: 20 },
+            { header: "Team", key: "team", width: 15 },
+            { header: "Date", key: "date", width: 15 },
+            { header: "Day", key: "day", width: 10 },
+            { header: "Attendance Status", key: "attendance_status", width: 20 },
+            { header: "Shift Time In", key: "shift_time_in", width: 15 },
+            { header: "Time In", key: "time_in", width: 15 },
+            { header: "Shift Time Out", key: "shift_time_out", width: 15 },
+            { header: "Time Out", key: "time_out", width: 15 },
+          ];
+        } else if (reportDescription == "Browser Activity Report") {
+          worksheet.columns = [
+            { header: "Employee Name", key: "employee_name", width: 20 },
+            { header: "Team", key: "team", width: 15 },
+            { header: "Date", key: "date", width: 15 },
+            { header: "Day", key: "day", width: 10 },
+            { header: "Attendance Status", key: "attendance_status", width: 20 },
+            { header: "Shift Time In", key: "shift_time_in", width: 15 },
+            { header: "Time In", key: "time_in", width: 15 },
+            { header: "Shift Time Out", key: "shift_time_out", width: 15 },
+            { header: "Time Out", key: "time_out", width: 15 },
+          ];
+        }
 
-      // Write to file
-      const fileStream = fs.createWriteStream(filePath);
-      doc.pipe(fileStream);
+        worksheet.addRows(reportData);
 
-      // Add title and content
-      doc.fontSize(18).text("Attendance Report", { align: "center" }).moveDown();
+        await workbook.xlsx.writeFile(filePath);
 
-      // Add header
-      const header = "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out";
-      console.log("Header:", header); // Debugging: Log header
-      doc.fontSize(12).text(header, { underline: true }).moveDown();
+        res.setHeader(
+          "Content-Type",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+        res.download(filePath);
 
-      // Add attendance rows
-      attendanceReport.forEach((row, index) => {
-        const rowText = `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`;
-        console.log(`Row ${index + 1}:`, rowText); // Debugging: Log each row
-        doc.fontSize(10).text(rowText);
-      });
+        const newAppInfo = await exportHistories.create({ reportName: reportDescription, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
+      } else {
+        const generatePDF = () =>
+          new Promise((resolve, reject) => {
+            const doc = new PDFDocument();
+            const writeStream = fs.createWriteStream(filePath);
 
-      // Finalize the document
-      doc.end();
+            doc.pipe(writeStream);
 
-      // Debugging: Write raw attendance data to a text file for verification
-      const debugFilePath = path.resolve(__dirname, '../../../storage/files', 'debug_attendance.txt');
-      fs.writeFileSync(
-        debugFilePath,
-        attendanceReport.map(row =>
-          `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-        ).join('\n')
-      );
-      console.log("Debug file written to:", debugFilePath);
+            // Add title
+            doc.fontSize(18).text(reportDescription, { align: "center" });
+            doc.moveDown();
 
-      fileStream.on('finish', () => {
-        // Ensure the file exists before sending
-        fs.access(filePath, fs.constants.F_OK, (err) => {
-          if (err) {
-            console.error("File does not exist:", err);
-            return res.status(500).json({ status: "error", message: "File generation failed." });
-          }
+            // Add headers
+            if (reportDescription == "Attendance Report") {
+              doc.fontSize(12).text(
+                "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+                { underline: true }
+              );
+              doc.moveDown();
 
-          // Send file to client
-          res.download(filePath, fileName, (err) => {
-            if (err) {
-              console.error("Error sending file:", err);
-              return res.status(500).json({ status: "error", message: "File download failed." });
+              reportData.forEach((row) => {
+                doc
+                  .fontSize(10)
+                  .text(
+                    `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+                  );
+              });
+
+            } else if (reportDescription == "Performance Report") {
+              doc.fontSize(12).text(
+                "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+                { underline: true }
+              );
+              doc.moveDown();
+
+              reportData.forEach((row) => {
+                doc
+                  .fontSize(10)
+                  .text(
+                    `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+                  );
+              });
+            } else if (reportDescription == "Application Report") {
+              doc.fontSize(12).text(
+                "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+                { underline: true }
+              );
+              doc.moveDown();
+
+              reportData.forEach((row) => {
+                doc
+                  .fontSize(10)
+                  .text(
+                    `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+                  );
+              });
+            } else if (reportDescription == "Unauthorized Report") {
+              doc.fontSize(12).text(
+                "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+                { underline: true }
+              );
+              doc.moveDown();
+
+              reportData.forEach((row) => {
+                doc
+                  .fontSize(10)
+                  .text(
+                    `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+                  );
+              });
+            } else if (reportDescription == "Department Performance Report") {
+              doc.fontSize(12).text(
+                "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+                { underline: true }
+              );
+              doc.moveDown();
+
+              reportData.forEach((row) => {
+                doc
+                  .fontSize(10)
+                  .text(
+                    `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+                  );
+              });
+            } else if (reportDescription == "Browser Activity Report") {
+              doc.fontSize(12).text(
+                "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+                { underline: true }
+              );
+              doc.moveDown();
+
+              reportData.forEach((row) => {
+                doc
+                  .fontSize(10)
+                  .text(
+                    `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+                  );
+              });
             }
 
-            console.log("PDF generated and downloaded successfully.");
-          });
-        });
-      });
+            doc.end();
 
-      fileStream.on('error', (err) => {
-        console.error("Error writing file:", err);
-        res.status(500).json({ status: "error", message: "File generation failed." });
-      });
+            writeStream.on("finish", () => resolve());
+            writeStream.on("error", (err) => reject(err));
+          });
+
+        await generatePDF();
+        console.log(`File generated and sent to user: ${filePath}`);
+
+        // Set headers for reading the file in the browser
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", "inline; filename=" + fileName);
+
+        // Send the file as a response
+        res.download(filePath);
+
+      }
     } catch (error) {
-      console.error("Error generating file:", error);
       res.status(500).json({ status: "error", message: error.message });
     }
   };
 
 
 
+
   getAttendanceReport = async (req, res) => {
-    // const dbTransaction = await Sequelize.transaction();
     try {
-      /**
-       * Employee name | Team | Date | Day | Attendance status | Shift time in | Time in | Shift Time out | Time out | Report(?)
-       */
-      const { fromDate, toDate, definedPeriod, teamId, userId, limit, offset } = req.body;
+      const { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
+      console.log("test", req.query);
+      if (format && !['xls', 'pdf'].includes(format)) {
+        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
+      }
+      if (!format) format = "xls";
+      // if(!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
       let startDate, endDate;
 
       // Determine date range based on definedPeriod
       const today = new Date();
 
-      if (definedPeriod === 1) {
+      if (definedPeriod == 1) {
         // Previous Day
         startDate = new Date(today.setDate(today.getDate() - 1));
         endDate = new Date(startDate);
-      } else if (definedPeriod === 2) {
+      } else if (definedPeriod == 2) {
         // Previous Week (Sunday to Saturday)
         const lastSunday = new Date(today.setDate(today.getDate() - today.getDay() - 7));
         const lastSaturday = new Date(lastSunday);
         lastSaturday.setDate(lastSunday.getDate() + 6);
         startDate = lastSunday;
         endDate = lastSaturday;
-      } else if (definedPeriod === 3) {
+      } else if (definedPeriod == 3) {
         // Previous Month
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         startDate = lastMonth;
         endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
-      } else if (definedPeriod === 4) {
+      } else if (definedPeriod == 4) {
         // Custom
         const rules = { fromDate: "required", toDate: "required" };
         const { status, message } = await validate(req.body, rules);
@@ -206,8 +340,8 @@ class exportReportController {
           timelog.logged_out_time AS time_out
         FROM timelogs AS timelog
         LEFT JOIN users AS u ON timelog.user_id = u.id
-       LEFT JOIN teams AS team ON u.teamId = team.id
-       LEFT JOIN shifts AS shifts ON timelog.shift_id = shifts.id
+        JOIN teams AS team ON u.teamId = team.id
+        JOIN shifts AS shifts ON timelog.shift_id = shifts.id
         WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
         ${teamId ? "AND team.id = :teamId" : ""}
         ${userId ? "AND u.id = :userId" : ""}
@@ -227,30 +361,37 @@ class exportReportController {
         }
       );
 
-      await this.downloadFile(req, res, attendanceReport);
+      const presentUsers = await TimeLog.findAll({
+        attributes: ['user_id'],
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: [],
+            where: {
+              isAdmin: 0,
+            },
+          },
+        ],
+        where: {
+          company_id: req.user.company_id,
+          date: {
+            [Op.between]: [startDate, endDate],
+          },
+        },
+        group: ['user_id'],
+      });
+      console.log(presentUsers.map(user => user.user_id));
+
+
+      let reportDescription = "Attendance Report";
+
+
+      await this.downloadFile(req, res, req.user.company_id, attendanceReport, format, reportDescription, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0]);
       // await dbTransaction.commit();
       // return helper.success(res, variables.Success, attendanceReport);
     } catch (error) {
       // if (dbTransaction) await dbTransaction.rollback();
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
-
-
-
-  getBrowserActivityReport = async (req, res) => {
-    const dbTransaction = await Sequelize.transaction();
-    try {
-      const { fromTime, toTime, definedPeriod, teamId, userId, format, deptRequest } = req.body;
-
-      /**
-       * Name | Dept. | URL | Productive/Non-productive | Time spent
-       */
-
-      await dbTransaction.commit();
-      return helper.success(res, variables.Success, "User Updated Successfully");
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -341,7 +482,7 @@ class exportReportController {
 
       // Query to fetch unauthorized access
       const unauthorizedAccessReport = await UserHistory.sequelize.query(
-        `SELECT u.fullname AS Name,departments.name AS DeptName, uh.url AS URL,TIME(uh.visitTime) AS Time
+        `SELECT u.fullname AS name,departments.name AS department, uh.url AS url,TIME(uh.visitTime) AS time
         FROM  user_histories As uh
         INNER JOIN users As u ON uh.userId = u.id
         INNER JOIN departments ON u.departmentId = departments.id
