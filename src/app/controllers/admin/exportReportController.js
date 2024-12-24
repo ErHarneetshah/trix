@@ -1,15 +1,20 @@
 import path from 'path';
 import fs from 'fs';
-import { Sequelize } from "sequelize";
+import { Op, Sequelize, QueryTypes, literal, fn, col,  } from "sequelize";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import exportReports from "../../../database/models/exportReportsModel.js";
 import validate from "../../../utils/CustomValidation.js";
+import team from "../../../database/models/teamModel.js";
+import User from "../../../database/models/userModel.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
-import { QueryTypes } from 'sequelize';
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import { UserHistory } from '../../../database/models/UserHistory.js';
+import department from '../../../database/models/departmentModel.js';
+import moment from "moment";
+import sequelize from '../../../database/queries/dbConnection.js';
+import GenerateReportHelper from '../../../utils/services/GenerateReportHelper.js';
 
 
 class exportReportController {
@@ -37,12 +42,7 @@ class exportReportController {
   getReportsHistory = async (req, res) => {
     try {
       return helper.success(res, variables.Success, "Reports Data Retrieved Successfully", alldata);
-      return helper.success(
-        res,
-        variables.Success,
-        "Reports Data Retrieved Successfully",
-        alldata
-      );
+     
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -247,16 +247,17 @@ class exportReportController {
           shifts.end_time AS shift_time_out, 
           timelog.logged_out_time AS time_out
         FROM timelogs AS timelog
-        JOIN users AS u ON timelog.user_id = u.id
-        JOIN teams AS team ON u.teamId = team.id
-        JOIN shifts AS shifts ON timelog.shift_id = shifts.id
-        WHERE timelog.date BETWEEN :startDate AND :endDate AND timelog.company_id = ${req.user.company_id} AND u.isAdmin = 0
+        LEFT JOIN users AS u ON timelog.user_id = u.id
+       LEFT JOIN teams AS team ON u.teamId = team.id
+       LEFT JOIN shifts AS shifts ON timelog.shift_id = shifts.id
+        WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
         ${teamId ? "AND team.id = :teamId" : ""}
         ${userId ? "AND u.id = :userId" : ""}
         ORDER BY timelog.date DESC
         `,
         {
           replacements: {
+            company_id: req.user.company_id,
             startDate: startDate.toISOString().split("T")[0],
             endDate: endDate.toISOString().split("T")[0],
             teamId,
@@ -340,32 +341,52 @@ class exportReportController {
   };
 
   getDeptPerformReport = async (req, res) => {
-    const dbTransaction = await Sequelize.transaction();
-    try {
-      const {
-        fromTime,
-        toTime,
-        definedPeriod,
-        teamId,
-        userId,
-        format,
-        deptRequest,
-      } = req.body;
-
-      /**
-       * Department | TL | Total employees | Avg Attendance rate | Avg Login time| Avg productive time (browser)| Avg non productive time (browser)| Avg productive time(app) | Avg non productive time (app) | Most non productive website | Most non productive app | Most productive (app) | Most non productive app
-       */
-
-      await dbTransaction.commit();
-      return helper.success(
-        res,
-        variables.Success,
-        "User Updated Successfully"
-      );
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
+      try {
+          const { company_id } = req.user;
+          const { option, startDate, endDate } = req.query;
+          const dateRange = await GenerateReportHelper.getDateRange(option, startDate, endDate);
+          const allDepartments = await department.findAll({
+              where: { company_id: company_id, status: 1 }
+          });
+  
+          const performanceArray = [];
+          for (const element of allDepartments) {
+              const totalEmployeesDepartmentWise = await GenerateReportHelper.getTotalEmployeeDepartmentWise(element.id, dateRange, 'user_ids');
+              console.log(totalEmployeesDepartmentWise);
+              //getting attendance average
+              const avgAttendence = await GenerateReportHelper.getAttendanceAvg(dateRange, totalEmployeesDepartmentWise, company_id);
+              //getting logged in time average
+              const avgLoggedInTime = await GenerateReportHelper.getAvgLoggedInTime(dateRange, totalEmployeesDepartmentWise);
+              const avgProductiveAppTime = await GenerateReportHelper.getAvgProductiveAppTime(dateRange, totalEmployeesDepartmentWise, company_id);
+              const avgNonProductiveAppTime = await GenerateReportHelper.getAvgNonProductiveAppTime(dateRange, totalEmployeesDepartmentWise, company_id);
+              const mostUnproductiveWebsiteName = await GenerateReportHelper.mostUnproductiveWebsiteName(dateRange, totalEmployeesDepartmentWise, company_id);
+              const mostproductiveWebsiteName = await GenerateReportHelper.mostProductiveWebsiteName(dateRange, totalEmployeesDepartmentWise, company_id);
+              const mostUnproductiveAppName = await GenerateReportHelper.mostUnproductiveAppName(dateRange, totalEmployeesDepartmentWise, company_id);
+              const mostproductiveAppName = await GenerateReportHelper.mostproductiveAppName(dateRange, totalEmployeesDepartmentWise, company_id);
+  
+  
+              const obj = {
+                  department_name: element.name,
+                  total_employee: totalEmployeesDepartmentWise.length,
+                  attendance_avg: avgAttendence,
+                  loggedin_time_avg: avgLoggedInTime,
+                  productive_app_time: avgProductiveAppTime,
+                  non_productive_app_time: avgNonProductiveAppTime,
+                  most_non_productive_website: mostUnproductiveWebsiteName,
+                  most_productive_website: mostproductiveWebsiteName,
+                  most_non_productive_app_name: mostUnproductiveAppName,
+                  most_productive_app: mostproductiveAppName
+              };
+  
+              performanceArray.push(obj);
+          }
+  
+          return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
+  
+      } catch (error) {
+          console.log(`departmentPerformanceReport ${error.message}`);
+          return helper.failed(res, variables.BadRequest, error.message)
+      }
   };
 
   getUnauthorizedWebReport = async (req, res) => {
@@ -373,7 +394,7 @@ class exportReportController {
       const today = new Date();
       let startDate, endDate;
       let companyId = req.user.company_id;
-      const { fromDate, toDate,definedPeriod,teamId,userId } = req.body;
+      const { fromDate, toDate, definedPeriod, teamId, userId } = req.body;
 
       // Define period logic
       if (definedPeriod === 1) {
@@ -389,14 +410,14 @@ class exportReportController {
         startDate = lastSunday;
         endDate = lastSaturday;
 
-      
+
       } else if (definedPeriod === 3) {
         // Previous Month
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         startDate = lastMonth;
         endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
 
-       
+
       } else if (definedPeriod === 4) {
         // Custom
         const rules = { fromDate: "required", toDate: "required" };
@@ -407,7 +428,7 @@ class exportReportController {
         startDate = new Date(fromDate);
         endDate = new Date(toDate);
 
-      
+
       } else {
         return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
@@ -425,8 +446,10 @@ class exportReportController {
         ORDER BY uh.visitTime DESC`,
         {
           type: QueryTypes.SELECT,
-          replacements: { companyId,startDate: startDate.toISOString().split("T")[0],
-            endDate: endDate.toISOString().split("T")[0],teamId,userId  },
+          replacements: {
+            companyId, startDate: startDate.toISOString().split("T")[0],
+            endDate: endDate.toISOString().split("T")[0], teamId, userId
+          },
         }
       );
 
@@ -436,6 +459,136 @@ class exportReportController {
       return res.status(500).json({ status: "error", message: error.message });
     }
   };
+
+  getTeamList = async (req, res) => {
+    try {
+      const teamList = await team.findAll({
+        where: {
+          company_id: req.user.company_id,
+        },
+        attributes: ["id", "name"],
+      });
+      return helper.success(res, variables.Success, teamList);
+    } catch (error) {
+      console.log("Error while getting team list for report:", error);
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getMemberList = async (req, res) => {
+    try {
+      const teamList = await User.findAll({
+        where: {
+          company_id: req.user.company_id,
+          isAdmin: 0,
+        },
+        attributes: ["id", "fullname"],
+      });
+      return helper.success(res, variables.Success, teamList);
+    } catch (error) {
+      console.log("Error while getting team list for report:", error);
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  getBrowserHistoryReport = async (req, res) => {
+    try {
+      let data = req.body;
+      if (!data.member_id) {
+        return helper.failed(
+          res,
+          variables.BadRequest,
+          "Please select team and member"
+        );
+      }
+   
+      const validOptions = [
+        "custom_range",
+        "yesterday",
+        "previous_week",
+        "previous_month",
+      ];
+
+      if (!data.option || !validOptions.includes(data.option)) {
+        return helper.failed(
+          res,
+          variables.BadRequest,
+          "Please select a valid date option"
+        );
+      }
+
+      let date;
+      if (data.option) {
+        if (data.option == "custom_range") {
+          if (!data.customStart || !data.customEnd) {
+            return helper.failed(
+              res,
+              variables.BadRequest,
+              "Please select start and end date"
+            );
+          }
+          date = await helper.getDateRange(data.option, data.customStart, data.customEnd);
+        } else {
+          date = await helper.getDateRange(data.option);
+        }
+      }
+      if (date && date.status == 0) {
+        return helper.failed(res, variables.BadRequest, date.message);
+      }
+
+      if (data.team_id && data.member_id) {
+        const team = await User.findOne({
+          where: {
+            teamId: data.team_id,
+            id: data.member_id,
+            company_id: req.user.company_id
+          },
+        });
+        if (!team) {
+          return helper.failed(res, variables.BadRequest, "User not found!!!");
+        }
+        const browserHistroy = await UserHistory.findAll({
+          where: {
+            userId: data.member_id,
+            createdAt: {
+              [Op.between]: [date.startDate, date.endDate],
+            },
+          },
+        });
+        return helper.success(
+          res,
+          variables.Success,
+          "Browser Data Fetched successfully",
+          browserHistroy
+        );
+      } else {
+        const team = await User.findOne({
+          where: {
+            id: data.member_id,
+            company_id: req.user.company_id,
+          },
+        });
+        if (!team) {
+          return helper.failed(res, variables.BadRequest, "User not found!!!");
+        }
+        const browserHistroy = await UserHistory.findAll({
+          where: {
+            userId: data.member_id,
+          },
+        });
+        return helper.success(
+          res,
+          variables.Success,
+          "Browser Data Fetched successfully",
+          browserHistroy
+        );
+      }
+    } catch (error) {
+      console.log("Error while generating browser history report:", error);
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
 
 
 }
