@@ -34,7 +34,7 @@ class exportReportController {
     try {
       const getStatus = await exportHistories.findAll({
         where: { company_id: req.user.company_id },
-        attributes: ["reportName","reportExtension","periodFrom","periodTo"],
+        attributes: ["reportName","reportExtension","periodFrom","periodTo", "filePath"],
       });
   
       if (getStatus.count === 0) {
@@ -336,6 +336,14 @@ class exportReportController {
   //   }
   // };
 
+  downloadExportFile = async (filtePath, res) =>{
+    return res.download(filtePath, (err) => {
+      if (err) {
+        console.error("Error sending XLS file:", err);
+        return helper.failed(res, variables.BadRequest,"File download failed");
+      }
+    });
+  }
 
   downloadFileDynamically = async (res, fromTime, toTime, format = 'xls', reportName, company_id, reportData, headers) => {
     try {
