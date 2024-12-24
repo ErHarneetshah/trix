@@ -85,6 +85,22 @@ class teamController {
     }
   };
 
+  getTeamDeptDropdown = async (req, res) => {
+    try {
+      let {id} = req.query;
+      if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is Required and in numbers!");
+      const alldata = await team.findAll({
+        where: { status: true, company_id: req.user.company_id, departmentId: id},
+        attributes: ["id", "name"]
+      });
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
   getSpecificTeam = async (req, res) => {
     try {
       const requestData = req.body;

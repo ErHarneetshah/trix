@@ -1,6 +1,6 @@
-import path from 'path';
-import fs from 'fs';
-import { Op, Sequelize, QueryTypes, literal, fn, col,  } from "sequelize";
+import path from "path";
+import fs from "fs";
+import { Op, Sequelize, QueryTypes, literal, fn, col } from "sequelize";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import exportReports from "../../../database/models/exportReportsModel.js";
@@ -10,30 +10,28 @@ import User from "../../../database/models/userModel.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
+<<<<<<< HEAD
 import { UserHistory } from '../../../database/models/UserHistory.js';
 import moment from "moment";
 import GenerateReportHelper from '../../../utils/services/GenerateReportHelper.js';
 import department from '../../../database/models/departmentModel.js';
 import sequelize from '../../../database/queries/dbConnection.js';
 
+=======
+import { UserHistory } from "../../../database/models/UserHistory.js";
+import department from "../../../database/models/departmentModel.js";
+import moment from "moment";
+import sequelize from "../../../database/queries/dbConnection.js";
+import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.js";
+>>>>>>> fc3035021342c61505f30e6f81e73f5dfd89d1b8
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
     try {
       const alldata = await exportReports.findAll();
-      if (!alldata)
-        return helper.failed(
-          res,
-          variables.NotFound,
-          "No Report Data Found in Table"
-        );
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Report Data Found in Table");
 
-      return helper.success(
-        res,
-        variables.Success,
-        "Reports Data Retrieved Successfully",
-        alldata
-      );
+      return helper.success(res, variables.Success, "Reports Data Retrieved Successfully", alldata);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -42,7 +40,6 @@ class exportReportController {
   getReportsHistory = async (req, res) => {
     try {
       return helper.success(res, variables.Success, "Reports Data Retrieved Successfully", alldata);
-     
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -54,11 +51,7 @@ class exportReportController {
       const { fromTime, toTime } = req.body;
 
       await dbTransaction.commit();
-      return helper.success(
-        res,
-        variables.Success,
-        "User Updated Successfully"
-      );
+      return helper.success(res, variables.Success, "User Updated Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -67,59 +60,60 @@ class exportReportController {
 
   getProductiveReport = async (req, res) => {
     try {
-      let { fromTime, toTime, definedPeriod, teamId, userId, format, allRequest } = req.body;
-      /**
-       * Employee name | Department | Date | login time | Logout time | Total active hours | Idle time | time on productive apps | Time on non productive apps | Productive websites | Non productive websites | Average productivity % | Most used productive app
-       */
-      if (allRequest) {
-      } else if (definedPeriod && [1, 2, 3].includes(definedPeriod)) {
-        const alldata = await TimeLog.findAndCountAll({
-          // where: logWhere, // add the definedPeriod Condition here
-          include: [
-            {
-              model: User,
-              as: "user",
-              required: true,
-              where: { teamId: teamId },
-              attributes: ["id", "fullname"],
-              include: [
-                {
-                  model: AppHistoryEntry,
-                  as: "productivity",
-                  required: false,
-                },
-                {
-                  model: department,
-                  as: "department",
-                  attributes: ["name"],
-                },
-              ],
-            },
-          ],
-          order: [["createdAt", "DESC"]],
-        });
-        if(!alldata) return helper.failed(res, variables.BadRequest, "Unable to retrieve the data");
+      let { fromTime, toTime, definedPeriod, teamId, userId, format } = req.body;
+      let startDate, endDate;
 
-        let result = commonfuncitons.createResponse(alldata.rows)
+      const today = new Date();
 
-        // await dbTransaction.commit();
-        return helper.success(res, variables.Success, "User Updated Successfully", result);
+      if (definedPeriod === 1) {
+        startDate = new Date(today.setDate(today.getDate() - 1));
+        endDate = new Date(startDate);
+      } else if (definedPeriod === 2) {
+        const lastSunday = new Date(today.setDate(today.getDate() - today.getDay() - 7));
+        const lastSaturday = new Date(lastSunday);
+        lastSaturday.setDate(lastSunday.getDate() + 6);
+        startDate = lastSunday;
+        endDate = lastSaturday;
+      } else if (definedPeriod === 3) {
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        startDate = lastMonth;
+        endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
+      } else if (definedPeriod === 4) {
+        const rules = { fromTime: "required", toTime: "required" };
+        const { status, message } = await validate(req.body, rules);
+        if (status === 0) {
+          return helper.failed(res, variables.ValidationError, message);
+        }
+        startDate = new Date(fromTime);
+        endDate = new Date(toTime);
+      } else {
+        return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
+
+      const users = await GenerateReportHelper.getUserInCompany(req.user.company_id);
+      let userIds = [];
+      for (const user of users.data) {
+        if (user.id) {
+          userIds.push(user.id);
+        }
+      }
+
+      let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, startDate, endDate);
+      let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, startDate, endDate);
+
+      return helper.success(res, variables.Success, "User Updated Successfully", { users: users.data, productiveWebsites: ProdWebCount, productiveApps: ProdAppAnalysis });
     } catch (error) {
       // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
-
-
-
   downloadFile = async (req, res, attendanceReport) => {
     try {
       const { format } = req.body;
       const fileName = `Attendance_Report_${Date.now()}.pdf`;
       const __dirname = path.dirname(new URL(import.meta.url).pathname);
-      const filePath = path.resolve(__dirname, '../../../storage/files', fileName);
+      const filePath = path.resolve(__dirname, "../../../storage/files", fileName);
       console.log(filePath);
 
       if (format === "xls") {
@@ -152,16 +146,16 @@ class exportReportController {
       doc.end();
 
       // Debugging: Write raw attendance data to a text file for verification
-      const debugFilePath = path.resolve(__dirname, '../../../storage/files', 'debug_attendance.txt');
+      const debugFilePath = path.resolve(__dirname, "../../../storage/files", "debug_attendance.txt");
       fs.writeFileSync(
         debugFilePath,
-        attendanceReport.map(row =>
-          `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-        ).join('\n')
+        attendanceReport
+          .map((row) => `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`)
+          .join("\n")
       );
       console.log("Debug file written to:", debugFilePath);
 
-      fileStream.on('finish', () => {
+      fileStream.on("finish", () => {
         // Ensure the file exists before sending
         fs.access(filePath, fs.constants.F_OK, (err) => {
           if (err) {
@@ -181,7 +175,7 @@ class exportReportController {
         });
       });
 
-      fileStream.on('error', (err) => {
+      fileStream.on("error", (err) => {
         console.error("Error writing file:", err);
         res.status(500).json({ status: "error", message: "File generation failed." });
       });
@@ -190,8 +184,6 @@ class exportReportController {
       res.status(500).json({ status: "error", message: error.message });
     }
   };
-
-
 
   getAttendanceReport = async (req, res) => {
     try {
@@ -226,7 +218,6 @@ class exportReportController {
         }
         startDate = new Date(fromDate);
         endDate = new Date(toDate);
-
       } else {
         return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
@@ -280,60 +271,14 @@ class exportReportController {
     }
   };
 
-
-
-  getBrowserActivityReport = async (req, res) => {
-    const dbTransaction = await Sequelize.transaction();
-    try {
-      const {
-        fromTime,
-        toTime,
-        definedPeriod,
-        teamId,
-        userId,
-        format,
-        deptRequest,
-      } = req.body;
-
-      /**
-       * Name | Dept. | URL | Productive/Non-productive | Time spent
-       */
-
-      await dbTransaction.commit();
-      return helper.success(
-        res,
-        variables.Success,
-        "User Updated Successfully"
-      );
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
-
   getApplicationUsageReport = async (req, res) => {
     const dbTransaction = await Sequelize.transaction();
     try {
-      const {
-        fromTime,
-        toTime,
-        definedPeriod,
-        teamId,
-        userId,
-        format,
-        deptRequest,
-      } = req.body;
+      const { fromTime, toTime, definedPeriod, teamId, userId, format } = req.body;
 
-      /**
-       * Name | Dept. | Application | Productive/Non-Productive |
-       */
 
       await dbTransaction.commit();
-      return helper.success(
-        res,
-        variables.Success,
-        "User Updated Successfully"
-      );
+      return helper.success(res, variables.Success, "User Updated Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -341,52 +286,50 @@ class exportReportController {
   };
 
   getDeptPerformReport = async (req, res) => {
-      try {
-          const { company_id } = req.user;
-          const { option, startDate, endDate } = req.query;
-          const dateRange = await GenerateReportHelper.getDateRange(option, startDate, endDate);
-          const allDepartments = await department.findAll({
-              where: { company_id: company_id, status: 1 }
-          });
-  
-          const performanceArray = [];
-          for (const element of allDepartments) {
-              const totalEmployeesDepartmentWise = await GenerateReportHelper.getTotalEmployeeDepartmentWise(element.id, dateRange, 'user_ids');
-              console.log(totalEmployeesDepartmentWise);
-              //getting attendance average
-              const avgAttendence = await GenerateReportHelper.getAttendanceAvg(dateRange, totalEmployeesDepartmentWise, company_id);
-              //getting logged in time average
-              const avgLoggedInTime = await GenerateReportHelper.getAvgLoggedInTime(dateRange, totalEmployeesDepartmentWise);
-              const avgProductiveAppTime = await GenerateReportHelper.getAvgProductiveAppTime(dateRange, totalEmployeesDepartmentWise, company_id);
-              const avgNonProductiveAppTime = await GenerateReportHelper.getAvgNonProductiveAppTime(dateRange, totalEmployeesDepartmentWise, company_id);
-              const mostUnproductiveWebsiteName = await GenerateReportHelper.mostUnproductiveWebsiteName(dateRange, totalEmployeesDepartmentWise, company_id);
-              const mostproductiveWebsiteName = await GenerateReportHelper.mostProductiveWebsiteName(dateRange, totalEmployeesDepartmentWise, company_id);
-              const mostUnproductiveAppName = await GenerateReportHelper.mostUnproductiveAppName(dateRange, totalEmployeesDepartmentWise, company_id);
-              const mostproductiveAppName = await GenerateReportHelper.mostproductiveAppName(dateRange, totalEmployeesDepartmentWise, company_id);
-  
-  
-              const obj = {
-                  department_name: element.name,
-                  total_employee: totalEmployeesDepartmentWise.length,
-                  attendance_avg: avgAttendence,
-                  loggedin_time_avg: avgLoggedInTime,
-                  productive_app_time: avgProductiveAppTime,
-                  non_productive_app_time: avgNonProductiveAppTime,
-                  most_non_productive_website: mostUnproductiveWebsiteName,
-                  most_productive_website: mostproductiveWebsiteName,
-                  most_non_productive_app_name: mostUnproductiveAppName,
-                  most_productive_app: mostproductiveAppName
-              };
-  
-              performanceArray.push(obj);
-          }
-  
-          return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
-  
-      } catch (error) {
-          console.log(`departmentPerformanceReport ${error.message}`);
-          return helper.failed(res, variables.BadRequest, error.message)
+    try {
+      const { company_id } = req.user;
+      const { option, startDate, endDate } = req.query;
+      const dateRange = await GenerateReportHelper.getDateRange(option, startDate, endDate);
+      const allDepartments = await department.findAll({
+        where: { company_id: company_id, status: 1 },
+      });
+
+      const performanceArray = [];
+      for (const element of allDepartments) {
+        const totalEmployeesDepartmentWise = await GenerateReportHelper.getTotalEmployeeDepartmentWise(element.id, dateRange, "user_ids");
+        console.log(totalEmployeesDepartmentWise);
+        //getting attendance average
+        const avgAttendence = await GenerateReportHelper.getAttendanceAvg(dateRange, totalEmployeesDepartmentWise, company_id);
+        //getting logged in time average
+        const avgLoggedInTime = await GenerateReportHelper.getAvgLoggedInTime(dateRange, totalEmployeesDepartmentWise);
+        const avgProductiveAppTime = await GenerateReportHelper.getAvgProductiveAppTime(dateRange, totalEmployeesDepartmentWise, company_id);
+        const avgNonProductiveAppTime = await GenerateReportHelper.getAvgNonProductiveAppTime(dateRange, totalEmployeesDepartmentWise, company_id);
+        const mostUnproductiveWebsiteName = await GenerateReportHelper.mostUnproductiveWebsiteName(dateRange, totalEmployeesDepartmentWise, company_id);
+        const mostproductiveWebsiteName = await GenerateReportHelper.mostProductiveWebsiteName(dateRange, totalEmployeesDepartmentWise, company_id);
+        const mostUnproductiveAppName = await GenerateReportHelper.mostUnproductiveAppName(dateRange, totalEmployeesDepartmentWise, company_id);
+        const mostproductiveAppName = await GenerateReportHelper.mostproductiveAppName(dateRange, totalEmployeesDepartmentWise, company_id);
+
+        const obj = {
+          department_name: element.name,
+          total_employee: totalEmployeesDepartmentWise.length,
+          attendance_avg: avgAttendence,
+          loggedin_time_avg: avgLoggedInTime,
+          productive_app_time: avgProductiveAppTime,
+          non_productive_app_time: avgNonProductiveAppTime,
+          most_non_productive_website: mostUnproductiveWebsiteName,
+          most_productive_website: mostproductiveWebsiteName,
+          most_non_productive_app_name: mostUnproductiveAppName,
+          most_productive_app: mostproductiveAppName,
+        };
+
+        performanceArray.push(obj);
       }
+
+      return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
+    } catch (error) {
+      console.log(`departmentPerformanceReport ${error.message}`);
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
   };
 
   getUnauthorizedWebReport = async (req, res) => {
@@ -401,7 +344,6 @@ class exportReportController {
         // Previous Day
         startDate = new Date(today.setDate(today.getDate() - 1));
         endDate = new Date(startDate);
-
       } else if (definedPeriod === 2) {
         // Previous Week (Sunday to Saturday)
         const lastSunday = new Date(today.setDate(today.getDate() - today.getDay() - 7));
@@ -409,15 +351,11 @@ class exportReportController {
         lastSaturday.setDate(lastSunday.getDate() + 6);
         startDate = lastSunday;
         endDate = lastSaturday;
-
-
       } else if (definedPeriod === 3) {
         // Previous Month
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         startDate = lastMonth;
         endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
-
-
       } else if (definedPeriod === 4) {
         // Custom
         const rules = { fromDate: "required", toDate: "required" };
@@ -427,12 +365,9 @@ class exportReportController {
         }
         startDate = new Date(fromDate);
         endDate = new Date(toDate);
-
-
       } else {
         return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
-
 
       // Query to fetch unauthorized access
       const unauthorizedAccessReport = await UserHistory.sequelize.query(
@@ -447,8 +382,11 @@ class exportReportController {
         {
           type: QueryTypes.SELECT,
           replacements: {
-            companyId, startDate: startDate.toISOString().split("T")[0],
-            endDate: endDate.toISOString().split("T")[0], teamId, userId
+            companyId,
+            startDate: startDate.toISOString().split("T")[0],
+            endDate: endDate.toISOString().split("T")[0],
+            teamId,
+            userId,
           },
         }
       );
@@ -495,37 +433,29 @@ class exportReportController {
     try {
       let data = req.body;
       if (!data.member_id) {
-        return helper.failed(
-          res,
-          variables.BadRequest,
-          "Please select team and member"
-        );
+        return helper.failed(res, variables.BadRequest, "Please select team and member");
       }
-   
-      const validOptions = [
-        "custom_range",
-        "yesterday",
-        "previous_week",
-        "previous_month",
-      ];
+
+      const validOptions = ["custom_range", "yesterday", "previous_week", "previous_month"];
 
       if (!data.option || !validOptions.includes(data.option)) {
-        return helper.failed(
-          res,
-          variables.BadRequest,
-          "Please select a valid date option"
-        );
+        return helper.failed(res, variables.BadRequest, "Please select a valid date option");
       }
 
       let date;
       if (data.option) {
         if (data.option == "custom_range") {
+<<<<<<< HEAD
           if (!data.start || !data.end) {
             return helper.failed(
               res,
               variables.BadRequest,
               "Please select start and end date"
             );
+=======
+          if (!data.customStart || !data.customEnd) {
+            return helper.failed(res, variables.BadRequest, "Please select start and end date");
+>>>>>>> fc3035021342c61505f30e6f81e73f5dfd89d1b8
           }
           date = await helper.getDateRange(data.option, data.start, data.end);
         } else {
@@ -541,7 +471,7 @@ class exportReportController {
           where: {
             teamId: data.team_id,
             id: data.member_id,
-            company_id: req.user.company_id
+            company_id: req.user.company_id,
           },
         });
         if (!team) {
@@ -564,12 +494,7 @@ class exportReportController {
             "visitTime"
           ]
         });
-        return helper.success(
-          res,
-          variables.Success,
-          "Browser Data Fetched successfully",
-          browserHistroy
-        );
+        return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
       } else {
         const team = await User.findOne({
           where: {
@@ -597,12 +522,7 @@ class exportReportController {
             "visitTime"
           ]
         });
-        return helper.success(
-          res,
-          variables.Success,
-          "Browser Data Fetched successfully",
-          browserHistroy
-        );
+        return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
       }
     } catch (error) {
       console.log("Error while generating browser history report:", error);

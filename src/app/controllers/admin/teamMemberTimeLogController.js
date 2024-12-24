@@ -8,6 +8,7 @@ import { Op, Sequelize, QueryTypes } from "sequelize";
 import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import commonfuncitons from "../../../utils/services/commonfuncitons.js";
+import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.js";
 class teamMemberTimeLogController {
   getAllTeamMemberLog = async (req, res) => {
     try {
@@ -154,6 +155,122 @@ class teamMemberTimeLogController {
       const count = result.length;
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: result });
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+
+  getTeamMemberLogFiltered2 = async (req, res) => {
+    try {
+      // ___________---------- Search, Limit, Pagination ----------_______________
+      let { searchParam, limit, page, date, tab } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      let userWhere = {};
+      let logWhere = {};
+      // ___________---------- Search, Limit, Pagination ----------_______________
+
+      let startOfDay;
+      let endOfDay;
+      let company_id = req.user.company_id;
+      let userIds = [];
+
+      if (date) {
+        startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+      } else {
+        startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+      }
+
+      logWhere.company_id = company_id;
+
+      const alldata = await GenerateReportHelper.getUserInCompany(company_id);
+
+      for (const user of alldata.data) {
+        if (user.id) {
+          userIds.push(user.id);
+        }
+      }
+
+      // const timeLogQuery = `
+      //           SELECT
+      //               u.id AS userId,
+      //               u.fullname as name,
+      //               t.shift_id as shiftId,
+      //               t.logged_in_time as logged_in_time,
+      //               t.logged_out_time as logged_out_time,
+      //               t.early_going as early_going,
+      //               t.late_coming late_coming,
+      //               SUM(t.active_time) + SUM(t.spare_time) + SUM(t.idle_time) AS active_time,  
+      //               CASE 
+      //                   WHEN t.user_id IS NOT NULL THEN 'Present'
+      //                   ELSE 'Absent'
+      //               END AS attendance
+      //           FROM 
+      //               users u
+      //           LEFT JOIN 
+      //               timelogs t
+      //           ON 
+      //               u.id = t.user_id
+      //               AND t.createdAt BETWEEN :startOfDay AND :endOfDay
+      //           WHERE 
+      //               u.id IN (:userIds)
+      //           GROUP BY 
+      //               u.id, u.fullname, t.shift_id, t.logged_in_time, t.logged_out_time, t.early_going, t.late_coming, t.user_id;`;
+
+      const timeLogQuery2 = `SELECT
+                              u.id AS userId,
+                              u.fullname AS name,
+                              t.shift_id AS shiftId,
+                              t.logged_in_time AS logged_in_time,
+                              t.logged_out_time AS logged_out_time,
+                              t.early_going AS early_going,
+                              t.late_coming AS late_coming,
+                              SUM(t.active_time) + SUM(t.spare_time) + SUM(t.idle_time) AS active_time,  
+                              CASE 
+                                  WHEN t.user_id IS NOT NULL THEN 'Present'
+                                  ELSE 'Absent'
+                              END AS attendance,
+                              SUM(
+                                  CASE 
+                                      WHEN ah.is_productive = 1 THEN TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)
+                                      ELSE 0
+                                  END
+                              ) AS total_productive_time_seconds  -- Calculate total productive time
+                          FROM 
+                              users u
+                          LEFT JOIN 
+                              timelogs t ON u.id = t.user_id
+                              AND t.createdAt BETWEEN :startOfDay AND :endOfDay
+                          LEFT JOIN 
+                              app_histories ah ON u.id = ah.userId  -- Join with app_histories for productive time calculation
+                              AND ah.startTime BETWEEN :startOfDay AND :endOfDay  -- Filter for the date range
+                          WHERE 
+                              u.id IN (:userIds)
+                          GROUP BY 
+                              u.id, u.fullname, t.shift_id, t.logged_in_time, t.logged_out_time, t.early_going, t.late_coming, t.user_id;`
+      const replacements = {
+        startOfDay,
+        endOfDay,
+        userIds,
+      };
+
+      const results = await sequelize.query(timeLogQuery2, {
+        type: Sequelize.QueryTypes.SELECT,
+        replacements,
+      });
+
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", results);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }

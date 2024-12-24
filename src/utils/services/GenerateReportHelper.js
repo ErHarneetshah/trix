@@ -7,13 +7,12 @@ import User from "../../database/models/userModel.js";
 import team from "../../database/models/teamModel.js";
 import shift from "../../database/models/shiftModel.js";
 
-
-
 // Helper function to get the working days of a department's users
 const getWorkingDays = async (dateRange, userIds, companyId) => {
-    try {
-        const { startDate, endDate } = dateRange;
-        const [results] = await sequelize.query(`
+  try {
+    const { startDate, endDate } = dateRange;
+    const [results] = await sequelize.query(
+      `
         SELECT user_id, COUNT(DISTINCT DATE(createdAt)) AS count
         FROM timelogs
         WHERE company_id = :companyId
@@ -22,6 +21,7 @@ const getWorkingDays = async (dateRange, userIds, companyId) => {
         AND createdAt <= :endDate
         GROUP BY user_id
         ORDER BY count DESC
+<<<<<<< HEAD
     `, {
             replacements: {
                 companyId: companyId,
@@ -39,230 +39,236 @@ const getWorkingDays = async (dateRange, userIds, companyId) => {
         console.log(`getWorkingDays ${error.message}`);
         return 0;
     }
+=======
+    `,
+      {
+        replacements: {
+          companyId: companyId,
+          userIds: userIds,
+          startDate: `${startDate}T00:00:00`,
+          endDate: `${endDate}T23:59:59`,
+        },
+        type: sequelize.QueryTypes.SELECT,
+        logging: console.log,
+      }
+    );
+    return results ? results.count : 0;
+  } catch (error) {
+    console.log(`getWorkingDays ${error.message}`);
+    return 0;
+  }
+>>>>>>> fc3035021342c61505f30e6f81e73f5dfd89d1b8
 };
-
 
 // Helper function to get total present days of a user within the date range
 const getTotalPersentDays = async (dateRange, user_id) => {
-    try {
-        const { startDate, endDate } = dateRange;
-        const [results] = await sequelize.query(`
+  try {
+    const { startDate, endDate } = dateRange;
+    const [results] = await sequelize.query(
+      `
         SELECT count(DISTINCT createdAt) AS distinctCount
         FROM timelogs
         WHERE createdAt >= :startDate
         AND createdAt <= :endDate
         AND user_id = :userId
-    `, {
-            replacements: {
-                startDate: new Date(`${startDate}T00:00:00`),
-                endDate: new Date(`${endDate}T23:59:59`),
-                userId: user_id
-            },
-            type: sequelize.QueryTypes.SELECT
-        });
+    `,
+      {
+        replacements: {
+          startDate: new Date(`${startDate}T00:00:00`),
+          endDate: new Date(`${endDate}T23:59:59`),
+          userId: user_id,
+        },
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
 
-        return results ? results.distinctCount : 0;
-
-    } catch (error) {
-        console.log(`getTotalPersentDays ${error.message}`);
-        return 0;
-    }
+    return results ? results.distinctCount : 0;
+  } catch (error) {
+    console.log(`getTotalPersentDays ${error.message}`);
+    return 0;
+  }
 };
 export default {
+  getWorkingDays,
+  getTotalPersentDays,
 
-    getWorkingDays, getTotalPersentDays,
+  // Helper function to get the date range based on the option
+  getDateRange: async (option, customStart, customEnd) => {
+    const today = moment();
+    let startDate, endDate;
 
-    // Helper function to get the date range based on the option
-    getDateRange: async (option, customStart, customEnd) => {
-        const today = moment();
-        let startDate, endDate;
+    switch (option) {
+      case "yesterday":
+        startDate = endDate = today.clone().subtract(1, "days").format("YYYY-MM-DD");
+        break;
 
-        switch (option) {
-            case 'yesterday':
-                startDate = endDate = today.clone().subtract(1, 'days').format('YYYY-MM-DD');
-                break;
+      case "previous_week":
+        endDate = today.clone().startOf("week").subtract(1, "days").format("YYYY-MM-DD");
+        startDate = moment(endDate).subtract(6, "days").format("YYYY-MM-DD");
+        break;
 
-            case 'previous_week':
-                endDate = today.clone().startOf('week').subtract(1, 'days').format('YYYY-MM-DD');
-                startDate = moment(endDate).subtract(6, 'days').format('YYYY-MM-DD');
-                break;
+      case "previous_month":
+        const firstDayOfThisMonth = today.clone().startOf("month");
+        const lastDayOfPreviousMonth = firstDayOfThisMonth.clone().subtract(1, "days");
+        startDate = lastDayOfPreviousMonth.clone().startOf("month").format("YYYY-MM-DD");
+        endDate = lastDayOfPreviousMonth.format("YYYY-MM-DD");
+        break;
 
-            case 'previous_month':
-                const firstDayOfThisMonth = today.clone().startOf('month');
-                const lastDayOfPreviousMonth = firstDayOfThisMonth.clone().subtract(1, 'days');
-                startDate = lastDayOfPreviousMonth.clone().startOf('month').format('YYYY-MM-DD');
-                endDate = lastDayOfPreviousMonth.format('YYYY-MM-DD');
-                break;
-
-            case 'custom_range':
-                if (!customStart || !customEnd) {
-                    throw new Error("Both customStart and customEnd must be provided for 'custom range'.");
-                }
-                startDate = moment(customStart).format('YYYY-MM-DD');
-                endDate = moment(customEnd).format('YYYY-MM-DD');
-                break;
-
-            default:
-                throw new Error("Invalid option. Valid options are 'yesterday', 'previous week', 'previous month', or 'custom range'.");
+      case "custom_range":
+        if (!customStart || !customEnd) {
+          throw new Error("Both customStart and customEnd must be provided for 'custom range'.");
         }
+        startDate = moment(customStart).format("YYYY-MM-DD");
+        endDate = moment(customEnd).format("YYYY-MM-DD");
+        break;
 
-        return { startDate, endDate };
-    },
-
-    // Helper function to get the total employees in a specific department
-    getTotalEmployeeDepartmentWise: async (deptId, dateRange, type = "count") => {
-        try {
-            const { startDate, endDate } = dateRange;
-            if (type === "count") {
-                const totalEmployees = await User.count({
-                    where: {
-                        departmentId: deptId,
-                        status: 1,
-                        createdAt: {
-                            // [Op.gte]: new Date(`${startDate}T00:00:00`),
-                            [Op.lte]: new Date(`${endDate}T23:59:59`)
-                        }
-                    },
-                });
-                return totalEmployees;
-            } else {
-                const totalEmployees = await User.findAll({
-                    where: {
-                        departmentId: deptId,
-                        status: 1,
-                        createdAt: {
-                            // [Op.gte]: new Date(`${startDate}T00:00:00`),
-                            [Op.lte]: new Date(`${endDate}T23:59:59`)
-                        }
-                    },
-                    attributes: ['id']
-                });
-                return totalEmployees.map(item => item.id);
-            }
-        } catch (error) {
-            console.log(`getTotalEmployeeDepartmentWise ${error.message}`);
-            return 0;
-        }
-    },
-
-    // Helper function to get the total employees in a specific department
-    getTotalEmployeeTeamWise: async (teams, dateRange, type = "count") => {
-        try {
-            const { startDate, endDate } = dateRange;
-            if (type === "count") {
-                const totalEmployees = await User.count({
-                    where: {
-                        teamId: {
-                            [Op.in]: Array.isArray(teams) ? teams : [teams]
-                        },
-                        status: 1,
-                        createdAt: {
-                            // [Op.gte]: new Date(`${startDate}T00:00:00`),
-                            [Op.lte]: new Date(`${endDate}T23:59:59`)
-                        }
-                    },
-                });
-                return totalEmployees;
-            } else {
-                const totalEmployees = await User.findAll({
-                    where: {
-                        teamId: {
-                            [Op.in]: Array.isArray(teams) ? teams : [teams]
-                        },
-                        status: 1,
-                        createdAt: {
-                            // [Op.gte]: new Date(`${startDate}T00:00:00`),
-                            [Op.lte]: new Date(`${endDate}T23:59:59`)
-                        }
-                    },
-                    attributes: ['id']
-                });
-                return totalEmployees.map(item => item.id);
-            }
-        } catch (error) {
-            console.log(`getTotalEmployeeTeamWise ${error.message}`);
-            return 0;
-        }
-    },
-
-
-    getAvgLoggedInTime: async (dateRange, userIds) => {
-        try {
-            let { startDate, endDate } = dateRange;
-
-
-            const results = await TimeLog.findOne({
-                attributes: [
-                    [sequelize.fn('AVG', sequelize.literal('active_time / 60')), 'average_active_time']
-                ],
-                where: {
-                    user_id: {
-                        [Op.in]: userIds
-                    },
-                    createdAt: {
-                        [Op.gte]: new Date(`${startDate}T00:00:00`),
-                        [Op.lte]: new Date(`${endDate}T23:59:59`)
-                    }
-                },
-            });
-
-            return results ? results.get('average_active_time') : 0;
-
-        } catch (error) {
-            console.log(`getAvgLoggedInTime ${error.message}`);
-            return 0;
-        }
+      default:
+        throw new Error("Invalid option. Valid options are 'yesterday', 'previous week', 'previous month', or 'custom range'.");
     }
-    ,
 
-    // Helper function to get the attendance average for a department
-    getAttendanceAvg: async (dateRange, userIds, companyId) => {
-        try {
-            let { startDate, endDate } = dateRange;
-            const totalEmployeesWithinRange = await User.findAll({
-                where: {
-                    id: {
-                        [Op.in]: userIds
-                    }
-                }
-            });
+    return { startDate, endDate };
+  },
 
-            const avg = [];
-            for (const user of totalEmployeesWithinRange) {
-                let avgUser = 0;
-                const userJoiningDate = user.createdAt;
-                const formattedJoiningDate = new Date(userJoiningDate).toISOString().split('T')[0];
-                if (startDate < formattedJoiningDate) {
-                    startDate = formattedJoiningDate;
-                }
-                const allWorkingDays = await getWorkingDays({ startDate, endDate }, userIds, companyId);
-                const userWorkingDays = await getTotalPersentDays({ startDate, endDate }, user.id);
-                if (parseInt(allWorkingDays) > 0) {
-                    avgUser = parseInt(userWorkingDays) / parseInt(allWorkingDays) * 100;
-                }
-                avg.push({ user_id: user.id, avg: avgUser });
-            }
+  // Helper function to get the total employees in a specific department
+  getTotalEmployeeDepartmentWise: async (deptId, dateRange, type = "count") => {
+    try {
+      const { startDate, endDate } = dateRange;
+      if (type === "count") {
+        const totalEmployees = await User.count({
+          where: {
+            departmentId: deptId,
+            status: 1,
+            createdAt: {
+              // [Op.gte]: new Date(`${startDate}T00:00:00`),
+              [Op.lte]: new Date(`${endDate}T23:59:59`),
+            },
+          },
+        });
+        return totalEmployees;
+      } else {
+        const totalEmployees = await User.findAll({
+          where: {
+            departmentId: deptId,
+            status: 1,
+            createdAt: {
+              // [Op.gte]: new Date(`${startDate}T00:00:00`),
+              [Op.lte]: new Date(`${endDate}T23:59:59`),
+            },
+          },
+          attributes: ["id"],
+        });
+        return totalEmployees.map((item) => item.id);
+      }
+    } catch (error) {
+      console.log(`getTotalEmployeeDepartmentWise ${error.message}`);
+      return 0;
+    }
+  },
 
-            const totalAvg = avg.length > 0
-                ? avg.reduce((acc, obj) => acc + obj.avg, 0) / avg.length
-                : 0;
-            return totalAvg;
+  // Helper function to get the total employees in a specific department
+  getTotalEmployeeTeamWise: async (teams, dateRange, type = "count") => {
+    try {
+      const { startDate, endDate } = dateRange;
+      if (type === "count") {
+        const totalEmployees = await User.count({
+          where: {
+            teamId: {
+              [Op.in]: Array.isArray(teams) ? teams : [teams],
+            },
+            status: 1,
+            createdAt: {
+              // [Op.gte]: new Date(`${startDate}T00:00:00`),
+              [Op.lte]: new Date(`${endDate}T23:59:59`),
+            },
+          },
+        });
+        return totalEmployees;
+      } else {
+        const totalEmployees = await User.findAll({
+          where: {
+            teamId: {
+              [Op.in]: Array.isArray(teams) ? teams : [teams],
+            },
+            status: 1,
+            createdAt: {
+              // [Op.gte]: new Date(`${startDate}T00:00:00`),
+              [Op.lte]: new Date(`${endDate}T23:59:59`),
+            },
+          },
+          attributes: ["id"],
+        });
+        return totalEmployees.map((item) => item.id);
+      }
+    } catch (error) {
+      console.log(`getTotalEmployeeTeamWise ${error.message}`);
+      return 0;
+    }
+  },
 
-        } catch (error) {
-            console.log(`getAttendanceAvg ${error.message}`);
-            return 0;
+  getAvgLoggedInTime: async (dateRange, userIds) => {
+    try {
+      let { startDate, endDate } = dateRange;
+
+      const results = await TimeLog.findOne({
+        attributes: [[sequelize.fn("AVG", sequelize.literal("active_time / 60")), "average_active_time"]],
+        where: {
+          user_id: {
+            [Op.in]: userIds,
+          },
+          createdAt: {
+            [Op.gte]: new Date(`${startDate}T00:00:00`),
+            [Op.lte]: new Date(`${endDate}T23:59:59`),
+          },
+        },
+      });
+
+      return results ? results.get("average_active_time") : 0;
+    } catch (error) {
+      console.log(`getAvgLoggedInTime ${error.message}`);
+      return 0;
+    }
+  },
+  // Helper function to get the attendance average for a department
+  getAttendanceAvg: async (dateRange, userIds, companyId) => {
+    try {
+      let { startDate, endDate } = dateRange;
+      const totalEmployeesWithinRange = await User.findAll({
+        where: {
+          id: {
+            [Op.in]: userIds,
+          },
+        },
+      });
+
+      const avg = [];
+      for (const user of totalEmployeesWithinRange) {
+        let avgUser = 0;
+        const userJoiningDate = user.createdAt;
+        const formattedJoiningDate = new Date(userJoiningDate).toISOString().split("T")[0];
+        if (startDate < formattedJoiningDate) {
+          startDate = formattedJoiningDate;
         }
-    },
+        const allWorkingDays = await getWorkingDays({ startDate, endDate }, userIds, companyId);
+        const userWorkingDays = await getTotalPersentDays({ startDate, endDate }, user.id);
+        if (parseInt(allWorkingDays) > 0) {
+          avgUser = (parseInt(userWorkingDays) / parseInt(allWorkingDays)) * 100;
+        }
+        avg.push({ user_id: user.id, avg: avgUser });
+      }
 
+      const totalAvg = avg.length > 0 ? avg.reduce((acc, obj) => acc + obj.avg, 0) / avg.length : 0;
+      return totalAvg;
+    } catch (error) {
+      console.log(`getAttendanceAvg ${error.message}`);
+      return 0;
+    }
+  },
 
+  getAvgProductiveAppTime: async (dateRange, userIds, companyId) => {
+    try {
+      let { startDate, endDate } = dateRange;
 
-    getAvgProductiveAppTime: async (dateRange, userIds, companyId) => {
-        try {
-            let { startDate, endDate } = dateRange;
-
-
-
-            const query = `
+      const query = `
     SELECT 
     COALESCE(AVG(user_total_time),0) AS average_time_minutes
     FROM (
@@ -284,33 +290,30 @@ export default {
     ) AS user_totals;
 `;
 
-            const replacements = {
-                companyId: companyId,
-                startDate,
-                endDate,
-                userIds
-            };
+      const replacements = {
+        companyId: companyId,
+        startDate,
+        endDate,
+        userIds,
+      };
 
-            const [results] = await sequelize.query(query, {
-                type: Sequelize.QueryTypes.SELECT,
-                replacements,
-            },
-            );
+      const [results] = await sequelize.query(query, {
+        type: Sequelize.QueryTypes.SELECT,
+        replacements,
+      });
 
-            console.log(results);
-            return results ? results.average_time_minutes : 0;
+      console.log(results);
+      return results ? results.average_time_minutes : 0;
+    } catch (error) {
+      return 0;
+    }
+  },
 
-        } catch (error) {
-            return 0;
-        }
-    },
+  getAvgNonProductiveAppTime: async (dateRange, userIds, companyId) => {
+    try {
+      let { startDate, endDate } = dateRange;
 
-
-    getAvgNonProductiveAppTime: async (dateRange, userIds, companyId) => {
-        try {
-            let { startDate, endDate } = dateRange;
-
-            const query = `
+      const query = `
     SELECT 
         COALESCE(AVG(user_total_time), 0) AS average_time_minutes
     FROM (
@@ -333,30 +336,28 @@ export default {
     ) AS user_totals;
 `;
 
-            const replacements = {
-                companyId,
-                startDate,
-                endDate,
-                userIds,
-            };
+      const replacements = {
+        companyId,
+        startDate,
+        endDate,
+        userIds,
+      };
 
-            const [results] = await sequelize.query(query, {
-                type: Sequelize.QueryTypes.SELECT,
-                replacements,
-            });
+      const [results] = await sequelize.query(query, {
+        type: Sequelize.QueryTypes.SELECT,
+        replacements,
+      });
 
-            return results ? results.average_time_minutes : 0;
+      return results ? results.average_time_minutes : 0;
+    } catch (error) {
+      return 0;
+    }
+  },
 
-        } catch (error) {
-            return 0;
-        }
-    },
-
-
-    mostUnproductiveWebsiteName: async (dateRange, userIds, companyId) => {
-        try {
-            const { startDate, endDate } = dateRange;
-            const query = `
+  mostUnproductiveWebsiteName: async (dateRange, userIds, companyId) => {
+    try {
+      const { startDate, endDate } = dateRange;
+      const query = `
                 SELECT 
                     COUNT(uh.id) AS total_counts,
                     uh.website_name AS website_name 
@@ -378,35 +379,33 @@ export default {
                 LIMIT 1;
             `;
 
-            // Ensure userIds is not empty
-            if (!userIds || userIds.length === 0) {
-                throw new Error("userIds array is empty or undefined.");
-            }
+      // Ensure userIds is not empty
+      if (!userIds || userIds.length === 0) {
+        throw new Error("userIds array is empty or undefined.");
+      }
 
-            const replacements = {
-                companyId,
-                startDate,
-                endDate,
-                userIds,
-            };
+      const replacements = {
+        companyId,
+        startDate,
+        endDate,
+        userIds,
+      };
 
-            const [results] = await sequelize.query(query, {
-                type: Sequelize.QueryTypes.SELECT,
-                replacements,
-            });
+      const [results] = await sequelize.query(query, {
+        type: Sequelize.QueryTypes.SELECT,
+        replacements,
+      });
 
-            return results ? results.website_name : 'N/A';
-
-        } catch (error) {
-            console.error(`Error in mostUnproductiveWebsiteName: ${error.message}`);
-            return "N/A";
-        }
+      return results ? results.website_name : "N/A";
+    } catch (error) {
+      console.error(`Error in mostUnproductiveWebsiteName: ${error.message}`);
+      return "N/A";
     }
-    ,
-    mostProductiveWebsiteName: async (dateRange, userIds, companyId) => {
-        try {
-            const { startDate, endDate } = dateRange;
-            const query = `
+  },
+  mostProductiveWebsiteName: async (dateRange, userIds, companyId) => {
+    try {
+      const { startDate, endDate } = dateRange;
+      const query = `
                 SELECT 
                     COUNT(uh.id) AS total_counts,
                     uh.website_name AS website_name 
@@ -428,41 +427,39 @@ export default {
                 LIMIT 1;
             `;
 
-            // Ensure userIds is not empty
-            if (!userIds || userIds.length === 0) {
-                throw new Error("userIds array is empty or undefined.");
-            }
+      // Ensure userIds is not empty
+      if (!userIds || userIds.length === 0) {
+        throw new Error("userIds array is empty or undefined.");
+      }
 
-            const replacements = {
-                companyId,
-                startDate,
-                endDate,
-                userIds,
-            };
+      const replacements = {
+        companyId,
+        startDate,
+        endDate,
+        userIds,
+      };
 
-            const [results] = await sequelize.query(query, {
-                type: Sequelize.QueryTypes.SELECT,
-                replacements,
-            });
+      const [results] = await sequelize.query(query, {
+        type: Sequelize.QueryTypes.SELECT,
+        replacements,
+      });
 
-            return results ? results.website_name : 'N/A';
+      return results ? results.website_name : "N/A";
+    } catch (error) {
+      console.error(`Error in mostproductiveWebsiteName: ${error.message}`);
+      return "N/A";
+    }
+  },
 
-        } catch (error) {
-            console.error(`Error in mostproductiveWebsiteName: ${error.message}`);
-            return "N/A";
-        }
-    },
+  mostUnproductiveAppName: async (dateRange, userIds, companyId) => {
+    try {
+      const { startDate, endDate } = dateRange;
 
+      if (!userIds || userIds.length === 0) {
+        throw new Error("userIds array is empty or undefined.");
+      }
 
-    mostUnproductiveAppName: async (dateRange, userIds, companyId) => {
-        try {
-            const { startDate, endDate } = dateRange;
-            
-            if (!userIds || userIds.length === 0) {
-                throw new Error("userIds array is empty or undefined.");
-            }
-    
-            const query = `
+      const query = `
                 SELECT 
                     ah.appName, 
                     COALESCE(SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)), 0) AS total_time_minutes
@@ -483,38 +480,36 @@ export default {
                     total_time_minutes DESC
                 LIMIT 1;
             `;
-    
-            const replacements = {
-                companyId,
-                startDate,
-                endDate,
-                userIds,
-            };
-    
-            const [results] = await sequelize.query(query, {
-                type: Sequelize.QueryTypes.SELECT,
-                replacements,
-            });
-    
-            // Return appName if results are found, otherwise return 'N/A'
-            return results  ? results.appName : 'N/A';
-    
-        } catch (error) {
-            console.error(`Error in mostUnproductiveAppName: ${error.message}`);
-            return "N/A";
-        }
+
+      const replacements = {
+        companyId,
+        startDate,
+        endDate,
+        userIds,
+      };
+
+      const [results] = await sequelize.query(query, {
+        type: Sequelize.QueryTypes.SELECT,
+        replacements,
+      });
+
+      // Return appName if results are found, otherwise return 'N/A'
+      return results ? results.appName : "N/A";
+    } catch (error) {
+      console.error(`Error in mostUnproductiveAppName: ${error.message}`);
+      return "N/A";
     }
-    
-    ,
-    mostproductiveAppName: async (dateRange, userIds, companyId) => {
-        try {
-            const { startDate, endDate } = dateRange;
-            
-            if (!userIds || userIds.length === 0) {
-                throw new Error("userIds array is empty or undefined.");
-            }
-    
-            const query = `
+  },
+
+  mostproductiveAppName: async (dateRange, userIds, companyId) => {
+    try {
+      const { startDate, endDate } = dateRange;
+
+      if (!userIds || userIds.length === 0) {
+        throw new Error("userIds array is empty or undefined.");
+      }
+
+      const query = `
                 SELECT 
                     ah.appName, 
                     COALESCE(SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)), 0) AS total_time_minutes
@@ -535,92 +530,111 @@ export default {
                     total_time_minutes DESC
                 LIMIT 1;
             `;
-    
-            const replacements = {
-                companyId,
-                startDate,
-                endDate,
-                userIds,
-            };
-    
-            const [results] = await sequelize.query(query, {
-                type: Sequelize.QueryTypes.SELECT,
-                replacements,
-            });
-    
-            // Return appName if results are found, otherwise return 'N/A'
-            return results  ? results.appName : 'N/A';
-    
-        } catch (error) {
-            console.error(`Error in mostproductiveAppName: ${error.message}`);
-            return "N/A";
-        }
-    },
-    getUserInCompany: async (companyId) => {
-        const users = await User.findAll({
-          where: { company_id: companyId, isAdmin: 0 },
-          attributes: ["id", "fullname"],
-          include: [
-            {
-              model: department,
-              as: "department",
-              attributes: ["name"],
-            },
-          ],
-        });
-    
-        if (!users) return { status: false, message: "No user data found in your company" };
-    
-        return { status: true, message: "User's data retrived successfully", data: users };
-      },
-    
-      getProdWebCount: async (userId) => {
-        const query = `
-                SELECT 
-                    uh.userId,
-                    SUM(CASE WHEN pw.website_name IS NOT NULL THEN 1 ELSE 0 END) AS productive_count,
-                    SUM(CASE WHEN pw.website_name IS NULL THEN 1 ELSE 0 END) AS non_productive_count
-                FROM 
-                    user_histories uh
-                LEFT JOIN 
-                    productive_websites pw
-                ON 
-                    uh.website_name = pw.website_name
-                WHERE 
-                    uh.userId = :userId
-                GROUP BY 
-                    uh.userId
+
+      const replacements = {
+        companyId,
+        startDate,
+        endDate,
+        userIds,
+      };
+
+      const [results] = await sequelize.query(query, {
+        type: Sequelize.QueryTypes.SELECT,
+        replacements,
+      });
+
+      // Return appName if results are found, otherwise return 'N/A'
+      return results ? results.appName : "N/A";
+    } catch (error) {
+      console.error(`Error in mostproductiveAppName: ${error.message}`);
+      return "N/A";
+    }
+  },
+  getUserInCompany: async (companyId) => {
+    const users = await User.findAll({
+      where: { company_id: companyId, isAdmin: 0 },
+      attributes: ["id", "fullname"],
+      include: [
+        {
+          model: department,
+          as: "department",
+          attributes: ["name"],
+        },
+      ],
+    });
+
+    if (!users) return { status: false, message: "No user data found in your company" };
+
+    return { status: true, message: "User's data retrived successfully", data: users };
+  },
+
+  getProdWebCount: async (userIds, startOfDay, endOfDay) => {
+    const query = `
+               SELECT 
+    u.id AS userId,
+    COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
+    COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count,
+    DATE(uh.createdAt) AS record_date  -- Extracting the date part of the createdAt field
+FROM 
+    users u
+LEFT JOIN 
+    user_histories uh ON u.id = uh.userId 
+    AND uh.createdAt BETWEEN :startOfDay AND :endOfDay
+LEFT JOIN 
+    productive_websites pw ON uh.website_name = pw.website_name
+WHERE 
+    u.id IN (:userIds)
+GROUP BY 
+    u.id, record_date;  -- Group by user and record_date
+
+
             `;
-    
-        const [results] = await sequelize.query(query, {
-          replacements: { userId },
-          type: sequelize.QueryTypes.SELECT,
-        });
-    
-        return results;
+
+    const results = await sequelize.query(query, {
+      replacements: {
+        startOfDay,
+        endOfDay,
+        userIds,
       },
-    
-      getProdAppDetails: async (userId) => {
-        const query = `SELECT 
-                            userId,
-                            appName,
-                            is_productive,
-                            SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)) AS time_spent_seconds,
-                            COUNT(*) AS session_count,
-                            SUM(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime))) OVER (PARTITION BY userId) AS total_time_spent_seconds,
-                            MAX(TIMESTAMPDIFF(SECOND, startTime, endTime)) AS max_time_spent_seconds
-                        FROM 
-                            app_histories
-                        WHERE 
-                            userId = :userId
-                        GROUP BY 
-                            userId, appName, is_productive;`;
-    
-        const [results] = await sequelize.query(query, {
-          replacements: { userId },
-          type: sequelize.QueryTypes.SELECT,
-        });
-    
-        return results;
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    return results;
+  },
+
+  getProdAppDetails: async (userIds, startOfDay, endOfDay) => {
+    const query = `SELECT 
+    userId,
+    appName,
+    is_productive,
+    IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS time_spent_seconds,
+    IFNULL(COUNT(*), 0) AS session_count,
+    (
+        SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0)
+        FROM app_histories ah
+        WHERE ah.userId = a.userId
+        AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
+    ) AS total_time_spent_seconds,
+    IFNULL(MAX(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS max_time_spent_seconds,
+    DATE(a.createdAt) AS record_date  -- Extracting the date part of the createdAt field
+FROM 
+    app_histories a
+WHERE 
+    a.userId IN (:userIds)
+GROUP BY 
+    userId, appName, is_productive, record_date;
+
+`;
+
+    const results = await sequelize.query(query, {
+      replacements: {
+        startOfDay,
+        endOfDay,
+        userIds,
       },
-}
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    return results;
+  },
+};
