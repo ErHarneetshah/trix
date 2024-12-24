@@ -21,7 +21,6 @@ const getWorkingDays = async (dateRange, userIds, companyId) => {
         AND createdAt <= :endDate
         GROUP BY user_id
         ORDER BY count DESC
-<<<<<<< HEAD
     `, {
             replacements: {
                 companyId: companyId,
@@ -39,25 +38,6 @@ const getWorkingDays = async (dateRange, userIds, companyId) => {
         console.log(`getWorkingDays ${error.message}`);
         return 0;
     }
-=======
-    `,
-      {
-        replacements: {
-          companyId: companyId,
-          userIds: userIds,
-          startDate: `${startDate}T00:00:00`,
-          endDate: `${endDate}T23:59:59`,
-        },
-        type: sequelize.QueryTypes.SELECT,
-        logging: console.log,
-      }
-    );
-    return results ? results.count : 0;
-  } catch (error) {
-    console.log(`getWorkingDays ${error.message}`);
-    return 0;
-  }
->>>>>>> fc3035021342c61505f30e6f81e73f5dfd89d1b8
 };
 
 // Helper function to get total present days of a user within the date range

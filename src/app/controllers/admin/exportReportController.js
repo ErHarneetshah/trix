@@ -10,20 +10,11 @@ import User from "../../../database/models/userModel.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
-<<<<<<< HEAD
-import { UserHistory } from '../../../database/models/UserHistory.js';
-import moment from "moment";
-import GenerateReportHelper from '../../../utils/services/GenerateReportHelper.js';
-import department from '../../../database/models/departmentModel.js';
-import sequelize from '../../../database/queries/dbConnection.js';
-
-=======
 import { UserHistory } from "../../../database/models/UserHistory.js";
 import department from "../../../database/models/departmentModel.js";
 import moment from "moment";
 import sequelize from "../../../database/queries/dbConnection.js";
 import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.js";
->>>>>>> fc3035021342c61505f30e6f81e73f5dfd89d1b8
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
@@ -445,17 +436,12 @@ class exportReportController {
       let date;
       if (data.option) {
         if (data.option == "custom_range") {
-<<<<<<< HEAD
           if (!data.start || !data.end) {
             return helper.failed(
               res,
               variables.BadRequest,
               "Please select start and end date"
             );
-=======
-          if (!data.customStart || !data.customEnd) {
-            return helper.failed(res, variables.BadRequest, "Please select start and end date");
->>>>>>> fc3035021342c61505f30e6f81e73f5dfd89d1b8
           }
           date = await helper.getDateRange(data.option, data.start, data.end);
         } else {

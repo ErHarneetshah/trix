@@ -655,10 +655,7 @@ const singleUserProductiveAppData = async ({ userId, date }) => {
 
 // Website data Calculate: ----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-const singleUserProductiveWebsitesAndNonproductiveWebsites = async (
-  userId,
-  date
-) => {
+const singleUserProductiveWebsitesAndNonproductiveWebsites = async (userId,date) => {
   try {
     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData({
       userId,
