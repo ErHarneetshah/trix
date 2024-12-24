@@ -11,10 +11,10 @@ import TimeLog from "../../../database/models/timeLogsModel.js";
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import { UserHistory } from '../../../database/models/UserHistory.js';
-import department from "../../../../database/models/departmentModel.js";
 import moment from "moment";
-import sequelize from "../../../../database/queries/dbConnection.js";
 import GenerateReportHelper from '../../../utils/services/GenerateReportHelper.js';
+import department from '../../../database/models/departmentModel.js';
+import sequelize from '../../../database/queries/dbConnection.js';
 
 
 class exportReportController {
@@ -520,14 +520,14 @@ class exportReportController {
       let date;
       if (data.option) {
         if (data.option == "custom_range") {
-          if (!data.customStart || !data.customEnd) {
+          if (!data.start || !data.end) {
             return helper.failed(
               res,
               variables.BadRequest,
               "Please select start and end date"
             );
           }
-          date = await helper.getDateRange(data.option, data.customStart, data.customEnd);
+          date = await helper.getDateRange(data.option, data.start, data.end);
         } else {
           date = await helper.getDateRange(data.option);
         }
@@ -554,6 +554,15 @@ class exportReportController {
               [Op.between]: [date.startDate, date.endDate],
             },
           },
+          attributes:[
+            "id",
+            "userId",
+            "company_id",
+            "website_name",
+            "url",
+            "title",
+            "visitTime"
+          ]
         });
         return helper.success(
           res,
@@ -574,7 +583,19 @@ class exportReportController {
         const browserHistroy = await UserHistory.findAll({
           where: {
             userId: data.member_id,
+            createdAt: {
+              [Op.between]: [date.startDate, date.endDate],
+            },
           },
+          attributes:[
+            "id",
+            "userId",
+            "company_id",
+            "website_name",
+            "url",
+            "title",
+            "visitTime"
+          ]
         });
         return helper.success(
           res,
@@ -588,9 +609,6 @@ class exportReportController {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
-
-
-
 }
 
 export default exportReportController;

@@ -30,7 +30,7 @@ const getWorkingDays = async (dateRange, userIds, companyId) => {
                 endDate: `${endDate}T23:59:59`
             },
             type: sequelize.QueryTypes.SELECT,
-            logging:console.log
+            // logging:console.log
         });
         return results ? results.count : 0;
 
