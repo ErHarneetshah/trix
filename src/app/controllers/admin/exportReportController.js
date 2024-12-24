@@ -362,7 +362,7 @@ class exportReportController {
         fs.writeFileSync(filePath, csvContent);
         console.log("XLS file written successfully:", filePath);
   
-        const newAppInfo = await exportHistories.create({ reportName: reportName, company_id: req.user.company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
+        const newAppInfo = await exportHistories.create({ reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
   
         res.setHeader(
           "Content-Type",
@@ -398,7 +398,7 @@ class exportReportController {
         doc.end();
 
 
-        const newAppInfo = await exportHistories.create({ reportName: reportName,company_id: req.user.company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
+        const newAppInfo = await exportHistories.create({ reportName: reportName,company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
 
         fileStream.on('finish', () => {
          res.download(filePath, fileName, (err) => {
