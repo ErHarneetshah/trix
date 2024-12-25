@@ -9,7 +9,8 @@ import department from "../../database/models/departmentModel.js";
 import TimeLog from "../../database/models/timeLogsModel.js";
 import sequelize from "../../database/queries/dbConnection.js";
 import User from "../../database/models/userModel.js";
-
+import helper from "./helper.js";
+import exportHistories from "../../database/models/exportHistoryModel.js";
 
 // Helper function to get the working days of a department's users
 const getWorkingDays = async (dateRange, userIds, companyId) => {
@@ -25,23 +26,23 @@ const getWorkingDays = async (dateRange, userIds, companyId) => {
         AND createdAt <= :endDate
         GROUP BY user_id
         ORDER BY count DESC
-    `, {
-            replacements: {
-                companyId: companyId,
-                userIds: userIds,
-                startDate: `${startDate}T00:00:00`,
-                endDate: `${endDate}T23:59:59`
-            },
-            type: sequelize.QueryTypes.SELECT,
-            // logging:console.log
-        });
-        return results ? results.count : 0;
-
-
-    } catch (error) {
-        console.log(`getWorkingDays ${error.message}`);
-        return 0;
-    }
+    `,
+      {
+        replacements: {
+          companyId: companyId,
+          userIds: userIds,
+          startDate: `${startDate}T00:00:00`,
+          endDate: `${endDate}T23:59:59`,
+        },
+        type: sequelize.QueryTypes.SELECT,
+        // logging:console.log
+      }
+    );
+    return results ? results.count : 0;
+  } catch (error) {
+    console.log(`getWorkingDays ${error.message}`);
+    return 0;
+  }
 };
 
 // Helper function to get total present days of a user within the date range
@@ -516,79 +517,78 @@ export default {
   },
 
   getProdWebCount: async (userIds, startOfDay, endOfDay) => {
-//     const query = `
-//                SELECT 
-//     u.id AS userId,
-//     COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
-//     COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count,
-//     DATE(uh.createdAt) AS record_date  -- Extracting the date part of the createdAt field
-// FROM 
-//     users u
-// LEFT JOIN 
-//     user_histories uh ON u.id = uh.userId 
-//     AND uh.createdAt BETWEEN :startOfDay AND :endOfDay
-// LEFT JOIN 
-//     productive_websites pw ON uh.website_name = pw.website_name
-// WHERE 
-//     u.id IN (:userIds)
-// GROUP BY 
-//     u.id, record_date;  -- Group by user and record_date
-//             `;
+    //     const query = `
+    //                SELECT
+    //     u.id AS userId,
+    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
+    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count,
+    //     DATE(uh.createdAt) AS record_date  -- Extracting the date part of the createdAt field
+    // FROM
+    //     users u
+    // LEFT JOIN
+    //     user_histories uh ON u.id = uh.userId
+    //     AND uh.createdAt BETWEEN :startOfDay AND :endOfDay
+    // LEFT JOIN
+    //     productive_websites pw ON uh.website_name = pw.website_name
+    // WHERE
+    //     u.id IN (:userIds)
+    // GROUP BY
+    //     u.id, record_date;  -- Group by user and record_date
+    //             `;
 
-//? To get everything in a single query
-// `WITH RECURSIVE DateRange AS (
-//     SELECT :startOfDay AS record_date
-//     UNION ALL
-//     SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
-//     FROM DateRange
-//     WHERE record_date < :endOfDay
-// )
-// SELECT 
-//     u.id AS userId,
-//     dr.record_date,  -- Include all dates from DateRange
+    //? To get everything in a single query
+    // `WITH RECURSIVE DateRange AS (
+    //     SELECT :startOfDay AS record_date
+    //     UNION ALL
+    //     SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
+    //     FROM DateRange
+    //     WHERE record_date < :endOfDay
+    // )
+    // SELECT
+    //     u.id AS userId,
+    //     dr.record_date,  -- Include all dates from DateRange
 
-//     -- Data from app_histories
-//     a.appName,
-//     a.is_productive,
-//     IFNULL(SUM(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS time_spent_seconds,
-//     IFNULL(COUNT(a.id), 0) AS session_count,
-//     (
-//         SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
-//         FROM app_histories ah
-//         WHERE ah.userId = u.id
-//         AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
-//     ) AS total_time_spent_seconds,
-//     IFNULL(MAX(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS max_time_spent_seconds,
+    //     -- Data from app_histories
+    //     a.appName,
+    //     a.is_productive,
+    //     IFNULL(SUM(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS time_spent_seconds,
+    //     IFNULL(COUNT(a.id), 0) AS session_count,
+    //     (
+    //         SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
+    //         FROM app_histories ah
+    //         WHERE ah.userId = u.id
+    //         AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
+    //     ) AS total_time_spent_seconds,
+    //     IFNULL(MAX(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS max_time_spent_seconds,
 
-//     -- Data from user_histories
-//     COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
-//     COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count
+    //     -- Data from user_histories
+    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
+    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count
 
-// FROM 
-//     users u
-// CROSS JOIN 
-//     DateRange dr
-// LEFT JOIN 
-//     app_histories a 
-//     ON u.id = a.userId 
-//     AND DATE(a.createdAt) = dr.record_date  -- Match specific date
-// LEFT JOIN 
-//     user_histories uh 
-//     ON u.id = uh.userId 
-//     AND DATE(uh.createdAt) = dr.record_date  -- Match specific date
-// LEFT JOIN 
-//     productive_websites pw 
-//     ON uh.website_name = pw.website_name
+    // FROM
+    //     users u
+    // CROSS JOIN
+    //     DateRange dr
+    // LEFT JOIN
+    //     app_histories a
+    //     ON u.id = a.userId
+    //     AND DATE(a.createdAt) = dr.record_date  -- Match specific date
+    // LEFT JOIN
+    //     user_histories uh
+    //     ON u.id = uh.userId
+    //     AND DATE(uh.createdAt) = dr.record_date  -- Match specific date
+    // LEFT JOIN
+    //     productive_websites pw
+    //     ON uh.website_name = pw.website_name
 
-// WHERE 
-//     u.id IN (:userIds)
+    // WHERE
+    //     u.id IN (:userIds)
 
-// GROUP BY 
-//     u.id, dr.record_date, a.appName, a.is_productive;
-// `;
+    // GROUP BY
+    //     u.id, dr.record_date, a.appName, a.is_productive;
+    // `;
 
-
-const query = `WITH RECURSIVE DateRange AS (
+    const query = `WITH RECURSIVE DateRange AS (
                   SELECT :startOfDay AS record_date
                   UNION ALL
                   SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
@@ -630,27 +630,27 @@ const query = `WITH RECURSIVE DateRange AS (
   },
 
   getProdAppDetails: async (userIds, startOfDay, endOfDay) => {
-//     const query = `SELECT 
-//     userId,
-//     appName,
-//     is_productive,
-//     IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS time_spent_seconds,
-//     IFNULL(COUNT(*), 0) AS session_count,
-//     (
-//         SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0)
-//         FROM app_histories ah
-//         WHERE ah.userId = a.userId
-//         AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
-//     ) AS total_time_spent_seconds,
-//     IFNULL(MAX(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS max_time_spent_seconds,
-//     DATE(a.createdAt) AS record_date  -- Extracting the date part of the createdAt field
-// FROM 
-//     app_histories a
-// WHERE 
-//     a.userId IN (:userIds)
-// GROUP BY 
-//     userId, appName, is_productive, record_date;
-// `;
+    //     const query = `SELECT
+    //     userId,
+    //     appName,
+    //     is_productive,
+    //     IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS time_spent_seconds,
+    //     IFNULL(COUNT(*), 0) AS session_count,
+    //     (
+    //         SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0)
+    //         FROM app_histories ah
+    //         WHERE ah.userId = a.userId
+    //         AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
+    //     ) AS total_time_spent_seconds,
+    //     IFNULL(MAX(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS max_time_spent_seconds,
+    //     DATE(a.createdAt) AS record_date  -- Extracting the date part of the createdAt field
+    // FROM
+    //     app_histories a
+    // WHERE
+    //     a.userId IN (:userIds)
+    // GROUP BY
+    //     userId, appName, is_productive, record_date;
+    // `;
 
     const query = `WITH RECURSIVE DateRange AS (
                       SELECT :startOfDay AS record_date
@@ -706,7 +706,7 @@ const query = `WITH RECURSIVE DateRange AS (
   },
 
   getTimeLogDetails: async (userIds, startOfDay, endOfDay) => {
-        const query = `WITH RECURSIVE DateRange AS (
+    const query = `WITH RECURSIVE DateRange AS (
                             SELECT :startDate AS record_date
                             UNION ALL
                             SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
@@ -733,18 +733,18 @@ const query = `WITH RECURSIVE DateRange AS (
                         ORDER BY 
                             u.id, dr.record_date, tl.timestamp;  -- Order by user, date, and timelog timestamp
                             `;
-    
-        const results = await sequelize.query(query, {
-          replacements: {
-            startOfDay,
-            endOfDay,
-            userIds,
-          },
-          type: sequelize.QueryTypes.SELECT,
-        });
-    
-        return results;
+
+    const results = await sequelize.query(query, {
+      replacements: {
+        startOfDay,
+        endOfDay,
+        userIds,
       },
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    return results;
+  },
 
   //  downloadFile = async (req, res, company_id, reportData, format, reportDescription, fromTime, toTime) => {
   //   try {
@@ -955,49 +955,58 @@ const query = `WITH RECURSIVE DateRange AS (
   //   }
   // };
 
-  downloadFileDynamically: async (res, fromTime, toTime, format = 'xls', reportName, company_id, reportData, headers) => {
+  downloadFileDynamically: async (res, fromTime, toTime, format = "xls", reportName, company_id, reportData, headers) => {
     try {
-      const timestamp = new Date().toISOString().replace(/[-:.]/g, ''); // e.g., 20231224T123456
+      const timestamp = new Date().toISOString().replace(/[-:.]/g, ""); // e.g., 20231224T123456
       const fileName = `${reportName}_${company_id}_${timestamp}.${format}`;
-  
-      const __dirname = path.dirname(new URL(import.meta.url).pathname);
-      const directoryPath = path.resolve(__dirname, '../../../storage/files');
+
+      //? Previous Code
+      // const __dirname = path.dirname(new URL(import.meta.url).pathname);
+      // console.log(__dirname);
+      // const directoryPath = path.resolve(__dirname, '../../../storage/files');
+      // const filePath = path.join(directoryPath, fileName);
+
+      // Get the correct directory path for ES modules
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+
+      // Print the __dirname to verify
+      console.log(__dirname);
+
+      // Define the directory path correctly
+      const directoryPath = path.resolve(__dirname, "../../../storage/files");
       const filePath = path.join(directoryPath, fileName);
-  
+
       // Ensure the directory exists
       if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
       }
-      const keys = Object.keys(reportData[0]); 
-      if (format === 'xls') {
+      const keys = Object.keys(reportData[0]);
+      if (format === "xls ") {
         // Generate XLS file (simple CSV format for demo purposes)
         const csvContent = [
-          headers.join(','), // Use headers provided as column names
-          ...reportData.map(row => keys.map((key, index) => row[key] || '').join(',')) // Map data to headers
-         ].join('\n');
-  
+          headers.join(","), // Use headers provided as column names
+          ...reportData.map((row) => keys.map((key, index) => row[key] || "").join(",")), // Map data to headers
+        ].join("\n");
 
         fs.writeFileSync(filePath, csvContent);
         console.log("XLS file written successfully:", filePath);
-  
+
         const newAppInfo = await exportHistories.create({ reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
-  
-        res.setHeader(
-          "Content-Type",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        );
+
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
-  
+
         return res.download(filePath, fileName, (err) => {
           if (err) {
             console.error("Error sending XLS file:", err);
-            return helper.failed(res, variables.BadRequest,"File download failed");
+            return helper.failed(res, variables.BadRequest, "File download failed");
           }
           console.log("XLS file downloaded successfully.");
         });
       }
-  
-      if (format === 'pdf') {
+
+      if (format === "pdf") {
         // Generate PDF file
         const doc = new PDFDocument({ compress: false });
         const fileStream = fs.createWriteStream(filePath);
@@ -1005,41 +1014,38 @@ const query = `WITH RECURSIVE DateRange AS (
 
         // Add title and content
         doc.fontSize(18).text(reportName, { align: "center" }).moveDown();
-        const headerText = headers.join(' | ');
+        const headerText = headers.join(" | ");
         doc.fontSize(12).text(headerText, { underline: true }).moveDown();
 
         reportData.forEach((row, index) => {
-         const rowText = keys.map((key, idx) => row[key] || '').join(' | '); // Dynamically map data to headers
-         doc.fontSize(10).text(rowText);
+          const rowText = keys.map((key, idx) => row[key] || "").join(" | "); // Dynamically map data to headers
+          doc.fontSize(10).text(rowText);
         });
 
         doc.end();
 
+        const newAppInfo = await exportHistories.create({ reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
 
-        const newAppInfo = await exportHistories.create({ reportName: reportName,company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
-
-        fileStream.on('finish', () => {
-         res.download(filePath, fileName, (err) => {
+        fileStream.on("finish", () => {
+          res.download(filePath, fileName, (err) => {
             if (err) {
-             console.error("Error sending PDF file:", err);
-             return helper.failed(res, variables.BadRequest, "File download failed");
+              console.error("Error sending PDF file:", err);
+              return helper.failed(res, variables.BadRequest, "File download failed");
             }
             console.log("PDF file downloaded successfully.");
-         });
+          });
         });
 
-        fileStream.on('error', (err) => {
-         console.error("Error writing PDF file:", err);
-         return helper.failed(res, variables.BadRequest, "File generation failed");
+        fileStream.on("error", (err) => {
+          console.error("Error writing PDF file:", err);
+          return helper.failed(res, variables.BadRequest, "File generation failed");
         });
-     } else {
-      return helper.failed(res, variables.BadRequest, "Unsupported File Request");
-     }
+      } else {
+        return helper.failed(res, variables.BadRequest, "Unsupported File Request");
+      }
     } catch (error) {
-     console.error("Error generating file:", error);
-     return helper.failed(res, variables.BadRequest, error.message);
+      console.error("Error generating file:", error);
+      return helper.failed(res, variables.BadRequest, error.message);
     }
- }
-
-
+  },
 };

@@ -115,41 +115,28 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
-      }
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');      }
       // if(!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
       let startDate, endDate;
 
-      // Determine date range based on definedPeriod
-      const today = new Date();
 
-      if (definedPeriod == 1) {
-        // Previous Day
-        startDate = new Date(today.setDate(today.getDate() - 1));
-        endDate = new Date(startDate);
-      } else if (definedPeriod == 2) {
-        // Previous Week (Sunday to Saturday)
-        const lastSunday = new Date(today.setDate(today.getDate() - today.getDay() - 7));
-        const lastSaturday = new Date(lastSunday);
-        lastSaturday.setDate(lastSunday.getDate() + 6);
-        startDate = lastSunday;
-        endDate = lastSaturday;
-      } else if (definedPeriod == 3) {
-        // Previous Month
-        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        startDate = lastMonth;
-        endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
-      } else if (definedPeriod == 4) {
-        // Custom
-        const rules = { fromDate: "required", toDate: "required" };
-        const { status, message } = await validate(req.body, rules);
-        if (status === 0) {
-          return helper.failed(res, variables.ValidationError, message);
+      const validOptions = [1, 2, 3, 4];
+
+      if (!definedPeriod || !validOptions.includes(definedPeriod)) {
+        return helper.failed(res, variables.BadRequest, "Please select a valid date option");
+      }
+
+      let date;
+
+      if (definedPeriod) {
+        if (definedPeriod == 4) {
+          if (!fromDate || !toDate) {
+            return helper.failed(res, variables.BadRequest, "Please select start and end date");
+          }
+          date = await helper.getDateRange(definedPeriod, fromDate, toDate);
+        } else {
+          date = await helper.getDateRange(definedPeriod);
         }
-        startDate = new Date(fromDate);
-        endDate = new Date(toDate);
-      } else {
-        return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
 
       // Fetch attendance report
@@ -179,8 +166,8 @@ class exportReportController {
         {
           replacements: {
             company_id: req.user.company_id,
-            startDate: startDate.toISOString().split("T")[0],
-            endDate: endDate.toISOString().split("T")[0],
+            startDate: date.startDate,
+            endDate: date.endDate,
             teamId,
             userId,
             limit: limit || 10,
@@ -190,36 +177,11 @@ class exportReportController {
         }
       );
 
-      const presentUsers = await TimeLog.findAll({
-        attributes: ["user_id"],
-        include: [
-          {
-            model: User,
-            as: "user",
-            attributes: [],
-            where: {
-              isAdmin: 0,
-            },
-          },
-        ],
-        where: {
-          company_id: req.user.company_id,
-          date: {
-            [Op.between]: [startDate, endDate],
-          },
-        },
-        group: ["user_id"],
-      });
-
       let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Shift Time Out", "Time Out"];
 
-      // await GenerateReportHelper.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Attendance Report", req.user.company_id, attendanceReport, headers);
-
-      // await this.downloadFile(req, res, req.user.company_id, attendanceReport, format, reportDescription, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0]);
-      // await dbTransaction.commit();
-      return helper.success(res, variables.Success, attendanceReport);
+      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
+      // return helper.success(res, variables.Success, attendanceReport);
     } catch (error) {
-      // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -229,8 +191,12 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
+
+      if(!teamId)
+        return helper.failed(res, variables.BadRequest, 'Team must be selected');
+
 
       const validOptions = [1, 2, 3, 4];
 
@@ -255,11 +221,10 @@ class exportReportController {
       const applicationUsage = await UserHistory.sequelize.query(`
                             WITH AppUsageData AS (
                       SELECT 
+                          u.fullname,
+                          u.departmentId,
                           ah.appName,
                           ah.is_productive AS productivity_status,
-                          ah.company_id,
-                          u.teamId,
-                          u.departmentId,
                           TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime) AS time_spent_minutes
                       FROM app_histories AS ah
                       INNER JOIN users AS u ON ah.userId = u.id AND ah.company_id = u.company_id
@@ -294,8 +259,7 @@ class exportReportController {
 
       let headers = ["Name", "Department", "Application", "Productive/Non Producitve"];
 
-      // await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application Usage Report", req.user.company_id, data, headers);
-      // await dbTransaction.commit();
+      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application Usage Report", req.user.company_id, applicationUsage, headers);
       return helper.success(res, variables.Success, "User Updated Successfully", applicationUsage);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
@@ -308,8 +272,7 @@ class exportReportController {
       let { definedPeriod, fromDate, toDate, format, teamId } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
-      }
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');      }
       const dateRange = await helper.getDateRange(definedPeriod, fromDate, toDate);
       const allDepartments = await department.findAll({
         where: { company_id: company_id, status: 1 },
@@ -373,16 +336,17 @@ class exportReportController {
 
   getUnauthorizedWebReport = async (req, res) => {
     try {
-      const today = new Date();
-      let startDate, endDate;
       let companyId = req.user.company_id;
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
-      }
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');      }
 
       const validOptions = [1, 2, 3, 4];
+
+      if(!teamId)
+        return helper.failed(res, variables.BadRequest, 'Team must be selected');
+
 
       if (!definedPeriod || !validOptions.includes(definedPeriod)) {
         return helper.failed(res, variables.BadRequest, "Please select a valid date option");
@@ -407,7 +371,7 @@ class exportReportController {
         INNER JOIN users As u ON uh.userId = u.id
         INNER JOIN departments ON u.departmentId = departments.id
         WHERE uh.website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id = :companyId
-            AND uh.date BETWEEN :startDate AND :endDate   ${teamId ? "AND team.id = :teamId" : ""} AND u.isAdmin = 0
+            AND uh.date BETWEEN :startDate AND :endDate   ${teamId ? "AND u.teamId = :teamId" : ""} AND u.isAdmin = 0
         ${userId ? "AND u.id = :userId" : ""}
         ORDER BY uh.visitTime DESC`,
         {
@@ -424,9 +388,9 @@ class exportReportController {
 
       let headers = ["Name", "Department", "Url", "Time"];
 
-      // await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
+      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
 
-      return res.status(200).json({ status: "success", data: unauthorizedAccessReport });
+      // return res.status(200).json({ status: "success", data: unauthorizedAccessReport });
     } catch (error) {
       console.error("Error fetching unauthorized access report:", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -469,8 +433,7 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, format, teamId, userId } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
-      }
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');      }
 
       if (!teamId) {
         return helper.failed(res, variables.BadRequest, "Please select the team");
