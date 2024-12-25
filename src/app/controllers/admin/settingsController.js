@@ -177,17 +177,14 @@ const updateSitesStatus = async (req, res) => {
 
     const website = await BlockedWebsites.findByPk(id);
     if (!website) {
-      return helper.failed(res, variables.NotFound, "Id does not exists in our system.");
+      return helper.failed(res, variables.NotFound, "Id does not exists in company.");
     }
 
     if (website.status === status) {
       return helper.failed(res, variables.BadRequest, `Site status is already ${status === 1 ? "Blocked" : "Unblocked"}.`);
     }
-    const [updatedRows] = await BlockedWebsites.update({ status: status }, { where: { id: id, companyId: req.user.company_id } });
+    await BlockedWebsites.update({ status: status }, { where: { id: id, companyId: req.user.company_id } });
 
-    if (updatedRows === 0) {
-      return helper.failed(res, variables.NotFound, "Site not found or status not changed");
-    }
     return helper.success(res, variables.Success, "Site status updated successfully");
   } catch (error) {
     console.error("Error updating site status:", error);
@@ -322,23 +319,15 @@ const updateReportSettings = async (req, res) => {
       return helper.failed(res, variables.ValidationError, "Export Type can only be 1, 2 or 3");
     }
 
-    const [updatedPreviousStatus] = await reportSettings.update({ status: exportType }, { where: { company_id: req.user.company_id } });
-    if (updatedPreviousStatus === 0) {
-      return helper.failed(res, variables.NotFound, "No report settings found for the specified company.");
-    }
-
+    await reportSettings.update({ status: exportType }, { where: { company_id: req.user.company_id } });
 
     // Update the user's `next_reports_schedule_date`
     let resultDate = (exportType === 1) ? commonfuncitons.getNextMonthDate() : (exportType === 2) ? commonfuncitons.getNextMondayDate() : (exportType === 3) ? commonfuncitons.getTomorrowDate() : "Unknown Error";
-    //console.log("----", resultDate)
-    const [updatedUsers] = await User.update(
+    await User.update(
       { next_reports_schedule_date: resultDate },
       { where: { id: req.user.id } }
     );
-    //console.log(req.user.id, "admin");
-    if (updatedUsers === 0) {
-      return helper.failed(res, variables.NotFound, "No users found for the specified company.");
-    }
+    
 
     return helper.success(res, variables.Success, "Report Settings Updated Successfully");
   } catch (error) {

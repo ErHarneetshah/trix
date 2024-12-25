@@ -57,7 +57,7 @@ const sendEmailWithReports = async (req, res) => {
 
                         let resultDate = (admin.status === 1) ? commonfuncitons.getNextMonthDate() : (admin.status === 2) ? commonfuncitons.getNextMondayDate() : (admin.status === 3) ? commonfuncitons.getTomorrowDate() : "Unknown Error in sendEmailWithReports";
 
-                        const [updatedUsers] = await User.update(
+                        await User.update(
                             { next_reports_schedule_date: resultDate },
                             { where: { id: admin.id } }
                         );

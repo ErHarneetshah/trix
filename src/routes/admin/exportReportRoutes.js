@@ -7,7 +7,6 @@ const router = express.Router();
 const exportReportInstance = new exportReportController();
 
 router.post("/getReportsDataSet",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getReportsDataSet);
-router.post("/getAllReports",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getAllReports);
 router.post("/getProductiveReport",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getProductiveReport);
 router.post("/getDeptPerformReport",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getDeptPerformReport);
 router.post("/getAttendanceReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getAttendanceReport);
