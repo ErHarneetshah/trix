@@ -4,7 +4,7 @@ import variables from "../../config/variableConfig.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
 import shift from "../../../database/models/shiftModel.js";
 import User from "../../../database/models/userModel.js";
-import { Op, Sequelize, QueryTypes } from "sequelize";
+import { Op, Sequelize, QueryTypes, fn, col, where, literal } from "sequelize";
 import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import commonfuncitons from "../../../utils/services/commonfuncitons.js";
@@ -286,47 +286,49 @@ GROUP BY
         logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
       }
 
+      const formattedDate = new Date(date).toISOString().split('T')[0];
+
+
       userWhere.currentStatus = 1;
+      let companyId = req.user.company_id;
 
-      const employeeCount = await TimeLog.count({
+      let employeeCount = await User.count({
         where: {
-          company_id: req.user.company_id,
-          createdAt: { [Op.between]: [startOfDay, endOfDay] },
+          company_id: companyId,
+          status: 1,
+          isAdmin:0,
+          [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
         },
       });
+      if(!employeeCount) employeeCount = 0;
 
-      const workingCount = await TimeLog.count({
+      let workingCount = await TimeLog.count({
         where: {
-          company_id: req.user.company_id,
+          company_id: companyId,
           logged_out_time: null,
-          createdAt: { [Op.between]: [startOfDay, endOfDay] },
+          [Op.and]: Sequelize.literal(`DATE(createdAt) = '${formattedDate}'`),
         },
-        include: [
-          {
-            model: User,
-            as: "user",
-            required: true,
-            where: { currentStatus: 1 },
-          },
-        ],
       });
+      if(!workingCount) workingCount = 0;
 
-      const absentCount = await TimeLog.count({
+      let absentCount = await User.count({
         where: {
-          company_id: req.user.company_id,
-          createdAt: { [Op.between]: [startOfDay, endOfDay] },
-        },
-        include: [
-          {
-            model: User,
-            as: "user",
-            required: true,
-            where: { currentStatus: 0 },
+          company_id: companyId,
+          isAdmin:0,
+          status: 1,
+          [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
+          id: {
+            [Op.notIn]: literal(`(
+              SELECT user_id FROM timelogs 
+              WHERE DATE(createdAt) = '${formattedDate}' AND company_id = ${companyId}
+            )`),
           },
-        ],
+        },
       });
+      if(!absentCount) absentCount = 0;
 
-      const slackingCount = await TimeLog.count({
+
+      let slackingCount = await TimeLog.count({
         where: {
           company_id: req.user.company_id,
           createdAt: { [Op.between]: [startOfDay, endOfDay] },
@@ -336,13 +338,16 @@ GROUP BY
         },
       });
 
-      const lateCount = await TimeLog.count({
+
+      let lateCount = await TimeLog.count({
         where: {
           company_id: req.user.company_id,
           createdAt: { [Op.between]: [startOfDay, endOfDay] },
           late_coming: 1,
         },
       });
+      if(!lateCount) lateCount = 0;
+
 
       //console.log({ startOfDay });
       let date_string = new Date(startOfDay).toISOString().split("T")[0];
@@ -373,7 +378,9 @@ GROUP BY
         }
       );
 
-      const productiveCount = productiveResult.count;
+      let productiveCount = productiveResult.count;
+      if(!productiveCount) productiveCount = 0;
+
 
       const [nonProductiveResult] = await sequelize.query(
         `
@@ -401,7 +408,9 @@ GROUP BY
         }
       );
 
-      const nonProductiveCount = nonProductiveResult.count;
+      let nonProductiveCount = nonProductiveResult.count;
+      if(!nonProductiveCount) nonProductiveCount = 0;
+
 
       const countsData = [
         { count: employeeCount, name: "employee" },

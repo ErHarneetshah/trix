@@ -31,7 +31,7 @@ class exportReportController {
       let offset = (page - 1) * limit || 0;
       // ___________---------- Search, Limit, Pagination ----------_______________
 
-      const getStatus = await exportHistories.findAll({
+      const getStatus = await exportHistories.findAndCountAll({
         where: { company_id: req.user.company_id },
         limit: limit,
         offset: offset,
@@ -53,31 +53,23 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       let startDate, endDate;
 
-      const today = new Date();
+      const validOptions = [1, 2, 3, 4];
 
-      if (definedPeriod === 1) {
-        startDate = new Date(today.setDate(today.getDate() - 1));
-        endDate = new Date(startDate);
-      } else if (definedPeriod === 2) {
-        const lastSunday = new Date(today.setDate(today.getDate() - today.getDay() - 7));
-        const lastSaturday = new Date(lastSunday);
-        lastSaturday.setDate(lastSunday.getDate() + 6);
-        startDate = lastSunday;
-        endDate = lastSaturday;
-      } else if (definedPeriod === 3) {
-        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        startDate = lastMonth;
-        endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
-      } else if (definedPeriod === 4) {
-        const rules = { fromDate: "required", toDate: "required" };
-        const { status, message } = await validate(req.body, rules);
-        if (status === 0) {
-          return helper.failed(res, variables.ValidationError, message);
+      if (!definedPeriod || !validOptions.includes(definedPeriod)) {
+        return helper.failed(res, variables.BadRequest, "Please select a valid date option");
+      }
+
+      let date;
+
+      if (definedPeriod) {
+        if (definedPeriod == 4) {
+          if (!fromDate || !toDate) {
+            return helper.failed(res, variables.BadRequest, "Please select start and end date");
+          }
+          date = await helper.getDateRange(definedPeriod, fromDate, toDate);
+        } else {
+          date = await helper.getDateRange(definedPeriod);
         }
-        startDate = new Date(fromDate);
-        endDate = new Date(toDate);
-      } else {
-        return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
 
       const users = await GenerateReportHelper.getUserInCompany(req.user.company_id);
@@ -88,9 +80,9 @@ class exportReportController {
         }
       }
 
-      let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, startDate, endDate);
-      let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, startDate, endDate);
-      let TimeLogsDetails = await GenerateReportHelper.getProdAppDetails(userIds, startDate, endDate);
+      let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
+      let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
+      let TimeLogsDetails = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
 
       // let finalJson = await GenerateReportHelper.combineJson(users, ProdWebCount)
 
