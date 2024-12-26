@@ -1,6 +1,5 @@
-import path from "path";
+import { Op, Sequelize, QueryTypes, literal, fn, col } from "sequelize";
 import fs from "fs";
-import { Op, Sequelize, QueryTypes, literal, fn, col, UUIDV4 } from "sequelize";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import exportReports from "../../../database/models/exportReportsModel.js";
@@ -8,15 +7,15 @@ import validate from "../../../utils/CustomValidation.js";
 import team from "../../../database/models/teamModel.js";
 import User from "../../../database/models/userModel.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
-import PDFDocument from "pdfkit";
-import ExcelJS from "exceljs";
-import { UserHistory } from '../../../database/models/UserHistory.js';
-import { fileURLToPath } from "url";
-import exportHistories from '../../../database/models/exportHistoryModel.js';
+import { UserHistory } from "../../../database/models/UserHistory.js";
+import exportHistories from "../../../database/models/exportHistoryModel.js";
 import department from "../../../database/models/departmentModel.js";
-import moment from "moment";
-import sequelize from "../../../database/queries/dbConnection.js";
 import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.js";
+import { endOfDay } from "date-fns";
+import moment from "moment";
+import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
+import path from "path";
+import axios from "axios";
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
@@ -32,64 +31,65 @@ class exportReportController {
 
   getExportHistoryReport = async (req, res) => {
     try {
-      const getStatus = await exportHistories.findAll({
-        where: { company_id: req.user.company_id },
-        attributes: ["reportName","reportExtension","periodFrom","periodTo", "filePath"],
+      // ___________---------- Search, Limit, Pagination ----------_______________
+      let { searchParam, limit, page, date } = req.query;
+      limit = parseInt(limit) || 10;
+      let searchable = ["reportName"];
+      let where = await helper.searchCondition(searchParam, searchable);
+      where.company_id = req.user.company_id;
+      let offset = (page - 1) * limit || 0;
+      let startOfDay, endOfDay;
+
+      if (date) {
+        startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+      } else {
+        startOfDay = moment.tz(moment(), "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+      }
+      where.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+      // ___________---------- Search, Limit, Pagination ----------_______________
+
+      const getStatus = await exportHistories.findAndCountAll({
+        where: where,
+        limit: limit,
+        offset: offset,
+        attributes: ["reportName", "reportExtension", "periodFrom", "periodTo", "filePath", [Sequelize.fn("DATE", Sequelize.col("createdAt")), "createdAt"]],
+        order: [["createdAt", "DESC"]],
       });
-  
+
       if (getStatus.count === 0) {
         return helper.success(res, variables.Success, "No Export Histories Found.", getStatus);
       }
-  
+
       return helper.success(res, variables.Success, "Reports Data Retrieved Successfully", getStatus);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
-  getAllReports = async (req, res) => {
-    const dbTransaction = await Sequelize.transaction();
-    try {
-      const { fromTime, toTime } = req.body;
-
-      await dbTransaction.commit();
-      return helper.success(res, variables.Success, "User Updated Successfully");
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
-
   getProductiveReport = async (req, res) => {
     try {
-      let { fromTime, toTime, definedPeriod, teamId, userId, format } = req.body;
+      let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       let startDate, endDate;
 
-      const today = new Date();
+      const validOptions = [1, 2, 3, 4];
 
-      if (definedPeriod === 1) {
-        startDate = new Date(today.setDate(today.getDate() - 1));
-        endDate = new Date(startDate);
-      } else if (definedPeriod === 2) {
-        const lastSunday = new Date(today.setDate(today.getDate() - today.getDay() - 7));
-        const lastSaturday = new Date(lastSunday);
-        lastSaturday.setDate(lastSunday.getDate() + 6);
-        startDate = lastSunday;
-        endDate = lastSaturday;
-      } else if (definedPeriod === 3) {
-        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        startDate = lastMonth;
-        endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
-      } else if (definedPeriod === 4) {
-        const rules = { fromTime: "required", toTime: "required" };
-        const { status, message } = await validate(req.body, rules);
-        if (status === 0) {
-          return helper.failed(res, variables.ValidationError, message);
+      if (!definedPeriod || !validOptions.includes(definedPeriod)) {
+        return helper.failed(res, variables.BadRequest, "Please select a valid date option");
+      }
+
+      let date;
+
+      if (definedPeriod) {
+        if (definedPeriod == 4) {
+          if (!fromDate || !toDate) {
+            return helper.failed(res, variables.BadRequest, "Please select start and end date");
+          }
+          date = await helper.getDateRange(definedPeriod, fromDate, toDate);
+        } else {
+          date = await helper.getDateRange(definedPeriod);
         }
-        startDate = new Date(fromTime);
-        endDate = new Date(toTime);
-      } else {
-        return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
 
       const users = await GenerateReportHelper.getUserInCompany(req.user.company_id);
@@ -100,8 +100,11 @@ class exportReportController {
         }
       }
 
-      let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, startDate, endDate);
-      let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, startDate, endDate);
+      let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
+      let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
+      let TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
+
+      // let finalJson = await GenerateReportHelper.combineJson(users, ProdWebCount)
 
       let data = [];
       let headers = [
@@ -115,395 +118,145 @@ class exportReportController {
         "Productive Websites",
         "Non Productive Websites",
         "Average Productive %",
-        "Most Used Productive App"
-      ]
-      
-      await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Productive Report", req.user.company_id, data, headers);
+        "Most Used Productive App",
+      ];
 
-      return helper.success(res, variables.Success, "User Updated Successfully", data);
+      // return helper.success(res, variables.Success, "Productivity Report Generated Successfully", {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis, TimeLogs: TimeLogsDetails});
+
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive Report", req.user.company_id, data, headers);
+
+      if (result.status) {
+        return helper.success(res, variables.Success, "Productivity Report Generated Successfully", data);
+        // return helper.success(res, variables.Success, "Productivity Report Generated Successfully", {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis});
+
+      } else {
+        return helper.success(res, variables.Success, "Productivity Report Generation Failed");
+      }
     } catch (error) {
-      // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
-  // downloadFile = async (req, res, company_id, reportData, format, reportDescription, fromTime, toTime) => {
+  // getAttendanceReport = async (req, res) => {
   //   try {
-  //     const fileName = `${reportDescription}_${company_id}_${Date.now()}.${format === "xls" ? "xlsx" : "pdf"}`;
-  //     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  //     const filePath = path.resolve(__dirname, "../../../storage/files", fileName);
-  //     if (format === "xls") {
-  //       const workbook = new ExcelJS.Workbook();
-  //       const worksheet = workbook.addWorksheet(reportDescription);
+  //     let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
+  //     if (!format) format = "xls";
+  //     if (format && !["xls", "pdf"].includes(format)) {
+  //       return helper.failed(res, variables.BadRequest, 'Invalid format. Only xls or pdf are allowed');
+  //     }
+  //     if (!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
 
-  //       if (reportDescription == "Attendance Report") {
-  //         worksheet.columns = [
-  //           { header: "Employee Name", key: "employee_name", width: 20 },
-  //           { header: "Team", key: "team", width: 15 },
-  //           { header: "Date", key: "date", width: 15 },
-  //           { header: "Day", key: "day", width: 10 },
-  //           { header: "Attendance Status", key: "attendance_status", width: 20 },
-  //           { header: "Shift Time In", key: "shift_time_in", width: 15 },
-  //           { header: "Time In", key: "time_in", width: 15 },
-  //           { header: "Shift Time Out", key: "shift_time_out", width: 15 },
-  //           { header: "Time Out", key: "time_out", width: 15 },
-  //         ];
-  //       } else if (reportDescription == "Productivity Report") {
-  //         worksheet.columns = [
-  //           { header: "Employee Name", key: "employee_name", width: 20 },
-  //           { header: "Department", key: "department", width: 15 },
-  //           { header: "Date", key: "date", width: 15 },
-  //           { header: "Total Active Hours", key: "total_active_hours", width: 10 },
-  //           { header: "Idle Time", key: "idle_time", width: 20 },
-  //           { header: "Time on Productive Apps", key: "productive_app_time", width: 15 },
-  //           { header: "Time on Non Prodcutive Apps", key: "nonProductive_app_time", width: 15 },
-  //           { header: "Productive Websites Count", key: "productive_website_count", width: 15 },
-  //           { header: "Non Productive Websites Count", key: "productive_website_count", width: 15 },
-  //           { header: "Average Productive Percentage", key: "average_productive", width: 15 },
-  //           { header: "Most Used Productive App", key: "most_used_productive_app", width: 15 },
-  //         ];
-  //       } else if (reportDescription == "Application Usage Report") {
-  //         worksheet.columns = [
-  //           { header: "Name", key: "name", width: 20 },
-  //           { header: "Department", key: "department", width: 15 },
-  //           { header: "Application", key: "applicationName", width: 15 },
-  //           { header: "Productive/NonProducitve", key: "isProductive", width: 10 },
-  //         ];
-  //       } else if (reportDescription == "Unauthorized Report") {
-  //         worksheet.columns = [
-  //           { header: "Name", key: "name", width: 20 },
-  //           { header: "Department", key: "department", width: 15 },
-  //           { header: "URL", key: "url", width: 15 },
-  //           { header: "Time", key: "time", width: 10 },
-  //         ];
-  //       } else if (reportDescription == "Department Performance Report") {
-  //         worksheet.columns = [
-  //           { header: "Employee Name", key: "employee_name", width: 20 },
-  //           { header: "Team", key: "team", width: 15 },
-  //           { header: "Date", key: "date", width: 15 },
-  //           { header: "Day", key: "day", width: 10 },
-  //           { header: "Attendance Status", key: "attendance_status", width: 20 },
-  //           { header: "Shift Time In", key: "shift_time_in", width: 15 },
-  //           { header: "Time In", key: "time_in", width: 15 },
-  //           { header: "Shift Time Out", key: "shift_time_out", width: 15 },
-  //           { header: "Time Out", key: "time_out", width: 15 },
-  //         ];
-  //       } else if (reportDescription == "Browser Activity Report") {
-  //         worksheet.columns = [
-  //           { header: "Employee Name", key: "employee_name", width: 20 },
-  //           { header: "Team", key: "team", width: 15 },
-  //           { header: "Date", key: "date", width: 15 },
-  //           { header: "Day", key: "day", width: 10 },
-  //           { header: "Attendance Status", key: "attendance_status", width: 20 },
-  //           { header: "Shift Time In", key: "shift_time_in", width: 15 },
-  //           { header: "Time In", key: "time_in", width: 15 },
-  //           { header: "Shift Time Out", key: "shift_time_out", width: 15 },
-  //           { header: "Time Out", key: "time_out", width: 15 },
-  //         ];
+  //     const validOptions = [1, 2, 3, 4];
+
+  //     if (!definedPeriod || !validOptions.includes(definedPeriod)) {
+  //       return helper.failed(res, variables.BadRequest, "Please select a valid date option");
+  //     }
+
+  //     let date;
+
+  //     if (definedPeriod) {
+  //       if (definedPeriod == 4) {
+  //         if (!fromDate || !toDate) {
+  //           return helper.failed(res, variables.BadRequest, "Please select start and end date");
+  //         }
+  //         date = await helper.getDateRange(definedPeriod, fromDate, toDate);
+  //       } else {
+  //         date = await helper.getDateRange(definedPeriod);
   //       }
+  //     }
 
-  //       worksheet.addRows(reportData);
+  //     // Fetch attendance report
+  //     const attendanceReport = await TimeLog.sequelize.query(
+  //       `SELECT
+  //         u.fullname AS employee_name,
+  //         team.name AS team,
+  //         timelog.date AS date,
+  //         DAYNAME(timelog.date) AS day,
+  //         CASE
+  //           WHEN timelog.logged_in_time IS NOT NULL THEN 'Present'
+  //           ELSE 'Absent'
+  //         END AS attendance_status,
+  //         shifts.start_time AS shift_time_in,
+  //         timelog.logged_in_time AS time_in,
+  //         shifts.end_time AS shift_time_out,
+  //         timelog.logged_out_time AS time_out
+  //       FROM timelogs AS timelog
+  //       LEFT JOIN users AS u ON timelog.user_id = u.id
+  //       JOIN teams AS team ON u.teamId = team.id
+  //       JOIN shifts AS shifts ON timelog.shift_id = shifts.id
+  //       WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
+  //       ${teamId ? "AND team.id = :teamId" : ""}
+  //       ${userId ? "AND u.id = :userId" : ""}
+  //       ORDER BY timelog.date DESC
+  //       `,
+  //       {
+  //         replacements: {
+  //           company_id: req.user.company_id,
+  //           startDate: date.startDate,
+  //           endDate: date.endDate,
+  //           teamId,
+  //           userId,
+  //           limit: limit || 10,
+  //           offset: offset || 0,
+  //         },
+  //         type: QueryTypes.SELECT,
+  //       }
+  //     );
 
-  //       await workbook.xlsx.writeFile(filePath);
+  //     let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Shift Time Out", "Time Out"];
 
-  //       res.setHeader(
-  //         "Content-Type",
-  //         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  //       );
-  //       res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
-  //       res.download(filePath);
-
-  //       const newAppInfo = await exportHistories.create({ reportName: reportDescription, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
+  //     const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
+  //     if (result.status) {
+  //       return helper.success(res, variables.Success, "Attendance Report Generated Successfully");
   //     } else {
-  //       const generatePDF = () =>
-  //         new Promise((resolve, reject) => {
-  //           const doc = new PDFDocument();
-  //           const writeStream = fs.createWriteStream(filePath);
-
-  //           doc.pipe(writeStream);
-
-  //           // Add title
-  //           doc.fontSize(18).text(reportDescription, { align: "center" });
-  //           doc.moveDown();
-
-  //           // Add headers
-  //           if (reportDescription == "Attendance Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-
-  //           } else if (reportDescription == "Performance Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-  //           } else if (reportDescription == "Application Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-  //           } else if (reportDescription == "Unauthorized Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-  //           } else if (reportDescription == "Department Performance Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-  //           } else if (reportDescription == "Browser Activity Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-  //           }
-
-  //           doc.end();
-
-  //           writeStream.on("finish", () => resolve());
-  //           writeStream.on("error", (err) => reject(err));
-  //         });
-
-  //       await generatePDF();
-  //       console.log(`File generated and sent to user: ${filePath}`);
-
-  //       // Set headers for reading the file in the browser
-  //       res.setHeader("Content-Type", "application/pdf");
-  //       res.setHeader("Content-Disposition", "inline; filename=" + fileName);
-
-  //       // Send the file as a response
-  //       res.download(filePath);
-
+  //       return helper.success(res, variables.Success, "Attendance Report Generation Failed");
   //     }
   //   } catch (error) {
-  //     res.status(500).json({ status: "error", message: error.message });
+  //     return helper.failed(res, variables.BadRequest, error.message);
   //   }
   // };
-
-  downloadExportFile = async (filtePath, res) =>{
-    return res.download(filtePath, (err) => {
-      if (err) {
-        console.error("Error sending XLS file:", err);
-        return helper.failed(res, variables.BadRequest,"File download failed");
-      }
-    });
-  }
-
-  downloadFileDynamically = async (res, fromTime, toTime, format = 'xls', reportName, company_id, reportData, headers) => {
-    try {
-      const timestamp = new Date().toISOString().replace(/[-:.]/g, ''); // e.g., 20231224T123456
-      const fileName = `${reportName}_${company_id}_${timestamp}.${format}`;
-  
-      const __dirname = path.dirname(new URL(import.meta.url).pathname);
-      const directoryPath = path.resolve(__dirname, '../../../storage/files');
-      const filePath = path.join(directoryPath, fileName);
-  
-      // Ensure the directory exists
-      if (!fs.existsSync(directoryPath)) {
-        fs.mkdirSync(directoryPath, { recursive: true });
-      }
-      const keys = Object.keys(reportData[0]); 
-      if (format === 'xls') {
-        // Generate XLS file (simple CSV format for demo purposes)
-        const csvContent = [
-          headers.join(','), // Use headers provided as column names
-          ...reportData.map(row => keys.map((key, index) => row[key] || '').join(',')) // Map data to headers
-         ].join('\n');
-  
-
-        fs.writeFileSync(filePath, csvContent);
-        console.log("XLS file written successfully:", filePath);
-  
-        const newAppInfo = await exportHistories.create({ reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
-  
-        res.setHeader(
-          "Content-Type",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        );
-        res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
-  
-        return res.download(filePath, fileName, (err) => {
-          if (err) {
-            console.error("Error sending XLS file:", err);
-            return helper.failed(res, variables.BadRequest,"File download failed");
-          }
-          console.log("XLS file downloaded successfully.");
-        });
-      }
-  
-      if (format === 'pdf') {
-        // Generate PDF file
-        const doc = new PDFDocument({ compress: false });
-        const fileStream = fs.createWriteStream(filePath);
-        doc.pipe(fileStream);
-
-        // Add title and content
-        doc.fontSize(18).text(reportName, { align: "center" }).moveDown();
-        const headerText = headers.join(' | ');
-        doc.fontSize(12).text(headerText, { underline: true }).moveDown();
-
-        reportData.forEach((row, index) => {
-         const rowText = keys.map((key, idx) => row[key] || '').join(' | '); // Dynamically map data to headers
-         doc.fontSize(10).text(rowText);
-        });
-
-        doc.end();
-
-
-        const newAppInfo = await exportHistories.create({ reportName: reportName,company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
-
-        fileStream.on('finish', () => {
-         res.download(filePath, fileName, (err) => {
-            if (err) {
-             console.error("Error sending PDF file:", err);
-             return helper.failed(res, variables.BadRequest, "File download failed");
-            }
-            console.log("PDF file downloaded successfully.");
-         });
-        });
-
-        fileStream.on('error', (err) => {
-         console.error("Error writing PDF file:", err);
-         return helper.failed(res, variables.BadRequest, "File generation failed");
-        });
-     } else {
-      return helper.failed(res, variables.BadRequest, "Unsupported File Request");
-     }
-    } catch (error) {
-     console.error("Error generating file:", error);
-     return helper.failed(res, variables.BadRequest, error.message);
-    }
- }
-  
 
   getAttendanceReport = async (req, res) => {
     try {
       const { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
-      console.log("test", req.query);
       if (!format) format = "xls";
-      if (format && !['xls', 'pdf'].includes(format)) {
+      if (format && !["xls", "pdf"].includes(format)) {
         throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
       }
-      // if(!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
-      let startDate, endDate;
+      if (!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
 
-      // Determine date range based on definedPeriod
-      const today = new Date();
+      const validOptions = [1, 2, 3, 4];
 
-      if (definedPeriod == 1) {
-        // Previous Day
-        startDate = new Date(today.setDate(today.getDate() - 1));
-        endDate = new Date(startDate);
-      } else if (definedPeriod == 2) {
-        // Previous Week (Sunday to Saturday)
-        const lastSunday = new Date(today.setDate(today.getDate() - today.getDay() - 7));
-        const lastSaturday = new Date(lastSunday);
-        lastSaturday.setDate(lastSunday.getDate() + 6);
-        startDate = lastSunday;
-        endDate = lastSaturday;
-      } else if (definedPeriod == 3) {
-        // Previous Month
-        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        startDate = lastMonth;
-        endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
-      } else if (definedPeriod == 4) {
-        // Custom
-        const rules = { fromDate: "required", toDate: "required" };
-        const { status, message } = await validate(req.body, rules);
-        if (status === 0) {
-          return helper.failed(res, variables.ValidationError, message);
-        }
-        startDate = new Date(fromDate);
-        endDate = new Date(toDate);
-      } else {
-        return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
+      if (!definedPeriod || !validOptions.includes(definedPeriod)) {
+        return helper.failed(res, variables.BadRequest, "Please select a valid date option");
       }
 
-      // Fetch attendance report
-      const attendanceReport = await TimeLog.sequelize.query(
-        `SELECT 
-          u.fullname AS employee_name, 
-          team.name AS team, 
-          timelog.date AS date, 
-          DAYNAME(timelog.date) AS day, 
-          CASE 
-            WHEN timelog.logged_in_time IS NOT NULL THEN 'Present' 
-            ELSE 'Absent' 
-          END AS attendance_status, 
-          shifts.start_time AS shift_time_in, 
-          timelog.logged_in_time AS time_in, 
-          shifts.end_time AS shift_time_out, 
-          timelog.logged_out_time AS time_out
-        FROM timelogs AS timelog
-        LEFT JOIN users AS u ON timelog.user_id = u.id
-        JOIN teams AS team ON u.teamId = team.id
-        JOIN shifts AS shifts ON timelog.shift_id = shifts.id
-        WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
+      let date;
+
+      if (definedPeriod) {
+        if (definedPeriod == 4) {
+          if (!fromDate || !toDate) {
+            return helper.failed(res, variables.BadRequest, "Please select start and end date");
+          }
+          date = await helper.getDateRange(definedPeriod, fromDate, toDate);
+        } else {
+          date = await helper.getDateRange(definedPeriod);
+        }
+      }
+
+      const attendanceReport = [];
+      const presentUsersReport = await TimeLog.sequelize.query(
+        `SELECT u.fullname AS employee_name, team.name AS team, timelog.date AS date, DAYNAME(timelog.date) AS day, CASE WHEN timelog.logged_in_time IS NOT NULL THEN 'Present' ELSE 'Absent' END AS attendance_status, shifts.start_time AS shift_time_in, timelog.logged_in_time AS time_in, shifts.end_time AS shift_time_out, timelog.logged_out_time AS time_out
+        FROM timelogs AS timelog LEFT JOIN users AS u ON timelog.user_id = u.id JOIN teams AS team ON u.teamId = team.id JOIN shifts AS shifts ON timelog.shift_id = shifts.id WHERE timelog.date BETWEEN :startDate AND :endOfDay AND u.company_id = :company_id AND u.isAdmin = 0
         ${teamId ? "AND team.id = :teamId" : ""}
         ${userId ? "AND u.id = :userId" : ""}
-        ORDER BY timelog.date DESC
-        `,
+        AND u.createdAt <= :endOfDay
+        ORDER BY timelog.date DESC`,
         {
           replacements: {
             company_id: req.user.company_id,
-            startDate: startDate.toISOString().split("T")[0],
-            endDate: endDate.toISOString().split("T")[0],
+            startDate: date.startDate,
+            endOfDay: date.endDate,
             teamId,
             userId,
             limit: limit || 10,
@@ -514,11 +267,11 @@ class exportReportController {
       );
 
       const presentUsers = await TimeLog.findAll({
-        attributes: ['user_id'],
+        attributes: ["user_id"],
         include: [
           {
             model: User,
-            as: 'user',
+            as: "user",
             attributes: [],
             where: {
               isAdmin: 0,
@@ -528,75 +281,165 @@ class exportReportController {
         where: {
           company_id: req.user.company_id,
           date: {
-            [Op.between]: [startDate, endDate],
+            [Op.between]: [date.startDate, date.endDate],
           },
         },
-        group: ['user_id'],
+        group: ["user_id"],
       });
-      console.log(presentUsers.map(user => user.user_id));
 
-      let headers = [
-        "Employee Name",
-        "Team",
-        "Date",
-        "Day",
-        "Attendance Status",
-        "Shift Time In",
-        "Shift Time Out",
-        "Time Out"
-      ]
-      
-      await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Attendance Report", req.user.company_id, attendanceReport, headers);
+      const absentUsersReport = await TimeLog.sequelize.query(
+        `SELECT u.fullname AS employee_name, team.name AS team, 'N/A' AS date, 'N/A' AS day, 'Absent' AS attendance_status, shifts.start_time AS shift_time_in, 'N/A' AS time_in, shifts.end_time AS shift_time_out, 'N/A' AS time_out
+         FROM users AS u
+    
+         LEFT JOIN teams AS team
+         ON u.teamId = team.id
+        LEFT JOIN shifts AS shifts
+         ON team.shiftId = shifts.id
+         WHERE u.company_id = :company_id
+         AND u.isAdmin = 0
+         ${teamId ? "AND team.id = :teamId" : ""}
+        ${userId ? "AND u.id = :userId" : ""}
+        AND u.createdAt <= :endOfDay
+         AND u.id NOT IN (:presentUserIds)
+         ORDER BY u.fullname ASC`,
+        {
+          replacements: {
+            company_id: req.user.company_id,
+            endOfDay: date.endDate,
+            teamId,
+            userId,
+            presentUserIds: presentUsers.length > 0 ? presentUsers.map((user) => user.user_id) : [-1],
+          },
+          type: QueryTypes.SELECT,
+        }
+      );
 
-      // await this.downloadFile(req, res, req.user.company_id, attendanceReport, format, reportDescription, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0]);
-      // await dbTransaction.commit();
-      // return helper.success(res, variables.Success, attendanceReport);
+      attendanceReport.push(...absentUsersReport);
+      attendanceReport.push(...presentUsersReport);
+
+      let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Time in", "Shift Time Out", "Time Out"];
+
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Attendance Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Attendance Report Generation Failed");
+      }
     } catch (error) {
-      // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   getApplicationUsageReport = async (req, res) => {
-    const dbTransaction = await Sequelize.transaction();
     try {
-      const { fromTime, toTime, definedPeriod, teamId, userId, format } = req.body;
-      if(!fromTime || !toTime) return helper.failed(res, variables.ValidationError, "From Time and To time both are required")
-      let startDate = new Date(fromTime);
-      endDate = new Date(toTime);
+      let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
+      if (!format) format = "xls";
+      if (format && !["xls", "pdf"].includes(format)) {
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
+      }
 
-      let data = [];
-      let headers = [
-        "Name",
-        "Department",
-        "Application",
-        "Productive/Non Producitve"
-      ]
-      
-      await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Application Usage Report", req.user.company_id, data, headers);
-      await dbTransaction.commit();
-      return helper.success(res, variables.Success, "User Updated Successfully");
+      if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
+
+      const validOptions = [1, 2, 3, 4];
+
+      if (!definedPeriod || !validOptions.includes(definedPeriod)) {
+        return helper.failed(res, variables.BadRequest, "Please select a valid date option");
+      }
+
+      let date;
+      const companyId = req.user.company_id;
+
+      if (definedPeriod) {
+        if (definedPeriod == 4) {
+          if (!fromDate || !toDate) {
+            return helper.failed(res, variables.BadRequest, "Please select start and end date");
+          }
+          date = await helper.getDateRange(definedPeriod, fromDate, toDate);
+        } else {
+          date = await helper.getDateRange(definedPeriod);
+        }
+      }
+
+      const applicationUsage = await UserHistory.sequelize.query(
+        `
+                            WITH AppUsageData AS (
+                      SELECT 
+                          u.fullname,
+                          u.departmentId,
+                          ah.appName,
+                          ah.is_productive AS productivity_status,
+                          TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime) AS time_spent_minutes
+                      FROM app_histories AS ah
+                      INNER JOIN users AS u ON ah.userId = u.id AND ah.company_id = u.company_id
+                      LEFT JOIN teams AS team ON u.teamId = team.id
+                      WHERE 
+                          ah.company_id = :companyId
+                          AND ah.createdAt BETWEEN :startDate AND :endDate
+                          ${userId ? "AND u.id = :userId" : ""}
+                          ${teamId ? "AND team.id = :teamId" : ""}
+                          AND u.isAdmin = 0 -- Exclude admin users
+                  )
+
+                  SELECT 
+                      aud.appName,
+                      aud.productivity_status,
+                      SUM(aud.time_spent_minutes) AS total_time_minutes,
+                      d.name AS department_name
+                  FROM AppUsageData aud
+                  LEFT JOIN departments d ON aud.departmentId = d.id -- Join to get department name
+                  GROUP BY aud.appName, aud.productivity_status, d.name;
+                  `,
+        {
+          type: QueryTypes.SELECT,
+          replacements: {
+            companyId,
+            startDate: date.startDate,
+            endDate: date.endDate,
+            teamId,
+            userId,
+          },
+        }
+      );
+
+      let headers = ["Name", "Department", "Application", "Productive/Non Producitve"];
+
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application Usage Report", req.user.company_id, applicationUsage, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Application Usage Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Application Usage Report Generation Failed");
+      }
     } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   getDeptPerformReport = async (req, res) => {
     try {
-      const { company_id } = req.user;
-      const { definedPeriod, fromDate, toDate, format, teamId } = req.body;
+      let { company_id } = req.user;
+      let { definedPeriod, fromDate, toDate, format, teamId } = req.body;
       if (!format) format = "xls";
-      if (format && !['xls', 'pdf'].includes(format)) {
-        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
+      if (format && !["xls", "pdf"].includes(format)) {
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
-      const dateRange = await GenerateReportHelper.getDateRange(definedPeriod, fromDate, toDate);
-      const allDepartments = await department.findAll({
-        where: { company_id: company_id, status: 1 },
-      });
 
-      let startDate = dateRange.startDate;
-      let endDate = dateRange.endDate;
+      // if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
+
+      let dateRange;
+
+      if (definedPeriod) {
+        if (definedPeriod == 4) {
+          if (!fromDate || !toDate) {
+            return helper.failed(res, variables.BadRequest, "Please select start and end date");
+          }
+          dateRange = await helper.getDateRange(definedPeriod, fromDate, toDate);
+        } else {
+          dateRange = await helper.getDateRange(definedPeriod);
+        }
+      }
+      const allDepartments = await department.findAll({
+        where: { company_id: req.user.company_id, status: 1 },
+      });
 
       const performanceArray = [];
       for (const element of allDepartments) {
@@ -629,7 +472,6 @@ class exportReportController {
         performanceArray.push(obj);
       }
 
-      // await this.downloadFile(req, res, company_id, performanceArray, format, "Department Performance Report", startDate, endDate);
       let headers = [
         "Department",
         "Total Employees",
@@ -640,12 +482,24 @@ class exportReportController {
         "Most Non Productive Website",
         "Most Productive Website",
         "Most Non Productive App",
-        "Most Productive App"
-      ]
-      
-      await this.downloadFileDynamically(res, dateRange.startDate, dateRange.endDate, format, "Department Performance Report", req.user.company_id, performanceArray, headers);
+        "Most Productive App",
+      ];
 
-      return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
+      const result = await GenerateReportHelper.downloadFileDynamically(
+        res,
+        dateRange.startDate,
+        dateRange.endDate,
+        format,
+        "Department Performance Report",
+        req.user.company_id,
+        performanceArray,
+        headers
+      );
+      if (result.status) {
+        return helper.success(res, variables.Success, "Department Performance Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Department Performance Report Generation Failed");
+      }
     } catch (error) {
       console.log(`departmentPerformanceReport ${error.message}`);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -654,39 +508,34 @@ class exportReportController {
 
   getUnauthorizedWebReport = async (req, res) => {
     try {
-      const today = new Date();
-      let startDate, endDate;
       let companyId = req.user.company_id;
-      const { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
+      let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       if (!format) format = "xls";
-      if (format && !['xls', 'pdf'].includes(format)) {
-        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
+      if (format && !["xls", "pdf"].includes(format)) {
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
+console.log("test1");
+      const validOptions = [1, 2, 3, 4];
 
-      if (definedPeriod === 1) {
-        startDate = new Date(today.setDate(today.getDate() - 1));
-        endDate = new Date(startDate);
-      } else if (definedPeriod === 2) {
-        const lastSunday = new Date(today.setDate(today.getDate() - today.getDay() - 7));
-        const lastSaturday = new Date(lastSunday);
-        lastSaturday.setDate(lastSunday.getDate() + 6);
-        startDate = lastSunday;
-        endDate = lastSaturday;
-      } else if (definedPeriod === 3) {
-        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        startDate = lastMonth;
-        endDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
-      } else if (definedPeriod === 4) {
-        const rules = { fromDate: "required", toDate: "required" };
-        const { status, message } = await validate(req.body, rules);
-        if (status === 0) {
-          return helper.failed(res, variables.ValidationError, message);
-        }
-        startDate = new Date(fromDate);
-        endDate = new Date(toDate);
-      } else {
-        return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
+      if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
+
+      if (!definedPeriod || !validOptions.includes(definedPeriod)) {
+        return helper.failed(res, variables.BadRequest, "Please select a valid date option");
       }
+      console.log("test2");
+
+      let date;
+      if (definedPeriod) {
+        if (definedPeriod == 4) {
+          if (!fromDate || !toDate) {
+            return helper.failed(res, variables.BadRequest, "Please select start and end date");
+          }
+          date = await helper.getDateRange(definedPeriod, fromDate, toDate);
+        } else {
+          date = await helper.getDateRange(definedPeriod);
+        }
+      }
+      console.log("test3");
 
       // Query to fetch unauthorized access
       const unauthorizedAccessReport = await UserHistory.sequelize.query(
@@ -695,34 +544,33 @@ class exportReportController {
         INNER JOIN users As u ON uh.userId = u.id
         INNER JOIN departments ON u.departmentId = departments.id
         WHERE uh.website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id = :companyId
-            AND uh.date BETWEEN :startDate AND :endDate   ${teamId ? "AND team.id = :teamId" : ""} AND u.isAdmin = 0
+            AND uh.date BETWEEN :startDate AND :endDate   ${teamId ? "AND u.teamId = :teamId" : ""} AND u.isAdmin = 0
         ${userId ? "AND u.id = :userId" : ""}
         ORDER BY uh.visitTime DESC`,
         {
           type: QueryTypes.SELECT,
           replacements: {
             companyId,
-            startDate: startDate.toISOString().split("T")[0],
-            endDate: endDate.toISOString().split("T")[0],
+            startDate: date.startDate,
+            endDate: date.endDate,
             teamId,
             userId,
           },
         }
       );
+      console.log("test4",unauthorizedAccessReport);
 
-      let headers = [
-        "Name",
-        "Department",
-        "Url",
-        "Time",
-      ]
-      
-      await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0],endDate.toISOString().split("T")[0], format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
+      let headers = ["Name", "Department", "Url", "Time"];
 
-      return res.status(200).json({ status: "success", data: unauthorizedAccessReport });
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Unauthorized Web Report Generated Successfully", unauthorizedAccessReport);
+      } else {
+        return helper.success(res, variables.Success, "Unauthorized Web Report Generation Failed");
+      }
     } catch (error) {
       console.error("Error fetching unauthorized access report:", error);
-      return res.status(500).json({ status: "error", message: error.message });
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
@@ -759,104 +607,170 @@ class exportReportController {
 
   getBrowserHistoryReport = async (req, res) => {
     try {
-      let data = req.body;
-      if (!data.member_id) {
-        return helper.failed(res, variables.BadRequest, "Please select team and member");
+      let { fromDate, toDate, definedPeriod, format, teamId, userId } = req.body;
+      if (!format) format = "xls";
+      if (format && !["xls", "pdf"].includes(format)) {
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
 
-      const validOptions = ["custom_range", "yesterday", "previous_week", "previous_month"];
+      if (!teamId) {
+        return helper.failed(res, variables.BadRequest, "Please select the team");
+      }
 
-      if (!data.definedPeriod || !validOptions.includes(data.definedPeriod)) {
+      const validOptions = [1, 2, 3, 4];
+
+      if (!definedPeriod || !validOptions.includes(definedPeriod)) {
         return helper.failed(res, variables.BadRequest, "Please select a valid date option");
       }
 
       let date;
-      if (data.definedPeriod) {
-        if (data.definedPeriod == "4") {
-          if (!data.customStart || !data.customEnd) {
+      if (definedPeriod) {
+        if (definedPeriod == 4) {
+          if (!fromDate || !toDate) {
             return helper.failed(res, variables.BadRequest, "Please select start and end date");
           }
-          date = await helper.getDateRange(data.definedPeriod, data.customStart, data.customEnd);
+          date = await helper.getDateRange(definedPeriod, fromDate, toDate);
         } else {
-          date = await helper.getDateRange(data.definedPeriod);
+          date = await helper.getDateRange(definedPeriod);
         }
       }
       if (date && date.status == 0) {
         return helper.failed(res, variables.BadRequest, date.message);
       }
 
-      if (data.team_id && data.member_id) {
-        const team = await User.findOne({
-          where: {
-            teamId: data.team_id,
-            id: data.member_id,
-            company_id: req.user.company_id,
-          },
-        });
-        if (!team) {
-          return helper.failed(res, variables.BadRequest, "User not found!!!");
-        }
-        const browserHistroy = await UserHistory.findAll({
-          where: {
-            userId: data.member_id,
-            createdAt: {
-              [Op.between]: [date.startDate, date.endDate],
-            },
-          },
-          attributes:[
-            "id",
-            "userId",
-            "company_id",
-            "website_name",
-            "url",
-            "title",
-            "visitTime"
-          ]
-        });
-        return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
-      } else {
-        const team = await User.findOne({
-          where: {
-            id: data.member_id,
-            company_id: req.user.company_id,
-          },
-        });
-        if (!team) {
-          return helper.failed(res, variables.BadRequest, "User not found!!!");
-        }
-        const browserHistroy = await UserHistory.findAll({
-          where: {
-            userId: data.member_id,
-            createdAt: {
-              [Op.between]: [date.startDate, date.endDate],
-            },
-          },
-          attributes:[
-            "id",
-            "userId",
-            "company_id",
-            "website_name",
-            "url",
-            "title",
-            "visitTime"
-          ]
-        });
+      let browserHistory;
 
-        let headers = [
-          "Name",
-          "Department",
-          "Url",
-          "Productive/Non-Productivity",
-          "Time Spent"
-        ]
+      if (teamId && userId) {
+        const team = await User.findOne({
+          where: {
+            teamId: teamId,
+            id: userId,
+            company_id: req.user.company_id,
+          },
+        });
+        if (!team) {
+          return helper.failed(res, variables.BadRequest, "User not found!!!");
+        }
+        browserHistory = await UserHistory.sequelize.query(
+          `
+            SELECT 
+    uh.website_name, 
+    d.name AS departmentName, 
+    uh.url, 
+    IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
+    uh.visitTime
+FROM 
+    user_histories AS uh
+LEFT JOIN 
+    users AS u ON uh.userId = u.id
+LEFT JOIN 
+    departments AS d ON u.departmentId = d.id
+LEFT JOIN 
+    productive_websites AS pw 
+    ON uh.website_name = pw.website_name AND pw.company_id = :companyId
+WHERE 
+    uh.userId = :userId
+    AND uh.createdAt BETWEEN :startDate AND :endDate
+
+          `,
+          {
+            type: QueryTypes.SELECT,
+            replacements: {
+              userId,         // Array of user IDs
+              startDate: date.startDate,  // Start date for filtering
+              endDate: date.endDate,      // End date for filtering
+            },
+          }
+        );
         
-        await this.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistroy, headers);
+      } else {
+        const team = await User.findAll({
+          where: {
+            teamId: teamId,
+            company_id: req.user.company_id,
+          },
+          attributes: ["id"],
+        });
+        if (!team || team.length === 0) {
+          return helper.failed(res, variables.BadRequest, "User not found!!!");
+        }
+        const userIds = team.map((user) => user.id);
+        browserHistory = await UserHistory.sequelize.query(
+          `
+            SELECT 
+    uh.website_name, 
+    d.name AS departmentName, 
+    uh.url, 
+    IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
+    uh.visitTime
+FROM 
+    user_histories AS uh
+LEFT JOIN 
+    users AS u ON uh.userId = u.id
+LEFT JOIN 
+    departments AS d ON u.departmentId = d.id
+LEFT JOIN 
+    productive_websites AS pw 
+    ON uh.website_name = pw.website_name AND pw.company_id = :companyId
+WHERE 
+    uh.userId IN (:userIds)
+    AND uh.createdAt BETWEEN :startDate AND :endDate
 
-        return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
+          `,
+          {
+            type: QueryTypes.SELECT,
+            replacements: {
+              companyId: req.user.company_id,
+              userIds,         // Array of user IDs
+              startDate: date.startDate,  // Start date for filtering
+              endDate: date.endDate,      // End date for filtering
+            },
+          }
+        );
+        
+      }
+      let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Visit Time"];
+
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistory, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Browser History Report Generated Successfully", browserHistory);
+      } else {
+        return helper.success(res, variables.Success, "Browser History Report Generation Failed");
       }
     } catch (error) {
       console.log("Error while generating browser history report:", error);
       return helper.failed(res, variables.BadRequest, error.message);
+    }
+  };
+
+  downloadExportReport = async (req, res) => {
+    try {
+      let { filePath } = req.body;
+  
+      if (typeof filePath !== "string" || !filePath.trim()) {
+        return helper.failed(res, variables.BadRequest, "Invalid file path provided");
+      }
+  
+      const normalizedPath = path.resolve(filePath);
+      // Check if the file exists and is accessible
+      await fs.promises.access(normalizedPath, fs.constants.F_OK);
+  
+      // Send the file as a download
+      return res.download(normalizedPath, (err) => {
+        if (err) {
+          console.error("Error sending file:", err);
+          return helper.failed(res, variables.BadRequest, "File download failed");
+        }
+      });
+    } catch (err) {
+      console.error("Error during file download:", err);
+  
+      // Handle specific error types
+      if (err.code === "ENOENT") {
+        return helper.failed(res, variables.BadRequest, "File not found");
+      }
+  
+      return helper.failed(res, variables.ServerError, "An error occurred while processing the file download");
     }
   };
 }

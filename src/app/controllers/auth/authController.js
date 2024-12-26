@@ -7,7 +7,6 @@ import accessToken, {
 } from "../../../database/models/accessTokenModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
-import TimeLog from "../../../database/models/timeLogsModel.js";
 import { getShiftData } from "../../../utils/validations/socketValidation.js";
 import bcrypt from "bcrypt";
 import company from "../../../database/models/company.js";
@@ -49,8 +48,6 @@ class authController extends jwtService {
           validationResult.message
         );
 
-      //console.log("1");
-
       // Check if the user already exists
       const existingCompany = await company.findOne({
         where: { name: requestData.companyName },
@@ -70,18 +67,11 @@ class authController extends jwtService {
         where: { email: requestData.email },
         transaction: dbTransaction,
       });
-      if (existingCompany) {
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Company already exists with this Email!"
-        );
+      if (existingCompanyWithEmail) {
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Company already exists with this Email!");
       }
 
-      //console.log("2");
-      //* Step1
+      //* -------------- Create Company --------------------------
       const createCompany = await company.create(
         {
           name: requestData.companyName,
@@ -104,8 +94,7 @@ class authController extends jwtService {
         );
       }
 
-      //console.log("3");
-
+      //* -------------- Create Report Settings --------------------------
       const createReportSettings = await reportSettings.create(
         {
           company_id: createCompany.id,
@@ -126,8 +115,7 @@ class authController extends jwtService {
         );
       }
 
-      //console.log("4");
-
+      //* -------------- Create Department --------------------------
       const createDepartment = await department.create(
         {
           name: "Upper Management",
@@ -150,8 +138,7 @@ class authController extends jwtService {
         );
       }
 
-      //console.log("5");
-
+      //* -------------- Create Designation --------------------------
       const createDesignation = await designation.create(
         {
           name: "MD (Managing Director)",
@@ -172,8 +159,8 @@ class authController extends jwtService {
           "Unable to Create Designation for this Company"
         );
       }
-      //console.log("6");
 
+      //* -------------- Create Role --------------------------
       const createRole = await role.create(
         {
           name: "Admin",
@@ -194,8 +181,8 @@ class authController extends jwtService {
           "Unable to Create Role for this Company"
         );
       }
-      //console.log("7");
 
+      //* -------------- Create Role Permissions --------------------------
       const permissionInstance = new rolePermissionController();
       const createPermissionModules = await app_modules.findAll({
         attributes: { exclude: ["createdAt", "updatedAt"] },
@@ -220,8 +207,7 @@ class authController extends jwtService {
         }
       }
 
-      //console.log("8");
-
+      //* -------------- Create Shift --------------------------
       const createShift = await shift.create(
         {
           company_id: createCompany.id,
@@ -247,8 +233,7 @@ class authController extends jwtService {
         );
       }
 
-      //console.log("9");
-
+      //* -------------- Create Team --------------------------
       const createTeam = await team.create(
         {
           name: "Upper Management Team",
@@ -266,11 +251,7 @@ class authController extends jwtService {
         throw new Error("Unable to Create Team Record for this company.");
       }
 
-      //console.log("10");
-
-      // const today = new Date();
-      // const nextMonthDate = addMonths(today, 1);
-
+      //* -------------- Create User -------------------------
       const createUser = await User.create(
         {
           company_id: createCompany.id,
@@ -304,8 +285,7 @@ class authController extends jwtService {
         );
       }
 
-      //console.log("11");
-
+      //* -------------- Update Department --------------------------
       const updateDept = await department.update(
         {
           reportingManagerId: createUser.id,
@@ -315,24 +295,16 @@ class authController extends jwtService {
             id: createDepartment.id,
             company_id: createCompany.id,
           },
-          transaction: dbTransaction, // Included transaction in the same options object
+          transaction: dbTransaction,
         }
       );
 
       if (!updateDept || updateDept[0] === 0) {
-        // Sequelize's update returns an array, [number of affected rows]
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Unable to Add Reporting Manager for Department"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Add Reporting Manager for Department");
       }
 
-      //console.log("12");
-
+      //* -------------- Create Language Settings --------------------------
       const createLanguages = await languageSettings.create(
         {
           user_id: createUser.id,
@@ -354,20 +326,9 @@ class authController extends jwtService {
         );
       }
 
-      //console.log(createUser);
-
-      const token = this.generateToken(
-        createUser.id.toString(),
-        createUser.isAdmin,
-        createUser.company_id,
-        "1d"
-      );
-      if (!token)
-        return helper.failed(
-          res,
-          variables.serviceUnavailabe,
-          "Unable to create access token"
-        );
+      //* -------------- Create Access Token --------------------------
+      const token = this.generateToken(createUser.id.toString(), createUser.isAdmin, createUser.company_id, "1d");
+      if (!token) return helper.failed(res, variables.serviceUnavailabe, "Unable to create access token");
 
       const expireTime = this.calculateTime();
       await createAccessToken(
@@ -399,7 +360,6 @@ class authController extends jwtService {
   login = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
-      let today = new Date().toISOString().split("T")[0];
       let requestData = req.body;
 
       let validationResult = await authValidation.loginValid(requestData, res); 
@@ -545,23 +505,8 @@ class authController extends jwtService {
         );
         let expireTime = this.calculateTime();
 
-        const generatedToken = await createAccessToken(
-          user.id,
-          user.isAdmin,
-          user.company_id,
-          token,
-          expireTime,
-          dbTransaction
-        );
-
-        if (!generatedToken)
-          return helper.sendResponse(
-            res,
-            variables.BadRequest,
-            0,
-            null,
-            "Token Did not saved in db"
-          );
+        const generatedToken = await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
+        if (!generatedToken) return helper.sendResponse(res, variables.BadRequest, 0, null, "Token Did not saved in db");
       }
       await dbTransaction.commit();
       return helper.sendResponse(
@@ -586,14 +531,10 @@ class authController extends jwtService {
   //* Logout Function -----------------------------------------------------------------
   logout = async (req, res) => {
     try {
-      let userData = await User.findOne({ where: { id: req.user.id } });
-      let token = await accessToken.findOne({
-        where: { token: req.sessionToken },
-      }); // checking if the token exists in system
-      if (!token)
-        return helper.failed(res, variables.NotFound, "Already Logout");
+      let token = await accessToken.findOne({ where: { token: req.sessionToken } });
+      if (!token) return helper.failed(res, variables.NotFound, "Already Logout");
 
-      await token.destroy(); // token destroyed here
+      await token.destroy();
 
       return helper.success(res, variables.Success, "Logout Successfully");
     } catch (error) {
@@ -770,26 +711,6 @@ class authController extends jwtService {
     }
   };
 
-  // advanced_setting = async (req, res) => {
-  //   try {
-  //     let { screen_capture, broswer_capture, app_capture } = req.body;
-  //     if (![0, 1].includes(screen_capture) || ![0, 1].includes(broswer_capture) || ![0, 1].includes(app_capture)) {
-  //       return helper.failed(res, variables.BadRequest, "Invalid Data");
-  //     }
-
-  //     let data = await company.findOne({ where: { id: req.user.company_id } });
-  //     if (!data) {
-  //       return helper.failed(res, variables.NotFound, "company not found!!");
-  //     }
-  //     data.screen_capture = screen_capture;
-  //     data.broswer_capture = broswer_capture;
-  //     data.app_capture = app_capture;
-  //     data.save();
-  //     return helper.success(res, variables.Success, "Advanced setting update successfully!");
-  //   } catch (error) {
-  //     return helper.failed(res, variables.BadRequest, error.message);
-  //   }
-  // };
   advanced_setting = async (req, res) => {
     try {
       let {

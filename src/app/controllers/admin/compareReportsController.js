@@ -45,14 +45,14 @@ const getCompareReportsData = async (req, res, next) => {
         const queries = [
             {
                 query: `
-                    SELECT ah.appName, 
-                        SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)) AS total_time_minutes
-                    FROM app_histories AS ah
-                    INNER JOIN productive_apps AS ap ON ap.app_name = ah.appName and ap.department_id=:departmentId
-                    WHERE DATE(ah.createdAt) = :createdAt 
-                    AND ah.company_id = :companyId 
-                    AND ah.userId = :userId
-                    GROUP BY ah.appName;
+                        SELECT ah.appName, 
+                            SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)) AS total_time_minutes
+                        FROM app_histories AS ah
+                        INNER JOIN productive_apps AS ap ON ap.app_name = ah.appName and ap.department_id=:departmentId
+                        WHERE DATE(ah.createdAt) = :createdAt 
+                        AND ah.company_id = :companyId 
+                        AND ah.userId = :userId
+                        GROUP BY ah.appName;
                 `,
                 key: 'productiveApps'
             },

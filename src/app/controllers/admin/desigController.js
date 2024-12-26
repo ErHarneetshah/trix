@@ -37,7 +37,7 @@ class desigController {
   getDesigDropdown = async (req, res) => {
     try {
       const allData = await designation.findAll({
-        where: {status: 1, company_id: req.user.company_id},
+        where: { status: 1, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
@@ -58,7 +58,7 @@ class desigController {
         where: { id: id, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!desigData) return helper.failed(res, variables.NotFound, "Designation Data Not Found in your company data");
+      if (!desigData) return helper.failed(res, variables.NotFound, "Designation Data Not Found in company data");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", desigData);
     } catch (error) {
@@ -78,7 +78,7 @@ class desigController {
         where: { name: name, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (existingDesig) return helper.failed(res, variables.ValidationError, "Designation Already Exists in your company");
+      if (existingDesig) return helper.failed(res, variables.ValidationError, "Designation Already Exists in company");
 
       // ___________---------- Designation Add ----------_______________
       const addNewDesig = await designation.create({ name: name, company_id: req.user.company_id }, { transaction: dbTransaction });
@@ -120,9 +120,8 @@ class desigController {
         return helper.failed(res, variables.ValidationError, "Desgination name already exists in different record!");
       }
 
-      
       // ___________---------- Designation Update ----------_______________
-      const updated = await designation.update(
+      await designation.update(
         {
           name: name,
         },
@@ -133,13 +132,8 @@ class desigController {
         }
       );
 
-      if (updated) {
-        await dbTransaction.commit();
-        return helper.success(res, variables.Success, "Designation updated Successfully!");
-      } else {
-        if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, 0, null, "Unable to update the designation!");
-      }
+      await dbTransaction.commit();
+      return helper.success(res, variables.Success, "Designation updated Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -162,7 +156,7 @@ class desigController {
 
       // ___________---------- Designation Used in other table or not ----------_______________
       const isUsedInUsers = await User.findOne({ where: { designationId: id } });
-      if (isUsedInUsers) return helper.failed(res, variables.BadRequest, "Cannot Delete this Designation as it is referred in other tables");
+      if (isUsedInUsers) return helper.failed(res, variables.BadRequest, "Designation cannot be deleted because it is in use by other records.");
 
       // ___________---------- Designation Destroy ----------_______________
       const deleteDesig = await designation.destroy({

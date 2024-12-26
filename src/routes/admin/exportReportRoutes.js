@@ -7,7 +7,6 @@ const router = express.Router();
 const exportReportInstance = new exportReportController();
 
 router.post("/getReportsDataSet",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getReportsDataSet);
-router.post("/getAllReports",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getAllReports);
 router.post("/getProductiveReport",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getProductiveReport);
 router.post("/getDeptPerformReport",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getDeptPerformReport);
 router.post("/getAttendanceReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getAttendanceReport);
@@ -16,7 +15,7 @@ router.post("/getUnauthorizedWebReport", authMiddleware,verifyAdminMiddleware,  
 router.post("/getTeamList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getTeamList);
 router.post("/getMemberList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getMemberList);
 router.post("/getBrowserHistoryReport",authMiddleware,verifyAdminMiddleware, exportReportInstance.getBrowserHistoryReport);
-router.post("/downloadExportFile",authMiddleware,verifyAdminMiddleware, exportReportInstance.downloadExportFile);
+router.post("/downloadExportReport", authMiddleware,verifyAdminMiddleware, exportReportInstance.downloadExportReport);
 
 
 router.get("/getExportHistory",authMiddleware,verifyAdminMiddleware, exportReportInstance.getExportHistoryReport);
