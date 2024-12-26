@@ -263,17 +263,17 @@ GROUP BY
 
       if (tab) {
         if (tab.toLowerCase() === "working") {
-          updatedJson = updatedJson.filter((item) => item.logged_out_time === null && item.user.currentStatus === true);
+          updatedJson = updatedJson.filter((item) => item.logged_out_time === null && item.logged_in_time !== null);
         } else if (tab.toLowerCase() === "absent") {
-          updatedJson = updatedJson.filter((item) => item.user.currentStatus === false);
+          updatedJson = updatedJson.filter((item) => item.logged_out_time === null && item.logged_in_time === null);
         } else if (tab.toLowerCase() === "late") {
-          updatedJson = updatedJson.filter((item) => item.late_coming === true);
+          updatedJson = updatedJson.filter((item) => item.late_coming === 1);
         } else if (tab.toLowerCase() === "slacking") {
           updatedJson = updatedJson.filter((item) => item.user.is_slacking === true);
         } else if (tab.toLowerCase() === "productive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.user.productiveTime != 0 && item.user.nonProductiveTime != 0);
-        } else if (tab.toLowerCase() === "nonProductive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.user.nonProductiveTime != 0 && item.user.productiveTime != 0);
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.logged_in_time !== null);
+        } else if (tab.toLowerCase() === "nonproductive") {
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.logged_in_time !== null);
         }
       }
 

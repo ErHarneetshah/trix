@@ -261,7 +261,7 @@ class exportReportController {
       let headers = ["Name", "Department", "Application", "Productive/Non Producitve"];
 
       await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application Usage Report", req.user.company_id, applicationUsage, headers);
-      return helper.success(res, variables.Success, "User Updated Successfully", applicationUsage);
+      // return helper.success(res, variables.Success, "User Updated Successfully", applicationUsage);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -327,9 +327,9 @@ class exportReportController {
         "Most Productive App",
       ];
 
-      // await GenerateReportHelper.downloadFileDynamically(res, dateRange.startDate, dateRange.endDate, format, "Department Performance Report", req.user.company_id, performanceArray, headers);
+      await GenerateReportHelper.downloadFileDynamically(res, dateRange.startDate, dateRange.endDate, format, "Department Performance Report", req.user.company_id, performanceArray, headers);
 
-      return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
+      // return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
     } catch (error) {
       console.log(`departmentPerformanceReport ${error.message}`);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -511,8 +511,8 @@ class exportReportController {
       }
       let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Time Spent"];
 
-      // await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, data.format, "Browser History Report", req.user.company_id, browserHistroy, headers);
-      return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
+      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, data.format, "Browser History Report", req.user.company_id, browserHistroy, headers);
+      // return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
     } catch (error) {
       console.log("Error while generating browser history report:", error);
       return helper.failed(res, variables.BadRequest, error.message);
