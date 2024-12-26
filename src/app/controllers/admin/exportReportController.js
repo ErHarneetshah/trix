@@ -410,7 +410,13 @@ class exportReportController {
         const newAppInfo = await exportHistories.create({ reportName: reportName,company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
 
         fileStream.on('finish', () => {
-         res.download(filePath, fileName, (err) => {
+          res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          );
+          res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+          
+         return res.download(filePath, fileName, (err) => {
             if (err) {
              console.error("Error sending PDF file:", err);
              return helper.failed(res, variables.BadRequest, "File download failed");
