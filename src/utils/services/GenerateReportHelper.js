@@ -11,6 +11,7 @@ import sequelize from "../../database/queries/dbConnection.js";
 import User from "../../database/models/userModel.js";
 import helper from "./helper.js";
 import exportHistories from "../../database/models/exportHistoryModel.js";
+import variables from "../../app/config/variableConfig.js";
 
 // Helper function to get the working days of a department's users
 const getWorkingDays = async (dateRange, userIds, companyId) => {
