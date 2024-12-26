@@ -26,7 +26,7 @@ class exportReportController {
   getExportHistoryReport = async (req, res) => {
     try {
       // ___________---------- Search, Limit, Pagination ----------_______________
-      let { limit, page, date } = req.query;
+      let { limit, page} = req.query;
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
       // ___________---------- Search, Limit, Pagination ----------_______________
