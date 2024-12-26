@@ -1,0 +1,883 @@
+import { Buffer } from "buffer";
+import User from "../../database/models/userModel.js";
+import TimeLog from "../../database/models/TimeLog.js";
+import { getShiftData } from "../validations/socketValidation.js";
+import { Notification } from "../../database/models/Notification.js";
+import { Sequelize } from "sequelize";
+
+
+const emitUserDataToSpecificAdmins = async (targetUserId) => {
+    if (!io) return;
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) {
+        console.log("here returbning", targetUser);
+        return;
+    }
+    try {
+        const imagesCursor = await bucket
+            .find({ "metadata.user": targetUser._id })
+            .toArray();
+        const images = [];
+        const today = new Date().toISOString().split("T")[0];
+
+        // Iterate through the fetched files and filter by today's date
+        imagesCursor.forEach((file) => {
+            if (
+                file.filename &&
+                file.uploadDate.toISOString().split("T")[0] === today
+            ) {
+                images.push({
+                    fileName: file.filename,
+                    uploadTime: file.uploadDate.toLocaleString(),
+                });
+            }
+        });
+        const userHistory = await UserHistory.findOne({
+            user: targetUser._id,
+            date: today,
+        });
+
+        const userAppHistory = await UserAppHistory.findOne({
+            user: targetUser._id,
+            date: today,
+        });
+
+        const userStatus = targetUser.status;
+        const userSettings = await UserSettings.findOne({ user: targetUser._id });
+        const urlHostUsageData = await UserHistory.aggregate([
+            {
+                $match: {
+                    date: today,
+                    user: targetUser._id,
+                }, // Filter for today's date
+            },
+            { $unwind: "$history" }, // Unwind the history array
+            {
+                $addFields: {
+                    host: {
+                        $regexFind: {
+                            input: "$history.url",
+                            regex: /^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/, // Regex to extract the host
+                        },
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: "$host.match", // Group by the extracted host (match from the regex)
+                    count: { $sum: 1 }, // Count occurrences of each host
+                },
+            },
+            { $sort: { count: -1 } }, // Sort by count in descending order
+            {
+                $project: {
+                    _id: 0, // Exclude the _id field
+                    site: "$_id", // Rename _id to site
+                    count: 1, // Keep the count field
+                },
+            },
+        ]);
+        const appUsageData = await UserAppHistory.aggregate([
+            {
+                $match: { date: today, user: targetUser._id }, // Filter for today's date
+            },
+            { $unwind: "$appHistory" }, // Unwind the appHistory array
+            {
+                $group: {
+                    _id: "$appHistory.appName", // Group by app name
+                    count: { $sum: 1 }, // Count occurrences of each app
+                },
+            },
+            { $sort: { count: -1 } }, // Sort by count in descending order
+        ]);
+
+        // Emit to the room of the specific user
+        io.to(`user_${targetUser.userId}`).emit("admin:userData", {
+            status: true,
+            data: {
+                userId: targetUserId,
+                images: images || [],
+                userHistory: userHistory || {},
+                userAppHistory: userAppHistory || {},
+                userStatus: userStatus,
+                userSettings: userSettings || {},
+                appUsageData,
+                urlHostUsageData,
+            },
+        });
+    } catch (error) {
+        console.log("Error Occured emitUserDataToSpecificAdmins -", error);
+        io.to(`user_${targetUser.userId}`).emit("error", {
+            message: `Error Occoured ${error} `,
+        });
+    }
+};
+
+// export function startServer(io) {
+//     io.on("connection", async (socket) => {
+//         try {
+//             const userId = socket.data.user.userId;
+//             const userData = await User.findOne({ where: { id: userId } });
+//             if (!userData) return;
+
+//             let shift_Data = await getShiftData(userData.teamId);
+//             // Save user's socket ID
+//             userSockets[socket.id] = { userId, username: userData.username };
+//             userData.socket_id = socket.id;
+//             userData.current_status = 1;
+//             userData.save();
+//             connectedUsersCount++;
+
+//             // Create Time Log
+//             let date = new Date();
+//             let currentHours = date.getHours();
+//             let currentMinutes = date.getMinutes();
+//             let [shiftHours, shiftMinutes] = shift_Data.start_time.split(":").map(Number);
+
+//             // Compare shift start time with the current time
+//             if (currentHours > shiftHours || (currentHours == shiftHours && currentMinutes > shiftMinutes)) {
+//                 let shiftTimeInMinutes = shiftHours * 60 + shiftMinutes;
+//                 let currentTimeInMinutes = currentHours * 60 + currentMinutes;
+
+//                 let timeDifference = currentTimeInMinutes - shiftTimeInMinutes;
+//                 let diffHours = Math.floor(timeDifference / 60);
+//                 let diffMinutes = timeDifference % 60;
+
+//                 await TimeLog.create({
+//                     user_id: userId,
+//                     shift_id: shift_Data.id,
+//                     logged_in_time: `${currentHours}:${currentMinutes}`,
+//                     late_coming_duration: `${diffHours}:${diffMinutes}`,
+//                     late_coming: 1
+//                 });
+
+//             } else {
+//                 await TimeLog.create({
+//                     user_id: userId,
+//                     shift_id: shift_Data.id,
+//                     logged_in_time: `${currentHours}:${currentMinutes}`,
+//                     late_coming_duration: '00:00',
+//                 });
+//             }
+
+//             // create notification in database
+//             await Notification.create({
+//                 title: "User login",
+//                 message: `User ${userData.fullname} login`,
+//                 userId: socket.data.user.userId,
+//             })
+
+//             // Notify the admin when a user connects
+//             let admin = await User.findOne({ where: { current_status: true, isAdmin: true } });
+//             if (admin && admin.socket_id) {
+//                 socket.to(admin.socket_id).emit("user_connected", { 'Total_Connected_User': connectedUsersCount });
+
+//             }
+
+//         } catch (error) {
+//             console.log("error in connection ", error);
+//         }
+
+//         // User disconnect socket :
+
+//         socket.on("disconnect", async () => {
+//             try {
+//                 const socketData = userSockets[socket.id];  // Retrieve stored user data by socket.id
+//                 if (!socketData) return;
+
+//                 const { userId } = socketData;
+
+//                 const userData = await User.findOne({ where: { id: userId } });
+//                 if (!userData) return;
+
+//                 let shift_Data = await getShiftData(userData.teamId);
+//                 let time_data = await TimeLog.findOne({
+//                     where: { user_id: userId },
+//                     order: [['createdAt', 'DESC']]
+//                 });
+
+//                 // Update user's status to disconnected
+//                 userData.socket_id = null;
+//                 userData.current_status = 0;
+//                 await userData.save();
+//                 connectedUsersCount--;
+
+//                 // Create Time Log for disconnect
+//                 let date = new Date();
+//                 let currentHours = date.getHours();
+//                 let currentMinutes = date.getMinutes();
+//                 let [shiftEndHours, shiftEndMinutes] = shift_Data.end_time.split(":").map(Number)
+
+//                 // Convert current time and shift end time into minutes
+//                 let shiftEndInMinutes = shiftEndHours * 60 + shiftEndMinutes;
+//                 let currentTimeInMinutes = currentHours * 60 + currentMinutes;
+
+//                 if (currentTimeInMinutes < shiftEndInMinutes) {
+//                     // Time remaining (shift end time is in the future)
+//                     let remainingMinutes = shiftEndInMinutes - currentTimeInMinutes;
+//                     let remainingHours = Math.floor(remainingMinutes / 60);
+//                     let remainingMinutesMod = remainingMinutes % 60;
+//                     await time_data.update({
+//                         user_id: userId,
+//                         shift_id: shift_Data.id,
+//                         logged_out_time: `${currentHours}:${currentMinutes}`,
+//                         early_going_duration: `${remainingHours}:${remainingMinutesMod}`,
+//                         early_going: 1
+//                     })
+//                 } else {
+
+//                     await time_data.update({
+//                         user_id: userId,
+//                         shift_id: shift_Data.id,
+//                         logged_out_time: `${currentHours}:${currentMinutes}`,
+//                         early_going_duration: '00:00',
+//                     })
+//                 }
+
+//                 // create notification in database
+//                 await Notification.create({
+//                     title: "User logout",
+//                     message: `User ${userData.fullname} logout`,
+//                     userId: socket.data.user.userId,
+//                 })
+//             } catch (error) {
+//                 console.log("error in connection ", error);
+//             }
+//         });
+
+//         socket.on("readNotification", async (data) => {
+//             try {
+
+//             } catch (error) {
+//                 console.log("error in connection ", error);
+//             }
+//         })
+
+
+//         // Allow admins to listen to specific users
+//         // socket.on("admin:listenToUser", (targetUserId) => {
+//         //     try {
+//         //         if (socket.data.user.isAdmin) {
+//         //             socket.join(`user_${targetUserId}`);
+//         //             socket.emit("listeningSuccess", {
+//         //                 message: `Listening to user ${targetUserId.toString()}`,
+//         //             });
+//         //         } else {
+//         //             0;
+//         //             console.log("here");
+//         //             socket.emit("listeningError", { message: "Unauthorized access" });
+//         //         }
+//         //     } catch (error) {
+//         //         socket.emit("listeningError", { message: `${error}` });
+//         //     }
+//         // });
+//         // socket.on("ping", async (data) => {
+//         //     socket.emit("pong");
+//         // });
+//         // socket.on("uploadImage", async (data) => {
+//         //     try {
+//         //         const { images } = data;
+//         //         const userId = socket.data.user.userId;
+//         //         const user = await User.findOne({ userId });
+
+//         //         if (!images || images.length === 0) {
+//         //             console.log("Invalid data received from the client");
+//         //             socket.emit("imageError", { message: "Invalid data" });
+//         //             return;
+//         //         }
+
+//         //         if (!user || user.userId !== userId) {
+//         //             socket.emit("imageError", { message: "Unauthorized access" });
+//         //             return;
+//         //         }
+
+//         //         const uploadPromises = images.map(async (image) => {
+//         //             const timestamp = new Date().toISOString();
+//         //             const buffer = Buffer.from(image.data, "base64");
+
+//         //             return new Promise((resolve, reject) => {
+//         //                 const uploadStream = bucket.openUploadStream(image.name, {
+//         //                     contentType: image.mimetype,
+//         //                     metadata: {
+//         //                         user: user._id,
+//         //                         timestamp,
+//         //                     },
+//         //                 });
+
+//         //                 uploadStream.on("error", (err) => reject(err));
+//         //                 uploadStream.on("finish", () => resolve({ filename: image.name }));
+
+//         //                 uploadStream.write(buffer);
+//         //                 uploadStream.end();
+//         //             });
+//         //         });
+
+//         //         // Wait for all uploads to finish
+//         //         const results = await Promise.all(uploadPromises);
+
+//         //         // Emit success to the client
+//         //         socket.emit("imageSuccess", {
+//         //             message: "Images uploaded successfully",
+//         //             results,
+//         //         });
+
+//         //         // Notify admins
+//         //         emitUserDataToSpecificAdmins(user._id);
+//         //     } catch (error) {
+//         //         console.error("Error uploading images:", error);
+//         //         socket.emit("imageError", { message: "Failed to upload images" });
+//         //     }
+//         // });
+
+//         // socket.on("uploadHistory", async (data) => {
+//         //     try {
+//         //         var { url, title, visitTime } = data;
+//         //         const userId = socket.data.user.userId;
+
+//         //         const user = await User.findOne({ userId });
+//         //         if (!user || user.userId !== userId) {
+//         //             socket.emit("historyError", { message: "Unauthorized access" });
+//         //             return;
+//         //         }
+
+//         //         if (!url || !title || !visitTime) {
+//         //             socket.emit("historyError", { message: "Invalid data" });
+//         //             return;
+//         //         }
+
+//         //         const today = new Date().toISOString().split("T")[0];
+
+//         //         let userHistory = await UserHistory.findOne({
+//         //             user: user._id,
+//         //             date: today,
+//         //         });
+//         //         if (!Date.parse(visitTime)) {
+//         //             visitTime = Date.now();
+//         //         }
+//         //         if (!userHistory) {
+//         //             userHistory = new UserHistory({
+//         //                 user: user._id,
+//         //                 date: today,
+//         //                 history: [{ url, title, visitTime }],
+//         //             });
+//         //             await userHistory.save();
+//         //         } else {
+//         //             userHistory.history.push({ url, title, visitTime });
+//         //             await userHistory.save();
+//         //         }
+
+//         //         socket.emit("historySuccess", {
+//         //             message: "History uploaded successfully",
+//         //         });
+//         //         emitUserDataToSpecificAdmins(user._id);
+//         //     } catch (error) {
+//         //         console.error("Error uploading history:", error);
+//         //         socket.emit("historyError", { message: "Failed to upload history" });
+//         //     }
+//         // });
+
+//         // socket.on("uploadAppHistory", async (data) => {
+//         //     try {
+//         //         const { histories } = data;
+//         //         const userId = socket.data.user.userId;
+
+//         //         const user = await User.findOne({ userId });
+//         //         if (!user || user.userId !== userId) {
+//         //             socket.emit("appHistoryError", { message: "Unauthorized access" });
+//         //             return;
+//         //         }
+
+//         //         if (!histories || histories.length === 0) {
+//         //             socket.emit("appHistoryError", { message: "Invalid data" });
+//         //             return;
+//         //         }
+
+//         //         const today = new Date().toISOString().split("T")[0];
+
+//         //         // Find or create a record for today
+//         //         let userAppHistory = await UserAppHistory.findOne({
+//         //             user: user._id,
+//         //             date: today,
+//         //         });
+
+//         //         if (!userAppHistory) {
+//         //             // If no record exists for today, create a new one
+//         //             userAppHistory = new UserAppHistory({
+//         //                 user: user._id,
+//         //                 date: today,
+//         //                 appHistory: [],
+//         //             });
+//         //         }
+
+//         //         // Process the app history entries
+//         //         const updatePromises = histories.map(async (history) => {
+//         //             const { appName, startTime, endTime } = history;
+
+//         //             if (!appName || !startTime || !endTime) {
+//         //                 return Promise.reject("Invalid history data");
+//         //     // let { limit, page } = data;
+      // limit = limit || 10;
+      // let offset = (page - 1) * limit || 0;
+      let notifications = await Notification.findAll({
+        where: {},
+        order: [["createdAt", "DESC"]],
+        limit: limit|| 5,
+        // offset: parseInt(offset),
+      });        );
+
+//         //             if (existingAppHistory) {
+//         //                 // Update the end time of the existing entry
+//         //                 existingAppHistory.endTime = new Date(endTime);
+//         //             } else {
+//         //                 // Add a new entry to the app history array
+//         //                 userAppHistory.appHistory.push({
+//         //                     appName,
+//         //                     startTime: new Date(startTime),
+//         //                     endTime: new Date(endTime),
+//         //                 });
+//         //             }
+//         //         });
+
+//         //         await Promise.all(updatePromises);
+
+//         //         // Save the updated or new document
+//         //         await userAppHistory.save();
+
+//         //         socket.emit("appHistorySuccess", {
+//         //             message: "App history uploaded successfully",
+//         //         });
+
+//         //         // Notify admins with updated data
+//         //         emitUserDataToSpecificAdmins(user._id);
+//         //     } catch (error) {
+//         //         console.error("Error uploading app history:", error);
+//         //         socket.emit("appHistoryError", {
+//         //             message: "Failed to upload app history",
+//         //         });
+//         //     }
+//         // });
+
+//         // socket.on("getStatus", async () => {
+//         //     try {
+//         //         const userId = socket.data.user.userId;
+//         //         const user = await User.findOne({ userId });
+
+//         //         if (!user) {
+//         //             socket.emit("statusError", { message: "User not found" });
+//         //             return;
+//         //         }
+
+//         //         socket.emit("statusUpdate", {
+//         //             userId: user.userId,
+//         //             status: user.status,
+//         //         });
+//         //     } catch (error) {
+//         //         console.error("Error fetching user status:", error);
+//         //         socket.emit("statusError", { message: "Failed to fetch user status" });
+//         //     }
+//         // });
+
+//         // socket.on("getUserSettings", async () => {
+//         //     try {
+//         //         const userId = socket.data.user.userId;
+//         //         const user = await User.findOne({ userId });
+//         //         if (!user) {
+//         //             socket.emit("userSettingsError", { message: "User not found" });
+//         //             return;
+//         //         }
+//         //         const userSettings = await UserSettings.findOne({ user: user._id });
+//         //         if (userSettings) {
+//         //             socket.emit("userSettingsUpdated", {
+//         //                 message: "Current user settings",
+//         //                 userSettings,
+//         //             });
+//         //         } else {
+//         //             socket.emit("userSettingsError", {
+//         //                 message: "No settings found for this user",
+//         //             });
+//         //         }
+//         //     } catch (error) {
+//         //         console.error("Error fetching user settings:", error);
+//         //         socket.emit("userSettingsError", {
+//         //             message: "Failed to fetch user settings",
+//         //         });
+//         //     }
+//         // });
+//     });
+
+//     // httpServer.listen(Number(SOCKET_PORT), () => {
+//     //     console.log(`Socket is running on port ${SOCKET_PORT}`);
+//     // });
+// }
+
+export async function startServer(io, socket) {
+
+socket.on("login",async(data)=>{
+
+    const adminUser = await User.findOne({
+        where: { isAdmin: true }
+    });
+    await Notification.create({
+        userId: socket.data.user.userId,
+        message: "User Login successfully",
+        title: "User Login",
+    });
+
+  const findAdminCount = await Notification.count({
+    where: {// let { limit, page } = data;
+      // limit = limit || 10;
+      // let offset = (page - 1) * limit || 0;
+      let notifications = await Notification.findAll({
+        where: {},
+        order: [["createdAt", "DESC"]],
+        limit: limit|| 5,
+        // offset: parseInt(offset),
+      }); is_read: 0 }
+});
+
+socket.to(adminUser.socket_id).emit("login",{"demo":findAdminCount})
+socket.emit("login",data)    
+})
+
+
+    // Ensure events fire only once
+    socket.once("disconnect", async () => {
+        console.log(`User disconnected: ${socket.data.user.userId}`);
+        await Notification.create({
+            userId: socket.data.user.userId,
+            message: "User Logout successfully",
+            title: "User Logout",
+        });
+    });
+
+  
+}
+
+// export fun// let { limit, page } = data;
+      // limit = limit || 10;
+      // let offset = (page - 1) * limit || 0;
+      let notifications = await Notification.findAll({
+        where: {},
+        order: [["createdAt", "DESC"]],
+        limit: limit|| 5,
+        // offset: parseInt(offset),
+      });(!token) {
+//             return next(new Error("Authentication error"));
+//         }
+
+//         try {
+//             const decoded = verifyToken(token);
+//             socket.data.user = decoded;
+//             next();
+//         } catch (err) {
+//             next(new Error("Invalid or expired token"));
+//         }
+//     });
+
+//     io.on("connection", async (socket) => {
+//         try {
+//             console.log(`User connected: ${socket.data.user.userId}  \n token ->  ${socket.handshake.headers.authorization}`);
+//             const userId = socket.data.user.userId;
+//             const user = await User.findOne({ userId });
+//             console.log(user);
+
+
+//             if (!user) {
+//                 socket.emit("error", { message: "Unauthorized User" });
+
+//                 return;
+//             }
+//             const isAdmin = socket.data.user.isAdmin;
+//             socket.use((packet, next) => {
+//                 if (packet[0].startsWith("admin") && !isAdmin) {
+//                     socket.emit("error", { message: "Admin privileges required" });
+
+//                     return next(new Error("Admin privileges required"));
+//                 }
+//                 next();
+//             });
+//             socket.join(`${user._id}`);
+//         } catch (error) {
+//             console.log("error in connection ", error);
+//         }
+//         // Allow admins to listen to specific users
+//         socket.on("admin:listenToUser", (targetUserId) => {
+//             try {
+//                 if (socket.data.user.isAdmin) {
+//                     socket.join(`user_${targetUserId}`);
+//                     socket.emit("listeningSuccess", {
+//                         message: `Listening to user ${targetUserId.toString()}`,
+//                     });
+//                 } else {
+//                     0;
+//                     console.log("here");
+//                     socket.emit("listeningError", { message: "Unauthorized access" });
+//                 }
+//             } catch (error) {
+//                 socket.emit("listeningError", { message: `${error}` });
+//             }
+//         });
+//         socket.on("ping", async (data) => {
+//             socket.emit("pong");
+//         });
+//         socket.on("uploadImage", async (data) => {
+//             try {
+//                 const { images } = data;
+//                 const userId = socket.data.user.userId;
+//                 const user = await User.findOne({ userId });
+// let { limit, page } = data;
+      // limit = limit || 10;
+      // let offset = (page - 1) * limit || 0;
+      let notifications = await Notification.findAll({
+        where: {},
+        order: [["createdAt", "DESC"]],
+        limit: limit|| 5,
+        // offset: parseInt(offset),
+      });
+//                 if (!images || images.length === 0) {
+//                     console.log("Invalid data received from the client");
+//                     socket.emit("imageError", { message: "Invalid data" });
+//                     return;
+//                 }
+
+//                 if (!user || user.userId !== userId) {
+//                     socket.emit("imageError", { message: "Unauthorized access" });
+//                     return;
+//                 }
+
+//                 const uploadPromises = images.map(async (image) => {
+//                     const timestamp = new Date().toISOString();
+//                     const buffer = Buffer.from(image.data, "base64");
+
+//                     return new Promise((resolve, reject) => {
+//                         const uploadStream = bucket.openUploadStream(image.name, {
+//                             contentType: image.mimetype,
+//                             metadata: {
+//                                 user: user._id,
+//                                 timestamp,
+//                             },
+//                         });
+
+//                         uploadStream.on("error", (err) => reject(err));
+//                         uploadStream.on("finish", () => resolve({ filename: image.name }));
+
+//                         uploadStream.write(buffer);
+//                         uploadStream.end();
+//                     });
+//                 });
+
+//                 // Wait for all uploads to finish
+//                 const results = await Promise.all(uploadPromises);
+
+//                 // Emit success to the client
+//                 socket.emit("imageSuccess", {
+//                     message: "Images uploaded successfully",
+//                     results,
+//                 });
+
+//                 // Notify admins
+//                 emitUserDataToSpecificAdmins(user._id);
+//             } catch (error) {
+//                 console.error("Error uploading images:", error);
+//                 socket.emit("imageError", { message: "Failed to upload images" });
+//             }
+//         });
+
+//         socket.on("uploadHistory", async (data) => {
+//             try {
+//                 var { url, title, visitTime } = data;
+//                 const userId = socket.data.user.userId;
+
+//                 const user = await User.findOne({ userId });
+//                 if (!user || user.userId !== userId) {
+//                     socket.emit("historyError", { message: "Unauthorized access" });
+//                     return;
+//                 }
+
+//                 if (!url || !title || !visitTime) {
+//                     socket.emit("historyError", { message: "Invalid data" });
+//                     return;
+//                 }
+
+//                 const today = new Date().toISOString().split("T")[0];
+
+//                 let userHistory = await UserHistory.findOne({
+//                     user: user._id,
+//                     date: today,
+//                 });
+//                 if (!Date.parse(visitTime)) {
+//                     visitTime = Date.now();
+//                 }
+//                 if (!userHistory) {
+//                     userHistory = new UserHistory({
+//                         user: user._id,
+//                         date: today,
+//                         history: [{ url, title, visitTime }],
+//                     });
+//                     await userHistory.save();
+//                 } else {
+//                     userHistory.history.push({ url, title, visitTime });
+//                     await userHistory.save();
+//                 }
+
+//                 socket.emit("historySuccess", {
+//                     message: "History uploaded successfully",
+//                 });
+//                 emitUserDataToSpecificAdmins(user._id);
+//             } catch (error) {
+//                 console.error("Error uploading history:", error);
+//                 socket.emit("historyError", { message: "Failed to upload history" });
+//             }
+//         });
+
+//         socket.on("uploadAppHistory", async (data) => {
+//             try {
+//                 const { histories } = data;
+//                 const userId = socket.data.user.userId;
+
+//                 const user = await User.findOne({ userId });
+//                 if (!user || user.userId !== userId) {
+//                     socket.emit("appHistoryError", { message: "Unauthorized access" });
+//                     return;
+//                 }
+
+//                 if (!histories || histories.length === 0) {
+//                     socket.emit("appHistoryError", { message: "Invalid data" });
+//                     return;
+//                 }
+
+//                 const today = new Date().toISOString().split("T")[0];
+
+//                 // Find or create a record for today
+//                 let userAppHistory = await UserAppHistory.findOne({
+//                     user: user._id,
+//                     date: today,
+//                 });
+
+//                 if (!userAppHistory) {
+//                     // If no record exists for today, create a new one
+//                     userAppHistory = new UserAppHistory({
+//                         user: user._id,
+//                         date: today,
+//                         appHistory: [],
+//                     });
+//                 }
+
+//                 // Process the app history entries
+//                 const updatePromises = histories.map(async (history) => {
+//                     const { appName, startTime, endTime } = history;
+
+//                     if (!appName || !startTime || !endTime) {
+//                         return Promise.reject("Invalid history data");
+//                     }
+
+//                     // Check if an app entry with the same app name and start time already exists for today
+//                     const existingAppHistory = userAppHistory.appHistory.find(
+//                         (appEntry) =>
+//                             appEntry.appName === appName &&
+//                             new Date(appEntry.startTime).getTime() ===
+//                             new Date(startTime).getTime()
+//                     );
+
+//                     if (existingAppHistory) {
+//                         // Update the end time of the existing entry
+//                         existingAppHistory.endTime = new Date(endTime);
+//                     } else {
+//                         // Add a new entry to the app history array
+//                         userAppHistory.appHistory.push({
+//                             appName,
+//                             startTime: new Date(startTime),
+//                             endTime: new Date(endTime),
+//                         });
+//                     }
+//                 });
+
+//                 await Promise.all(updatePromises);
+
+//                 // Save the updated or new document
+//                 await userAppHistory.save();
+
+//                 socket.emit("appHistorySuccess", {
+//                     message: "App history uploaded successfully",
+//                 });
+
+//                 // Notify admins with updated data
+//                 emitUserDataToSpecificAdmins(user._id);
+//             } catch (error) {
+//                 console.error("Error uploading app history:", error);
+//                 socket.emit("appHistoryError", {
+//                     message: "Failed to upload app history",
+//                 });
+//             }
+//         });
+
+//         socket.on("getStatus", async () => {
+//             try {
+//                 const userId = socket.data.user.userId;
+//                 const user = await User.findOne({ userId });
+
+//                 if (!user) {
+//                     socket.emit("statusError", { message: "User not found" });
+//                     return;
+//                 }
+
+//                 socket.emit("statusUpdate", {
+//                     userId: user.userId,
+//                     status: user.status,
+//                 });
+//             } catch (error) {
+//                 console.error("Error fetching user status:", error);
+//                 socket.emit("statusError", { message: "Failed to fetch user status" });
+//             }
+//         });
+
+//         socket.on("getUserSettings", async () => {
+//             try {
+//                 const userId = socket.data.user.userId;
+//                 const user = await User.findOne({ userId });
+//                 if (!user) {
+//                     socket.emit("userSettingsError", { message: "User not found" });
+//                     return;
+//                 }
+//                 const userSettings = await UserSettings.findOne({ user: user._id });
+//                 if (userSettings) {
+//                     socket.emit("userSettingsUpdated", {
+//                         message: "Current user settings",
+//                         userSettings,
+//                     });
+//                 } else {
+//                     socket.emit("userSettingsError", {
+//                         message: "No settings found for this user",
+//                     });
+//                 }
+//             } catch (error) {
+//                 console.error("Error fetching user settings:", error);
+//                 socket.emit("userSettingsError", {
+//                     message: "Failed to fetch user settings",
+//                 });
+//             }
+//         });
+
+//         socket.on("disconnect", () => {
+//             console.log(`User disconnected: ${socket.data.user.userId}  \n token ->  ${socket.handshake.headers.authorization}`);
+//         });
+//     });
+
+//     httpServer.listen(Number(SOCKET_PORT), () => {
+//         console.log(`Socket is running on port ${SOCKET_PORT}`);
+//     });
+// }
+
+export { emitUserDataToSpecificAdmins };
+
+
+
+///// let { limit, page } = data;
+      // limit = limit || 10;
+      // let offset = (page - 1) * limit || 0;
+      let notifications = await Notification.findAll({
+        where: {},
+        order: [["createdAt", "DESC"]],
+        limit: limit|| 5,
+        // offset: parseInt(offset),
+      });
