@@ -256,7 +256,31 @@ GROUP BY
 
       let updatedJson = commonfuncitons.createResponse2(results);
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", updatedJson);
+      if (searchParam) {
+        const regex = new RegExp(searchParam, "i");
+        updatedJson = updatedJson.filter((item) => regex.test(item.user.fullname));
+      }
+
+      if (tab) {
+        if (tab.toLowerCase() === "working") {
+          updatedJson = updatedJson.filter((item) => item.logged_out_time === null && item.user.currentStatus === true);
+        } else if (tab.toLowerCase() === "absent") {
+          updatedJson = updatedJson.filter((item) => item.user.currentStatus === false);
+        } else if (tab.toLowerCase() === "late") {
+          updatedJson = updatedJson.filter((item) => item.late_coming === true);
+        } else if (tab.toLowerCase() === "slacking") {
+          updatedJson = updatedJson.filter((item) => item.user.is_slacking === true);
+        } else if (tab.toLowerCase() === "productive") {
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.user.productiveTime != 0 && item.user.nonProductiveTime != 0);
+        } else if (tab.toLowerCase() === "nonProductive") {
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.user.nonProductiveTime != 0 && item.user.productiveTime != 0);
+        }
+      }
+
+      const count = updatedJson.length;
+
+
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: updatedJson });
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
