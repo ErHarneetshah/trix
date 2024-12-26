@@ -92,17 +92,17 @@ class exportReportController {
         }
       }
 
-      const users = await GenerateReportHelper.getUserInCompany(req.user.company_id);
-      let userIds = [];
-      for (const user of users.data) {
-        if (user.id) {
-          userIds.push(user.id);
-        }
-      }
+      // const users = await GenerateReportHelper.getUserInCompany(req.user.company_id);
+      // let userIds = [];
+      // for (const user of users.data) {
+      //   if (user.id) {
+      //     userIds.push(user.id);
+      //   }
+      // }
 
-      let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
-      let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
-      let TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
+      // let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
+      // let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
+      // let TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
 
       // let finalJson = await GenerateReportHelper.combineJson(users, ProdWebCount)
 
