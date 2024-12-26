@@ -118,7 +118,7 @@ export default {
   getDateRange: async (option, customStart, customEnd) => {
     const today = moment();
     let startDate, endDate;
-  
+
     option = String(option);
   
     switch (option) {
