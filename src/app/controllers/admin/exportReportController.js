@@ -1,4 +1,5 @@
 import { Op, Sequelize, QueryTypes, literal, fn, col } from "sequelize";
+import fs from "fs";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import exportReports from "../../../database/models/exportReportsModel.js";
@@ -10,6 +11,9 @@ import { UserHistory } from "../../../database/models/UserHistory.js";
 import exportHistories from "../../../database/models/exportHistoryModel.js";
 import department from "../../../database/models/departmentModel.js";
 import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.js";
+import { endOfDay } from "date-fns";
+import moment from "moment";
+import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
@@ -26,16 +30,30 @@ class exportReportController {
   getExportHistoryReport = async (req, res) => {
     try {
       // ___________---------- Search, Limit, Pagination ----------_______________
-      let { limit, page} = req.query;
+      let { searchParam, limit, page, date } = req.query;
       limit = parseInt(limit) || 10;
+      let searchable = ["reportName"];
+      let where = await helper.searchCondition(searchParam, searchable);
+      where.company_id = req.user.company_id;
       let offset = (page - 1) * limit || 0;
+      let startOfDay, endOfDay;
+
+      if (date) {
+        startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+      } else {
+        startOfDay = moment.tz(moment(), "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+      }
+      where.createdAt = { [Op.between]: [startOfDay, endOfDay] };
       // ___________---------- Search, Limit, Pagination ----------_______________
 
       const getStatus = await exportHistories.findAndCountAll({
-        where: { company_id: req.user.company_id },
+        where: where,
         limit: limit,
         offset: offset,
-        attributes: ["reportName", "reportExtension", "periodFrom", "periodTo", "filePath"],
+        attributes: ["reportName", "reportExtension", "periodFrom", "periodTo", "filePath", [Sequelize.fn("DATE", Sequelize.col("createdAt")), "createdAt"]],
+        order: [["createdAt", "DESC"]],
       });
 
       if (getStatus.count === 0) {
@@ -82,7 +100,7 @@ class exportReportController {
 
       let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
       let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
-      let TimeLogsDetails = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
+      let TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
 
       // let finalJson = await GenerateReportHelper.combineJson(users, ProdWebCount)
 
@@ -101,24 +119,109 @@ class exportReportController {
         "Most Used Productive App",
       ];
 
-      // await GenerateReportHelper.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Productive Report", req.user.company_id, data, headers);
+      // return helper.success(res, variables.Success, "Productivity Report Generated Successfully", {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis, TimeLogs: TimeLogsDetails});
 
-      return helper.success(res, variables.Success, "User Updated Successfully", ProdAppAnalysis);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive Report", req.user.company_id, data, headers);
+
+      if (result.status) {
+        return helper.success(res, variables.Success, "Productivity Report Generated Successfully", data);
+        // return helper.success(res, variables.Success, "Productivity Report Generated Successfully", {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis});
+
+      } else {
+        return helper.success(res, variables.Success, "Productivity Report Generation Failed");
+      }
     } catch (error) {
-      // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
+  // getAttendanceReport = async (req, res) => {
+  //   try {
+  //     let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
+  //     if (!format) format = "xls";
+  //     if (format && !["xls", "pdf"].includes(format)) {
+  //       return helper.failed(res, variables.BadRequest, 'Invalid format. Only xls or pdf are allowed');
+  //     }
+  //     if (!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
+
+  //     const validOptions = [1, 2, 3, 4];
+
+  //     if (!definedPeriod || !validOptions.includes(definedPeriod)) {
+  //       return helper.failed(res, variables.BadRequest, "Please select a valid date option");
+  //     }
+
+  //     let date;
+
+  //     if (definedPeriod) {
+  //       if (definedPeriod == 4) {
+  //         if (!fromDate || !toDate) {
+  //           return helper.failed(res, variables.BadRequest, "Please select start and end date");
+  //         }
+  //         date = await helper.getDateRange(definedPeriod, fromDate, toDate);
+  //       } else {
+  //         date = await helper.getDateRange(definedPeriod);
+  //       }
+  //     }
+
+  //     // Fetch attendance report
+  //     const attendanceReport = await TimeLog.sequelize.query(
+  //       `SELECT
+  //         u.fullname AS employee_name,
+  //         team.name AS team,
+  //         timelog.date AS date,
+  //         DAYNAME(timelog.date) AS day,
+  //         CASE
+  //           WHEN timelog.logged_in_time IS NOT NULL THEN 'Present'
+  //           ELSE 'Absent'
+  //         END AS attendance_status,
+  //         shifts.start_time AS shift_time_in,
+  //         timelog.logged_in_time AS time_in,
+  //         shifts.end_time AS shift_time_out,
+  //         timelog.logged_out_time AS time_out
+  //       FROM timelogs AS timelog
+  //       LEFT JOIN users AS u ON timelog.user_id = u.id
+  //       JOIN teams AS team ON u.teamId = team.id
+  //       JOIN shifts AS shifts ON timelog.shift_id = shifts.id
+  //       WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
+  //       ${teamId ? "AND team.id = :teamId" : ""}
+  //       ${userId ? "AND u.id = :userId" : ""}
+  //       ORDER BY timelog.date DESC
+  //       `,
+  //       {
+  //         replacements: {
+  //           company_id: req.user.company_id,
+  //           startDate: date.startDate,
+  //           endDate: date.endDate,
+  //           teamId,
+  //           userId,
+  //           limit: limit || 10,
+  //           offset: offset || 0,
+  //         },
+  //         type: QueryTypes.SELECT,
+  //       }
+  //     );
+
+  //     let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Shift Time Out", "Time Out"];
+
+  //     const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
+  //     if (result.status) {
+  //       return helper.success(res, variables.Success, "Attendance Report Generated Successfully");
+  //     } else {
+  //       return helper.success(res, variables.Success, "Attendance Report Generation Failed");
+  //     }
+  //   } catch (error) {
+  //     return helper.failed(res, variables.BadRequest, error.message);
+  //   }
+  // };
+
   getAttendanceReport = async (req, res) => {
     try {
-      let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
+      const { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
+        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
       }
-      // if(!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
-      let startDate, endDate;
+      if (!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
 
       const validOptions = [1, 2, 3, 4];
 
@@ -139,35 +242,19 @@ class exportReportController {
         }
       }
 
-      // Fetch attendance report
-      const attendanceReport = await TimeLog.sequelize.query(
-        `SELECT 
-          u.fullname AS employee_name, 
-          team.name AS team, 
-          timelog.date AS date, 
-          DAYNAME(timelog.date) AS day, 
-          CASE 
-            WHEN timelog.logged_in_time IS NOT NULL THEN 'Present' 
-            ELSE 'Absent' 
-          END AS attendance_status, 
-          shifts.start_time AS shift_time_in, 
-          timelog.logged_in_time AS time_in, 
-          shifts.end_time AS shift_time_out, 
-          timelog.logged_out_time AS time_out
-        FROM timelogs AS timelog
-        LEFT JOIN users AS u ON timelog.user_id = u.id
-        JOIN teams AS team ON u.teamId = team.id
-        JOIN shifts AS shifts ON timelog.shift_id = shifts.id
-        WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
+      const attendanceReport = [];
+      const presentUsersReport = await TimeLog.sequelize.query(
+        `SELECT u.fullname AS employee_name, team.name AS team, timelog.date AS date, DAYNAME(timelog.date) AS day, CASE WHEN timelog.logged_in_time IS NOT NULL THEN 'Present' ELSE 'Absent' END AS attendance_status, shifts.start_time AS shift_time_in, timelog.logged_in_time AS time_in, shifts.end_time AS shift_time_out, timelog.logged_out_time AS time_out
+        FROM timelogs AS timelog LEFT JOIN users AS u ON timelog.user_id = u.id JOIN teams AS team ON u.teamId = team.id JOIN shifts AS shifts ON timelog.shift_id = shifts.id WHERE timelog.date BETWEEN :startDate AND :endOfDay AND u.company_id = :company_id AND u.isAdmin = 0
         ${teamId ? "AND team.id = :teamId" : ""}
         ${userId ? "AND u.id = :userId" : ""}
-        ORDER BY timelog.date DESC
-        `,
+        AND u.createdAt <= :endOfDay
+        ORDER BY timelog.date DESC`,
         {
           replacements: {
             company_id: req.user.company_id,
             startDate: date.startDate,
-            endDate: date.endDate,
+            endOfDay: date.endDate,
             teamId,
             userId,
             limit: limit || 10,
@@ -177,10 +264,65 @@ class exportReportController {
         }
       );
 
-      let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Shift Time Out", "Time Out"];
+      const presentUsers = await TimeLog.findAll({
+        attributes: ["user_id"],
+        include: [
+          {
+            model: User,
+            as: "user",
+            attributes: [],
+            where: {
+              isAdmin: 0,
+            },
+          },
+        ],
+        where: {
+          company_id: req.user.company_id,
+          date: {
+            [Op.between]: [date.startDate, date.endDate],
+          },
+        },
+        group: ["user_id"],
+      });
 
-      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
-      // return helper.success(res, variables.Success, attendanceReport);
+      const absentUsersReport = await TimeLog.sequelize.query(
+        `SELECT u.fullname AS employee_name, team.name AS team, 'N/A' AS date, 'N/A' AS day, 'Absent' AS attendance_status, shifts.start_time AS shift_time_in, 'N/A' AS time_in, shifts.end_time AS shift_time_out, 'N/A' AS time_out
+         FROM users AS u
+    
+         LEFT JOIN teams AS team
+         ON u.teamId = team.id
+        LEFT JOIN shifts AS shifts
+         ON team.shiftId = shifts.id
+         WHERE u.company_id = :company_id
+         AND u.isAdmin = 0
+         ${teamId ? "AND team.id = :teamId" : ""}
+        ${userId ? "AND u.id = :userId" : ""}
+        AND u.createdAt <= :endOfDay
+         AND u.id NOT IN (:presentUserIds)
+         ORDER BY u.fullname ASC`,
+        {
+          replacements: {
+            company_id: req.user.company_id,
+            endOfDay: date.endDate,
+            teamId,
+            userId,
+            presentUserIds: presentUsers.length > 0 ? presentUsers.map((user) => user.user_id) : [-1],
+          },
+          type: QueryTypes.SELECT,
+        }
+      );
+
+      attendanceReport.push(...absentUsersReport);
+      attendanceReport.push(...presentUsersReport);
+
+      let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Time in", "Shift Time Out", "Time Out"];
+
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Attendance Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Attendance Report Generation Failed");
+      }
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -191,7 +333,6 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
         return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
 
@@ -260,8 +401,12 @@ class exportReportController {
 
       let headers = ["Name", "Department", "Application", "Productive/Non Producitve"];
 
-      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application Usage Report", req.user.company_id, applicationUsage, headers);
-      // return helper.success(res, variables.Success, "User Updated Successfully", applicationUsage);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application Usage Report", req.user.company_id, applicationUsage, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Application Usage Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Application Usage Report Generation Failed");
+      }
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -275,13 +420,24 @@ class exportReportController {
       if (format && !["xls", "pdf"].includes(format)) {
         return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
-      const dateRange = await helper.getDateRange(definedPeriod, fromDate, toDate);
-      const allDepartments = await department.findAll({
-        where: { company_id: company_id, status: 1 },
-      });
 
-      let startDate = dateRange.startDate;
-      let endDate = dateRange.endDate;
+      // if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
+
+      let dateRange;
+
+      if (definedPeriod) {
+        if (definedPeriod == 4) {
+          if (!fromDate || !toDate) {
+            return helper.failed(res, variables.BadRequest, "Please select start and end date");
+          }
+          dateRange = await helper.getDateRange(definedPeriod, fromDate, toDate);
+        } else {
+          dateRange = await helper.getDateRange(definedPeriod);
+        }
+      }
+      const allDepartments = await department.findAll({
+        where: { company_id: req.user.company_id, status: 1 },
+      });
 
       const performanceArray = [];
       for (const element of allDepartments) {
@@ -327,9 +483,21 @@ class exportReportController {
         "Most Productive App",
       ];
 
-      await GenerateReportHelper.downloadFileDynamically(res, dateRange.startDate, dateRange.endDate, format, "Department Performance Report", req.user.company_id, performanceArray, headers);
-
-      // return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
+      const result = await GenerateReportHelper.downloadFileDynamically(
+        res,
+        dateRange.startDate,
+        dateRange.endDate,
+        format,
+        "Department Performance Report",
+        req.user.company_id,
+        performanceArray,
+        headers
+      );
+      if (result.status) {
+        return helper.success(res, variables.Success, "Department Performance Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Department Performance Report Generation Failed");
+      }
     } catch (error) {
       console.log(`departmentPerformanceReport ${error.message}`);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -389,9 +557,12 @@ class exportReportController {
 
       let headers = ["Name", "Department", "Url", "Time"];
 
-      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
-
-      // return res.status(200).json({ status: "success", data: unauthorizedAccessReport });
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Unauthorized Web Report Generated Successfully", unauthorizedAccessReport);
+      } else {
+        return helper.success(res, variables.Success, "Unauthorized Web Report Generation Failed");
+      }
     } catch (error) {
       console.error("Error fetching unauthorized access report:", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -462,7 +633,7 @@ class exportReportController {
         return helper.failed(res, variables.BadRequest, date.message);
       }
 
-      let browserHistroy;
+      let browserHistory;
 
       if (teamId && userId) {
         const team = await User.findOne({
@@ -475,15 +646,38 @@ class exportReportController {
         if (!team) {
           return helper.failed(res, variables.BadRequest, "User not found!!!");
         }
-        browserHistroy = await UserHistory.findAll({
-          where: {
-            userId: userId,
-            createdAt: {
-              [Op.between]: [date.startDate, date.endDate],
+        browserHistory = await UserHistory.sequelize.query(
+          `
+            SELECT 
+    uh.website_name, 
+    d.name AS departmentName, 
+    uh.url, 
+    IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
+    uh.visitTime
+FROM 
+    user_histories AS uh
+LEFT JOIN 
+    users AS u ON uh.userId = u.id
+LEFT JOIN 
+    departments AS d ON u.departmentId = d.id
+LEFT JOIN 
+    productive_websites AS pw 
+    ON uh.website_name = pw.website_name AND pw.company_id = :companyId
+WHERE 
+    uh.userId = :userId
+    AND uh.createdAt BETWEEN :startDate AND :endDate
+
+          `,
+          {
+            type: QueryTypes.SELECT,
+            replacements: {
+              userId,         // Array of user IDs
+              startDate: date.startDate,  // Start date for filtering
+              endDate: date.endDate,      // End date for filtering
             },
-          },
-          attributes: ["id", "userId", "company_id", "website_name", "url", "title", "visitTime"],
-        });
+          }
+        );
+        
       } else {
         const team = await User.findAll({
           where: {
@@ -496,23 +690,48 @@ class exportReportController {
           return helper.failed(res, variables.BadRequest, "User not found!!!");
         }
         const userIds = team.map((user) => user.id);
+        browserHistory = await UserHistory.sequelize.query(
+          `
+            SELECT 
+    uh.website_name, 
+    d.name AS departmentName, 
+    uh.url, 
+    IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
+    uh.visitTime
+FROM 
+    user_histories AS uh
+LEFT JOIN 
+    users AS u ON uh.userId = u.id
+LEFT JOIN 
+    departments AS d ON u.departmentId = d.id
+LEFT JOIN 
+    productive_websites AS pw 
+    ON uh.website_name = pw.website_name AND pw.company_id = :companyId
+WHERE 
+    uh.userId IN (:userIds)
+    AND uh.createdAt BETWEEN :startDate AND :endDate
 
-        browserHistroy = await UserHistory.findAll({
-          where: {
-            userId: {
-              [Op.in]: userIds,
+          `,
+          {
+            type: QueryTypes.SELECT,
+            replacements: {
+              companyId: req.user.company_id,
+              userIds,         // Array of user IDs
+              startDate: date.startDate,  // Start date for filtering
+              endDate: date.endDate,      // End date for filtering
             },
-            createdAt: {
-              [Op.between]: [date.startDate, date.endDate],
-            },
-          },
-          attributes: ["id", "userId", "company_id", "website_name", "url", "title", "visitTime"],
-        });
+          }
+        );
+        
       }
-      let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Time Spent"];
+      let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Visit Time"];
 
-      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, data.format, "Browser History Report", req.user.company_id, browserHistroy, headers);
-      // return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistory, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Browser History Report Generated Successfully", browserHistory);
+      } else {
+        return helper.success(res, variables.Success, "Browser History Report Generation Failed");
+      }
     } catch (error) {
       console.log("Error while generating browser history report:", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -520,12 +739,23 @@ class exportReportController {
   };
 
   downloadExportReport = async (req, res) => {
-    let { filePath } = req.query;
-    return res.download(filePath, (err) => {
+    let { filePath } = req.body;
+
+    if (typeof filePath !== "string" || !filePath.trim()) {
+      return helper.failed(res, variables.BadRequest, "Invalid file path provided");
+    }
+    fs.access(filePath, fs.constants.F_OK, (err) => {
       if (err) {
-        console.error("Error sending XLS file:", err);
-        return helper.failed(res, variables.BadRequest, "File download failed");
+        console.error("File not found:", err);
+        return helper.failed(res, variables.BadRequest, "File not found");
       }
+
+      return res.download(filePath, (err) => {
+        if (err) {
+          console.error("Error sending XLS file:", err);
+          return helper.failed(res, variables.BadRequest, "File download failed");
+        }
+      });
     });
   };
 }
