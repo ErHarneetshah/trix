@@ -13,6 +13,7 @@ import department from "../../../database/models/departmentModel.js";
 import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.js";
 import { endOfDay } from "date-fns";
 import moment from "moment";
+import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
@@ -99,7 +100,7 @@ class exportReportController {
 
       let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
       let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
-      let TimeLogsDetails = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
+      let TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
 
       // let finalJson = await GenerateReportHelper.combineJson(users, ProdWebCount)
 
@@ -118,10 +119,14 @@ class exportReportController {
         "Most Used Productive App",
       ];
 
+      // return helper.success(res, variables.Success, "Productivity Report Generated Successfully", {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis, TimeLogs: TimeLogsDetails});
+
       const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive Report", req.user.company_id, data, headers);
 
       if (result.status) {
         return helper.success(res, variables.Success, "Productivity Report Generated Successfully", data);
+        // return helper.success(res, variables.Success, "Productivity Report Generated Successfully", {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis});
+
       } else {
         return helper.success(res, variables.Success, "Productivity Report Generation Failed");
       }
@@ -641,29 +646,27 @@ class exportReportController {
         if (!team) {
           return helper.failed(res, variables.BadRequest, "User not found!!!");
         }
-        // browserHistroy = await UserHistory.findAll({
-        //   where: {
-        //     userId: userId,
-        //     createdAt: {
-        //       [Op.between]: [date.startDate, date.endDate],
-        //     },
-        //   },
-        //   attributes: ["id", "userId", "company_id", "website_name", "url", "title", "visitTime"],
-        // });
         browserHistory = await UserHistory.sequelize.query(
           `
             SELECT 
-              uh.id, 
-              uh.userId, 
-              uh.company_id, 
-              uh.website_name, 
-              uh.url, 
-              uh.title, 
-              uh.visitTime
-            FROM user_histories AS uh
-            WHERE 
-              uh.userId = :userId
-              AND uh.createdAt BETWEEN :startDate AND :endDate
+    uh.website_name, 
+    d.name AS departmentName, 
+    uh.url, 
+    IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
+    uh.visitTime
+FROM 
+    user_histories AS uh
+LEFT JOIN 
+    users AS u ON uh.userId = u.id
+LEFT JOIN 
+    departments AS d ON u.departmentId = d.id
+LEFT JOIN 
+    productive_websites AS pw 
+    ON uh.website_name = pw.website_name AND pw.company_id = :companyId
+WHERE 
+    uh.userId = :userId
+    AND uh.createdAt BETWEEN :startDate AND :endDate
+
           `,
           {
             type: QueryTypes.SELECT,
@@ -687,36 +690,32 @@ class exportReportController {
           return helper.failed(res, variables.BadRequest, "User not found!!!");
         }
         const userIds = team.map((user) => user.id);
-
-        // browserHistroy = await UserHistory.findAll({
-        //   where: {
-        //     userId: {
-        //       [Op.in]: userIds,
-        //     },
-        //     createdAt: {
-        //       [Op.between]: [date.startDate, date.endDate],
-        //     },
-        //   },
-        //   attributes: ["id", "userId", "company_id", "website_name", "url", "title", "visitTime"],
-        // });
         browserHistory = await UserHistory.sequelize.query(
           `
             SELECT 
-              uh.id, 
-              uh.userId, 
-              uh.company_id, 
-              uh.website_name, 
-              uh.url, 
-              uh.title, 
-              uh.visitTime
-            FROM user_histories AS uh
-            WHERE 
-              uh.userId IN (:userIds)
-              AND uh.createdAt BETWEEN :startDate AND :endDate
+    uh.website_name, 
+    d.name AS departmentName, 
+    uh.url, 
+    IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
+    uh.visitTime
+FROM 
+    user_histories AS uh
+LEFT JOIN 
+    users AS u ON uh.userId = u.id
+LEFT JOIN 
+    departments AS d ON u.departmentId = d.id
+LEFT JOIN 
+    productive_websites AS pw 
+    ON uh.website_name = pw.website_name AND pw.company_id = :companyId
+WHERE 
+    uh.userId IN (:userIds)
+    AND uh.createdAt BETWEEN :startDate AND :endDate
+
           `,
           {
             type: QueryTypes.SELECT,
             replacements: {
+              companyId: req.user.company_id,
               userIds,         // Array of user IDs
               startDate: date.startDate,  // Start date for filtering
               endDate: date.endDate,      // End date for filtering
@@ -725,7 +724,7 @@ class exportReportController {
         );
         
       }
-      let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Time Spent"];
+      let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Visit Time"];
 
       const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistory, headers);
       if (result.status) {

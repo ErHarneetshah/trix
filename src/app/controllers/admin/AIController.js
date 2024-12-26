@@ -128,9 +128,12 @@ async function getOpenAIResponse(userId, question, date) {
         { role: "user", content: prompt },
       ],
     });
-
+    console.log(response.choices[0]);
+    
     return response.choices[0].message.content;
   } catch (error) {
+    console.log(error);
+    
     console.error("Error calling OpenAI:", message.error);
   }
 }

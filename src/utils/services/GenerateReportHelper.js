@@ -728,31 +728,28 @@ export default {
 
   getTimeLogDetails: async (userIds, startOfDay, endOfDay) => {
     const query = `WITH RECURSIVE DateRange AS (
-                            SELECT :startDate AS record_date
+                            SELECT :startOfDay AS record_date
                             UNION ALL
                             SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
                             FROM DateRange
-                            WHERE record_date < :endDate
+                            WHERE record_date < :endOfDay
                         )
                         SELECT 
                             u.id AS userId,
                             tl.id AS timelogId,
-                            tl.time_spent,
-                            tl.is_active,
-                            tl.timestamp,
-                            dr.record_date  -- Include all dates from DateRange
+                            dr.record_date 
                         FROM 
                             users u
                         CROSS JOIN 
                             DateRange dr
                         LEFT JOIN 
                             timelogs tl 
-                            ON u.id = tl.userId 
-                            AND DATE(tl.timestamp) = dr.record_date  -- Match specific date
+                            ON u.id = tl.user_id 
+                            AND DATE(tl.createdAt) = dr.record_date
                         WHERE 
                             u.id IN (:userIds)
                         ORDER BY 
-                            u.id, dr.record_date, tl.timestamp;  -- Order by user, date, and timelog timestamp
+                            u.id, dr.record_date, tl.createdAt;
                             `;
 
     const results = await sequelize.query(query, {
