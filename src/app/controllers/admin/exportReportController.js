@@ -34,13 +34,13 @@ class exportReportController {
     try {
       const getStatus = await exportHistories.findAll({
         where: { company_id: req.user.company_id },
-        attributes: ["reportName","reportExtension","periodFrom","periodTo"],
+        attributes: ["reportName", "reportExtension", "periodFrom", "periodTo"],
       });
-  
+
       if (getStatus.count === 0) {
         return helper.success(res, variables.Success, "No Export Histories Found.", getStatus);
       }
-  
+
       return helper.success(res, variables.Success, "Reports Data Retrieved Successfully", getStatus);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
@@ -117,7 +117,7 @@ class exportReportController {
         "Average Productive %",
         "Most Used Productive App"
       ]
-      
+
       await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Productive Report", req.user.company_id, data, headers);
 
       return helper.success(res, variables.Success, "User Updated Successfully", data);
@@ -341,44 +341,44 @@ class exportReportController {
     try {
       const timestamp = new Date().toISOString().replace(/[-:.]/g, ''); // e.g., 20231224T123456
       const fileName = `${reportName}_${company_id}_${timestamp}.${format}`;
-  
+
       const __dirname = path.dirname(new URL(import.meta.url).pathname);
       const directoryPath = path.resolve(__dirname, '../../../storage/files');
       const filePath = path.join(directoryPath, fileName);
-  
+
       // Ensure the directory exists
       if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
       }
-      const keys = Object.keys(reportData[0]); 
+      const keys = Object.keys(reportData[0]);
       if (format === 'xls') {
         // Generate XLS file (simple CSV format for demo purposes)
         const csvContent = [
           headers.join(','), // Use headers provided as column names
           ...reportData.map(row => keys.map((key, index) => row[key] || '').join(',')) // Map data to headers
-         ].join('\n');
-  
+        ].join('\n');
+
 
         fs.writeFileSync(filePath, csvContent);
         console.log("XLS file written successfully:", filePath);
-  
+
         const newAppInfo = await exportHistories.create({ reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
-  
+
         res.setHeader(
           "Content-Type",
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         );
         res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
-  
+
         return res.download(filePath, fileName, (err) => {
           if (err) {
             console.error("Error sending XLS file:", err);
-            return helper.failed(res, variables.BadRequest,"File download failed");
+            return helper.failed(res, variables.BadRequest, "File download failed");
           }
           console.log("XLS file downloaded successfully.");
         });
       }
-  
+
       if (format === 'pdf') {
         // Generate PDF file
         const doc = new PDFDocument({ compress: false });
@@ -391,43 +391,42 @@ class exportReportController {
         doc.fontSize(12).text(headerText, { underline: true }).moveDown();
 
         reportData.forEach((row, index) => {
-         const rowText = keys.map((key, idx) => row[key] || '').join(' | '); // Dynamically map data to headers
-         doc.fontSize(10).text(rowText);
+          const rowText = keys.map((key, idx) => row[key] || '').join(' | '); // Dynamically map data to headers
+          doc.fontSize(10).text(rowText);
         });
 
         doc.end();
 
 
-        const newAppInfo = await exportHistories.create({ reportName: reportName,company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
+        const newAppInfo = await exportHistories.create({ reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
 
         fileStream.on('finish', () => {
-         res.download(filePath, fileName, (err) => {
+          res.download(filePath, fileName, (err) => {
             if (err) {
-             console.error("Error sending PDF file:", err);
-             return helper.failed(res, variables.BadRequest, "File download failed");
+              console.error("Error sending PDF file:", err);
+              return helper.failed(res, variables.BadRequest, "File download failed");
             }
             console.log("PDF file downloaded successfully.");
-         });
+          });
         });
 
         fileStream.on('error', (err) => {
-         console.error("Error writing PDF file:", err);
-         return helper.failed(res, variables.BadRequest, "File generation failed");
+          console.error("Error writing PDF file:", err);
+          return helper.failed(res, variables.BadRequest, "File generation failed");
         });
-     } else {
-      return helper.failed(res, variables.BadRequest, "Unsupported File Request");
-     }
+      } else {
+        return helper.failed(res, variables.BadRequest, "Unsupported File Request");
+      }
     } catch (error) {
-     console.error("Error generating file:", error);
-     return helper.failed(res, variables.BadRequest, error.message);
+      console.error("Error generating file:", error);
+      return helper.failed(res, variables.BadRequest, error.message);
     }
- }
-  
+  }
+
 
   getAttendanceReport = async (req, res) => {
     try {
       const { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
-      console.log("test", req.query);
       if (!format) format = "xls";
       if (format && !['xls', 'pdf'].includes(format)) {
         throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
@@ -466,31 +465,14 @@ class exportReportController {
       } else {
         return helper.failed(res, variables.ValidationError, "Invalid definedPeriod provided.");
       }
-
+      const attendanceReport = [];
       // Fetch attendance report
-      const attendanceReport = await TimeLog.sequelize.query(
-        `SELECT 
-          u.fullname AS employee_name, 
-          team.name AS team, 
-          timelog.date AS date, 
-          DAYNAME(timelog.date) AS day, 
-          CASE 
-            WHEN timelog.logged_in_time IS NOT NULL THEN 'Present' 
-            ELSE 'Absent' 
-          END AS attendance_status, 
-          shifts.start_time AS shift_time_in, 
-          timelog.logged_in_time AS time_in, 
-          shifts.end_time AS shift_time_out, 
-          timelog.logged_out_time AS time_out
-        FROM timelogs AS timelog
-        LEFT JOIN users AS u ON timelog.user_id = u.id
-        JOIN teams AS team ON u.teamId = team.id
-        JOIN shifts AS shifts ON timelog.shift_id = shifts.id
-        WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
+      const presentUsersReport = await TimeLog.sequelize.query(
+        `SELECT u.fullname AS employee_name, team.name AS team, timelog.date AS date, DAYNAME(timelog.date) AS day, CASE   WHEN timelog.logged_in_time IS NOT NULL THEN 'Present'   ELSE 'Absent' END AS attendance_status, shifts.start_time AS shift_time_in, timelog.logged_in_time AS time_in, shifts.end_time AS shift_time_out, timelog.logged_out_time AS time_out
+        FROM timelogs AS timelog LEFT JOIN users AS u ON timelog.user_id = u.id JOIN teams AS team ON u.teamId = team.id JOIN shifts AS shifts ON timelog.shift_id = shifts.id WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
         ${teamId ? "AND team.id = :teamId" : ""}
         ${userId ? "AND u.id = :userId" : ""}
-        ORDER BY timelog.date DESC
-        `,
+        ORDER BY timelog.date DESC`,
         {
           replacements: {
             company_id: req.user.company_id,
@@ -525,24 +507,42 @@ class exportReportController {
         },
         group: ['user_id'],
       });
-      console.log(presentUsers.map(user => user.user_id));
 
-      let headers = [
-        "Employee Name",
-        "Team",
-        "Date",
-        "Day",
-        "Attendance Status",
-        "Shift Time In",
-        "Shift Time Out",
-        "Time Out"
-      ]
-      
+      const absentUsersReport = await TimeLog.sequelize.query(
+        `SELECT u.fullname AS employee_name,  team.name AS team,  'N/A' AS date,  'N/A' AS day,  'Absent' AS attendance_status,  shifts.start_time AS shift_time_in,  'N/A' AS time_in,  shifts.end_time AS shift_time_out,   'N/A' AS time_out
+         FROM users AS u
+       
+         LEFT JOIN teams AS team 
+           ON u.teamId = team.id
+        LEFT JOIN shifts AS shifts 
+           ON team.shiftId = shifts.id
+         WHERE u.company_id = :company_id 
+           AND u.isAdmin = 0 
+           ${teamId ? "AND team.id = :teamId" : ""}
+            ${userId ? "AND u.id = :userId" : ""}
+           AND u.id NOT IN (:presentUserIds)
+         ORDER BY u.fullname ASC`,
+        {
+          replacements: {
+            company_id: req.user.company_id,
+            presentUserIds: presentUsers.length > 0 
+            ? presentUsers.map(user => user.user_id) 
+            : [-1],
+          },
+          type: QueryTypes.SELECT,
+        }
+      );
+
+      attendanceReport.push(...absentUsersReport);
+      attendanceReport.push(...presentUsersReport);
+
+
+      let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Time in", "Shift Time Out", "Time Out"];
+
       await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Attendance Report", req.user.company_id, attendanceReport, headers);
 
       // await this.downloadFile(req, res, req.user.company_id, attendanceReport, format, reportDescription, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0]);
       // await dbTransaction.commit();
-      // return helper.success(res, variables.Success, attendanceReport);
     } catch (error) {
       // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -553,7 +553,7 @@ class exportReportController {
     const dbTransaction = await Sequelize.transaction();
     try {
       const { fromTime, toTime, definedPeriod, teamId, userId, format } = req.body;
-      if(!fromTime || !toTime) return helper.failed(res, variables.ValidationError, "From Time and To time both are required")
+      if (!fromTime || !toTime) return helper.failed(res, variables.ValidationError, "From Time and To time both are required")
       let startDate = new Date(fromTime);
       endDate = new Date(toTime);
 
@@ -564,7 +564,7 @@ class exportReportController {
         "Application",
         "Productive/Non Producitve"
       ]
-      
+
       await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Application Usage Report", req.user.company_id, data, headers);
       await dbTransaction.commit();
       return helper.success(res, variables.Success, "User Updated Successfully");
@@ -634,7 +634,7 @@ class exportReportController {
         "Most Non Productive App",
         "Most Productive App"
       ]
-      
+
       await this.downloadFileDynamically(res, dateRange.startDate, dateRange.endDate, format, "Department Performance Report", req.user.company_id, performanceArray, headers);
 
       return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
@@ -708,8 +708,8 @@ class exportReportController {
         "Url",
         "Time",
       ]
-      
-      await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0],endDate.toISOString().split("T")[0], format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
+
+      await this.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
 
       return res.status(200).json({ status: "success", data: unauthorizedAccessReport });
     } catch (error) {
@@ -820,7 +820,7 @@ class exportReportController {
           "Productive/Non-Productivity",
           "Time Spent"
         ]
-        
+
         await this.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistroy, headers);
 
         return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
