@@ -86,18 +86,15 @@ const setupSocketIO = (io) => {
     }
   });
 
-  // Connection event:
   io.on("connection", async (socket) => {
     socket.join(`Admin_${socket.user.company_id}`);
     if (socket.user.isAdmin) {
-      //console.log(`Admin ID ${socket.user.userId} connected `);
       let userData = await User.findOne({ where: { id: socket.user.userId } });
       userData.socket_id = socket.id;
       userData.currentStatus = 1;
       userData.save();
       handleAdminSocket(socket, io);
     } else {
-      //console.log(`User ID ${socket.user.userId} connected `);
       let today = new Date().toISOString().split("T")[0];
 
       let user = await User.findOne({ where: { id: socket.user.userId } });
@@ -105,6 +102,7 @@ const setupSocketIO = (io) => {
       let now = new Date();
       let currentHours = now.getHours();
       let currentMinutes = now.getMinutes();
+      let currentTotalMinutes = currentHours * 60 + currentMinutes;
 
       let shiftData = await getShiftData(user.teamId);
 
@@ -112,100 +110,87 @@ const setupSocketIO = (io) => {
         .split(":")
         .map(Number);
       let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
-      if (
-        currentHours > endHours &&
-        currentHours === endHours &&
-        currentMinutes > endMinutes
-      ) {
-        return helper.sendResponse(
-          res,
-          variables.Forbidden,
-          0,
-          {},
-          "Your shift is over. You cannot log in at this time."
-        );
+
+      let shiftStartTotalMinutes = shiftHours * 60 + shiftMinutes;
+      let shiftEndTotalMinutes = endHours * 60 + endMinutes;
+
+      if (shiftEndTotalMinutes < shiftStartTotalMinutes) {
+        shiftEndTotalMinutes += 1440;
+        if (currentTotalMinutes < shiftStartTotalMinutes) {
+          currentTotalMinutes += 1440;
+        }
       }
+
+      let logicalShiftDate =
+        now.getHours() >= shiftHours
+          ? today
+          : new Date(now - 86400000).toISOString().split("T")[0];
+
       let timeLog = await TimeLog.findOne({
         where: {
           user_id: user.id,
-          date: today,
+          date: logicalShiftDate,
+          shift_id: shiftData.id,
         },
         order: [["createdAt", "DESC"]],
       });
-      // if (timeLog) {
-      //   //console.log(timeLog.dataValues);
-      // }
 
       let lateComing = 0;
-      let lateComingDuration = "00:00";
       let lateMinutes = 0;
+      let lateComingDuration = "00:00";
 
-      // if (timeLog && timeLog.logged_out_time == null) {
-      //   const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
-      //   let logoutTime = new Date();
-      //   logoutTime.setHours(hours, mins, 0, 0);
-      //   let spareMinutes = Math.floor((now - logoutTime) / 60000);
-      //   timeLog.spare_time =
-      //     parseInt(timeLog.spare_time) + parseInt(spareMinutes);
-      //   timeLog.logged_out_time = null;
-      //   timeLog.early_going= 0;
-      //   timeLog.save();
-      //   user.socket_id = socket.id
-      //   user.currentStatus = 1;
-      //   user.save();
       if (timeLog) {
         if (timeLog.logged_out_time != null) {
-          //console.log("Time loh hai and logout null nhi hai");
-          const [hours, mins] = timeLog.logged_out_time.split(":").map(Number);
-          let logoutTime = new Date();
-          logoutTime.setHours(hours, mins, 0, 0);
-          let spareMinutes = Math.floor((now - logoutTime) / 60000);
-          timeLog.spare_time =
-            parseInt(timeLog.spare_time) + parseInt(spareMinutes);
-        } else {
-          //console.log("Time loh hai and logout null hai");
-          timeLog.spare_time = parseInt(timeLog.spare_time || 0);
+          const [logoutHours, logoutMinutes] = timeLog.logged_out_time
+            .split(":")
+            .map(Number);
+          let logoutTotalMinutes = logoutHours * 60 + logoutMinutes;
+
+          if (logoutTotalMinutes < shiftStartTotalMinutes) {
+            logoutTotalMinutes += 1440;
+          }
+
+          let spareMinutes = currentTotalMinutes - logoutTotalMinutes;
+          timeLog.spare_time += parseInt(spareMinutes);
         }
+
         timeLog.logged_out_time = null;
         timeLog.early_going = 0;
-        timeLog.save();
-        user.socket_id = socket.id;
-        user.currentStatus = 1;
-        user.save();
+        await timeLog.save();
       } else {
-        if (
-          currentHours > shiftHours ||
-          (currentHours === shiftHours && currentMinutes > shiftMinutes)
-        ) {
-          lateMinutes =
-            (currentHours - shiftHours) * 60 + (currentMinutes - shiftMinutes);
+        if (currentTotalMinutes > shiftStartTotalMinutes) {
+          lateMinutes = currentTotalMinutes - shiftStartTotalMinutes;
           lateComing = 1;
-          lateComingDuration = `${Math.floor(lateMinutes / 60)}:${
-            lateMinutes % 60
-          }`;
+          lateComingDuration = `${Math.floor(lateMinutes / 60)
+            .toString()
+            .padStart(2, "0")}:${(lateMinutes % 60)
+            .toString()
+            .padStart(2, "0")}`;
         }
-        const [lateHours, lateMins] = lateComingDuration.split(":").map(Number);
-        lateMinutes = lateHours * 60 + lateMins;
-        user.socket_id = socket.id;
-        user.currentStatus = 1;
-        user.save();
+
+        let formattedHours = String(currentHours % 24).padStart(2, "0");
+        let formattedMinutes = String(currentMinutes).padStart(2, "0");
 
         await TimeLog.create({
           user_id: user.id,
           shift_id: shiftData.id,
           company_id: user.company_id,
-          logged_in_time: `${currentHours}:${currentMinutes}`,
+          logged_in_time: `${formattedHours}:${formattedMinutes}`,
           late_coming: lateComing,
           late_coming_duration: lateMinutes,
           spare_time: 0,
           active_time: 0,
-          date: today,
+          date: logicalShiftDate,
         });
       }
+
+      user.socket_id = socket.id;
+      user.currentStatus = 1;
+      await user.save();
+
       handleUserSocket(socket, io);
     }
   });
-
   return io;
 };
 
@@ -257,7 +242,7 @@ const handleAdminSocket = async (socket, io) => {
 
   socket.on("getUserReport", async (data) => {
     try {
-      const adminId = socket.userId; 
+      const adminId = socket.userId;
 
       if (adminRooms[adminId]) {
         const previousRoom = adminRooms[adminId];
@@ -265,7 +250,7 @@ const handleAdminSocket = async (socket, io) => {
       }
 
       const newRoom = `privateRoom_${data.id}`;
-      adminRooms[adminId] = newRoom; 
+      adminRooms[adminId] = newRoom;
 
       socket.join(newRoom);
 
@@ -279,7 +264,9 @@ const handleAdminSocket = async (socket, io) => {
       const response = await getUserReport(data);
       io.to(newRoom).emit("getUserReport", response);
     } catch (error) {
-      socket.emit("getUserReport", {message: "Failed to fetch user report for admin."});
+      socket.emit("getUserReport", {
+        message: "Failed to fetch user report for admin.",
+      });
     }
   });
 
@@ -481,7 +468,7 @@ const getUserReport = async (data) => {
     };
   } catch (error) {
     console.error("Error getting user report:", error.message);
-    return {status: 0,message: "Error getting user report",data: null};
+    return { status: 0, message: "Error getting user report", data: null };
   }
 };
 
@@ -655,7 +642,10 @@ const singleUserProductiveAppData = async ({ userId, date }) => {
 
 // Website data Calculate: ----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-const singleUserProductiveWebsitesAndNonproductiveWebsites = async (userId,date) => {
+const singleUserProductiveWebsitesAndNonproductiveWebsites = async (
+  userId,
+  date
+) => {
   try {
     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData({
       userId,
@@ -1128,8 +1118,6 @@ const handleUserSocket = async (socket, io) => {
   });
 
   socket.on("disconnect", async () => {
-    //console.log(`User ID ${socket.user.userId} disconnected`);
-
     let userData = await User.findOne({ where: { id: socket.user.userId } });
     let time_data = await TimeLog.findOne({
       where: { user_id: socket.user.userId },
@@ -1149,13 +1137,20 @@ const handleUserSocket = async (socket, io) => {
 
       let shiftData = await getShiftData(userData.teamId);
       let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
-
-      let shiftEndTimeInMinutes = endHours * 60 + endMinutes;
-
       let [loginHours, loginMinutes] = time_data.logged_in_time
         .split(":")
         .map(Number);
+      console.log({ time_data: time_data.logged_in_time });
+
+      let shiftEndTimeInMinutes = endHours * 60 + endMinutes;
       let loginTimeInMinutes = loginHours * 60 + loginMinutes;
+
+      if (shiftEndTimeInMinutes < loginTimeInMinutes) {
+        shiftEndTimeInMinutes += 1440;
+      }
+      if (logoutTimeInMinutes < loginTimeInMinutes) {
+        logoutTimeInMinutes += 1440;
+      }
 
       let duration = logoutTimeInMinutes - loginTimeInMinutes;
       let activeTime =
@@ -1165,10 +1160,13 @@ const handleUserSocket = async (socket, io) => {
 
       let earlyGoing = logoutTimeInMinutes < shiftEndTimeInMinutes ? 1 : 0;
 
-      let formattedLogoutTime = `${String(logoutHours).padStart(
+      let adjustedLogoutHours = Math.floor(logoutTimeInMinutes / 60) % 24;
+      let adjustedLogoutMinutes = logoutTimeInMinutes % 60;
+
+      let formattedLogoutTime = `${String(adjustedLogoutHours).padStart(
         2,
         "0"
-      )}:${String(logoutMinutes).padStart(2, "0")}`;
+      )}:${String(adjustedLogoutMinutes).padStart(2, "0")}`;
 
       await time_data.update({
         logged_out_time: formattedLogoutTime,
@@ -1294,293 +1292,3 @@ const notifyAdmin = async (id, type, time, url) => {
 };
 
 export default setupSocketIO;
-
-//chart Data
-
-// const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
-//   try {
-//     const { userId, date } = req.query;
-
-//     // Fetch data from both functions
-//     const nonProductiveAppsData = await singleUserProductiveAppData('', '', '', 'function', { userId, date });
-//     const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date });
-
-//     // Validate data format
-//     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
-//       return helper.failed(res, 400, "Invalid data format", []);
-//     }
-
-//     // Determine which array has the higher count
-//     const [primaryData, secondaryData, primaryKey, secondaryKey] =
-//       nonProductiveAppsData.length >= productiveAppsData.length
-//         ? [nonProductiveAppsData, productiveAppsData, 'non_productive_apps_total_time', 'productive_apps_value']
-//         : [productiveAppsData, nonProductiveAppsData, 'productive_apps_value', 'non_productive_apps_total_time'];
-
-//     // Combine data based on the larger array
-//     const combinedData = primaryData.map(primaryItem => {
-//       const matchingSecondaryItem = secondaryData.find(
-//         secondaryItem => secondaryItem.name === primaryItem.name // Match by period
-//       );
-//       return {
-//         period: primaryItem.name,
-//         [primaryKey]: parseFloat(primaryItem.value || '0.0'),
-//         [secondaryKey]: parseFloat(matchingSecondaryItem?.value || '0.0'),
-//       };
-//     });
-
-// Success response
-//     return helper.success(res, variables.Success, "Data Fetched Successfully", combinedData);
-//   } catch (error) {
-//     console.error("Error in productiveAppsAndproductiveapps:", error);
-//     return helper.failed(res, 500, "Internal Server Error", []);
-//   }
-// };
-
-// // helper functions
-
-// const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
-//   try {
-//     // Extract `userId` and `date` based on the type of request
-//     const { userId, date } = type === 'api' ? req.query : obj;
-//     const companyId = 101;
-
-//     // Validate required parameters
-//     if (!userId || !date) {
-//       const message = "userId and date are required.";
-//       return type === 'api' ? helper.failed(res, 400, message) : false;
-//     }
-
-//     // Fetch user information
-//     const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
-//     if (!userInfo) {
-//       const message = "User does not exist.";
-//       return type === 'api' ? helper.failed(res, 404, message) : false;
-//     }
-
-// Fetch team information
-//     const teamInfo = await team.findOne({
-//       where: { id: userInfo.teamId, status: 1, company_id: companyId },
-//     });
-//     if (!teamInfo) {
-//       const message = "Team is invalid or inactive.";
-//       return type === 'api' ? helper.failed(res, 404, message) : false;
-//     }
-
-//     // Fetch shift information
-//     const shiftInfo = await shift.findOne({
-//       where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
-//     });
-//     if (!shiftInfo) {
-//       const message = "Shift is invalid or inactive.";
-//       return type === 'api' ? helper.failed(res, 404, message) : false;
-//     }
-
-//     // SQL query to fetch productive app data grouped by hour
-//     const query = `
-//       SELECT
-//           DATE_FORMAT(ah.startTime, '%H:00') AS hour,
-//           SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_duration
-//       FROM
-//           app_histories AS ah
-//       INNER JOIN
-//           productive_apps ap ON ap.app_name = ah.appName
-//       WHERE
-//           DATE(ah.createdAt) = :date
-//           AND ah.userId = :userId
-//           AND ah.company_id = :companyId
-//       GROUP BY
-//           DATE_FORMAT(ah.startTime, '%H:00')
-//       ORDER BY
-//           hour;
-//     `;
-
-//     // Execute query with replacements
-//     const results = await sequelize.query(query, {
-//       replacements: { date, userId, companyId },
-//       type: Sequelize.QueryTypes.SELECT,
-//       logging: //console.log
-//     });
-
-//     // Format results for pie chart data
-//     const pieChartData = results.map((result) => ({
-//       name: result.hour,
-//       value: result.total_duration ? parseFloat((result.total_duration)) : 0, // Convert seconds to hours
-//     }));
-
-//     // Return success response
-//     const successMessage = "Productive app data fetched successfully.";
-//     return type === 'api'
-//       ? helper.success(res, variables.Success, successMessage, pieChartData)
-//       : pieChartData;
-//   } catch (error) {
-//     // Log error and return failure response
-//     console.error("Error fetching productive app data:", error.message);
-//     return type === 'api'
-//       ? helper.failed(res, 500, error.message)
-//       : false;
-//   }
-// };
-
-// const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
-//   try {
-//     // Extract `userId` and `date` based on the type of request
-//     const { userId, date } = type === 'api' ? req.query : obj;
-//     const companyId = 101;
-
-//     // Validate required parameters
-//     if (!userId || !date) {
-//       const message = "userId and date are required.";
-//       return type === 'api' ? helper.failed(res, 400, message) : false;
-//     }
-
-//     // Fetch user information
-//     const userInfo = await User.findOne({ where: { id: userId, company_id: companyId } });
-//     if (!userInfo) {
-//       const message = "User does not exist.";
-//       return type === 'api' ? helper.failed(res, 404, message) : false;
-//     }
-
-//     // Fetch team information
-//     const teamInfo = await team.findOne({
-//       where: { id: userInfo.teamId, status: 1, company_id: companyId },
-//     });
-//     if (!teamInfo) {
-//       const message = "Team is invalid or inactive.";
-//       return type === 'api' ? helper.failed(res, 404, message) : false;
-//     }
-
-//     // Fetch shift information
-//     const shiftInfo = await shift.findOne({
-//       where: { id: teamInfo.shiftId, status: 1, company_id: companyId },
-//     });
-//     if (!shiftInfo) {
-//       const message = "Shift is invalid or inactive.";
-//       return type === 'api' ? helper.failed(res, 404, message) : false;
-//     }
-
-//     // SQL query to fetch productive app data grouped by hour
-//     const query = `
-//     SELECT
-//     DATE_FORMAT(ah.startTime, '%H:00') AS hour,
-//     SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)) AS total_duration
-// FROM
-//     app_histories AS ah
-// WHERE
-//     ah.appName NOT IN (
-//         SELECT appName
-//         FROM productive_apps
-//         WHERE company_id = :companyId
-//     )
-//  AND date(createdAt)=:date
-//     AND ah.userId = 2
-//     AND ah.company_id = :companyId
-// GROUP BY
-//     DATE_FORMAT(ah.startTime, '%H:00')
-// ORDER BY
-//     hour;
-//     `;
-
-//     // Execute query with replacements
-//     const results = await sequelize.query(query, {
-//       replacements: { date, userId, companyId },
-//       type: Sequelize.QueryTypes.SELECT,
-//       logging: //console.log
-//     });
-
-//     // Format results for pie chart data
-//     const pieChartData = results.map((result) => ({
-//       name: result.hour,
-//       value: result.total_duration ? parseFloat((result.total_duration)) : 0, // Convert seconds to hours
-//     }));
-
-//     // Return success response
-//     const successMessage = "Non Productive app data fetched successfully.";
-//     return type === 'api'
-//       ? helper.success(res, variables.Success, successMessage, pieChartData)
-//       : pieChartData;
-//   } catch (error) {
-//     // Log error and return failure response
-//     console.error("Error fetching non productive app data:", error.message);
-//     return type === 'api'
-//       ? helper.failed(res, 500, error.message)
-//       : false;
-//   }
-// };
-
-// const getUserReport = async (data, io, socket) => {
-//   try {
-//     let user = await User.findOne({
-//       where: { id: data.id },
-//       include: [
-//         {
-//           model: department,
-//           as: "department",
-//           attributes: ["name"],
-//         },
-//         {
-//           model: designation,
-//           as: "designation",
-//           attributes: ["name"],
-//         },
-//       ],
-//     });
-//     if (!user) {
-//       return socket.emit("error", { message: "User not found" });
-//     }
-
-//     socket.join("privateRoom_" + data.id);
-//     // io.to(user.socket_id).socketsJoin("privateRoom_" + data.id);
-
-//     let today = data.date
-//       ? new Date(data.date).toISOString().split("T")[0]
-//       : new Date().toISOString().split("T")[0];
-
-//     // Fetch web history
-//     let web_query = `SELECT url, count(id) as visits FROM user_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY url`;
-//     let userHistories = await Model.query(web_query, {
-//       type: QueryTypes.SELECT,
-//     });
-
-//     // Fetch app history
-//     let app_query = `SELECT appName, count(id) as visits FROM app_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY appName`;
-//     let appHistories = await Model.query(app_query, {
-//       type: QueryTypes.SELECT,
-//     });
-
-//     // Fetch image uploads
-//     let image_query = `SELECT content FROM image_uploads WHERE date = "${today}" AND userId = ${data.id}`;
-//     let image = await Model.query(image_query, { type: QueryTypes.SELECT });
-
-//     // Fetch productive and non-productive app data
-//     const productiveAndNonProductiveData =
-//       await singleUserProductiveAppAndNonproductiveApps(data.id, today);
-
-//     // Fetch productive and non-productive website data
-//     const productiveAndNonProductiveWebData =
-//       await singleUserProductiveWebsitesAndNonproductiveWebsites(
-//         data.id,
-//         today
-//       );
-
-//     // Combine the response data
-//     let response = {
-//       status: 1,
-//       message: "User Report fetched successfully",
-//       data: {
-//         user,
-//         image,
-//         userHistories,
-//         appHistories,
-//         productiveAndNonProductiveData: productiveAndNonProductiveData || [],
-//         productiveAndNonProductiveWebData:
-//           productiveAndNonProductiveWebData || [],
-//       },
-//     };
-//     // //console.log(response);
-
-//     return response;
-//   } catch (error) {
-//     console.error("Error getting user report:", error.message);
-//     return { error: "Error getting user report" };
-//   }
-// };
