@@ -7,11 +7,8 @@ const router = express.Router();
 const teamMemberLogInstance = new teamMemberTimeLogController();
 
 router.get("/getAllTimeMemberLog",  authMiddleware,verifyAdminMiddleware,   teamMemberLogInstance.getAllTeamMemberLog);
-router.get("/getTimeMemberLogFiltered",  authMiddleware,verifyAdminMiddleware,   teamMemberLogInstance.getTeamMemberLogFiltered);
+router.get("/getTimeMemberLogFiltered",  authMiddleware,verifyAdminMiddleware,   teamMemberLogInstance.getTeamMemberLogFiltered2);
+router.get("/getTimeMemberLogFiltered2",  authMiddleware,verifyAdminMiddleware,   teamMemberLogInstance.getTeamMemberLogFiltered2);
 router.get("/getFilterCount",  authMiddleware,verifyAdminMiddleware,   teamMemberLogInstance.getFilterCount);
-
-// router.post("/addDept",  authMiddleware,verifyAdminMiddleware,   teamMemberLogInstance.addDept);
-// router.put("/updateDept", authMiddleware,verifyAdminMiddleware,   teamMemberLogInstance.updateDept);
-// router.delete("/deleteDept", authMiddleware,verifyAdminMiddleware,   teamMemberLogInstance.deleteDept);
 
 export default router;

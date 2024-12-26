@@ -129,30 +129,29 @@ class teamMemberController {
       if (!validationResult.status) return helper.failed(res, variables.BadRequest, validationResult.message);
 
       const existsDept = await department.findOne({
-        where: {id: requestData.departmentId, company_id: req.user.company_id}
-      })
-      if(!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
+        where: { id: requestData.departmentId, company_id: req.user.company_id },
+      });
+      if (!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
 
       const existsDesig = await designation.findOne({
-        where: {id: requestData.designationId, company_id: req.user.company_id}
-      })
-      if(!existsDesig) return helper.failed(res, variables.BadRequest, "Designation Does Not Exists");
+        where: { id: requestData.designationId, company_id: req.user.company_id },
+      });
+      if (!existsDesig) return helper.failed(res, variables.BadRequest, "Designation Does Not Exists");
 
       const existsRole = await role.findOne({
-        where: {id: requestData.roleId, company_id: req.user.company_id}
-      })
-      if(!existsRole) return helper.failed(res, variables.BadRequest, "Role Does Not Exists");
+        where: { id: requestData.roleId, company_id: req.user.company_id },
+      });
+      if (!existsRole) return helper.failed(res, variables.BadRequest, "Role Does Not Exists");
 
       const existsTeam = await team.findOne({
-        where: {id: requestData.teamId, company_id: req.user.company_id}
-      })
-      if(!existsTeam) return helper.failed(res, variables.BadRequest, "Team Does Not Exists");
+        where: { id: requestData.teamId, company_id: req.user.company_id },
+      });
+      if (!existsTeam) return helper.failed(res, variables.BadRequest, "Team Does Not Exists");
 
       const existsTeamInDept = await team.findOne({
-        where: {id: requestData.teamId, departmentId:requestData.departmentId, company_id: req.user.company_id}
-      })
-      if(!existsTeamInDept) return helper.failed(res, variables.BadRequest, "Team Does Not Exists in Department");
-      
+        where: { id: requestData.teamId, departmentId: requestData.departmentId, company_id: req.user.company_id },
+      });
+      if (!existsTeamInDept) return helper.failed(res, variables.BadRequest, "Team Does Not Exists in Department");
 
       // Check if the user already exists
       const existingUser = await User.findOne({
@@ -213,7 +212,7 @@ class teamMemberController {
         transaction: dbTransaction,
       });
 
-      if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists in your company data");
+      if (!existingTeamMember) return helper.failed(res, variables.BadRequest, "User does not exists in company data");
       // if (existingTeamMember.isAdmin) return helper.failed(res, variables.BadRequest, "You are not authorized to made this change");
 
       // Remove the 'password' field if it exists in updateFields
@@ -233,9 +232,9 @@ class teamMemberController {
       }
 
       const existsDept = await department.findOne({
-        where: {id: updateFields.departmentId, company_id: req.user.company_id}
-      })
-      if(!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
+        where: { id: updateFields.departmentId, company_id: req.user.company_id },
+      });
+      if (!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
 
       // const existsDesig = await designation.findOne({
       //   where: {id: updateFields.designationId, company_id: req.user.company_id}
@@ -243,34 +242,29 @@ class teamMemberController {
       // if(!existsDesig) return helper.failed(res, variables.BadRequest, "Designation Does Not Exists");
 
       const existsRole = await role.findOne({
-        where: {id: updateFields.roleId, company_id: req.user.company_id}
-      })
-      if(!existsRole) return helper.failed(res, variables.BadRequest, "Role Does Not Exists");
+        where: { id: updateFields.roleId, company_id: req.user.company_id },
+      });
+      if (!existsRole) return helper.failed(res, variables.BadRequest, "Role Does Not Exists");
 
       const existsTeam = await team.findOne({
-        where: {id: updateFields.teamId, company_id: req.user.company_id}
-      })
-      if(!existsTeam) return helper.failed(res, variables.BadRequest, "Team Does Not Exists");
+        where: { id: updateFields.teamId, company_id: req.user.company_id },
+      });
+      if (!existsTeam) return helper.failed(res, variables.BadRequest, "Team Does Not Exists");
 
       const existsTeamInDept = await team.findOne({
-        where: {id: updateFields.teamId, departmentId:updateFields.departmentId, company_id: req.user.company_id}
-      })
-      if(!existsTeamInDept) return helper.failed(res, variables.BadRequest, "Team Does Not Exists in Department");
+        where: { id: updateFields.teamId, departmentId: updateFields.departmentId, company_id: req.user.company_id },
+      });
+      if (!existsTeamInDept) return helper.failed(res, variables.BadRequest, "Team Does Not Exists in Department");
 
       // Perform the update operation
-      const [updatedRows] = await User.update(updateFields, {
+      await User.update(updateFields, {
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
         individualHooks: true,
       });
 
-      if (updatedRows > 0) {
-        await dbTransaction.commit();
-        return helper.success(res, variables.Success, "User Updated Successfully");
-      } else {
-        if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unable to update the shift");
-      }
+      await dbTransaction.commit();
+      return helper.success(res, variables.Success, "User Updated Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -333,7 +327,7 @@ class teamMemberController {
         }
       }
       const u = await User.findOne({ where: { id: id } });
-      
+
       if (!u) {
         return helper.sendResponse(res, variables.NotFound, 0, null, "user not found");
       }

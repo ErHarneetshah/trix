@@ -1,11 +1,18 @@
 import moment from "moment";
+import fs from "fs";
+import path from "path";
+import PDFDocument from "pdfkit";
+import ExcelJS from "exceljs";
+import { fileURLToPath } from "url";
 import { Op, fn, col, Sequelize, literal } from "sequelize";
 import department from "../../database/models/departmentModel.js";
 import TimeLog from "../../database/models/timeLogsModel.js";
 import sequelize from "../../database/queries/dbConnection.js";
 import User from "../../database/models/userModel.js";
-import team from "../../database/models/teamModel.js";
-import shift from "../../database/models/shiftModel.js";
+import helper from "./helper.js";
+import exportHistories from "../../database/models/exportHistoryModel.js";
+import variables from "../../app/config/variableConfig.js";
+import { finished } from "stream";
 
 // Helper function to get the working days of a department's users
 const getWorkingDays = async (dateRange, userIds, companyId) => {
@@ -30,7 +37,7 @@ const getWorkingDays = async (dateRange, userIds, companyId) => {
           endDate: `${endDate}T23:59:59`,
         },
         type: sequelize.QueryTypes.SELECT,
-        logging: console.log,
+        // logging:console.log
       }
     );
     return results ? results.count : 0;
@@ -71,45 +78,6 @@ const getTotalPersentDays = async (dateRange, user_id) => {
 export default {
   getWorkingDays,
   getTotalPersentDays,
-
-  // Helper function to get the date range based on the option
-  getDateRange: async (option, customStart, customEnd) => {
-    const today = moment();
-    let startDate, endDate;
-
-    option = String(option); 
-
-    switch (option) {
-      case "1":
-        startDate = endDate = today.clone().subtract(1, "days").format("YYYY-MM-DD");
-        break;
-
-      case "2":
-        endDate = today.clone().startOf("week").subtract(1, "days").format("YYYY-MM-DD");
-        startDate = moment(endDate).subtract(6, "days").format("YYYY-MM-DD");
-        break;
-
-      case "3":
-        const firstDayOfThisMonth = today.clone().startOf("month");
-        const lastDayOfPreviousMonth = firstDayOfThisMonth.clone().subtract(1, "days");
-        startDate = lastDayOfPreviousMonth.clone().startOf("month").format("YYYY-MM-DD");
-        endDate = lastDayOfPreviousMonth.format("YYYY-MM-DD");
-        break;
-
-      case "4":
-        if (!customStart || !customEnd) {
-          throw new Error("Both customStart and customEnd must be provided for 'custom range'.");
-        }
-        startDate = moment(customStart).format("YYYY-MM-DD");
-        endDate = moment(customEnd).format("YYYY-MM-DD");
-        break;
-
-      default:
-        throw new Error("Invalid option. Valid options are 'yesterday', 'previous week', 'previous month', or 'custom range'.");
-    }
-
-    return { startDate, endDate };
-  },
 
   // Helper function to get the total employees in a specific department
   getTotalEmployeeDepartmentWise: async (deptId, dateRange, type = "count") => {
@@ -545,32 +513,111 @@ export default {
       ],
     });
 
-    if (!users) return { status: false, message: "No user data found in your company" };
+    if (!users) return { status: false, message: "No user data found in company" };
 
     return { status: true, message: "User's data retrived successfully", data: users };
   },
 
   getProdWebCount: async (userIds, startOfDay, endOfDay) => {
-    const query = `
-               SELECT 
-    u.id AS userId,
-    COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
-    COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count,
-    DATE(uh.createdAt) AS record_date  -- Extracting the date part of the createdAt field
-FROM 
-    users u
-LEFT JOIN 
-    user_histories uh ON u.id = uh.userId 
-    AND uh.createdAt BETWEEN :startOfDay AND :endOfDay
-LEFT JOIN 
-    productive_websites pw ON uh.website_name = pw.website_name
-WHERE 
-    u.id IN (:userIds)
-GROUP BY 
-    u.id, record_date;  -- Group by user and record_date
+    //     const query = `
+    //                SELECT
+    //     u.id AS userId,
+    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
+    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count,
+    //     DATE(uh.createdAt) AS record_date  -- Extracting the date part of the createdAt field
+    // FROM
+    //     users u
+    // LEFT JOIN
+    //     user_histories uh ON u.id = uh.userId
+    //     AND uh.createdAt BETWEEN :startOfDay AND :endOfDay
+    // LEFT JOIN
+    //     productive_websites pw ON uh.website_name = pw.website_name
+    // WHERE
+    //     u.id IN (:userIds)
+    // GROUP BY
+    //     u.id, record_date;  -- Group by user and record_date
+    //             `;
 
+    //? To get everything in a single query
+    // `WITH RECURSIVE DateRange AS (
+    //     SELECT :startOfDay AS record_date
+    //     UNION ALL
+    //     SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
+    //     FROM DateRange
+    //     WHERE record_date < :endOfDay
+    // )
+    // SELECT
+    //     u.id AS userId,
+    //     dr.record_date,  -- Include all dates from DateRange
 
-            `;
+    //     -- Data from app_histories
+    //     a.appName,
+    //     a.is_productive,
+    //     IFNULL(SUM(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS time_spent_seconds,
+    //     IFNULL(COUNT(a.id), 0) AS session_count,
+    //     (
+    //         SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
+    //         FROM app_histories ah
+    //         WHERE ah.userId = u.id
+    //         AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
+    //     ) AS total_time_spent_seconds,
+    //     IFNULL(MAX(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS max_time_spent_seconds,
+
+    //     -- Data from user_histories
+    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
+    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count
+
+    // FROM
+    //     users u
+    // CROSS JOIN
+    //     DateRange dr
+    // LEFT JOIN
+    //     app_histories a
+    //     ON u.id = a.userId
+    //     AND DATE(a.createdAt) = dr.record_date  -- Match specific date
+    // LEFT JOIN
+    //     user_histories uh
+    //     ON u.id = uh.userId
+    //     AND DATE(uh.createdAt) = dr.record_date  -- Match specific date
+    // LEFT JOIN
+    //     productive_websites pw
+    //     ON uh.website_name = pw.website_name
+
+    // WHERE
+    //     u.id IN (:userIds)
+
+    // GROUP BY
+    //     u.id, dr.record_date, a.appName, a.is_productive;
+    // `;
+
+    const query = `WITH RECURSIVE DateRange AS (
+                  SELECT :startOfDay AS record_date
+                  UNION ALL
+                  SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
+                  FROM DateRange
+                  WHERE record_date < :endOfDay
+              )
+              SELECT 
+                  u.id AS userId,
+                  COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
+                  COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count,
+                  dr.record_date  -- Include all dates from DateRange
+              FROM 
+                  users u
+              CROSS JOIN 
+                  DateRange dr
+              LEFT JOIN 
+                  user_histories uh 
+                  ON u.id = uh.userId 
+                  AND DATE(uh.createdAt) = dr.record_date  -- Match specific date
+              LEFT JOIN 
+                  productive_websites pw 
+                  ON uh.website_name = pw.website_name
+              WHERE 
+                  u.id IN (:userIds)
+              GROUP BY 
+                  u.id, dr.record_date;  -- Group by user and each date
+              `;
 
     const results = await sequelize.query(query, {
       replacements: {
@@ -585,28 +632,68 @@ GROUP BY
   },
 
   getProdAppDetails: async (userIds, startOfDay, endOfDay) => {
-    const query = `SELECT 
-    userId,
-    appName,
-    is_productive,
-    IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS time_spent_seconds,
-    IFNULL(COUNT(*), 0) AS session_count,
-    (
-        SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0)
-        FROM app_histories ah
-        WHERE ah.userId = a.userId
-        AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
-    ) AS total_time_spent_seconds,
-    IFNULL(MAX(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS max_time_spent_seconds,
-    DATE(a.createdAt) AS record_date  -- Extracting the date part of the createdAt field
-FROM 
-    app_histories a
-WHERE 
-    a.userId IN (:userIds)
-GROUP BY 
-    userId, appName, is_productive, record_date;
+    //     const query = `SELECT
+    //     userId,
+    //     appName,
+    //     is_productive,
+    //     IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS time_spent_seconds,
+    //     IFNULL(COUNT(*), 0) AS session_count,
+    //     (
+    //         SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0)
+    //         FROM app_histories ah
+    //         WHERE ah.userId = a.userId
+    //         AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
+    //     ) AS total_time_spent_seconds,
+    //     IFNULL(MAX(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS max_time_spent_seconds,
+    //     DATE(a.createdAt) AS record_date  -- Extracting the date part of the createdAt field
+    // FROM
+    //     app_histories a
+    // WHERE
+    //     a.userId IN (:userIds)
+    // GROUP BY
+    //     userId, appName, is_productive, record_date;
+    // `;
 
-`;
+    const query = `WITH RECURSIVE DateRange AS (
+                      SELECT :startOfDay AS record_date
+                      UNION ALL
+                      SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
+                      FROM DateRange
+                      WHERE record_date < :endOfDay
+                  )
+                  SELECT 
+                      u.id AS userId,
+                      IFNULL(SUM(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS time_spent_seconds,
+                      IFNULL(COUNT(a.id), 0) AS session_count,
+                      (
+                          SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
+                          FROM app_histories ah
+                          WHERE ah.userId = u.id
+                          AND DATE(ah.createdAt) = dr.record_date
+                          AND ah.is_productive = 1  -- Time spent on productive apps
+                      ) AS total_time_spent_on_productive_apps,  -- Time spent on productive apps on this date
+                      (
+                          SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
+                          FROM app_histories ah
+                          WHERE ah.userId = u.id
+                          AND DATE(ah.createdAt) = dr.record_date
+                          AND ah.is_productive = 0  -- Time spent on non-productive apps
+                      ) AS total_time_spent_on_non_productive_apps,  -- Time spent on non-productive apps on this date
+                      IFNULL(MAX(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS max_time_spent_seconds,
+                      dr.record_date  -- Ensures all dates are included
+                  FROM 
+                      users u
+                  CROSS JOIN 
+                      DateRange dr
+                  LEFT JOIN 
+                      app_histories a 
+                      ON u.id = a.userId 
+                      AND DATE(a.createdAt) = dr.record_date  -- Match specific date
+                  WHERE 
+                      u.id IN (:userIds)
+                  GROUP BY 
+                      u.id, dr.record_date;
+                  `;
 
     const results = await sequelize.query(query, {
       replacements: {
@@ -618,5 +705,440 @@ GROUP BY
     });
 
     return results;
+  },
+
+  getTimeLogDetails: async (userIds, startOfDay, endOfDay) => {
+    const query = `WITH RECURSIVE DateRange AS (
+                            SELECT :startDate AS record_date
+                            UNION ALL
+                            SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
+                            FROM DateRange
+                            WHERE record_date < :endDate
+                        )
+                        SELECT 
+                            u.id AS userId,
+                            tl.id AS timelogId,
+                            tl.time_spent,
+                            tl.is_active,
+                            tl.timestamp,
+                            dr.record_date  -- Include all dates from DateRange
+                        FROM 
+                            users u
+                        CROSS JOIN 
+                            DateRange dr
+                        LEFT JOIN 
+                            timelogs tl 
+                            ON u.id = tl.userId 
+                            AND DATE(tl.timestamp) = dr.record_date  -- Match specific date
+                        WHERE 
+                            u.id IN (:userIds)
+                        ORDER BY 
+                            u.id, dr.record_date, tl.timestamp;  -- Order by user, date, and timelog timestamp
+                            `;
+
+    const results = await sequelize.query(query, {
+      replacements: {
+        startOfDay,
+        endOfDay,
+        userIds,
+      },
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    return results;
+  },
+
+  //  downloadFile = async (req, res, company_id, reportData, format, reportDescription, fromTime, toTime) => {
+  //   try {
+  //     const fileName = `${reportDescription}_${company_id}_${Date.now()}.${format === "xls" ? "xlsx" : "pdf"}`;
+  //     const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  //     const filePath = path.resolve(__dirname, "../../../storage/files", fileName);
+  //     if (format === "xls") {
+  //       const workbook = new ExcelJS.Workbook();
+  //       const worksheet = workbook.addWorksheet(reportDescription);
+
+  //       if (reportDescription == "Attendance Report") {
+  //         worksheet.columns = [
+  //           { header: "Employee Name", key: "employee_name", width: 20 },
+  //           { header: "Team", key: "team", width: 15 },
+  //           { header: "Date", key: "date", width: 15 },
+  //           { header: "Day", key: "day", width: 10 },
+  //           { header: "Attendance Status", key: "attendance_status", width: 20 },
+  //           { header: "Shift Time In", key: "shift_time_in", width: 15 },
+  //           { header: "Time In", key: "time_in", width: 15 },
+  //           { header: "Shift Time Out", key: "shift_time_out", width: 15 },
+  //           { header: "Time Out", key: "time_out", width: 15 },
+  //         ];
+  //       } else if (reportDescription == "Productivity Report") {
+  //         worksheet.columns = [
+  //           { header: "Employee Name", key: "employee_name", width: 20 },
+  //           { header: "Department", key: "department", width: 15 },
+  //           { header: "Date", key: "date", width: 15 },
+  //           { header: "Total Active Hours", key: "total_active_hours", width: 10 },
+  //           { header: "Idle Time", key: "idle_time", width: 20 },
+  //           { header: "Time on Productive Apps", key: "productive_app_time", width: 15 },
+  //           { header: "Time on Non Prodcutive Apps", key: "nonProductive_app_time", width: 15 },
+  //           { header: "Productive Websites Count", key: "productive_website_count", width: 15 },
+  //           { header: "Non Productive Websites Count", key: "productive_website_count", width: 15 },
+  //           { header: "Average Productive Percentage", key: "average_productive", width: 15 },
+  //           { header: "Most Used Productive App", key: "most_used_productive_app", width: 15 },
+  //         ];
+  //       } else if (reportDescription == "Application Usage Report") {
+  //         worksheet.columns = [
+  //           { header: "Name", key: "name", width: 20 },
+  //           { header: "Department", key: "department", width: 15 },
+  //           { header: "Application", key: "applicationName", width: 15 },
+  //           { header: "Productive/NonProducitve", key: "isProductive", width: 10 },
+  //         ];
+  //       } else if (reportDescription == "Unauthorized Report") {
+  //         worksheet.columns = [
+  //           { header: "Name", key: "name", width: 20 },
+  //           { header: "Department", key: "department", width: 15 },
+  //           { header: "URL", key: "url", width: 15 },
+  //           { header: "Time", key: "time", width: 10 },
+  //         ];
+  //       } else if (reportDescription == "Department Performance Report") {
+  //         worksheet.columns = [
+  //           { header: "Employee Name", key: "employee_name", width: 20 },
+  //           { header: "Team", key: "team", width: 15 },
+  //           { header: "Date", key: "date", width: 15 },
+  //           { header: "Day", key: "day", width: 10 },
+  //           { header: "Attendance Status", key: "attendance_status", width: 20 },
+  //           { header: "Shift Time In", key: "shift_time_in", width: 15 },
+  //           { header: "Time In", key: "time_in", width: 15 },
+  //           { header: "Shift Time Out", key: "shift_time_out", width: 15 },
+  //           { header: "Time Out", key: "time_out", width: 15 },
+  //         ];
+  //       } else if (reportDescription == "Browser Activity Report") {
+  //         worksheet.columns = [
+  //           { header: "Employee Name", key: "employee_name", width: 20 },
+  //           { header: "Team", key: "team", width: 15 },
+  //           { header: "Date", key: "date", width: 15 },
+  //           { header: "Day", key: "day", width: 10 },
+  //           { header: "Attendance Status", key: "attendance_status", width: 20 },
+  //           { header: "Shift Time In", key: "shift_time_in", width: 15 },
+  //           { header: "Time In", key: "time_in", width: 15 },
+  //           { header: "Shift Time Out", key: "shift_time_out", width: 15 },
+  //           { header: "Time Out", key: "time_out", width: 15 },
+  //         ];
+  //       }
+
+  //       worksheet.addRows(reportData);
+
+  //       await workbook.xlsx.writeFile(filePath);
+
+  //       res.setHeader(
+  //         "Content-Type",
+  //         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  //       );
+  //       res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+  //       res.download(filePath);
+
+  //       const newAppInfo = await exportHistories.create({ reportName: reportDescription, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
+  //     } else {
+  //       const generatePDF = () =>
+  //         new Promise((resolve, reject) => {
+  //           const doc = new PDFDocument();
+  //           const writeStream = fs.createWriteStream(filePath);
+
+  //           doc.pipe(writeStream);
+
+  //           // Add title
+  //           doc.fontSize(18).text(reportDescription, { align: "center" });
+  //           doc.moveDown();
+
+  //           // Add headers
+  //           if (reportDescription == "Attendance Report") {
+  //             doc.fontSize(12).text(
+  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+  //               { underline: true }
+  //             );
+  //             doc.moveDown();
+
+  //             reportData.forEach((row) => {
+  //               doc
+  //                 .fontSize(10)
+  //                 .text(
+  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+  //                 );
+  //             });
+
+  //           } else if (reportDescription == "Performance Report") {
+  //             doc.fontSize(12).text(
+  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+  //               { underline: true }
+  //             );
+  //             doc.moveDown();
+
+  //             reportData.forEach((row) => {
+  //               doc
+  //                 .fontSize(10)
+  //                 .text(
+  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+  //                 );
+  //             });
+  //           } else if (reportDescription == "Application Report") {
+  //             doc.fontSize(12).text(
+  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+  //               { underline: true }
+  //             );
+  //             doc.moveDown();
+
+  //             reportData.forEach((row) => {
+  //               doc
+  //                 .fontSize(10)
+  //                 .text(
+  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+  //                 );
+  //             });
+  //           } else if (reportDescription == "Unauthorized Report") {
+  //             doc.fontSize(12).text(
+  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+  //               { underline: true }
+  //             );
+  //             doc.moveDown();
+
+  //             reportData.forEach((row) => {
+  //               doc
+  //                 .fontSize(10)
+  //                 .text(
+  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+  //                 );
+  //             });
+  //           } else if (reportDescription == "Department Performance Report") {
+  //             doc.fontSize(12).text(
+  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+  //               { underline: true }
+  //             );
+  //             doc.moveDown();
+
+  //             reportData.forEach((row) => {
+  //               doc
+  //                 .fontSize(10)
+  //                 .text(
+  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+  //                 );
+  //             });
+  //           } else if (reportDescription == "Browser Activity Report") {
+  //             doc.fontSize(12).text(
+  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
+  //               { underline: true }
+  //             );
+  //             doc.moveDown();
+
+  //             reportData.forEach((row) => {
+  //               doc
+  //                 .fontSize(10)
+  //                 .text(
+  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
+  //                 );
+  //             });
+  //           }
+
+  //           doc.end();
+
+  //           writeStream.on("finish", () => resolve());
+  //           writeStream.on("error", (err) => reject(err));
+  //         });
+
+  //       await generatePDF();
+  //       console.log(`File generated and sent to user: ${filePath}`);
+
+  //       // Set headers for reading the file in the browser
+  //       res.setHeader("Content-Type", "application/pdf");
+  //       res.setHeader("Content-Disposition", "inline; filename=" + fileName);
+
+  //       // Send the file as a response
+  //       res.download(filePath);
+
+  //     }
+  //   } catch (error) {
+  //     res.status(500).json({ status: "error", message: error.message });
+  //   }
+  // };
+
+  downloadFileDynamically: async (res, fromTime, toTime, format = "xls", reportName, company_id, reportData, headers) => {
+    const dbTransaction = await sequelize.transaction();
+
+    try {
+      const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
+      const fileName = `${reportName}_${company_id}_${timestamp}.${format}`;
+
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+
+      // Define the directory path correctly
+      const directoryPath = path.resolve(__dirname, "../../../storage/files");
+      const filePath = path.join(directoryPath, fileName);
+
+      // Ensure the directory exists
+      if (!fs.existsSync(directoryPath)) {
+        fs.mkdirSync(directoryPath, { recursive: true });
+      }
+      const keys = reportData.length === 0 ? [] : Object.keys(reportData[0]);
+      if (format === "xls") {
+        const csvContent = [
+          headers.join(","),
+          ...reportData.map((row) => keys.map((key, index) => row[key] || "").join(",")), // Map data to headers
+        ].join("\n");
+
+        fs.writeFileSync(filePath, csvContent);
+        console.log("XLS file written successfully:", filePath);
+
+        const newAppInfo = await exportHistories.create(
+          { reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime },
+          { transaction: dbTransaction }
+        );
+
+        if (newAppInfo) {
+          await dbTransaction.commit();
+          return { status: 1 };
+        } else {
+          await dbTransaction.rollback();
+          return { status: 0 };
+        }
+      } 
+      else if (format === "pdf") {
+        // try {
+        //   const doc = new PDFDocument({ compress: false });
+        //   const fileStream = fs.createWriteStream(filePath);
+
+        //   doc.pipe(fileStream);
+
+        //   // Add content to the PDF
+        //   doc.fontSize(18).text(reportName, { align: "center" }).moveDown();
+        //   const headerText = headers.join(" | ");
+        //   doc.fontSize(12).text(headerText, { underline: true }).moveDown();
+
+        //   reportData.forEach((row) => {
+        //     const rowText = keys.map((key) => row[key] || "").join(" | "); // Dynamically map data to headers
+        //     doc.fontSize(10).text(rowText);
+        //   });
+
+        //   doc.end();
+
+        //   // Await for the file writing to finish
+        //   await new Promise((resolve, reject) => {
+        //     fileStream.on("finish", resolve);
+        //     fileStream.on("error", reject);
+        //   });
+
+        //   // Save details to the database
+        //   const newAppInfo = await exportHistories.create({
+        //     reportName,
+        //     company_id,
+        //     filePath,
+        //     reportExtension: format,
+        //     periodFrom: fromTime,
+        //     periodTo: toTime,
+        //   });
+
+        //   if (newAppInfo) {
+        //     await dbTransaction.commit();
+        //     return { status: 1 };
+        //   } else {
+        //     await dbTransaction.rollback();
+        //     return { status: 0 };
+        //   }
+        // } catch (err) {
+        //   console.error("Error generating PDF report:", err);
+        //   await dbTransaction.rollback();
+        //   return helper.failed(res, variables.BadRequest, "File generation failed");
+        // }
+
+        try {
+          const doc = new PDFDocument({ compress: false });
+          const fileStream = fs.createWriteStream(filePath);
+      
+          doc.pipe(fileStream);
+      
+          // Add report title
+          doc.fontSize(10).text(reportName, { align: "center", underline: true }).moveDown(2);
+      
+          // Define table properties
+          const tableTop = 100; // Starting Y position for the table
+          const columnWidths = [50, 60, 50, 50, 60, 50, 50, 50, 50]; 
+          const rowHeight = 40;
+      
+          // Draw table headers
+          let xPos = 50; // Starting X position
+          let yPos = tableTop;
+      
+          headers.forEach((header, index) => {
+            doc
+              .rect(xPos, yPos, columnWidths[index], rowHeight)
+              .fillAndStroke("#f0f0f0", "black") // Background and border color
+              .fillColor("black")
+              .fontSize(6)
+              .text(header, xPos + 5, yPos + 5, {
+                width: columnWidths[index] - 10, // Adjust width for padding
+                align: "center",
+                ellipsis: true,
+              });
+            xPos += columnWidths[index];
+          });
+      
+          yPos += rowHeight; // Move to the next row
+      
+          // Draw table data
+          reportData.forEach((row) => {
+            xPos = 50; // Reset X position for each row
+            keys.forEach((key, index) => {
+              const cellText = row[key] || "";
+              doc
+                .rect(xPos, yPos, columnWidths[index], rowHeight)
+                .stroke()
+                .fillColor("black")
+                .fontSize(6)
+                .text(cellText, xPos + 5, yPos + 5, {
+                  width: columnWidths[index] - 10, // Adjust width for padding
+                  align: "center",
+                  ellipsis: true, // Truncate text with "..."
+                });
+              xPos += columnWidths[index];
+            });
+            yPos += rowHeight; // Move to the next row
+          });
+      
+          // Finalize PDF
+          doc.end();
+      
+          // Await file writing completion
+          await new Promise((resolve, reject) => {
+            fileStream.on("finish", resolve);
+            fileStream.on("error", reject);
+          });
+      
+          // Save details to the database
+          const newAppInfo = await exportHistories.create({
+            reportName,
+            company_id,
+            filePath,
+            reportExtension: format,
+            periodFrom: fromTime,
+            periodTo: toTime,
+          });
+      
+          if (newAppInfo) {
+            await dbTransaction.commit();
+            return { status: 1 };
+          } else {
+            await dbTransaction.rollback();
+            return { status: 0 };
+          }
+        } catch (err) {
+          console.error("Error generating PDF report:", err);
+          await dbTransaction.rollback();
+          return helper.failed(res, variables.BadRequest, "File generation failed");
+        }
+      } 
+      else {
+        await dbTransaction.rollback();
+        return helper.failed(res, variables.BadRequest, "Unsupported File Request");
+      }
+    } catch (error) {
+      console.error("Error generating file:", error);
+      return helper.failed(res, variables.BadRequest, error.message);
+    }
   },
 };
