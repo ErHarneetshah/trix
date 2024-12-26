@@ -15,7 +15,6 @@ import { endOfDay } from "date-fns";
 import moment from "moment";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 import path from "path";
-import axios from "axios";
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
@@ -128,7 +127,6 @@ class exportReportController {
       if (result.status) {
         return helper.success(res, variables.Success, "Productivity Report Generated Successfully", data);
         // return helper.success(res, variables.Success, "Productivity Report Generated Successfully", {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis});
-
       } else {
         return helper.success(res, variables.Success, "Productivity Report Generation Failed");
       }
@@ -514,7 +512,7 @@ class exportReportController {
       if (format && !["xls", "pdf"].includes(format)) {
         return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
-console.log("test1");
+      console.log("test1");
       const validOptions = [1, 2, 3, 4];
 
       if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
@@ -558,7 +556,7 @@ console.log("test1");
           },
         }
       );
-      console.log("test4",unauthorizedAccessReport);
+      console.log("test4", unauthorizedAccessReport);
 
       let headers = ["Name", "Department", "Url", "Time"];
 
@@ -676,13 +674,12 @@ WHERE
           {
             type: QueryTypes.SELECT,
             replacements: {
-              userId,         // Array of user IDs
-              startDate: date.startDate,  // Start date for filtering
-              endDate: date.endDate,      // End date for filtering
+              userId, // Array of user IDs
+              startDate: date.startDate, // Start date for filtering
+              endDate: date.endDate, // End date for filtering
             },
           }
         );
-        
       } else {
         const team = await User.findAll({
           where: {
@@ -721,13 +718,12 @@ WHERE
             type: QueryTypes.SELECT,
             replacements: {
               companyId: req.user.company_id,
-              userIds,         // Array of user IDs
-              startDate: date.startDate,  // Start date for filtering
-              endDate: date.endDate,      // End date for filtering
+              userIds, // Array of user IDs
+              startDate: date.startDate, // Start date for filtering
+              endDate: date.endDate, // End date for filtering
             },
           }
         );
-        
       }
       let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Visit Time"];
 
@@ -746,15 +742,23 @@ WHERE
   downloadExportReport = async (req, res) => {
     try {
       let { filePath } = req.body;
-  
+      const fileName = path.basename(filePath);
       if (typeof filePath !== "string" || !filePath.trim()) {
         return helper.failed(res, variables.BadRequest, "Invalid file path provided");
       }
-  
+
       const normalizedPath = path.resolve(filePath);
       // Check if the file exists and is accessible
       await fs.promises.access(normalizedPath, fs.constants.F_OK);
-  
+
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileName}"`
+      );
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
       // Send the file as a download
       return res.download(normalizedPath, (err) => {
         if (err) {
@@ -764,12 +768,12 @@ WHERE
       });
     } catch (err) {
       console.error("Error during file download:", err);
-  
+
       // Handle specific error types
       if (err.code === "ENOENT") {
         return helper.failed(res, variables.BadRequest, "File not found");
       }
-  
+
       return helper.failed(res, variables.ServerError, "An error occurred while processing the file download");
     }
   };
