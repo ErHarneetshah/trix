@@ -990,8 +990,8 @@ export default {
       if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
       }
-      const keys = Object.keys(reportData[0]);
-      console.log(keys);
+
+      let keys = reportData.length === 0 ? [] : Object.keys(reportData[0]);
       if (format === "xls") {
         const csvContent = [
           headers.join(","),
