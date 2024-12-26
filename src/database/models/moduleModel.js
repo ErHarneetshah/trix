@@ -11,10 +11,6 @@ const app_modules = sequelize.define('modules', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-  },
-  aliasName: {
-    type: DataTypes.STRING,
-    allowNull: false,
   }
 }, {
   timestamps: true,
