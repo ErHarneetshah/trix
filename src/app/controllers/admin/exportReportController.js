@@ -14,6 +14,7 @@ import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.j
 import { endOfDay } from "date-fns";
 import moment from "moment";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
+import path from "path";
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
@@ -739,24 +740,34 @@ WHERE
   };
 
   downloadExportReport = async (req, res) => {
-    let { filePath } = req.body;
-
-    if (typeof filePath !== "string" || !filePath.trim()) {
-      return helper.failed(res, variables.BadRequest, "Invalid file path provided");
-    }
-    fs.access(filePath, fs.constants.F_OK, (err) => {
-      if (err) {
-        console.error("File not found:", err);
-        return helper.failed(res, variables.BadRequest, "File not found");
+    try {
+      let { filePath } = req.body;
+  
+      if (typeof filePath !== "string" || !filePath.trim()) {
+        return helper.failed(res, variables.BadRequest, "Invalid file path provided");
       }
-
-      return res.download(filePath, (err) => {
+  
+      const normalizedPath = path.resolve(filePath);
+      // Check if the file exists and is accessible
+      await fs.promises.access(normalizedPath, fs.constants.F_OK);
+  
+      // Send the file as a download
+      return res.download(normalizedPath, (err) => {
         if (err) {
-          console.error("Error sending XLS file:", err);
+          console.error("Error sending file:", err);
           return helper.failed(res, variables.BadRequest, "File download failed");
         }
       });
-    });
+    } catch (err) {
+      console.error("Error during file download:", err);
+  
+      // Handle specific error types
+      if (err.code === "ENOENT") {
+        return helper.failed(res, variables.BadRequest, "File not found");
+      }
+  
+      return helper.failed(res, variables.ServerError, "An error occurred while processing the file download");
+    }
   };
 }
 
