@@ -25,8 +25,16 @@ class exportReportController {
 
   getExportHistoryReport = async (req, res) => {
     try {
+      // ___________---------- Search, Limit, Pagination ----------_______________
+      let { limit, page, date } = req.query;
+      limit = parseInt(limit) || 10;
+      let offset = (page - 1) * limit || 0;
+      // ___________---------- Search, Limit, Pagination ----------_______________
+
       const getStatus = await exportHistories.findAll({
         where: { company_id: req.user.company_id },
+        limit: limit,
+        offset: offset,
         attributes: ["reportName", "reportExtension", "periodFrom", "periodTo", "filePath"],
       });
 
@@ -115,10 +123,10 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');      }
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
+      }
       // if(!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
       let startDate, endDate;
-
 
       const validOptions = [1, 2, 3, 4];
 
@@ -191,12 +199,11 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
 
-      if(!teamId)
-        return helper.failed(res, variables.BadRequest, 'Team must be selected');
-
+      if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
 
       const validOptions = [1, 2, 3, 4];
 
@@ -218,7 +225,8 @@ class exportReportController {
         }
       }
 
-      const applicationUsage = await UserHistory.sequelize.query(`
+      const applicationUsage = await UserHistory.sequelize.query(
+        `
                             WITH AppUsageData AS (
                       SELECT 
                           u.fullname,
@@ -246,16 +254,17 @@ class exportReportController {
                   LEFT JOIN departments d ON aud.departmentId = d.id -- Join to get department name
                   GROUP BY aud.appName, aud.productivity_status, d.name;
                   `,
-                  {
-                    type: QueryTypes.SELECT,
-                    replacements: {
-                      companyId,
-                      startDate: date.startDate,
-                      endDate: date.endDate,
-                      teamId,
-                      userId,
-                    },
-                  });
+        {
+          type: QueryTypes.SELECT,
+          replacements: {
+            companyId,
+            startDate: date.startDate,
+            endDate: date.endDate,
+            teamId,
+            userId,
+          },
+        }
+      );
 
       let headers = ["Name", "Department", "Application", "Productive/Non Producitve"];
 
@@ -272,7 +281,8 @@ class exportReportController {
       let { definedPeriod, fromDate, toDate, format, teamId } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');      }
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
+      }
       const dateRange = await helper.getDateRange(definedPeriod, fromDate, toDate);
       const allDepartments = await department.findAll({
         where: { company_id: company_id, status: 1 },
@@ -340,13 +350,12 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');      }
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
+      }
 
       const validOptions = [1, 2, 3, 4];
 
-      if(!teamId)
-        return helper.failed(res, variables.BadRequest, 'Team must be selected');
-
+      if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
 
       if (!definedPeriod || !validOptions.includes(definedPeriod)) {
         return helper.failed(res, variables.BadRequest, "Please select a valid date option");
@@ -433,7 +442,8 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, format, teamId, userId } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');      }
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
+      }
 
       if (!teamId) {
         return helper.failed(res, variables.BadRequest, "Please select the team");
