@@ -264,13 +264,13 @@ class teamMemberController {
         individualHooks: true,
       });
 
-      if (updatedRows > 0) {
+      // if (updatedRows > 0) {
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "User Updated Successfully");
-      } else {
-        if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unable to update the shift");
-      }
+      // } else {
+      //   if (dbTransaction) await dbTransaction.rollback();
+      //   return helper.failed(res, variables.UnknownError, "Unable to update the shift");
+      // }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
