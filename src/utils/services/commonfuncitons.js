@@ -160,6 +160,68 @@ const createResponse = (inputData) => {
   });
 };
 
+const createResponse2 = (inputData) => {
+  return inputData.map((data) => {
+    const totalProductiveTimeSeconds = parseInt(data?.total_productive_time_seconds, 10) || 0;
+    const totalNonProductiveTimeSeconds = parseInt(data?.total_non_productive_time_seconds, 10) || 0;
+
+    // Helper function to convert seconds to HH:MM:SS format
+    const convertSecondsToHMS = (seconds) => {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      return { hours, minutes, seconds: secs };
+    };
+
+    // Formatting productive and non-productive time
+    const formatTime = (hms) => {
+      return `${hms.hours}h ${hms.minutes}m ${hms.seconds}s`;
+    };
+
+    const productiveTime = totalProductiveTimeSeconds > 0 ? formatTime(convertSecondsToHMS(totalProductiveTimeSeconds)) : "0h 0m 0s";
+
+    const nonProductiveTime = totalNonProductiveTimeSeconds > 0 ? formatTime(convertSecondsToHMS(totalNonProductiveTimeSeconds)) : "0h 0m 0s";
+
+    // Calculate thresholds
+    const activeTime = data.active_time + data.spare_time + data.idle_time;
+    const activeTimeThreshold = Math.floor(activeTime * 0.6);
+    const idleTimeThreshold = Math.floor(activeTime * 0.4);
+
+    let isProductive;
+    let isSlacking;
+
+    if (activeTimeThreshold != 0) {
+      isProductive = totalProductiveTimeSeconds >= activeTimeThreshold;
+      isSlacking = activeTime >= idleTimeThreshold;
+    } else {
+      isProductive = false;
+      isSlacking = false;
+    }
+    // Constructing the response object
+    return {
+      user_id: data.userId,
+      shift_id: data.shiftId,
+      logged_in_time: data.logged_in_time,
+      active_time: data.active_time,
+      logged_out_time: data.logged_out_time,
+      early_going: data.early_going,
+      late_coming: data.late_coming,
+      user: {
+        id: data.userId,
+        fullname: data.name,
+        productiveTime: productiveTime,
+        nonProductiveTime: nonProductiveTime,
+        is_productive: isProductive,
+        is_slacking: isSlacking,
+      },
+      shift:{
+        start_time: data.startTime,
+        end_time: data.endTime,
+      }
+    };
+  });
+};
+
 const calculateTimeInSeconds = (startTime, endTime) => {
   const start = new Date(startTime);
   const end = new Date(endTime);
@@ -178,4 +240,4 @@ const convertSecondsToHMS = (totalSeconds) => {
   return { hours, minutes, seconds }; // Return an object with the calculated values
 };
 
-export default { uploadPhotos, getNextMonthDate, getNextMondayDate, getTomorrowDate, createResponse, convertSecondsToHMS, calculateTimeInSeconds };
+export default { uploadPhotos, getNextMonthDate, getNextMondayDate, getTomorrowDate, createResponse, createResponse2, convertSecondsToHMS, calculateTimeInSeconds };

@@ -37,7 +37,7 @@ Validator.registerAsync('unique', function (columnValue, attribute, req, passes)
     const attr = attribute.split(",");  // 0 = tablename , 1 = columnname
     columnValue = columnValue.trim() 
     Model.query(`SELECT * FROM ${attr[0]} Where ${attr[1]} = "${columnValue}" LIMIT 1`).then(([results]) => {
-        return (results.length == 0) ? passes() : passes(false, `The ${req} already exists in our system.`);
+        return (results.length == 0) ? passes() : passes(false, `The ${req} already exists in company.`);
     }).catch((error) => {
         return passes(false, error.message)
     });

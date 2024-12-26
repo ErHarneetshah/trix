@@ -25,15 +25,9 @@ class shiftController {
         order: [["id", "DESC"]],
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!alldata)
-        return helper.failed(res, variables.NotFound, "No Data is available!");
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
-      return helper.success(
-        res,
-        variables.Success,
-        "All Data fetched Successfully!",
-        alldata
-      );
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -45,15 +39,9 @@ class shiftController {
         where: { status: true, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
-      if (!alldata)
-        return helper.failed(res, variables.NotFound, "No Data is available!");
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
-      return helper.success(
-        res,
-        variables.Success,
-        "All Data fetched Successfully!",
-        alldata
-      );
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, "Unable to fetch data");
     }
@@ -62,12 +50,7 @@ class shiftController {
   getSpecificShift = async (req, res) => {
     try {
       const { id } = req.body;
-      if (!id || isNaN(id))
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Id is required and in numbers"
-        );
+      if (!id || isNaN(id)) return helper.failed(res, variables.ValidationError, "Id is required and in numbers");
 
       const specificData = await shift.findOne({
         where: {
@@ -76,19 +59,9 @@ class shiftController {
         },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!specificData)
-        return helper.failed(
-          res,
-          variables.NotFound,
-          `Data not Found of matching attributes `
-        );
+      if (!specificData) return helper.failed(res, variables.NotFound, `Data not Found of matching attributes `);
 
-      return helper.success(
-        res,
-        variables.Success,
-        "Data Fetched Succesfully",
-        specificData
-      );
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -101,42 +74,22 @@ class shiftController {
     try {
       const requestData = req.body;
 
-      const validationResult = await teamsValidationSchema.shiftValid(
-        requestData,
-        res
-      );
-      if (!validationResult.status)
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          validationResult.message
-        );
+      const validationResult = await teamsValidationSchema.shiftValid(requestData, res);
+      if (!validationResult.status) return helper.failed(res, variables.ValidationError, validationResult.message);
 
       // Validation of start_time in 24 hr and HH:MM format only
       if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestData.start_time)) {
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Start Time must be in HH:MM 24-hour format."
-        );
+        return helper.failed(res, variables.ValidationError, "Start Time must be in HH:MM 24-hour format.");
       }
 
       // Validation of end_time in 24 hr and HH:MM format only
       if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(requestData.end_time)) {
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "End Time must be in HH:MM 24-hour format."
-        );
+        return helper.failed(res, variables.ValidationError, "End Time must be in HH:MM 24-hour format.");
       }
 
       // validating that both times cannot be same
       if (requestData.start_time == requestData.end_time) {
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Start Time and End Time Cannot be the same"
-        );
+        return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
       }
 
       //checkecing existing shift
@@ -150,12 +103,7 @@ class shiftController {
         },
         transaction: dbTransaction,
       });
-      if (existingShift)
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Shift Already Exists!"
-        );
+      if (existingShift) return helper.failed(res, variables.ValidationError, "Shift Already Exists!");
 
       //* Check if there is a dept with a name in a different id
       const existingShiftWithName = await shift.findOne({
@@ -166,11 +114,7 @@ class shiftController {
         transaction: dbTransaction,
       });
       if (existingShiftWithName) {
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Shift name already exists in different record!"
-        );
+        return helper.failed(res, variables.ValidationError, "Shift name already exists in different record!");
       }
 
       const existingSameShift = await shift.findOne({
@@ -182,12 +126,7 @@ class shiftController {
         },
         transaction: dbTransaction,
       });
-      if (existingSameShift)
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Shift Already Exists with same time"
-        );
+      if (existingSameShift) return helper.failed(res, variables.ValidationError, "Shift Already Exists with same time");
 
       requestData.company_id = req.user.company_id;
 
@@ -196,11 +135,7 @@ class shiftController {
         transaction: dbTransaction,
       });
       await dbTransaction.commit();
-      return helper.success(
-        res,
-        variables.Success,
-        "Shift Added Successfully!"
-      );
+      return helper.success(res, variables.Success, "Shift Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -211,40 +146,23 @@ class shiftController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, days, ...updateFields } = req.body;
-      if (!id || isNaN(id))
-        return helper.failed(
-          res,
-          variables.NotFound,
-          "Id is Required and in numbers!"
-        );
+      if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is Required and in numbers!");
 
       if (updateFields.start_time) {
         if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(updateFields.start_time)) {
-          return helper.failed(
-            res,
-            variables.ValidationError,
-            "Start Time must be in HH:MM 24-hour format."
-          );
+          return helper.failed(res, variables.ValidationError, "Start Time must be in HH:MM 24-hour format.");
         }
       }
 
       if (updateFields.end_time) {
         if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(updateFields.end_time)) {
-          return helper.failed(
-            res,
-            variables.ValidationError,
-            "End Time must be in HH:MM 24-hour format."
-          );
+          return helper.failed(res, variables.ValidationError, "End Time must be in HH:MM 24-hour format.");
         }
       }
 
       if (updateFields.start_time && updateFields.end_time) {
         if (updateFields.start_time == updateFields.end_time) {
-          return helper.failed(
-            res,
-            variables.ValidationError,
-            "Start Time and End Time Cannot be the same"
-          );
+          return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
         }
       }
 
@@ -252,12 +170,7 @@ class shiftController {
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingShift)
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Shift does not exists in your company!"
-        );
+      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in company!");
 
       const existingShiftWithName = await shift.findOne({
         where: {
@@ -268,11 +181,7 @@ class shiftController {
         transaction: dbTransaction,
       });
       if (existingShiftWithName) {
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Shift name already exists in different record!"
-        );
+        return helper.failed(res, variables.ValidationError, "Shift name already exists in different record!");
       }
 
       const existingShiftWithparam = await shift.findOne({
@@ -287,17 +196,13 @@ class shiftController {
         transaction: dbTransaction,
       });
       if (existingShiftWithparam) {
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Shift already exists with same parameter in different record!"
-        );
+        return helper.failed(res, variables.ValidationError, "Shift already exists with same parameter in different record!");
       }
 
       let updated;
 
       if (days) {
-        updated = await shift.update(
+        await shift.update(
           {
             ...updateFields,
             days: JSON.stringify(days),
@@ -309,7 +214,7 @@ class shiftController {
           }
         );
       } else {
-        updated = await shift.update(
+        await shift.update(
           {
             ...updateFields,
           },
@@ -321,21 +226,8 @@ class shiftController {
         );
       }
 
-      if (updated) {
-        await dbTransaction.commit();
-        return helper.success(
-          res,
-          variables.Success,
-          "Shift Updated Successfully"
-        );
-      } else {
-        if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(
-          res,
-          variables.UnknownError,
-          "Unable to update the shift"
-        );
-      }
+      await dbTransaction.commit();
+      return helper.success(res, variables.Success, "Shift Updated Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -346,31 +238,17 @@ class shiftController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;
-      if (!id || isNaN(id))
-        return helper.failed(
-          res,
-          variables.NotFound,
-          "Id is Required and in numbers!"
-        );
+      if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is Required and in numbers!");
 
       const existingShift = await shift.findOne({
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingShift)
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Shift does not exists in your company id!"
-        );
+      if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in company id!");
 
       const isUsedInTeams = await team.findOne({ where: { shiftId: id } });
       if (isUsedInTeams) {
-        return helper.failed(
-          res,
-          variables.BadRequest,
-          "Cannot Delete this Shift as it is referred in other tables"
-        );
+        return helper.failed(res, variables.BadRequest, "Shift cannot be deleted because it is in use by other records.");
       }
 
       // Create and save the new user
@@ -381,18 +259,10 @@ class shiftController {
 
       if (deleteShift) {
         await dbTransaction.commit();
-        return helper.success(
-          res,
-          variables.Success,
-          "Shift deleted Successfully!"
-        );
+        return helper.success(res, variables.Success, "Shift deleted Successfully!");
       } else {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(
-          res,
-          variables.BadRequest,
-          "Unable to delete the Shift!"
-        );
+        return helper.failed(res, variables.BadRequest, "Unable to delete the Shift!");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();

@@ -11,13 +11,15 @@ const app_modules = sequelize.define('modules', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  aliasName: {
+    type: DataTypes.STRING,
+    allowNull: false,
   }
 }, {
   timestamps: true,
-  // Prevent Sequelize from auto-creating foreign keys
   underscored: false,
 });
 
 // await module.sync({alter:1});
-
 export default app_modules;

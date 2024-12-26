@@ -88,7 +88,7 @@ class reportingManagerController {
         where: { id: id, reportingManagerId: reportManagerId },
         transaction: dbTransaction,
       });
-      if (existingReportManagerRecord) return helper.failed(res, variables.ValidationError, "Report Manager Record Already Exists in our system");
+      if (existingReportManagerRecord) return helper.failed(res, variables.ValidationError, "Report Manager Record Already Exists in company");
 
       // Create and save the new user
       const addNewReportManager = await reportingManager.create({ userId, departmentId }, { transaction: dbTransaction });
@@ -105,7 +105,7 @@ class reportingManagerController {
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, reportManagerId } = req.body;
-      if ((!id || isNaN(id)) || (!reportManagerId || isNaN(reportManagerId))) {
+      if (!id || isNaN(id) || !reportManagerId || isNaN(reportManagerId)) {
         return helper.failed(res, variables.NotFound, "Id and reportManagerId both are Required!");
       }
 
@@ -129,7 +129,7 @@ class reportingManagerController {
       if (existingUser.isAdmin) return helper.failed(res, variables.BadRequest, "Not allowed to assign to this Id");
 
       // ________-------- Update Department ---------______________
-      const updated = await department.update(
+      await department.update(
         {
           reportingManagerId: reportManagerId,
         },
@@ -140,13 +140,8 @@ class reportingManagerController {
         }
       );
 
-      if (updated) {
-        await dbTransaction.commit();
-        return helper.success(res, variables.Success, "Reporting Manager updated successfully!");
-      } else {
-        if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.BadRequest, "Unable to update reporting manager!");
-      }
+      await dbTransaction.commit();
+      return helper.success(res, variables.Success, "Reporting Manager updated successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
