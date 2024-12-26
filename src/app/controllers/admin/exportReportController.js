@@ -554,7 +554,7 @@ class exportReportController {
 
       const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
       if (result.status) {
-        return helper.success(res, variables.Success, "Unauthorized Web Report Generated Successfully");
+        return helper.success(res, variables.Success, "Unauthorized Web Report Generated Successfully", unauthorizedAccessReport);
       } else {
         return helper.success(res, variables.Success, "Unauthorized Web Report Generation Failed");
       }
@@ -628,7 +628,7 @@ class exportReportController {
         return helper.failed(res, variables.BadRequest, date.message);
       }
 
-      let browserHistroy;
+      let browserHistory;
 
       if (teamId && userId) {
         const team = await User.findOne({
@@ -641,15 +641,40 @@ class exportReportController {
         if (!team) {
           return helper.failed(res, variables.BadRequest, "User not found!!!");
         }
-        browserHistroy = await UserHistory.findAll({
-          where: {
-            userId: userId,
-            createdAt: {
-              [Op.between]: [date.startDate, date.endDate],
+        // browserHistroy = await UserHistory.findAll({
+        //   where: {
+        //     userId: userId,
+        //     createdAt: {
+        //       [Op.between]: [date.startDate, date.endDate],
+        //     },
+        //   },
+        //   attributes: ["id", "userId", "company_id", "website_name", "url", "title", "visitTime"],
+        // });
+        browserHistory = await UserHistory.sequelize.query(
+          `
+            SELECT 
+              uh.id, 
+              uh.userId, 
+              uh.company_id, 
+              uh.website_name, 
+              uh.url, 
+              uh.title, 
+              uh.visitTime
+            FROM user_histories AS uh
+            WHERE 
+              uh.userId = :userId
+              AND uh.createdAt BETWEEN :startDate AND :endDate
+          `,
+          {
+            type: QueryTypes.SELECT,
+            replacements: {
+              userId,         // Array of user IDs
+              startDate: date.startDate,  // Start date for filtering
+              endDate: date.endDate,      // End date for filtering
             },
-          },
-          attributes: ["id", "userId", "company_id", "website_name", "url", "title", "visitTime"],
-        });
+          }
+        );
+        
       } else {
         const team = await User.findAll({
           where: {
@@ -663,23 +688,48 @@ class exportReportController {
         }
         const userIds = team.map((user) => user.id);
 
-        browserHistroy = await UserHistory.findAll({
-          where: {
-            userId: {
-              [Op.in]: userIds,
+        // browserHistroy = await UserHistory.findAll({
+        //   where: {
+        //     userId: {
+        //       [Op.in]: userIds,
+        //     },
+        //     createdAt: {
+        //       [Op.between]: [date.startDate, date.endDate],
+        //     },
+        //   },
+        //   attributes: ["id", "userId", "company_id", "website_name", "url", "title", "visitTime"],
+        // });
+        browserHistory = await UserHistory.sequelize.query(
+          `
+            SELECT 
+              uh.id, 
+              uh.userId, 
+              uh.company_id, 
+              uh.website_name, 
+              uh.url, 
+              uh.title, 
+              uh.visitTime
+            FROM user_histories AS uh
+            WHERE 
+              uh.userId IN (:userIds)
+              AND uh.createdAt BETWEEN :startDate AND :endDate
+          `,
+          {
+            type: QueryTypes.SELECT,
+            replacements: {
+              userIds,         // Array of user IDs
+              startDate: date.startDate,  // Start date for filtering
+              endDate: date.endDate,      // End date for filtering
             },
-            createdAt: {
-              [Op.between]: [date.startDate, date.endDate],
-            },
-          },
-          attributes: ["id", "userId", "company_id", "website_name", "url", "title", "visitTime"],
-        });
+          }
+        );
+        
       }
       let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Time Spent"];
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistroy, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistory, headers);
       if (result.status) {
-        return helper.success(res, variables.Success, "Browser History Report Generated Successfully");
+        return helper.success(res, variables.Success, "Browser History Report Generated Successfully", browserHistory);
       } else {
         return helper.success(res, variables.Success, "Browser History Report Generation Failed");
       }

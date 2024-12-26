@@ -156,7 +156,9 @@ export default {
   getAvgLoggedInTime: async (dateRange, userIds) => {
     try {
       let { startDate, endDate } = dateRange;
-
+      if (userIds.length == 0) {
+        return 0;
+      }
       const results = await TimeLog.findOne({
         attributes: [[sequelize.fn("AVG", sequelize.literal("active_time / 60")), "average_active_time"]],
         where: {
@@ -180,6 +182,9 @@ export default {
   getAttendanceAvg: async (dateRange, userIds, companyId) => {
     try {
       let { startDate, endDate } = dateRange;
+      if (userIds.length == 0) {
+        return 0;
+      }
       const totalEmployeesWithinRange = await User.findAll({
         where: {
           id: {
@@ -215,6 +220,9 @@ export default {
   getAvgProductiveAppTime: async (dateRange, userIds, companyId) => {
     try {
       let { startDate, endDate } = dateRange;
+      if (userIds.length == 0) {
+        return 0;
+      }
 
       const query = `
     SELECT 
@@ -260,7 +268,9 @@ export default {
   getAvgNonProductiveAppTime: async (dateRange, userIds, companyId) => {
     try {
       let { startDate, endDate } = dateRange;
-
+      if (userIds.length == 0) {
+        return 0;
+      }
       const query = `
     SELECT 
         COALESCE(AVG(user_total_time), 0) AS average_time_minutes
@@ -305,6 +315,9 @@ export default {
   mostUnproductiveWebsiteName: async (dateRange, userIds, companyId) => {
     try {
       const { startDate, endDate } = dateRange;
+      if (userIds.length == 0) {
+        return 0;
+      }
       const query = `
                 SELECT 
                     COUNT(uh.id) AS total_counts,
@@ -353,6 +366,9 @@ export default {
   mostProductiveWebsiteName: async (dateRange, userIds, companyId) => {
     try {
       const { startDate, endDate } = dateRange;
+      if (userIds.length == 0) {
+        return 0;
+      }
       const query = `
                 SELECT 
                     COUNT(uh.id) AS total_counts,
@@ -402,7 +418,9 @@ export default {
   mostUnproductiveAppName: async (dateRange, userIds, companyId) => {
     try {
       const { startDate, endDate } = dateRange;
-
+      if (userIds.length == 0) {
+        return 0;
+      }
       if (!userIds || userIds.length === 0) {
         throw new Error("userIds array is empty or undefined.");
       }
@@ -452,6 +470,9 @@ export default {
   mostproductiveAppName: async (dateRange, userIds, companyId) => {
     try {
       const { startDate, endDate } = dateRange;
+      if (userIds.length == 0) {
+        return 0;
+      }
 
       if (!userIds || userIds.length === 0) {
         throw new Error("userIds array is empty or undefined.");
@@ -957,16 +978,12 @@ export default {
 
   downloadFileDynamically: async (res, fromTime, toTime, format = "xls", reportName, company_id, reportData, headers) => {
     const dbTransaction = await sequelize.transaction();
-
     try {
       const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
       const fileName = `${reportName}_${company_id}_${timestamp}.${format}`;
 
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = path.dirname(__filename);
-
-      // Print the __dirname to verify
-      console.log(__dirname);
 
       // Define the directory path correctly
       const directoryPath = path.resolve(__dirname, "../../../storage/files");
@@ -977,6 +994,7 @@ export default {
         fs.mkdirSync(directoryPath, { recursive: true });
       }
       const keys = Object.keys(reportData[0]);
+      console.log(keys);
       if (format === "xls") {
         const csvContent = [
           headers.join(","),
