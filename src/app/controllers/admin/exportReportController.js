@@ -218,7 +218,7 @@ class exportReportController {
 
   getAttendanceReport = async (req, res) => {
     try {
-      const { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
+      let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
         throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
