@@ -12,6 +12,7 @@ import User from "../../database/models/userModel.js";
 import helper from "./helper.js";
 import exportHistories from "../../database/models/exportHistoryModel.js";
 import variables from "../../app/config/variableConfig.js";
+import { finished } from "stream";
 
 // Helper function to get the working days of a department's users
 const getWorkingDays = async (dateRange, userIds, companyId) => {
@@ -957,17 +958,12 @@ export default {
   // };
 
   downloadFileDynamically: async (res, fromTime, toTime, format = "xls", reportName, company_id, reportData, headers) => {
+    const dbTransaction = await sequelize.transaction();
+
     try {
-      const timestamp = new Date().toISOString().replace(/[-:.]/g, ""); // e.g., 20231224T123456
+      const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
       const fileName = `${reportName}_${company_id}_${timestamp}.${format}`;
 
-      //? Previous Code
-      // const __dirname = path.dirname(new URL(import.meta.url).pathname);
-      // console.log(__dirname);
-      // const directoryPath = path.resolve(__dirname, '../../../storage/files');
-      // const filePath = path.join(directoryPath, fileName);
-
-      // Get the correct directory path for ES modules
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = path.dirname(__filename);
 
@@ -983,65 +979,76 @@ export default {
         fs.mkdirSync(directoryPath, { recursive: true });
       }
       const keys = Object.keys(reportData[0]);
-      if (format === "xls ") {
-        // Generate XLS file (simple CSV format for demo purposes)
+      if (format === "xls") {
         const csvContent = [
-          headers.join(","), // Use headers provided as column names
+          headers.join(","),
           ...reportData.map((row) => keys.map((key, index) => row[key] || "").join(",")), // Map data to headers
         ].join("\n");
 
         fs.writeFileSync(filePath, csvContent);
         console.log("XLS file written successfully:", filePath);
 
-        const newAppInfo = await exportHistories.create({ reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
+        const newAppInfo = await exportHistories.create(
+          { reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime },
+          { transaction: dbTransaction }
+        );
 
-        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+        if (newAppInfo) {
+          await dbTransaction.commit();
+          return { status: 1 };
+        } else {
+          await dbTransaction.rollback();
+          return { status: 0 };
+        }
+      } else if (format === "pdf") {
+        try {
+          const doc = new PDFDocument({ compress: false });
+          const fileStream = fs.createWriteStream(filePath);
 
-        return res.download(filePath, fileName, (err) => {
-          if (err) {
-            console.error("Error sending XLS file:", err);
-            return helper.failed(res, variables.BadRequest, "File download failed");
-          }
-          console.log("XLS file downloaded successfully.");
-        });
-      }
+          doc.pipe(fileStream);
 
-      if (format === "pdf") {
-        // Generate PDF file
-        const doc = new PDFDocument({ compress: false });
-        const fileStream = fs.createWriteStream(filePath);
-        doc.pipe(fileStream);
+          // Add content to the PDF
+          doc.fontSize(18).text(reportName, { align: "center" }).moveDown();
+          const headerText = headers.join(" | ");
+          doc.fontSize(12).text(headerText, { underline: true }).moveDown();
 
-        // Add title and content
-        doc.fontSize(18).text(reportName, { align: "center" }).moveDown();
-        const headerText = headers.join(" | ");
-        doc.fontSize(12).text(headerText, { underline: true }).moveDown();
-
-        reportData.forEach((row, index) => {
-          const rowText = keys.map((key, idx) => row[key] || "").join(" | "); // Dynamically map data to headers
-          doc.fontSize(10).text(rowText);
-        });
-
-        doc.end();
-
-        const newAppInfo = await exportHistories.create({ reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
-
-        fileStream.on("finish", () => {
-          res.download(filePath, fileName, (err) => {
-            if (err) {
-              console.error("Error sending PDF file:", err);
-              return helper.failed(res, variables.BadRequest, "File download failed");
-            }
-            console.log("PDF file downloaded successfully.");
+          reportData.forEach((row) => {
+            const rowText = keys.map((key) => row[key] || "").join(" | "); // Dynamically map data to headers
+            doc.fontSize(10).text(rowText);
           });
-        });
 
-        fileStream.on("error", (err) => {
-          console.error("Error writing PDF file:", err);
+          doc.end();
+
+          // Await for the file writing to finish
+          await new Promise((resolve, reject) => {
+            fileStream.on("finish", resolve);
+            fileStream.on("error", reject);
+          });
+
+          // Save details to the database
+          const newAppInfo = await exportHistories.create({
+            reportName,
+            company_id,
+            filePath,
+            reportExtension: format,
+            periodFrom: fromTime,
+            periodTo: toTime,
+          });
+
+          if (newAppInfo) {
+            await dbTransaction.commit();
+            return { status: 1 };
+          } else {
+            await dbTransaction.rollback();
+            return { status: 0 };
+          }
+        } catch (err) {
+          console.error("Error generating PDF report:", err);
+          await dbTransaction.rollback();
           return helper.failed(res, variables.BadRequest, "File generation failed");
-        });
+        }
       } else {
+        await dbTransaction.rollback();
         return helper.failed(res, variables.BadRequest, "Unsupported File Request");
       }
     } catch (error) {

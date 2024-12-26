@@ -1,4 +1,5 @@
 import { Op, Sequelize, QueryTypes, literal, fn, col } from "sequelize";
+import fs from 'fs';
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import exportReports from "../../../database/models/exportReportsModel.js";
@@ -26,7 +27,7 @@ class exportReportController {
   getExportHistoryReport = async (req, res) => {
     try {
       // ___________---------- Search, Limit, Pagination ----------_______________
-      let { limit, page} = req.query;
+      let { limit, page } = req.query;
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
       // ___________---------- Search, Limit, Pagination ----------_______________
@@ -35,7 +36,7 @@ class exportReportController {
         where: { company_id: req.user.company_id },
         limit: limit,
         offset: offset,
-        attributes: ["reportName", "reportExtension", "periodFrom", "periodTo", "filePath"],
+        attributes: ["reportName", "reportExtension", "periodFrom", "periodTo", "filePath", "createdAt"],
       });
 
       if (getStatus.count === 0) {
@@ -101,11 +102,14 @@ class exportReportController {
         "Most Used Productive App",
       ];
 
-      // await GenerateReportHelper.downloadFileDynamically(res, startDate.toISOString().split("T")[0], endDate.toISOString().split("T")[0], format, "Productive Report", req.user.company_id, data, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive Report", req.user.company_id, data, headers);
 
-      return helper.success(res, variables.Success, "User Updated Successfully", ProdAppAnalysis);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Productivity Report Generated Successfully", data);
+      } else {
+        return helper.success(res, variables.Success, "Productivity Report Generation Failed");
+      }
     } catch (error) {
-      // if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -115,10 +119,9 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
+        return helper.failed(res, variables.BadRequest, 'Invalid format. Only xls or pdf are allowed');
       }
-      // if(!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
-      let startDate, endDate;
+      if (!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
 
       const validOptions = [1, 2, 3, 4];
 
@@ -179,8 +182,12 @@ class exportReportController {
 
       let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Shift Time Out", "Time Out"];
 
-      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
-      // return helper.success(res, variables.Success, attendanceReport);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Attendance Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Attendance Report Generation Failed");
+      }
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -191,7 +198,6 @@ class exportReportController {
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
         return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
 
@@ -260,8 +266,12 @@ class exportReportController {
 
       let headers = ["Name", "Department", "Application", "Productive/Non Producitve"];
 
-      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application Usage Report", req.user.company_id, applicationUsage, headers);
-      // return helper.success(res, variables.Success, "User Updated Successfully", applicationUsage);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application Usage Report", req.user.company_id, applicationUsage, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Application Usage Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Application Usage Report Generation Failed");
+      }
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -275,13 +285,13 @@ class exportReportController {
       if (format && !["xls", "pdf"].includes(format)) {
         return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
+
+      // if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
+
       const dateRange = await helper.getDateRange(definedPeriod, fromDate, toDate);
       const allDepartments = await department.findAll({
         where: { company_id: company_id, status: 1 },
       });
-
-      let startDate = dateRange.startDate;
-      let endDate = dateRange.endDate;
 
       const performanceArray = [];
       for (const element of allDepartments) {
@@ -327,9 +337,21 @@ class exportReportController {
         "Most Productive App",
       ];
 
-      await GenerateReportHelper.downloadFileDynamically(res, dateRange.startDate, dateRange.endDate, format, "Department Performance Report", req.user.company_id, performanceArray, headers);
-
-      // return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
+      const result = await GenerateReportHelper.downloadFileDynamically(
+        res,
+        dateRange.startDate,
+        dateRange.endDate,
+        format,
+        "Department Performance Report",
+        req.user.company_id,
+        performanceArray,
+        headers
+      );
+      if (result.status) {
+        return helper.success(res, variables.Success, "Department Performance Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Department Performance Report Generation Failed");
+      }
     } catch (error) {
       console.log(`departmentPerformanceReport ${error.message}`);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -389,9 +411,12 @@ class exportReportController {
 
       let headers = ["Name", "Department", "Url", "Time"];
 
-      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
-
-      // return res.status(200).json({ status: "success", data: unauthorizedAccessReport });
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Unauthorized Web Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Unauthorized Web Report Generation Failed");
+      }
     } catch (error) {
       console.error("Error fetching unauthorized access report:", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -511,8 +536,12 @@ class exportReportController {
       }
       let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Time Spent"];
 
-      await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, data.format, "Browser History Report", req.user.company_id, browserHistroy, headers);
-      // return helper.success(res, variables.Success, "Browser Data Fetched successfully", browserHistroy);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, data.format, "Browser History Report", req.user.company_id, browserHistroy, headers);
+      if (result.status) {
+        return helper.success(res, variables.Success, "Browser History Report Generated Successfully");
+      } else {
+        return helper.success(res, variables.Success, "Browser History Report Generation Failed");
+      }
     } catch (error) {
       console.log("Error while generating browser history report:", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -520,12 +549,23 @@ class exportReportController {
   };
 
   downloadExportReport = async (req, res) => {
-    let { filePath } = req.query;
-    return res.download(filePath, (err) => {
+    let { filePath } = req.body;
+
+    if (typeof filePath !== "string" || !filePath.trim()) {
+      return helper.failed(res, variables.BadRequest, "Invalid file path provided");
+    }
+    fs.access(filePath, fs.constants.F_OK, (err) => {
       if (err) {
-        console.error("Error sending XLS file:", err);
-        return helper.failed(res, variables.BadRequest, "File download failed");
+        console.error("File not found:", err);
+        return helper.failed(res, variables.BadRequest, "File not found");
       }
+
+      return res.download(filePath, (err) => {
+        if (err) {
+          console.error("Error sending XLS file:", err);
+          return helper.failed(res, variables.BadRequest, "File download failed");
+        }
+      });
     });
   };
 }

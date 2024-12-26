@@ -9,6 +9,7 @@ import AppHistoryEntry from "../../../database/models/AppHistoryEntry.js";
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import commonfuncitons from "../../../utils/services/commonfuncitons.js";
 import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.js";
+import moment from "moment";
 class teamMemberTimeLogController {
   getAllTeamMemberLog = async (req, res) => {
     try {
@@ -241,6 +242,7 @@ LEFT JOIN
     AND ah.startTime BETWEEN :startOfDay AND :endOfDay -- Filter for the date range
 WHERE 
     u.id IN (:userIds)
+    AND u.createdAt <= :endOfDay
 GROUP BY 
     u.id, u.fullname, s.id, t.logged_in_time, t.logged_out_time, t.early_going, t.late_coming, t.user_id;`
       const replacements = {
@@ -293,24 +295,41 @@ GROUP BY
       let userWhere = {};
       let startOfDay;
       let endOfDay;
+      let formattedDate;
+      startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DDTHH:mm:ssZ");
 
-      if (date) {
-        startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
-        endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
+      // if (date) {
+      //   startOfDay = new Date(date);
+      //   startOfDay.setHours(0, 0, 0, 0);
+      //   endOfDay = new Date(date);
+      //   endOfDay.setHours(23, 59, 59, 999);
+      //   formattedDate = new Date(date).toISOString().split('T')[0];
 
-        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
-      } else {
-        startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        endOfDay = new Date();
-        endOfDay.setHours(23, 59, 59, 999);
+      //   logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+      // } else {
+      //   startOfDay = new Date();
+      //   startOfDay.setHours(0, 0, 0, 0);
+      //   endOfDay = new Date();
+      //   endOfDay.setHours(23, 59, 59, 999);
+      //   formattedDate = new Date().toISOString().split('T')[0];
+      //   console.log(formattedDate);
 
-        logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+      //   logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+      // }
+      if(date){
+        startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+        formattedDate = new Date(date).toISOString().split('T')[0];
+      }else{
+        startOfDay = moment.tz(moment(), "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+        formattedDate = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
       }
+      logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
 
-      const formattedDate = new Date(date).toISOString().split('T')[0];
+      console.log(startOfDay);
+      console.log(endOfDay);
+      console.log(formattedDate);
 
 
       userWhere.currentStatus = 1;
@@ -374,7 +393,8 @@ GROUP BY
 
 
       //console.log({ startOfDay });
-      let date_string = new Date(startOfDay).toISOString().split("T")[0];
+      console.log(startOfDay);
+      let dateOnly = startOfDay.split(" ")[0];
 
       const [productiveResult] = await sequelize.query(
         `
@@ -390,15 +410,17 @@ GROUP BY
             ON timelogs.user_id = appHistory.userId
           WHERE 
             timelogs.company_id = :company_id
-            AND timelogs.createdAt like "%${date_string}%" AND appHistory.is_productive = 1
+            AND timelogs.date = :dateOnly AND appHistory.is_productive = 1
           GROUP BY timelogs.user_id
           HAVING totalTimeSpent >= 0.6 * totalTimeLog
         ) AS productiveEntries;`,
         {
           replacements: {
             company_id: req.user.company_id,
+            dateOnly
           },
           type: QueryTypes.SELECT,
+          logging: console.log
         }
       );
 
@@ -420,15 +442,17 @@ GROUP BY
             ON timelogs.user_id = appHistory.userId
           WHERE 
             timelogs.company_id = :company_id
-            AND timelogs.createdAt like "%${date_string}%" AND appHistory.is_productive = 1
+            AND timelogs.date = :dateOnly AND appHistory.is_productive = 1
           GROUP BY timelogs.user_id
           HAVING totalTimeSpent <= 0.6 * totalTimeLog
         ) AS productiveEntries;`,
         {
           replacements: {
             company_id: req.user.company_id,
+            dateOnly
           },
           type: QueryTypes.SELECT,
+          logging: console.log,
         }
       );
 
