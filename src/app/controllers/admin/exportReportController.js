@@ -658,7 +658,7 @@ console.log("test1");
     d.name AS departmentName, 
     uh.url, 
     IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
-    uh.visitTime
+    uh.vispullitTime
 FROM 
     user_histories AS uh
 LEFT JOIN 
