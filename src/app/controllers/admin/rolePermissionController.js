@@ -184,44 +184,43 @@ class rolePermissionController {
   //   }
   // };
 
-
   updateMultipleRolePermission = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
     try {
       const { rolesModulesPermissions } = req.body;
-  
+
       if (!rolesModulesPermissions || !Array.isArray(rolesModulesPermissions)) {
         return helper.failed(res, variables.NotFound, "Roles and their module permissions are required and must be an array!");
       }
-  
+
       // Loop through each role's module permissions
       for (const roleModules of rolesModulesPermissions) {
         const { roleName, modulesPermissions } = roleModules;
-  
+
         if (!roleName || typeof roleName !== "string") {
           return helper.failed(res, variables.NotFound, "Role Name is required!");
         }
-  
+
         if (!modulesPermissions || !Array.isArray(modulesPermissions)) {
           return helper.failed(res, variables.NotFound, "Modules and Permissions are required and must be an array!");
         }
-  
+
         // Validate each module's permissions
         for (const module of modulesPermissions) {
           const { moduleName, permissions } = module;
-  
+
           if (!moduleName || typeof moduleName !== "string") {
             return helper.failed(res, variables.NotFound, "Module name is required!");
           }
-  
+
           if (!permissions || typeof permissions == "undefined") {
             return helper.failed(res, variables.NotFound, "Permissions are required!");
           }
-  
+
           if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {
             return helper.failed(res, variables.BadRequest, "Permissions must be a valid object.");
           }
-  
+
           // Validate required permission keys and boolean values
           const requiredKeys = ["GET", "POST", "PUT", "DELETE"];
           for (const key of requiredKeys) {
@@ -232,7 +231,7 @@ class rolePermissionController {
               return helper.failed(res, variables.BadRequest, `The value for ${key} in permissions must be true or false.`);
             }
           }
-  
+
           // Validate individual permission values
           for (const [key, value] of Object.entries(permissions)) {
             if (value !== true && value !== false) {
@@ -240,7 +239,7 @@ class rolePermissionController {
             }
           }
         }
-  
+
         // Check if the role exists
         const existRole = await role.findOne({
           where: { name: roleName, company_id: req.user.company_id },
@@ -248,11 +247,11 @@ class rolePermissionController {
           transaction: dbTransaction,
         });
         if (!existRole) return helper.failed(res, variables.ValidationError, `Role ${roleName} does not exist!`);
-  
+
         // Loop through each module and update the permissions for the role
         for (const module of modulesPermissions) {
           const { moduleName, permissions } = module;
-  
+
           const existingRolePermission = await rolePermission.findOne({
             where: { roleId: existRole.id, modules: moduleName, company_id: req.user.company_id },
             transaction: dbTransaction,
@@ -260,8 +259,8 @@ class rolePermissionController {
           if (!existingRolePermission) {
             return helper.failed(res, variables.ValidationError, `Role Permission does not exist for module: ${moduleName}`);
           }
-  
-          const updated = await rolePermission.update(
+
+          await rolePermission.update(
             {
               permissions: permissions,
             },
@@ -270,23 +269,16 @@ class rolePermissionController {
               transaction: dbTransaction,
             }
           );
-  
-          if (!updated) {
-            if (dbTransaction) await dbTransaction.rollback();
-            return helper.failed(res, variables.UnknownError, `Unable to update permissions for module: ${moduleName}`);
-          }
         }
       }
-  
+
       await dbTransaction.commit();
       return helper.success(res, variables.Success, "Role permissions updated successfully!");
-  
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
-  
 
   updateMultipleRolePermissionOnce = async (req, res) => {
     const dbTransaction = await sequelize.transaction();
@@ -327,7 +319,7 @@ class rolePermissionController {
         }
 
         if (allTrue) {
-          updated = await rolePermission.update(
+          await rolePermission.update(
             {
               permissions: {
                 POST: true,
@@ -342,7 +334,7 @@ class rolePermissionController {
             }
           );
         } else {
-          updated = await rolePermission.update(
+          await rolePermission.update(
             {
               permissions: {
                 POST: false,
@@ -359,13 +351,8 @@ class rolePermissionController {
         }
       }
 
-      if (updated) {
-        await dbTransaction.commit();
-        return helper.success(res, variables.Success, "Role permissions Updated Successfully!");
-      } else {
-        if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unable to update the role permissions!");
-      }
+      await dbTransaction.commit();
+      return helper.success(res, variables.Success, "Role permissions Updated Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);

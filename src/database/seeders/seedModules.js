@@ -7,31 +7,32 @@ const generateDummyData = async (transaction) => {
   await sequelize.query(`ALTER TABLE ${app_modules.getTableName()} AUTO_INCREMENT=1`);
 
   const moduleData = [
-      "role",
-      "reportingManager",
-      "team",
-      "shifts",
-      "teamMembers",
-      "department",
-      "designation",
-      "adminAuth",
-      "userSettings",
-      "permissions",
-      "blockedWebsite",
-      "productiveApp",
-      "reportSettings",
-      "user",
-      "dashboard",
-      "allTeamMemberDashboard",
+    { name: "role", aliasName: "Role" },
+    { name: "reportingManager", aliasName: "Reporting Manager" },
+    { name: "team", aliasName: "Team" },
+    { name: "shifts", aliasName: "Shifts" },
+    { name: "teamMembers", aliasName: "Team Members" },
+    { name: "department", aliasName: "Department" },
+    { name: "designation", aliasName: "Designation" },
+    { name: "adminAuth", aliasName: "Admin Authorization" },
+    { name: "userSettings", aliasName: "User Settings" },
+    { name: "permissions", aliasName: "Permissions" },
+    { name: "blockedWebsite", aliasName: "Blocked Website" },
+    { name: "productiveApp", aliasName: "Productive Application" },
+    { name: "reportSettings", aliasName: "Report Settings" },
+    { name: "user", aliasName: "User" },
+    { name: "dashboard", aliasName: "Dashboard" },
+    { name: "allTeamMemberDashboard", aliasName: "All Team Member Dashboard" },
   ];
-
+  
   // Insert into the database
   for (const requestData of moduleData) {
     await app_modules.create({
-      name: requestData
-    },
-   { transaction });
+      name: requestData.name,
+      aliasName: requestData.aliasName, // Save aliasName along with name
+    }, { transaction });
   }
+  
   //console.log("Dummy data inserted successfully!");
 };
 
