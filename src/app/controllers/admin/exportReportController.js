@@ -679,6 +679,7 @@ WHERE
               userId,         // Array of user IDs
               startDate: date.startDate,  // Start date for filtering
               endDate: date.endDate,      // End date for filtering
+              companyId: req.user.company_id
             },
           }
         );
