@@ -514,7 +514,7 @@ class exportReportController {
       if (format && !["xls", "pdf"].includes(format)) {
         return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
-
+console.log("test1");
       const validOptions = [1, 2, 3, 4];
 
       if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
@@ -522,6 +522,7 @@ class exportReportController {
       if (!definedPeriod || !validOptions.includes(definedPeriod)) {
         return helper.failed(res, variables.BadRequest, "Please select a valid date option");
       }
+      console.log("test2");
 
       let date;
       if (definedPeriod) {
@@ -534,6 +535,7 @@ class exportReportController {
           date = await helper.getDateRange(definedPeriod);
         }
       }
+      console.log("test3");
 
       // Query to fetch unauthorized access
       const unauthorizedAccessReport = await UserHistory.sequelize.query(
@@ -556,6 +558,7 @@ class exportReportController {
           },
         }
       );
+      console.log("test4",unauthorizedAccessReport);
 
       let headers = ["Name", "Department", "Url", "Time"];
 
