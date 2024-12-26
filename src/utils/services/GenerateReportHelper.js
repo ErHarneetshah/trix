@@ -990,8 +990,7 @@ export default {
       if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
       }
-
-      let keys = reportData.length === 0 ? [] : Object.keys(reportData[0]);
+      const keys = reportData.length === 0 ? [] : Object.keys(reportData[0]);
       if (format === "xls") {
         const csvContent = [
           headers.join(","),
@@ -1013,31 +1012,118 @@ export default {
           await dbTransaction.rollback();
           return { status: 0 };
         }
-      } else if (format === "pdf") {
+      } 
+      else if (format === "pdf") {
+        // try {
+        //   const doc = new PDFDocument({ compress: false });
+        //   const fileStream = fs.createWriteStream(filePath);
+
+        //   doc.pipe(fileStream);
+
+        //   // Add content to the PDF
+        //   doc.fontSize(18).text(reportName, { align: "center" }).moveDown();
+        //   const headerText = headers.join(" | ");
+        //   doc.fontSize(12).text(headerText, { underline: true }).moveDown();
+
+        //   reportData.forEach((row) => {
+        //     const rowText = keys.map((key) => row[key] || "").join(" | "); // Dynamically map data to headers
+        //     doc.fontSize(10).text(rowText);
+        //   });
+
+        //   doc.end();
+
+        //   // Await for the file writing to finish
+        //   await new Promise((resolve, reject) => {
+        //     fileStream.on("finish", resolve);
+        //     fileStream.on("error", reject);
+        //   });
+
+        //   // Save details to the database
+        //   const newAppInfo = await exportHistories.create({
+        //     reportName,
+        //     company_id,
+        //     filePath,
+        //     reportExtension: format,
+        //     periodFrom: fromTime,
+        //     periodTo: toTime,
+        //   });
+
+        //   if (newAppInfo) {
+        //     await dbTransaction.commit();
+        //     return { status: 1 };
+        //   } else {
+        //     await dbTransaction.rollback();
+        //     return { status: 0 };
+        //   }
+        // } catch (err) {
+        //   console.error("Error generating PDF report:", err);
+        //   await dbTransaction.rollback();
+        //   return helper.failed(res, variables.BadRequest, "File generation failed");
+        // }
+
         try {
           const doc = new PDFDocument({ compress: false });
           const fileStream = fs.createWriteStream(filePath);
-
+      
           doc.pipe(fileStream);
-
-          // Add content to the PDF
-          doc.fontSize(18).text(reportName, { align: "center" }).moveDown();
-          const headerText = headers.join(" | ");
-          doc.fontSize(12).text(headerText, { underline: true }).moveDown();
-
-          reportData.forEach((row) => {
-            const rowText = keys.map((key) => row[key] || "").join(" | "); // Dynamically map data to headers
-            doc.fontSize(10).text(rowText);
+      
+          // Add report title
+          doc.fontSize(10).text(reportName, { align: "center", underline: true }).moveDown(2);
+      
+          // Define table properties
+          const tableTop = 100; // Starting Y position for the table
+          const columnWidths = [50, 60, 50, 50, 60, 50, 50, 50, 50]; 
+          const rowHeight = 40;
+      
+          // Draw table headers
+          let xPos = 50; // Starting X position
+          let yPos = tableTop;
+      
+          headers.forEach((header, index) => {
+            doc
+              .rect(xPos, yPos, columnWidths[index], rowHeight)
+              .fillAndStroke("#f0f0f0", "black") // Background and border color
+              .fillColor("black")
+              .fontSize(6)
+              .text(header, xPos + 5, yPos + 5, {
+                width: columnWidths[index] - 10, // Adjust width for padding
+                align: "center",
+                ellipsis: true,
+              });
+            xPos += columnWidths[index];
           });
-
+      
+          yPos += rowHeight; // Move to the next row
+      
+          // Draw table data
+          reportData.forEach((row) => {
+            xPos = 50; // Reset X position for each row
+            keys.forEach((key, index) => {
+              const cellText = row[key] || "";
+              doc
+                .rect(xPos, yPos, columnWidths[index], rowHeight)
+                .stroke()
+                .fillColor("black")
+                .fontSize(6)
+                .text(cellText, xPos + 5, yPos + 5, {
+                  width: columnWidths[index] - 10, // Adjust width for padding
+                  align: "center",
+                  ellipsis: true, // Truncate text with "..."
+                });
+              xPos += columnWidths[index];
+            });
+            yPos += rowHeight; // Move to the next row
+          });
+      
+          // Finalize PDF
           doc.end();
-
-          // Await for the file writing to finish
+      
+          // Await file writing completion
           await new Promise((resolve, reject) => {
             fileStream.on("finish", resolve);
             fileStream.on("error", reject);
           });
-
+      
           // Save details to the database
           const newAppInfo = await exportHistories.create({
             reportName,
@@ -1047,7 +1133,7 @@ export default {
             periodFrom: fromTime,
             periodTo: toTime,
           });
-
+      
           if (newAppInfo) {
             await dbTransaction.commit();
             return { status: 1 };
@@ -1060,7 +1146,8 @@ export default {
           await dbTransaction.rollback();
           return helper.failed(res, variables.BadRequest, "File generation failed");
         }
-      } else {
+      } 
+      else {
         await dbTransaction.rollback();
         return helper.failed(res, variables.BadRequest, "Unsupported File Request");
       }
