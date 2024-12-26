@@ -58,7 +58,7 @@ class roleController {
         where: { id: id, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
-      if (!roleData) return helper.failed(res, variables.NotFound, "Role Data Not Found in your company data");
+      if (!roleData) return helper.failed(res, variables.NotFound, "Role Data Not Found in company data");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", roleData);
     } catch (error) {
@@ -81,7 +81,7 @@ class roleController {
 
       // Create and save the new user
       const addNewRole = await role.create({ name: name, company_id: req.user.company_id }, { transaction: dbTransaction });
-      if(!addNewRole){
+      if (!addNewRole) {
         if (dbTransaction) await dbTransaction.rollback();
         return helper.failed(res, variables.InternalServerError, "Unable to create role!");
       }
@@ -128,7 +128,7 @@ class roleController {
         return helper.failed(res, variables.ValidationError, "Role name already exists in different record!");
       }
 
-      const updated = await role.update(
+      await role.update(
         {
           name: name,
         },
@@ -138,13 +138,8 @@ class roleController {
         }
       );
 
-      if (updated) {
-        await dbTransaction.commit();
-        return helper.success(res, variables.Success, "Role Updated Successfully!");
-      } else {
-        if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.BadRequest, "Unable to update the role!");
-      }
+      await dbTransaction.commit();
+      return helper.success(res, variables.Success, "Role Updated Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);
@@ -165,7 +160,7 @@ class roleController {
 
       const isUsedInUsers = await User.findOne({ where: { roleId: id } });
       if (isUsedInUsers) {
-        return helper.failed(res, variables.BadRequest, "Cannot Delete this Role as it is referred in other tables");
+        return helper.failed(res, variables.BadRequest, "Role cannot be deleted because it is in use by other records.");
       }
 
       // Create and save the new user

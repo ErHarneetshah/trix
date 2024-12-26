@@ -253,13 +253,33 @@ const handleAdminSocket = async (socket, io) => {
       socket.emit("isRead", { notifications: result1 });
     }
   });
+  const adminRooms = {};
 
   socket.on("getUserReport", async (data) => {
-    let result1 = await getUserReport(data, io, socket);
-    if (result1.error) {
-      socket.emit("getUserReport", { message: result1.error });
-    } else {
-      socket.emit("getUserReport", result1);
+    try {
+      const adminId = socket.userId; 
+
+      if (adminRooms[adminId]) {
+        const previousRoom = adminRooms[adminId];
+        socket.leave(previousRoom);
+      }
+
+      const newRoom = `privateRoom_${data.id}`;
+      adminRooms[adminId] = newRoom; 
+
+      socket.join(newRoom);
+
+      const socketsInRoom = await io.in(newRoom).fetchSockets();
+      for (const clientSocket of socketsInRoom) {
+        if (clientSocket.id !== socket.id) {
+          clientSocket.leave(newRoom);
+        }
+      }
+
+      const response = await getUserReport(data);
+      io.to(newRoom).emit("getUserReport", response);
+    } catch (error) {
+      socket.emit("getUserReport", {message: "Failed to fetch user report for admin."});
     }
   });
 
@@ -388,7 +408,7 @@ const getUserStats = async (io, socket) => {
   }
 };
 
-const getUserReport = async (data, io, socket) => {
+const getUserReport = async (data) => {
   try {
     let user = await User.findOne({
       where: { id: data.id },
@@ -405,12 +425,14 @@ const getUserReport = async (data, io, socket) => {
         },
       ],
     });
-    if (!user) {
-      return socket.emit("error", { message: "User not found" });
-    }
 
-    socket.join("privateRoom_" + data.id);
-    io.to(user.socket_id).socketsJoin("privateRoom_" + data.id);
+    if (!user) {
+      return {
+        status: 0,
+        message: "User not found",
+        data: null,
+      };
+    }
 
     let today = data.date
       ? new Date(data.date).toISOString().split("T")[0]
@@ -444,7 +466,7 @@ const getUserReport = async (data, io, socket) => {
       );
 
     // Combine the response data
-    let response = {
+    return {
       status: 1,
       message: "User Report fetched successfully",
       data: {
@@ -457,12 +479,9 @@ const getUserReport = async (data, io, socket) => {
           productiveAndNonProductiveWebData || [],
       },
     };
-    // //console.log(response);
-
-    return response;
   } catch (error) {
     console.error("Error getting user report:", error.message);
-    return { error: "Error getting user report" };
+    return {status: 0,message: "Error getting user report",data: null};
   }
 };
 
@@ -636,10 +655,7 @@ const singleUserProductiveAppData = async ({ userId, date }) => {
 
 // Website data Calculate: ----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-const singleUserProductiveWebsitesAndNonproductiveWebsites = async (
-  userId,
-  date
-) => {
+const singleUserProductiveWebsitesAndNonproductiveWebsites = async (userId,date) => {
   try {
     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData({
       userId,
@@ -1488,5 +1504,83 @@ export default setupSocketIO;
 //     return type === 'api'
 //       ? helper.failed(res, 500, error.message)
 //       : false;
+//   }
+// };
+
+// const getUserReport = async (data, io, socket) => {
+//   try {
+//     let user = await User.findOne({
+//       where: { id: data.id },
+//       include: [
+//         {
+//           model: department,
+//           as: "department",
+//           attributes: ["name"],
+//         },
+//         {
+//           model: designation,
+//           as: "designation",
+//           attributes: ["name"],
+//         },
+//       ],
+//     });
+//     if (!user) {
+//       return socket.emit("error", { message: "User not found" });
+//     }
+
+//     socket.join("privateRoom_" + data.id);
+//     // io.to(user.socket_id).socketsJoin("privateRoom_" + data.id);
+
+//     let today = data.date
+//       ? new Date(data.date).toISOString().split("T")[0]
+//       : new Date().toISOString().split("T")[0];
+
+//     // Fetch web history
+//     let web_query = `SELECT url, count(id) as visits FROM user_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY url`;
+//     let userHistories = await Model.query(web_query, {
+//       type: QueryTypes.SELECT,
+//     });
+
+//     // Fetch app history
+//     let app_query = `SELECT appName, count(id) as visits FROM app_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY appName`;
+//     let appHistories = await Model.query(app_query, {
+//       type: QueryTypes.SELECT,
+//     });
+
+//     // Fetch image uploads
+//     let image_query = `SELECT content FROM image_uploads WHERE date = "${today}" AND userId = ${data.id}`;
+//     let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+
+//     // Fetch productive and non-productive app data
+//     const productiveAndNonProductiveData =
+//       await singleUserProductiveAppAndNonproductiveApps(data.id, today);
+
+//     // Fetch productive and non-productive website data
+//     const productiveAndNonProductiveWebData =
+//       await singleUserProductiveWebsitesAndNonproductiveWebsites(
+//         data.id,
+//         today
+//       );
+
+//     // Combine the response data
+//     let response = {
+//       status: 1,
+//       message: "User Report fetched successfully",
+//       data: {
+//         user,
+//         image,
+//         userHistories,
+//         appHistories,
+//         productiveAndNonProductiveData: productiveAndNonProductiveData || [],
+//         productiveAndNonProductiveWebData:
+//           productiveAndNonProductiveWebData || [],
+//       },
+//     };
+//     // //console.log(response);
+
+//     return response;
+//   } catch (error) {
+//     console.error("Error getting user report:", error.message);
+//     return { error: "Error getting user report" };
 //   }
 // };

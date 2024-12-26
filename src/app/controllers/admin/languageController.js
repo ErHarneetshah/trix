@@ -35,7 +35,7 @@ const updateLanguage = async (req, res) => {
         if (theme_id < 1 || theme_id > 2) {
             return helper.failed(res, variables.ValidationError, "Theme id  must be 1 or 2");
         }
-        const settings = await languageSettings.update({
+        await languageSettings.update({
             language_id: language_id,
             theme_id: theme_id
         }, { where: { user_id: req.user.id } });
@@ -54,9 +54,9 @@ const getThemeStatus = async (req, res) => {
             attributes: ["id", "language_id", "theme_id"],
             include: [
                 {
-                    model: languageDropdown,
-                    as: "language",
-                    attributes: ["language", "image"],
+                  model: languageDropdown,
+                  as: "language",
+                  attributes: ["language","image"],
                 },
             ]
         });

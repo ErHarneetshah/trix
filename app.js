@@ -13,7 +13,8 @@ import multer from "multer";
 import { fileURLToPath } from "url";
 import path from "path";
 import sequelize from "./src/database/queries/dbConnection.js";
-import './src/cron/cron-settings.js'; 
+// import './src/cron/cron-settings.js'; 
+import "./src/utils/services/deleteExpireTokensScheduler.js";
 
 const app = express();
 

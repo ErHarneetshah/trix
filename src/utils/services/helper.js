@@ -1,15 +1,12 @@
-// import appConfig from "../../app/config/appConfig.js";
 import { fail } from "assert";
 import fs from "fs";
 import generator from "generate-password";
 import variables from "../../app/config/variableConfig.js";
 import { Op } from "sequelize";
-// import { ACCESS_TOKEN } from "../config.js";
 import appConfig from "../../app/config/appConfig.js";
 import JWT from "jsonwebtoken";
 import { parse } from "tldts";
 import moment from "moment";
-// const ACCESS_TOKEN = new appConfig().getJwtConfig();
 
 export default {
   success: (res, statusCode, message, data = null, extra = null) => {
@@ -59,11 +56,10 @@ export default {
         if (err) {
           console.error("Failed to delete file", err);
         } else {
-          //console.log("File deleted successfully.");
+          console.log("File deleted successfully.");
         }
       });
     } catch (error) {
-      //console.log({ del_file_error: error });
       return { message: `Unable to delete file at this moment`, status: 0 };
     }
   },
@@ -103,25 +99,10 @@ export default {
       };
 
       if (otherParam) {
-        where.otherField = otherParam; // Adds another filter
+        where.otherField = otherParam;
       }
     }
     return where;
-  },
-
-  deleteFile: (filePath) => {
-    try {
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          console.error("Failed to delete file", err);
-        } else {
-          //console.log("File deleted successfully.");
-        }
-      });
-    } catch (error) {
-      //console.log({ del_file_error: error });
-      return { message: `Unable to delete file at this moment`, status: 0 };
-    }
   },
 
   extractWebsiteName: (url) => {
@@ -134,59 +115,43 @@ export default {
     }
   },
 
-   // Helper function to get the date range based on the option
-   getDateRange : async(option, customStart, customEnd) => {
+  getDateRange: async (option, customStart, customEnd) => {
     const today = moment();
     let startDate, endDate;
-
+  
+    option = String(option);
+  
     switch (option) {
-      case "yesterday":
-        startDate = endDate = today
-          .clone()
-          .subtract(1, "days")
-          .format("YYYY-MM-DD");
+      case "1": // Yesterday
+        startDate = today.clone().subtract(1, "days").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endDate = today.clone().subtract(1, "days").endOf("day").format("YYYY-MM-DD HH:mm:ss");
         break;
-
-      case "previous_week":
-        endDate = today
-          .clone()
-          .startOf("week")
-          .subtract(1, "days")
-          .format("YYYY-MM-DD");
-        startDate = moment(endDate)
-          .subtract(6, "days")
-          .format("YYYY-MM-DD");
+  
+      case "2": // Last week
+        endDate = today.clone().startOf("week").subtract(1, "days").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+        startDate = moment(endDate, "YYYY-MM-DD HH:mm:ss").subtract(6, "days").startOf("day").format("YYYY-MM-DD HH:mm:ss");
         break;
-
-      case "previous_month":
+  
+      case "3": // Last month
         const firstDayOfThisMonth = today.clone().startOf("month");
-        const lastDayOfPreviousMonth = firstDayOfThisMonth
-          .clone()
-          .subtract(1, "days");
-        startDate = lastDayOfPreviousMonth
-          .clone()
-          .startOf("month")
-          .format("YYYY-MM-DD");
-        endDate = lastDayOfPreviousMonth.format("YYYY-MM-DD");
+        const lastDayOfPreviousMonth = firstDayOfThisMonth.clone().subtract(1, "days");
+        startDate = lastDayOfPreviousMonth.clone().startOf("month").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endDate = lastDayOfPreviousMonth.endOf("day").format("YYYY-MM-DD HH:mm:ss");
         break;
-
-      case "custom_range":
+  
+      case "4": // Custom range
         if (!customStart || !customEnd) {
-          throw new Error(
-            "Both customStart and customEnd must be provided for 'custom range'."
-          );
+          throw new Error("Both customStart and customEnd must be provided for 'custom range'.");
         }
-        startDate = moment(customStart).format("YYYY-MM-DD");
-        endDate = moment(customEnd).format("YYYY-MM-DD");
+        startDate = moment(customStart).startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endDate = moment(customEnd).endOf("day").format("YYYY-MM-DD HH:mm:ss");
         break;
-
+  
       default:
-        // throw new Error(
-        //   "Invalid option. Valid options are 'yesterday', 'previous week', 'previous month', or 'custom range'."
-        // );
-        return {status:0 , message:"Invalid option!!!"}
+        return { status: 0, message: "Invalid option!!!" };
     }
-
+  
     return { startDate, endDate };
-  }
+  },
+  
 };

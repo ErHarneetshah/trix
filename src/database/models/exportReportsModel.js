@@ -13,7 +13,7 @@ const exportReports = sequelize.define('exportReports', {
     allowNull: false,
   },
   content:{
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT('long'),
     allowNull: false,
   },
   status:{
@@ -25,5 +25,7 @@ const exportReports = sequelize.define('exportReports', {
   timestamps: true,
   underscored: false,
 });
+
+await exportReports.sync({alter:1});
 
 export default exportReports;

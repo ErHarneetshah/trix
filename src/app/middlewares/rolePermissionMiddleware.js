@@ -9,7 +9,6 @@ const rolePermissionMiddleware = async (req, res, next) => {
     const reqMethod = req.method;
     const routeUrl = req.originalUrl;
     const moduleName = routeUrl.split("/")[2];
-
     // Testing variables
     // const customModule = "department";
     // const customRoleID = 30;

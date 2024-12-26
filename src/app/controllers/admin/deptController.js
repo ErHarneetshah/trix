@@ -16,6 +16,8 @@ class deptController {
   //* ________-------- GET All Departments ---------______________
   getAllDept = async (req, res) => {
     try {
+      const routeUrl = req.originalUrl;
+      console.log(routeUrl);
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       let searchable = ["name"];
@@ -72,7 +74,7 @@ class deptController {
         where: { id: id, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!deptData) return helper.failed(res, variables.NotFound, "Department Not Found in your company data");
+      if (!deptData) return helper.failed(res, variables.NotFound, "Department Not Found in company data");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", deptData);
     } catch (error) {
@@ -92,14 +94,14 @@ class deptController {
         where: { name: name, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (existingDept) return helper.failed(res, variables.ValidationError, "Department Already Exists in our system");
+      if (existingDept) return helper.failed(res, variables.ValidationError, "Department Already Exists in company");
 
       // ___________-------- Parent Dept exists or not ---------________________
       const existingParentDept = await department.findOne({
         where: { id: parentDeptId, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Parent Department does not exists in our system");
+      if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Parent Department does not exists in company");
 
       // ___________-------- Adding Dept ---------________________
       let addNewDept = await department.create({ name: name, parentDeptId: parentDeptId, company_id: req.user.company_id }, { transaction: dbTransaction });
@@ -199,7 +201,7 @@ class deptController {
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
-      if (!existingDept) return helper.failed(res, variables.BadRequest, "Department does not found in our system");
+      if (!existingDept) return helper.failed(res, variables.BadRequest, "Department does not exists in company");
 
       // ___________-------- Dept Used in order or not ---------________________
       const isUsedInUsers = await User.findOne({ where: { departmentId: id } });
@@ -207,7 +209,7 @@ class deptController {
       const isUsedInTeams = await team.findOne({ where: { departmentId: id } });
 
       if (isUsedInTeams || isUsedInProductiveAndNonApps || isUsedInUsers) {
-        return helper.failed(res, variables.BadRequest, "Cannot Delete this Department as it is referred in other tables");
+        return helper.failed(res, variables.BadRequest, "Department cannot be deleted because it is in use by other records.");
       }
 
       // ___________-------- Delete Department ---------________________

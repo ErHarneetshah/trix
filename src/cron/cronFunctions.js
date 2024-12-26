@@ -9,6 +9,8 @@ import commonfuncitons from '../utils/services/commonfuncitons.js';
 const sendEmailWithReports = async (req, res) => {
     try {
         const date = new Date();
+        // const todayDate = '2025-01-01';
+
         const todayDate = date.toISOString().split('T')[0];
 
         const limit = 1000;
@@ -26,7 +28,7 @@ const sendEmailWithReports = async (req, res) => {
 
             if (admins.length === 0) {
                 if (offset === 0) {
-                    //console.log("No admins found, skipping sending reports via email.");
+                    console.log("No admins found, skipping sending reports via email.");
                 }
                 hasMoreData = false;
                 break;
@@ -51,18 +53,18 @@ const sendEmailWithReports = async (req, res) => {
 
                     const sendmail = await H.sendM(admin.email, "Reports Data", message, '', '', attachment);
                     if (sendmail.success) {
-                        //get the report status and then after sending the mail update the users table next_reports_scheduling date
+                        //get the report status and then after sending the mail, update the users table next_reports_scheduling date
 
                         let resultDate = (admin.status === 1) ? commonfuncitons.getNextMonthDate() : (admin.status === 2) ? commonfuncitons.getNextMondayDate() : (admin.status === 3) ? commonfuncitons.getTomorrowDate() : "Unknown Error in sendEmailWithReports";
 
-                        const [updatedUsers] = await User.update(
+                        await User.update(
                             { next_reports_schedule_date: resultDate },
                             { where: { id: admin.id } }
                         );
 
-                        //console.log("Report Send Successfully.");
+                        console.log("Report Send Successfully.");
                     } else {
-                        //console.log("Error while sending the reports to the admin");
+                        console.log("Error while sending the reports to the admin");
                     }
                 } catch (error) {
                     console.error(`Failed to send email to ${admin.email}:`, error.message);
