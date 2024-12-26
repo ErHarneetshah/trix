@@ -74,10 +74,8 @@ class teamMemberTimeLogController {
     try {
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page, date, tab } = req.query;
-      // let searchable = ["$user.fullname$"];
       limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
-      // let logWhere = await helper.searchCondition(searchParam, searchable);
       let userWhere = {};
       let logWhere = {};
       // ___________---------- Search, Limit, Pagination ----------_______________
@@ -85,20 +83,14 @@ class teamMemberTimeLogController {
       let startOfDay;
       let endOfDay;
 
-      if (date) {
-        startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
-        endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
-        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
-      } else {
-        startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        endOfDay = new Date();
-        endOfDay.setHours(23, 59, 59, 999);
-
-        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+      if(date){
+        startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+      }else{
+        startOfDay = moment.tz(moment(), "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
       }
+      logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
 
       logWhere.company_id = req.user.company_id;
 
@@ -177,20 +169,14 @@ class teamMemberTimeLogController {
       let company_id = req.user.company_id;
       let userIds = [];
 
-      if (date) {
-        startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
-        endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
-        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
-      } else {
-        startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        endOfDay = new Date();
-        endOfDay.setHours(23, 59, 59, 999);
-
-        logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+      if(date){
+        startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+      }else{
+        startOfDay = moment.tz(moment(), "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
       }
+      logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
 
       logWhere.company_id = company_id;
 
@@ -325,7 +311,7 @@ GROUP BY
         endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
         formattedDate = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
       }
-      logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
+      logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
 
       console.log(startOfDay);
       console.log(endOfDay);
@@ -420,7 +406,6 @@ GROUP BY
             dateOnly
           },
           type: QueryTypes.SELECT,
-          logging: console.log
         }
       );
 
@@ -452,7 +437,6 @@ GROUP BY
             dateOnly
           },
           type: QueryTypes.SELECT,
-          logging: console.log,
         }
       );
 

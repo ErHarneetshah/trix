@@ -35,7 +35,6 @@ const topFiveProductiveAppsUsers = async (req, res, next) => {
     const results = await sequelize.query(query, {
       replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
-      logging: false,
     });
 
     if (!results || results.length === 0) {
@@ -82,7 +81,6 @@ const topFiveUnProductiveAppsUsers = async (req, res, next) => {
     const results = await sequelize.query(query, {
       replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
-      logging: false, // Set to `true` for debugging during development
     });
 
     if (!results || results.length === 0) {
@@ -170,7 +168,6 @@ const topFiveEffectiveUsers = async (req, res, next) => {
     const results = await sequelize.query(query, {
       replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
-      logging: false,
     });
 
     if (!results || results.length === 0) {
@@ -217,7 +214,6 @@ const topFiveAbsentUsers = async (req, res, next) => {
     const results = await sequelize.query(query, {
       replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
-      logging: false, // Disable logging for cleaner console output
     });
 
     // If no results are found, send an appropriate response
@@ -275,7 +271,6 @@ const topFiveLateComingUsers = async (req, res, next) => {
     const results = await sequelize.query(query, {
       replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
-      logging: false, // Disable query logging for cleaner console output
     });
 
     // If no results are found, send an appropriate response
@@ -337,7 +332,6 @@ const getTopFiveOfflineLoggedUsers = async (req, res, next) => {
     const results = await sequelize.query(query, {
       replacements: {companyId:company_id},
       type: Sequelize.QueryTypes.SELECT,
-      logging: false, // Disable query logging for a cleaner console
     });
 
     // If no results are found, send an appropriate response

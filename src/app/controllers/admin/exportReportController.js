@@ -12,6 +12,7 @@ import exportHistories from "../../../database/models/exportHistoryModel.js";
 import department from "../../../database/models/departmentModel.js";
 import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.js";
 import { endOfDay } from "date-fns";
+import moment from "moment";
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
@@ -28,19 +29,29 @@ class exportReportController {
   getExportHistoryReport = async (req, res) => {
     try {
       // ___________---------- Search, Limit, Pagination ----------_______________
-      let { searchParam, limit, page } = req.query;
+      let { searchParam, limit, page, date } = req.query;
       limit = parseInt(limit) || 10;
       let searchable = ["reportName"];
       let where = await helper.searchCondition(searchParam, searchable);
       where.company_id = req.user.company_id;
       let offset = (page - 1) * limit || 0;
+      let startOfDay, endOfDay;
+
+      if (date) {
+        startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+      } else {
+        startOfDay = moment.tz(moment(), "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
+        endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
+      }
+      where.createdAt = { [Op.between]: [startOfDay, endOfDay] };
       // ___________---------- Search, Limit, Pagination ----------_______________
 
       const getStatus = await exportHistories.findAndCountAll({
         where: where,
         limit: limit,
         offset: offset,
-        attributes: ["reportName", "reportExtension", "periodFrom", "periodTo", "filePath", [Sequelize.fn('DATE', Sequelize.col('createdAt')), 'createdAt']],
+        attributes: ["reportName", "reportExtension", "periodFrom", "periodTo", "filePath", [Sequelize.fn("DATE", Sequelize.col("createdAt")), "createdAt"]],
         order: [["createdAt", "DESC"]],
       });
 
@@ -407,9 +418,20 @@ class exportReportController {
 
       // if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
 
-      const dateRange = await helper.getDateRange(definedPeriod, fromDate, toDate);
+      let dateRange;
+
+      if (definedPeriod) {
+        if (definedPeriod == 4) {
+          if (!fromDate || !toDate) {
+            return helper.failed(res, variables.BadRequest, "Please select start and end date");
+          }
+          dateRange = await helper.getDateRange(definedPeriod, fromDate, toDate);
+        } else {
+          dateRange = await helper.getDateRange(definedPeriod);
+        }
+      }
       const allDepartments = await department.findAll({
-        where: { company_id: company_id, status: 1 },
+        where: { company_id: req.user.company_id, status: 1 },
       });
 
       const performanceArray = [];
@@ -655,7 +677,7 @@ class exportReportController {
       }
       let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Time Spent"];
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, data.format, "Browser History Report", req.user.company_id, browserHistroy, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistroy, headers);
       if (result.status) {
         return helper.success(res, variables.Success, "Browser History Report Generated Successfully");
       } else {

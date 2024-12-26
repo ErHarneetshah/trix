@@ -37,7 +37,6 @@ const getWorkingDays = async (dateRange, userIds, companyId) => {
           endDate: `${endDate}T23:59:59`,
         },
         type: sequelize.QueryTypes.SELECT,
-        // logging:console.log
       }
     );
     return results ? results.count : 0;
@@ -83,14 +82,14 @@ export default {
   getTotalEmployeeDepartmentWise: async (deptId, dateRange, type = "count") => {
     try {
       const { startDate, endDate } = dateRange;
+      console.log(endDate);
       if (type === "count") {
         const totalEmployees = await User.count({
           where: {
             departmentId: deptId,
             status: 1,
             createdAt: {
-              // [Op.gte]: new Date(`${startDate}T00:00:00`),
-              [Op.lte]: new Date(`${endDate}T23:59:59`),
+              [Op.lte]: new Date(endDate), // Directly use the `endDate` value
             },
           },
         });
@@ -101,8 +100,7 @@ export default {
             departmentId: deptId,
             status: 1,
             createdAt: {
-              // [Op.gte]: new Date(`${startDate}T00:00:00`),
-              [Op.lte]: new Date(`${endDate}T23:59:59`),
+              [Op.lte]: new Date(endDate),
             },
           },
           attributes: ["id"],
@@ -166,8 +164,8 @@ export default {
             [Op.in]: userIds,
           },
           createdAt: {
-            [Op.gte]: new Date(`${startDate}T00:00:00`),
-            [Op.lte]: new Date(`${endDate}T23:59:59`),
+            [Op.gte]: new Date(startDate),
+            [Op.lte]: new Date(endDate),
           },
         },
       });
