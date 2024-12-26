@@ -1,5 +1,5 @@
 import { Op, Sequelize, QueryTypes, literal, fn, col } from "sequelize";
-import fs from 'fs';
+import fs from "fs";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import exportReports from "../../../database/models/exportReportsModel.js";
@@ -11,6 +11,7 @@ import { UserHistory } from "../../../database/models/UserHistory.js";
 import exportHistories from "../../../database/models/exportHistoryModel.js";
 import department from "../../../database/models/departmentModel.js";
 import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.js";
+import { endOfDay } from "date-fns";
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
@@ -27,16 +28,20 @@ class exportReportController {
   getExportHistoryReport = async (req, res) => {
     try {
       // ___________---------- Search, Limit, Pagination ----------_______________
-      let { limit, page } = req.query;
+      let { searchParam, limit, page } = req.query;
       limit = parseInt(limit) || 10;
+      let searchable = ["reportName"];
+      let where = await helper.searchCondition(searchParam, searchable);
+      where.company_id = req.user.company_id;
       let offset = (page - 1) * limit || 0;
       // ___________---------- Search, Limit, Pagination ----------_______________
 
       const getStatus = await exportHistories.findAndCountAll({
-        where: { company_id: req.user.company_id },
+        where: where,
         limit: limit,
         offset: offset,
-        attributes: ["reportName", "reportExtension", "periodFrom", "periodTo", "filePath", "createdAt"],
+        attributes: ["reportName", "reportExtension", "periodFrom", "periodTo", "filePath", [Sequelize.fn('DATE', Sequelize.col('createdAt')), 'createdAt']],
+        order: [["createdAt", "DESC"]],
       });
 
       if (getStatus.count === 0) {
@@ -114,12 +119,91 @@ class exportReportController {
     }
   };
 
+  // getAttendanceReport = async (req, res) => {
+  //   try {
+  //     let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
+  //     if (!format) format = "xls";
+  //     if (format && !["xls", "pdf"].includes(format)) {
+  //       return helper.failed(res, variables.BadRequest, 'Invalid format. Only xls or pdf are allowed');
+  //     }
+  //     if (!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
+
+  //     const validOptions = [1, 2, 3, 4];
+
+  //     if (!definedPeriod || !validOptions.includes(definedPeriod)) {
+  //       return helper.failed(res, variables.BadRequest, "Please select a valid date option");
+  //     }
+
+  //     let date;
+
+  //     if (definedPeriod) {
+  //       if (definedPeriod == 4) {
+  //         if (!fromDate || !toDate) {
+  //           return helper.failed(res, variables.BadRequest, "Please select start and end date");
+  //         }
+  //         date = await helper.getDateRange(definedPeriod, fromDate, toDate);
+  //       } else {
+  //         date = await helper.getDateRange(definedPeriod);
+  //       }
+  //     }
+
+  //     // Fetch attendance report
+  //     const attendanceReport = await TimeLog.sequelize.query(
+  //       `SELECT
+  //         u.fullname AS employee_name,
+  //         team.name AS team,
+  //         timelog.date AS date,
+  //         DAYNAME(timelog.date) AS day,
+  //         CASE
+  //           WHEN timelog.logged_in_time IS NOT NULL THEN 'Present'
+  //           ELSE 'Absent'
+  //         END AS attendance_status,
+  //         shifts.start_time AS shift_time_in,
+  //         timelog.logged_in_time AS time_in,
+  //         shifts.end_time AS shift_time_out,
+  //         timelog.logged_out_time AS time_out
+  //       FROM timelogs AS timelog
+  //       LEFT JOIN users AS u ON timelog.user_id = u.id
+  //       JOIN teams AS team ON u.teamId = team.id
+  //       JOIN shifts AS shifts ON timelog.shift_id = shifts.id
+  //       WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
+  //       ${teamId ? "AND team.id = :teamId" : ""}
+  //       ${userId ? "AND u.id = :userId" : ""}
+  //       ORDER BY timelog.date DESC
+  //       `,
+  //       {
+  //         replacements: {
+  //           company_id: req.user.company_id,
+  //           startDate: date.startDate,
+  //           endDate: date.endDate,
+  //           teamId,
+  //           userId,
+  //           limit: limit || 10,
+  //           offset: offset || 0,
+  //         },
+  //         type: QueryTypes.SELECT,
+  //       }
+  //     );
+
+  //     let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Shift Time Out", "Time Out"];
+
+  //     const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
+  //     if (result.status) {
+  //       return helper.success(res, variables.Success, "Attendance Report Generated Successfully");
+  //     } else {
+  //       return helper.success(res, variables.Success, "Attendance Report Generation Failed");
+  //     }
+  //   } catch (error) {
+  //     return helper.failed(res, variables.BadRequest, error.message);
+  //   }
+  // };
+
   getAttendanceReport = async (req, res) => {
     try {
-      let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
+      const { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
       if (!format) format = "xls";
       if (format && !["xls", "pdf"].includes(format)) {
-        return helper.failed(res, variables.BadRequest, 'Invalid format. Only xls or pdf are allowed');
+        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
       }
       if (!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
 
@@ -142,35 +226,19 @@ class exportReportController {
         }
       }
 
-      // Fetch attendance report
-      const attendanceReport = await TimeLog.sequelize.query(
-        `SELECT 
-          u.fullname AS employee_name, 
-          team.name AS team, 
-          timelog.date AS date, 
-          DAYNAME(timelog.date) AS day, 
-          CASE 
-            WHEN timelog.logged_in_time IS NOT NULL THEN 'Present' 
-            ELSE 'Absent' 
-          END AS attendance_status, 
-          shifts.start_time AS shift_time_in, 
-          timelog.logged_in_time AS time_in, 
-          shifts.end_time AS shift_time_out, 
-          timelog.logged_out_time AS time_out
-        FROM timelogs AS timelog
-        LEFT JOIN users AS u ON timelog.user_id = u.id
-        JOIN teams AS team ON u.teamId = team.id
-        JOIN shifts AS shifts ON timelog.shift_id = shifts.id
-        WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
+      const attendanceReport = [];
+      const presentUsersReport = await TimeLog.sequelize.query(
+        `SELECT u.fullname AS employee_name, team.name AS team, timelog.date AS date, DAYNAME(timelog.date) AS day, CASE WHEN timelog.logged_in_time IS NOT NULL THEN 'Present' ELSE 'Absent' END AS attendance_status, shifts.start_time AS shift_time_in, timelog.logged_in_time AS time_in, shifts.end_time AS shift_time_out, timelog.logged_out_time AS time_out
+        FROM timelogs AS timelog LEFT JOIN users AS u ON timelog.user_id = u.id JOIN teams AS team ON u.teamId = team.id JOIN shifts AS shifts ON timelog.shift_id = shifts.id WHERE timelog.date BETWEEN :startDate AND :endOfDay AND u.company_id = :company_id AND u.isAdmin = 0
         ${teamId ? "AND team.id = :teamId" : ""}
         ${userId ? "AND u.id = :userId" : ""}
-        ORDER BY timelog.date DESC
-        `,
+        AND u.createdAt <= :endOfDay
+        ORDER BY timelog.date DESC`,
         {
           replacements: {
             company_id: req.user.company_id,
             startDate: date.startDate,
-            endDate: date.endDate,
+            endOfDay: date.endDate,
             teamId,
             userId,
             limit: limit || 10,
@@ -180,7 +248,58 @@ class exportReportController {
         }
       );
 
-      let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Shift Time Out", "Time Out"];
+      const presentUsers = await TimeLog.findAll({
+        attributes: ["user_id"],
+        include: [
+          {
+            model: User,
+            as: "user",
+            attributes: [],
+            where: {
+              isAdmin: 0,
+            },
+          },
+        ],
+        where: {
+          company_id: req.user.company_id,
+          date: {
+            [Op.between]: [date.startDate, date.endDate],
+          },
+        },
+        group: ["user_id"],
+      });
+
+      const absentUsersReport = await TimeLog.sequelize.query(
+        `SELECT u.fullname AS employee_name, team.name AS team, 'N/A' AS date, 'N/A' AS day, 'Absent' AS attendance_status, shifts.start_time AS shift_time_in, 'N/A' AS time_in, shifts.end_time AS shift_time_out, 'N/A' AS time_out
+         FROM users AS u
+    
+         LEFT JOIN teams AS team
+         ON u.teamId = team.id
+        LEFT JOIN shifts AS shifts
+         ON team.shiftId = shifts.id
+         WHERE u.company_id = :company_id
+         AND u.isAdmin = 0
+         ${teamId ? "AND team.id = :teamId" : ""}
+        ${userId ? "AND u.id = :userId" : ""}
+        AND u.createdAt <= :endOfDay
+         AND u.id NOT IN (:presentUserIds)
+         ORDER BY u.fullname ASC`,
+        {
+          replacements: {
+            company_id: req.user.company_id,
+            endOfDay: date.endDate,
+            teamId,
+            userId,
+            presentUserIds: presentUsers.length > 0 ? presentUsers.map((user) => user.user_id) : [-1],
+          },
+          type: QueryTypes.SELECT,
+        }
+      );
+
+      attendanceReport.push(...absentUsersReport);
+      attendanceReport.push(...presentUsersReport);
+
+      let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Time in", "Shift Time Out", "Time Out"];
 
       const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
       if (result.status) {

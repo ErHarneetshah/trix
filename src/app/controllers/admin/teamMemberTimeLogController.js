@@ -231,9 +231,9 @@ class teamMemberTimeLogController {
 FROM 
     users u
 LEFT JOIN 
-    teams tm ON u.teamId = tm.id -- Fetch the team associated with the user
+    teams tm ON u.teamId = tm.id
 LEFT JOIN 
-    shifts s ON tm.shiftId = s.id -- Fetch the shift associated with the team
+    shifts s ON tm.shiftId = s.id
 LEFT JOIN 
     timelogs t ON u.id = t.user_id
     AND t.createdAt BETWEEN :startOfDay AND :endOfDay
