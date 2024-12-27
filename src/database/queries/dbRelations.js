@@ -62,4 +62,6 @@ User.hasMany(AppHistoryEntry, { foreignKey: "userId", as: "productivity" });
 languageSettings.belongsTo(languageDropdown, { as: "language", foreignKey: "language_id" });
 
 
+User.belongsTo(company, { foreignKey: "company_id"});
+
 export default {}
