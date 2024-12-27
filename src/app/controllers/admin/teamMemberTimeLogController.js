@@ -178,9 +178,9 @@ GROUP BY
         } else if (tab.toLowerCase() === "slacking") {
           updatedJson = updatedJson.filter((item) => item.user.is_slacking === true);
         } else if (tab.toLowerCase() === "productive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.logged_in_time !== null && item.productiveTime !== "0h 0m 0s");
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.logged_in_time !== null && item.productiveTime.trim() !== "0h 0m 0s");
         } else if (tab.toLowerCase() === "nonproductive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.logged_in_time !== null && item.productiveTime !== "0h 0m 0s" );
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.logged_in_time !== null && item.productiveTime.trim()!== "0h 0m 0s");
         }
       }
 
@@ -203,24 +203,6 @@ GROUP BY
       let formattedDate;
       startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DDTHH:mm:ssZ");
 
-      // if (date) {
-      //   startOfDay = new Date(date);
-      //   startOfDay.setHours(0, 0, 0, 0);
-      //   endOfDay = new Date(date);
-      //   endOfDay.setHours(23, 59, 59, 999);
-      //   formattedDate = new Date(date).toISOString().split('T')[0];
-
-      //   logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
-      // } else {
-      //   startOfDay = new Date();
-      //   startOfDay.setHours(0, 0, 0, 0);
-      //   endOfDay = new Date();
-      //   endOfDay.setHours(23, 59, 59, 999);
-      //   formattedDate = new Date().toISOString().split('T')[0];
-      //   console.log(formattedDate);
-
-      //   logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
-      // }
       if(date){
         startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
         endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
