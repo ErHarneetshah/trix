@@ -11,6 +11,6 @@ router.get("/getDesigDropdown",  authMiddleware,verifyAdminMiddleware,   desigIn
 router.get("/getSpecificDesig",  authMiddleware,verifyAdminMiddleware,   desigInstance.getSpecificDesig);
 router.post("/addDesig",  authMiddleware,verifyAdminMiddleware,   desigInstance.addDesig);
 router.put("/updateDesig", authMiddleware,verifyAdminMiddleware,   desigInstance.updateDesig);
-router.delete("/deleteDesig", authMiddleware,verifyAdminMiddleware,   desigInstance.deleteDept);
+router.delete("/deleteDesig", authMiddleware,verifyAdminMiddleware,   desigInstance.deleteDesig);
 
 export default router;
