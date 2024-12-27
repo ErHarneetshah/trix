@@ -40,7 +40,7 @@ import nodemailer from "nodemailer";
 
 const addEmailGateeways = async (req, res) => {
   try {
-    let { protocol, host, username, password, port, encryption } = req.body;
+    let { protocol, host, username, password, port, encryption,fromUsername} = req.body;
 
     //console.log(req.body);
     // Default encryption type
@@ -53,6 +53,7 @@ const addEmailGateeways = async (req, res) => {
       username: "required|string|min:1|max:100",
       password: "required|string|min:6",
       port: "required|numeric|min:1|max:65535",
+      fromUsername: "required|string",
     };
 
     if (encryption) {
@@ -120,6 +121,8 @@ const addEmailGateeways = async (req, res) => {
       password,
       port,
       encryption: selectedEncryption,
+      fromUsername:fromUsername,
+
     });
 
     return helper.success(
