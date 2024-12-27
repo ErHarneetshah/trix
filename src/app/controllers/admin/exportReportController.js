@@ -70,7 +70,6 @@ class exportReportController {
   getProductiveReport = async (req, res) => {
     try {
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
-      let startDate, endDate;
 
       const validOptions = [1, 2, 3, 4];
 
@@ -91,42 +90,42 @@ class exportReportController {
         }
       }
 
-      // const users = await GenerateReportHelper.getUserInCompany(req.user.company_id);
-      // let userIds = [];
-      // for (const user of users.data) {
-      //   if (user.id) {
-      //     userIds.push(user.id);
-      //   }
-      // }
+      const users = await GenerateReportHelper.getUserInCompany(req.user.company_id);
+      let userIds = [];
+      for (const user of users.data) {
+        if (user.id) {
+          userIds.push(user.id);
+        }
+      }
 
-      // let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
-      // let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
-      // let TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
+      let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
+      let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
+      let TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
 
       // let finalJson = await GenerateReportHelper.combineJson(users, ProdWebCount)
 
-      let data = [];
       let headers = [
-        "Employee Name",
-        "Department",
-        "Date",
-        "Total Active Hours",
-        "Idle time",
-        "Time on Productive Apps",
-        "Time on Non Productive Apps",
-        "Productive Websites",
-        "Non Productive Websites",
-        "Average Productive %",
-        "Most Used Productive App",
+          "Employee Name",
+          "Department",
+          "Date",
+          "Total Active Hours",
+          "Idle time",
+          "Time on Productive Apps",
+          "Time on Non Productive Apps",
+          "Productive Websites",
+          "Non Productive Websites",
+          "Average Productive %",
+          "Most Used Productive App",
       ];
+      let data = {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis, TimeLogs: TimeLogsDetails};
+      
+      let updatedJson = await GenerateReportHelper.generateProductivityReport(data);
+      
 
-      // return helper.success(res, variables.Success, "Productivity Report Generated Successfully", {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis, TimeLogs: TimeLogsDetails});
-
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive Report", req.user.company_id, data, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive Report", req.user.company_id, updatedJson, headers);
 
       if (result.status) {
-        return helper.success(res, variables.Success, "Productivity Report Generated Successfully", data);
-        // return helper.success(res, variables.Success, "Productivity Report Generated Successfully", {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis});
+        return helper.success(res, variables.Success, "Productivity Report Generated Successfully", updatedJson);
       } else {
         return helper.success(res, variables.Success, "Productivity Report Generation Failed");
       }
