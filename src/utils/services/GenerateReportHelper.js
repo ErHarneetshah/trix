@@ -553,58 +553,6 @@ export default {
   },
 
   getProdWebCount: async (userIds, startOfDay, endOfDay) => {
-    //? To get everything in a single query
-    // `WITH RECURSIVE DateRange AS (
-    //     SELECT :startOfDay AS record_date
-    //     UNION ALL
-    //     SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
-    //     FROM DateRange
-    //     WHERE record_date < :endOfDay
-    // )
-    // SELECT
-    //     u.id AS userId,
-    //     dr.record_date,  -- Include all dates from DateRange
-
-    //     -- Data from app_histories
-    //     a.appName,
-    //     a.is_productive,
-    //     IFNULL(SUM(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS time_spent_seconds,
-    //     IFNULL(COUNT(a.id), 0) AS session_count,
-    //     (
-    //         SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
-    //         FROM app_histories ah
-    //         WHERE ah.userId = u.id
-    //         AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
-    //     ) AS total_time_spent_seconds,
-    //     IFNULL(MAX(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS max_time_spent_seconds,
-
-    //     -- Data from user_histories
-    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
-    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count
-
-    // FROM
-    //     users u
-    // CROSS JOIN
-    //     DateRange dr
-    // LEFT JOIN
-    //     app_histories a
-    //     ON u.id = a.userId
-    //     AND DATE(a.createdAt) = dr.record_date  -- Match specific date
-    // LEFT JOIN
-    //     user_histories uh
-    //     ON u.id = uh.userId
-    //     AND DATE(uh.createdAt) = dr.record_date  -- Match specific date
-    // LEFT JOIN
-    //     productive_websites pw
-    //     ON uh.website_name = pw.website_name
-
-    // WHERE
-    //     u.id IN (:userIds)
-
-    // GROUP BY
-    //     u.id, dr.record_date, a.appName, a.is_productive;
-    // `;
-
     const query = `SELECT
                   u.id AS userId,
                   COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
@@ -631,6 +579,7 @@ export default {
         userIds,
       },
       type: sequelize.QueryTypes.SELECT,
+      logging: console.log
     });
 
     return results;
@@ -942,10 +891,12 @@ GROUP BY u.id, tl.createdAt;`;
       const directoryPath = path.resolve(__dirname, "../../../storage/files");
       const filePath = path.join(directoryPath, fileName);
 
+
       // Ensure the directory exists
       if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
       }
+
       const keys = reportData.length === 0 ? [] : Object.keys(reportData[0]);
       if (format === "xls") {
         const csvContent = [
@@ -1115,7 +1066,24 @@ GROUP BY u.id, tl.createdAt;`;
 
   generateProductivityReport: async (data) => {
     const { users, ProdAppAnalysis, TimeLogs, ProductiveWebsite } = data;
-    const report = users.map((user) => {
+    let report;
+
+    if(ProdAppAnalysis == 0 || TimeLogs == 0 || ProductiveWebsite == 0)
+    {
+      report = [{
+        "Employee Name": "N/A",
+        "Department": "N/A",
+        "Total Active Hours": "N/A",
+        "Idle time": "N/A",
+        "Time on Productive Apps": "N/A",
+        "Time on Non Productive Apps": "N/A",
+        "Productive Websites Count": "N/A",
+        "Non Productive Websites Count": "N/A",
+        "Average Productive %": "N/A",
+        "Most Used Productive App": "N/A",
+      }];
+    }else{
+    report = users.map((user) => {
       const userProdAppAnalysis = ProdAppAnalysis.find((item) => item.userId === user.id);
       const userProdWebCount = ProductiveWebsite.find((item) => item.userId === user.id);
       const userTimeLog = TimeLogs.find((item) => item.userId === user.id);
@@ -1125,35 +1093,9 @@ GROUP BY u.id, tl.createdAt;`;
 
       const averageProductivePercentage = activeTimeInSeconds > 0 ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100 : 0;
 
-      // return {
-      //   "Employee Name": user.fullname,
-      //   "Department": user.department.name,
-      //   // "Date": "2024-12-18", // Assuming you want to report for a specific date
-      //   "Total Active Hours": userTimeLog
-      //     ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2)
-      //     : 0,
-      //   "Idle time": userTimeLog ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
-      //   "Time on Productive Apps": userProdAppAnalysis
-      //     ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2)
-      //     : 0,
-      //   "Time on Non Productive Apps": userProdAppAnalysis
-      //     ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2)
-      //     : 0,
-      //   "Productive Websites Count": userProdWebCount
-      //   ? (userProdWebCount.productive_count)
-      //   : 0,
-      //   "Non Productive Websites Count": userProdWebCount
-      //   ? (userProdWebCount.non_productive_count)
-      //   : 0,
-      //   "Average Productive %": averageProductivePercentage.toFixed(2) + "%",
-      //   "Most Used Productive App": userProdAppAnalysis
-      //     ? userProdAppAnalysis.app_name_with_max_time
-      //     : "N/A",
-      // };
       return {
         "Employee Name": user.fullname || "N/A",
         Department: user.department?.name || "N/A",
-        // "Date": "2024-12-18", // Uncomment and modify if you want to include a specific date
         "Total Active Hours": userTimeLog?.active_time_in_seconds ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
         "Idle time": userTimeLog?.idle_Time ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
         "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
@@ -1164,6 +1106,7 @@ GROUP BY u.id, tl.createdAt;`;
         "Most Used Productive App": userProdAppAnalysis?.app_name_with_max_time || "N/A",
       };
     });
+  }
 
     return report;
   },

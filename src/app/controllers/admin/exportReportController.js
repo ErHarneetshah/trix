@@ -113,12 +113,11 @@ class exportReportController {
               attributes: ["name"],
             },
           ],
-        })
+        });
 
-        if (!checkuser) return helper.failed(res, variables.ValidationError, "User does not exists in Selected Team")
-        users =  { status: true, message: "User's data retrived successfully", data: checkuser };
-        userIds = [userId];
-
+        if (!checkuser) return helper.failed(res, variables.ValidationError, "User does not exists in Selected Team");
+        users = { status: true, message: "User's data retrived successfully", data: checkuser };
+        userIds = [checkuser.id];
       } else {
         users = await GenerateReportHelper.getUserInCompany(req.user.company_id, teamId);
         for (const user of users.data) {
@@ -127,11 +126,22 @@ class exportReportController {
           }
         }
       }
+      let ProdWebCount;
+      let ProdAppAnalysis;
+      let TimeLogsDetails;
 
-      let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
-      let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
-      let TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
-
+      if (userIds.length == 0) {
+        ProdWebCount = [];
+        ProdAppAnalysis = [];
+        TimeLogsDetails = [];
+      } else {
+        ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
+        console.log(ProdWebCount);
+        ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
+        console.log(ProdAppAnalysis);
+        TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
+        console.log(TimeLogsDetails);
+      }
       // let finalJson = await GenerateReportHelper.combineJson(users, ProdWebCount)
 
       let headers = [
@@ -146,7 +156,7 @@ class exportReportController {
         "Average Productive %",
         "Most Used Productive App",
       ];
-      
+
       let data = { users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis, TimeLogs: TimeLogsDetails };
 
       let updatedJson = await GenerateReportHelper.generateProductivityReport(data);
@@ -650,10 +660,10 @@ class exportReportController {
           {
             type: QueryTypes.SELECT,
             replacements: {
-              userId,         // Array of user IDs
-              startDate: date.startDate,  // Start date for filtering
-              endDate: date.endDate,      // End date for filtering
-              companyId: req.user.company_id
+              userId, // Array of user IDs
+              startDate: date.startDate, // Start date for filtering
+              endDate: date.endDate, // End date for filtering
+              companyId: req.user.company_id,
             },
           }
         );
@@ -713,56 +723,53 @@ class exportReportController {
     }
   };
 
+  downloadExportReport = async (req, res) => {
+    try {
+      const { filePath } = req.body;
 
-
-downloadExportReport = async (req, res) => {
-  try {
-    const { filePath } = req.body;
-
-    if (!filePath || typeof filePath !== "string" || !filePath.trim()) {
-      return res.status(400).json({ message: "Invalid file path provided" });
-    }
-
-    const normalizedPath = path.resolve(filePath);
-    const fileName = path.basename(normalizedPath);
-    const fileExtension = path.extname(fileName).toLowerCase();
-
-    // Check if the file exists
-    // await fs.promises.access(normalizedPath, fs.constants.F_OK);
-
-    // Determine the content type
-    const mimeTypes = {
-      ".pdf": "application/pdf",
-      ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      ".xls": "application/vnd.ms-excel",
-    };
-
-    const contentType = mimeTypes[fileExtension];
-    if (!contentType) {
-      return res.status(400).json({ message: "Unsupported file type" });
-    }
-
-    // Set headers for download
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-    res.setHeader("Content-Type", contentType);
-
-    return res.download(normalizedPath, fileName, (err) => {
-      if (err) {
-        console.error("Error sending file:", err);
-        return res.status(500).json({ message: "File download failed" });
+      if (!filePath || typeof filePath !== "string" || !filePath.trim()) {
+        return res.status(400).json({ message: "Invalid file path provided" });
       }
-    });
-  } catch (err) {
-    console.error("Error during file download:", err);
 
-    if (err.code === "ENOENT") {
-      return res.status(500).json({ message: "File not found" });
+      const normalizedPath = path.resolve(filePath);
+      const fileName = path.basename(normalizedPath);
+      const fileExtension = path.extname(fileName).toLowerCase();
+
+      // Check if the file exists
+      // await fs.promises.access(normalizedPath, fs.constants.F_OK);
+
+      // Determine the content type
+      const mimeTypes = {
+        ".pdf": "application/pdf",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".xls": "application/vnd.ms-excel",
+      };
+
+      const contentType = mimeTypes[fileExtension];
+      if (!contentType) {
+        return res.status(400).json({ message: "Unsupported file type" });
+      }
+
+      // Set headers for download
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      res.setHeader("Content-Type", contentType);
+
+      return res.download(normalizedPath, fileName, (err) => {
+        if (err) {
+          console.error("Error sending file:", err);
+          return res.status(500).json({ message: "File download failed" });
+        }
+      });
+    } catch (err) {
+      console.error("Error during file download:", err);
+
+      if (err.code === "ENOENT") {
+        return res.status(500).json({ message: "File not found" });
+      }
+
+      res.status(500).json({ message: "An error occurred while processing the file download" });
     }
-
-    res.status(500).json({ message: "An error occurred while processing the file download" });
-  }
-};
-
+  };
 }
 
 export default exportReportController;
