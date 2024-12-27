@@ -147,7 +147,7 @@ class teamMemberTimeLogController {
 
       const count = result.length;
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: result });
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: updatedJson });
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
