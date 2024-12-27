@@ -13,6 +13,7 @@ import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 import uploadPhotos from "../../../utils/services/commonfuncitons.js";
 import commonfuncitons from "../../../utils/services/commonfuncitons.js";
+import bcrypt from "bcrypt";
 
 const getAdminDetails = async (req, res) => {
   try {
@@ -37,12 +38,14 @@ const getAdminDetails = async (req, res) => {
 
 const updateAdminDetails = async (req, res) => {
   try {
-    const { fullname, email, mobile } = req.body;
+    const { fullname, email, mobile, password ,confirm_password } = req.body;
 
     const rules = {
       fullname: "required|string|min:3|max:100",
       email: "required|email",
       mobile: "required|string|regex:/^\\d{10}$/",
+      password: "string|regex:/^[a-zA-Z0-9!@#$%^&*]{6,16}$/",
+      confirm_password: "required_with:password|same:password",
     };
 
     const { status, message } = await validate(req.body, rules);
@@ -53,11 +56,21 @@ const updateAdminDetails = async (req, res) => {
     const user = await User.findOne({
       where: { id: req.user.id, company_id: req.user.company_id },
     });
+
     if (!user) {
       return helper.failed(res, variables.BadRequest, "User not exists");
     }
-
-    await User.update({ fullname, email, mobile }, { where: { id: req.user.id, company_id: req.user.company_id } });
+    
+    if(password){
+      let comparePwd = await bcrypt.compare(password, user.password);
+      if (comparePwd) {
+        return helper.failed(res, variables.ValidationError, "Password cannot be same as previous one.");
+      }
+      let pass = await bcrypt.hash(password, 10);
+      await User.update({ fullname, email, mobile , password: pass }, { where: { id: req.user.id, company_id: req.user.company_id } });
+    }else{
+      await User.update({ fullname, email, mobile }, { where: { id: req.user.id, company_id: req.user.company_id } });
+    }
     return helper.success(res, variables.Success, "Admin Profile Updated Successfully");
   } catch (error) {
     console.error("Error updating admin details:", error);

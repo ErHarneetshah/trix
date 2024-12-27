@@ -28,10 +28,6 @@ await sequelize.query(
 process.env.TZ = "Asia/Kolkata"; console.log(`Server timezone set to: ${process.env.TZ}`);
 console.log(`Current server time: ${new Date().toString()}`);
 
-app.get('/get_timezone',(req,res,next)=>{
-  res.send(`Server timezone set to: ${process.env.TZ} and Current server time: ${new Date().toString()}`)
-});
-
 const httpServer = createServer(app);
 const appConfig = new appConfiguration();
 const dbConfig = appConfig.getConfig();
@@ -46,10 +42,21 @@ setupSocketIO(io);
 app.use(express.json());
 app.use(cors(corsMiddleware));
 app.use(routes);
+app.get('/get_timezone',(req,res,next)=>{
+  res.send(`Server timezone set to: ${process.env.TZ} and Current server time: ${new Date().toString()}`)
+});
+app.get("/export/:path", (req, res) => {
+  res.sendFile(__dirname + "/storage/files/" +  req.params.path);
+});
 
-//================ image get =====================//
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+app.use(express.static('assets'));
+app.use(express.static('storage/files'));
+
+//================ image get =====================//
+
 const updatedPath = path.join(__dirname, "assets"); // Adjusted to join the paths properly
 
 app.get("/image/:type/:path", (req, res) => {
