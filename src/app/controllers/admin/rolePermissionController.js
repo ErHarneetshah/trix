@@ -7,6 +7,12 @@ import app_modules from "../../../database/models/moduleModel.js";
 
 class rolePermissionController {
   getAllRolePermissions = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "permissions", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     try {
       const alldata = await rolePermission.findAndCountAll({
         where: { company_id: req.user.company_id },
@@ -88,6 +94,12 @@ class rolePermissionController {
   };
 
   addRolePermissions = async (module, roleId, company_id, transaction) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "permissions", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     try {
       if (isNaN(roleId)) throw new Error("Role Id must be in number");
       const permissionData = {
@@ -200,6 +212,12 @@ class rolePermissionController {
   // };
 
   updateMultipleRolePermission = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "permissions", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { rolesModulesPermissions } = req.body;
@@ -296,6 +314,12 @@ class rolePermissionController {
   };
 
   updateMultipleRolePermissionOnce = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "permissions", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    
     const dbTransaction = await sequelize.transaction();
     try {
       const { roleName, allTrue } = req.body;

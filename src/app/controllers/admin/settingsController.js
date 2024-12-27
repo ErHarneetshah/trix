@@ -66,6 +66,12 @@ const updateAdminDetails = async (req, res) => {
 };
 
 const getBlockedWebsites = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "blockedWebsite", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   try {
     let { departmentId, limit, page } = req.query;
 
@@ -116,6 +122,12 @@ const getBlockedWebsites = async (req, res) => {
 };
 
 const addBlockWebsites = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "blockedWebsite", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   try {
     const { departmentId, website } = req.body;
     const rules = {
@@ -166,6 +178,12 @@ const addBlockWebsites = async (req, res) => {
 };
 
 const updateSitesStatus = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "blockedWebsite", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   try {
     const { id, status } = req.body;
 
@@ -193,6 +211,12 @@ const updateSitesStatus = async (req, res) => {
 };
 
 const addProductiveApps = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "productiveApp", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   try {
     const { department_id, app_name } = req.body;
     const rules = {
@@ -236,9 +260,13 @@ const addProductiveApps = async (req, res) => {
 };
 
 const getAppInfo = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "productiveApp", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
   try {
     let { departmentId, limit, page } = req.query;
-
 
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
@@ -288,6 +316,12 @@ const getAppInfo = async (req, res) => {
 };
 
 const getReportStatus = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "reportSettings", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   const getStatus = await reportSettings.findOne({
     where: { company_id: req.user.company_id },
     attributes: ["status"],
@@ -303,6 +337,12 @@ const getReportStatus = async (req, res) => {
 };
 
 const updateReportSettings = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "reportSettings", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  
   try {
     const { exportType } = req.body;
 
@@ -322,12 +362,9 @@ const updateReportSettings = async (req, res) => {
     await reportSettings.update({ status: exportType }, { where: { company_id: req.user.company_id } });
 
     // Update the user's `next_reports_schedule_date`
-    let resultDate = (exportType === 1) ? commonfuncitons.getNextMonthDate() : (exportType === 2) ? commonfuncitons.getNextMondayDate() : (exportType === 3) ? commonfuncitons.getTomorrowDate() : "Unknown Error";
-    await User.update(
-      { next_reports_schedule_date: resultDate },
-      { where: { id: req.user.id } }
-    );
-    
+    let resultDate =
+      exportType === 1 ? commonfuncitons.getNextMonthDate() : exportType === 2 ? commonfuncitons.getNextMondayDate() : exportType === 3 ? commonfuncitons.getTomorrowDate() : "Unknown Error";
+    await User.update({ next_reports_schedule_date: resultDate }, { where: { id: req.user.id } });
 
     return helper.success(res, variables.Success, "Report Settings Updated Successfully");
   } catch (error) {
