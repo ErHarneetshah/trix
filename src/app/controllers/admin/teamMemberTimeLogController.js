@@ -70,89 +70,6 @@ class teamMemberTimeLogController {
     }
   };
 
-  getTeamMemberLogFiltered = async (req, res) => {
-    try {
-      // ___________---------- Search, Limit, Pagination ----------_______________
-      let { searchParam, limit, page, date, tab } = req.query;
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
-      let userWhere = {};
-      let logWhere = {};
-      // ___________---------- Search, Limit, Pagination ----------_______________
-
-      let startOfDay;
-      let endOfDay;
-
-      if(date){
-        startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
-        endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
-      }else{
-        startOfDay = moment.tz(moment(), "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
-        endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
-      }
-      logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
-
-      logWhere.company_id = req.user.company_id;
-
-      const alldata = await TimeLog.findAndCountAll({
-        where: logWhere,
-        offset: offset,
-        limit: limit,
-        include: [
-          {
-            model: User,
-            as: "user",
-            attributes: ["id", "fullname", "currentStatus"],
-            include: [
-              {
-                model: AppHistoryEntry,
-                as: "productivity",
-                required: false,
-              },
-            ],
-          },
-          {
-            model: shift,
-            as: "shift",
-            attributes: ["start_time", "end_time"],
-          },
-        ],
-        order: [["createdAt", "DESC"]],
-      });
-
-      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
-
-      let result = commonfuncitons.createResponse(alldata.rows);
-
-      if (searchParam) {
-        const regex = new RegExp(searchParam, "i");
-        result = result.filter((item) => regex.test(item.user.fullname));
-      }
-
-      if (tab) {
-        if (tab.toLowerCase() === "working") {
-          result = result.filter((item) => item.logged_out_time === null && item.user.currentStatus === true);
-        } else if (tab.toLowerCase() === "absent") {
-          result = result.filter((item) => item.user.currentStatus === false);
-        } else if (tab.toLowerCase() === "late") {
-          result = result.filter((item) => item.late_coming === true);
-        } else if (tab.toLowerCase() === "slacking") {
-          result = result.filter((item) => item.user.is_slacking === true);
-        } else if (tab.toLowerCase() === "productive") {
-          result = result.filter((item) => item.user.is_productive === true && item.user.productiveTime != 0 && item.user.nonProductiveTime != 0);
-        } else if (tab.toLowerCase() === "nonProductive") {
-          result = result.filter((item) => item.user.is_productive === false && item.user.nonProductiveTime != 0 && item.user.productiveTime != 0);
-        }
-      }
-
-      const count = result.length;
-
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: updatedJson });
-    } catch (error) {
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
-
 
   getTeamMemberLogFiltered2 = async (req, res) => {
     try {
@@ -270,7 +187,7 @@ GROUP BY
       const count = updatedJson.length;
 
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: results });
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: updatedJson });
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
