@@ -63,7 +63,7 @@ class rolePermissionController {
         where: { roleId: roleId, modules: moduleName, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!roleModuledata) return helper.failed(res, variables.NotFound, "No Data is available!");
+      if (!roleModuledata) return helper.failed(res, variables.NotFound, "Module Permission Not Available!");
 
       return roleModuledata;
       // return helper.success(res, variables.Success, "All Data Fetched Successfully!", roleModuledata);

@@ -8,7 +8,7 @@ import  superAdminController from "../../app/controllers/superAdmin/superAdminCo
 
 
 
-router.get('/admin', superAdminController.getAllAdmins);
+router.get('/getRegisterUsers', superAdminController.getAllAdmins);
 
 
 export default router;

@@ -221,10 +221,19 @@ const topApplicationChart = async (req, res, next) => {
   const { company_id } = req.user;
   let dateCondition = "";
 
-  if (filterType === "weekly") {
-    dateCondition = `WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) and ah.company_id=${company_id}`;
+  // Define date conditions based on filterType
+  if (filterType === "current_week") {
+    dateCondition = `WHERE YEARWEEK(ah.createdAt, 1) = YEARWEEK(CURDATE(), 1) AND ah.company_id=${company_id}`;
+  } else if (filterType === "last_week") {
+    dateCondition = `WHERE YEARWEEK(ah.createdAt, 1) = YEARWEEK(CURDATE(), 1) - 1 AND ah.company_id=${company_id}`;
+  } else if (filterType === "current_month") {
+    dateCondition = `WHERE MONTH(ah.createdAt) = MONTH(CURDATE()) AND YEAR(ah.createdAt) = YEAR(CURDATE()) AND ah.company_id=${company_id}`;
+  } else if (filterType === "last_month") {
+    dateCondition = `WHERE MONTH(ah.createdAt) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND YEAR(ah.createdAt) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND ah.company_id=${company_id}`;
+  } else if (filterType === "weekly") {
+    dateCondition = `WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND ah.company_id=${company_id}`;
   } else if (filterType === "monthly") {
-    dateCondition = `WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) and ah.company_id=${company_id}`;
+    dateCondition = `WHERE ah.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) AND ah.company_id=${company_id}`;
   }
 
   const query = `
@@ -241,6 +250,7 @@ const topApplicationChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
+      logging:console.log
     });
 
     const pieChartData = results.map(result => ({
@@ -261,10 +271,15 @@ const topWebsiteChart = async (req, res, next) => {
 
   let dateCondition = "";
 
-  if (filterType === "weekly") {
-    dateCondition = `WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) and uh.company_id=${company_id}`;
-  } else if (filterType === "monthly") {
-    dateCondition = `WHERE uh.createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) and uh.company_id=${company_id}`;
+  // Define date conditions based on filterType
+  if (filterType === "current_week") {
+    dateCondition = `WHERE YEARWEEK(uh.createdAt, 1) = YEARWEEK(CURDATE(), 1) AND uh.company_id=${company_id}`;
+  } else if (filterType === "last_week") {
+    dateCondition = `WHERE YEARWEEK(uh.createdAt, 1) = YEARWEEK(CURDATE(), 1) - 1 AND uh.company_id=${company_id}`;
+  } else if (filterType === "current_month") {
+    dateCondition = `WHERE MONTH(uh.createdAt) = MONTH(CURDATE()) AND YEAR(uh.createdAt) = YEAR(CURDATE()) AND uh.company_id=${company_id}`;
+  } else if (filterType === "last_month") {
+    dateCondition = `WHERE MONTH(uh.createdAt) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND YEAR(uh.createdAt) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AND uh.company_id=${company_id}`;
   }
 
   const query = `
@@ -281,7 +296,6 @@ const topWebsiteChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
-
     });
 
     const pieChartData = results.map(result => ({

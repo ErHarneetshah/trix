@@ -57,7 +57,7 @@ router.use('/admin/compare',compareReportRouter );
 
 // super Admin 
 
-router.use('/superadmin',superAdminRoutes );
+router.use('/user',superAdminRoutes );
 
 
 export default router;

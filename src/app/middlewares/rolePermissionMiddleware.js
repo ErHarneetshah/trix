@@ -8,7 +8,12 @@ const rolePermissionMiddleware = async (req, res, next) => {
     const authUser = req.user;
     const reqMethod = req.method;
     const routeUrl = req.originalUrl;
-    const moduleName = routeUrl.split("/")[2];
+    const parts = routeUrl.split("/");
+    const moduleName = parts[parts.length - 2];
+
+    console.log("Request Method", reqMethod);
+    console.log("Request URL", routeUrl);
+    console.log("Request URL", moduleName);
     // Testing variables
     // const customModule = "department";
     // const customRoleID = 30;
@@ -17,7 +22,6 @@ const rolePermissionMiddleware = async (req, res, next) => {
     const permissions = getPermission.dataValues.permissions;
     if (reqMethod in permissions) {
       if (permissions[reqMethod]) {
-        // //console.log("The Middleware is working");
         next();
       } else {
         return helper.failed(res, variables.BadRequest, "You Are Not Allowed to Access It");
