@@ -70,6 +70,15 @@ class exportReportController {
   getProductiveReport = async (req, res) => {
     try {
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
+      if (!format) format = "xls";
+      if (format && !["xls", "pdf"].includes(format)) {
+        throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
+      }
+
+      if (!teamId) return helper.failed(res, variables.ValidationError, "Team must be selected");
+
+      let teamExists = await team.findOne({ where: { id: teamId, company_id: req.user.company_id } });
+      if (!teamExists) return helper.failed(res, variables.NotFound, "Team does not exists");
 
       const validOptions = [1, 2, 3, 4];
 
@@ -90,11 +99,30 @@ class exportReportController {
         }
       }
 
-      const users = await GenerateReportHelper.getUserInCompany(req.user.company_id);
+      let users;
       let userIds = [];
-      for (const user of users.data) {
-        if (user.id) {
-          userIds.push(user.id);
+
+      if (userId) {
+        users = await User.findOne({
+          where: { id: userId, teamId: teamId, company_id: req.user.company_id },
+          attributes: ["id", "fullname"],
+          include: [
+            {
+              model: department,
+              as: "department",
+              attributes: ["name"],
+            },
+          ],
+        })
+        if (!users) return helper.failed(res, variables.ValidationError, "User does not exists in Selected Team")
+        userIds = [userId];
+
+      } else {
+        users = await GenerateReportHelper.getUserInCompany(req.user.company_id, teamId);
+        for (const user of users.data) {
+          if (user.id) {
+            userIds.push(user.id);
+          }
         }
       }
 
@@ -105,22 +133,21 @@ class exportReportController {
       // let finalJson = await GenerateReportHelper.combineJson(users, ProdWebCount)
 
       let headers = [
-          "Employee Name",
-          "Department",
-          "Date",
-          "Total Active Hours",
-          "Idle time",
-          "Time on Productive Apps",
-          "Time on Non Productive Apps",
-          "Productive Websites",
-          "Non Productive Websites",
-          "Average Productive %",
-          "Most Used Productive App",
+        "Employee Name",
+        "Department",
+        "Date",
+        "Total Active Hours",
+        "Idle time",
+        "Time on Productive Apps",
+        "Time on Non Productive Apps",
+        "Productive Websites",
+        "Non Productive Websites",
+        "Average Productive %",
+        "Most Used Productive App",
       ];
-      let data = {users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis, TimeLogs: TimeLogsDetails};
-      
+      let data = { users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis, TimeLogs: TimeLogsDetails };
+
       let updatedJson = await GenerateReportHelper.generateProductivityReport(data);
-      
 
       const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive Report", req.user.company_id, updatedJson, headers);
 
@@ -134,85 +161,6 @@ class exportReportController {
     }
   };
 
-  // getAttendanceReport = async (req, res) => {
-  //   try {
-  //     let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
-  //     if (!format) format = "xls";
-  //     if (format && !["xls", "pdf"].includes(format)) {
-  //       return helper.failed(res, variables.BadRequest, 'Invalid format. Only xls or pdf are allowed');
-  //     }
-  //     if (!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
-
-  //     const validOptions = [1, 2, 3, 4];
-
-  //     if (!definedPeriod || !validOptions.includes(definedPeriod)) {
-  //       return helper.failed(res, variables.BadRequest, "Please select a valid date option");
-  //     }
-
-  //     let date;
-
-  //     if (definedPeriod) {
-  //       if (definedPeriod == 4) {
-  //         if (!fromDate || !toDate) {
-  //           return helper.failed(res, variables.BadRequest, "Please select start and end date");
-  //         }
-  //         date = await helper.getDateRange(definedPeriod, fromDate, toDate);
-  //       } else {
-  //         date = await helper.getDateRange(definedPeriod);
-  //       }
-  //     }
-
-  //     // Fetch attendance report
-  //     const attendanceReport = await TimeLog.sequelize.query(
-  //       `SELECT
-  //         u.fullname AS employee_name,
-  //         team.name AS team,
-  //         timelog.date AS date,
-  //         DAYNAME(timelog.date) AS day,
-  //         CASE
-  //           WHEN timelog.logged_in_time IS NOT NULL THEN 'Present'
-  //           ELSE 'Absent'
-  //         END AS attendance_status,
-  //         shifts.start_time AS shift_time_in,
-  //         timelog.logged_in_time AS time_in,
-  //         shifts.end_time AS shift_time_out,
-  //         timelog.logged_out_time AS time_out
-  //       FROM timelogs AS timelog
-  //       LEFT JOIN users AS u ON timelog.user_id = u.id
-  //       JOIN teams AS team ON u.teamId = team.id
-  //       JOIN shifts AS shifts ON timelog.shift_id = shifts.id
-  //       WHERE timelog.date BETWEEN :startDate AND :endDate AND u.company_id = :company_id AND u.isAdmin = 0
-  //       ${teamId ? "AND team.id = :teamId" : ""}
-  //       ${userId ? "AND u.id = :userId" : ""}
-  //       ORDER BY timelog.date DESC
-  //       `,
-  //       {
-  //         replacements: {
-  //           company_id: req.user.company_id,
-  //           startDate: date.startDate,
-  //           endDate: date.endDate,
-  //           teamId,
-  //           userId,
-  //           limit: limit || 10,
-  //           offset: offset || 0,
-  //         },
-  //         type: QueryTypes.SELECT,
-  //       }
-  //     );
-
-  //     let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Shift Time Out", "Time Out"];
-
-  //     const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
-  //     if (result.status) {
-  //       return helper.success(res, variables.Success, "Attendance Report Generated Successfully");
-  //     } else {
-  //       return helper.success(res, variables.Success, "Attendance Report Generation Failed");
-  //     }
-  //   } catch (error) {
-  //     return helper.failed(res, variables.BadRequest, error.message);
-  //   }
-  // };
-
   getAttendanceReport = async (req, res) => {
     try {
       let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
@@ -220,7 +168,15 @@ class exportReportController {
       if (format && !["xls", "pdf"].includes(format)) {
         throw new Error('Invalid format. Only "xls" or "pdf" are allowed.');
       }
-      if (!teamId) return helper.failed(res, variables.ValidationError, "Team Id is required");
+      if (!teamId) return helper.failed(res, variables.ValidationError, "Team must be selected");
+
+      let teamExists = await team.findOne({ where: { id: teamId, company_id: req.user.company_id } });
+      if (!teamExists) return helper.failed(res, variables.NotFound, "Team does not exists");
+
+      if (userId) {
+        let userExists = await User.findOne({ where: { id: userId, company_id: req.user.company_id, teamId: teamId } });
+        if (!userExists) return helper.failed(res, variables.NotFound, "User does not exists in Selected Team");
+      }
 
       const validOptions = [1, 2, 3, 4];
 
@@ -335,7 +291,15 @@ class exportReportController {
         return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
 
-      if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
+      if (!teamId) return helper.failed(res, variables.ValidationError, "Team must be selected");
+
+      let teamExists = await team.findOne({ where: { id: teamId, company_id: req.user.company_id } });
+      if (!teamExists) return helper.failed(res, variables.NotFound, "Team does not exists");
+
+      if (userId) {
+        let userExists = await User.findOne({ where: { id: userId, company_id: req.user.company_id, teamId: teamId } });
+        if (!userExists) return helper.failed(res, variables.NotFound, "User does not exists in Selected Team");
+      }
 
       const validOptions = [1, 2, 3, 4];
 
@@ -514,7 +478,15 @@ class exportReportController {
       console.log("test1");
       const validOptions = [1, 2, 3, 4];
 
-      if (!teamId) return helper.failed(res, variables.BadRequest, "Team must be selected");
+      if (!teamId) return helper.failed(res, variables.ValidationError, "Team must be selected");
+
+      let teamExists = await team.findOne({ where: { id: teamId, company_id: req.user.company_id } });
+      if (!teamExists) return helper.failed(res, variables.NotFound, "Team does not exists");
+
+      if (userId) {
+        let userExists = await User.findOne({ where: { id: userId, company_id: req.user.company_id, teamId: teamId } });
+        if (!userExists) return helper.failed(res, variables.NotFound, "User does not exists in Selected Team");
+      }
 
       if (!definedPeriod || !validOptions.includes(definedPeriod)) {
         return helper.failed(res, variables.BadRequest, "Please select a valid date option");
@@ -571,36 +543,36 @@ class exportReportController {
     }
   };
 
-  getTeamList = async (req, res) => {
-    try {
-      const teamList = await team.findAll({
-        where: {
-          company_id: req.user.company_id,
-        },
-        attributes: ["id", "name"],
-      });
-      return helper.success(res, variables.Success, teamList);
-    } catch (error) {
-      console.log("Error while getting team list for report:", error);
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
+  // getTeamList = async (req, res) => {
+  //   try {
+  //     const teamList = await team.findAll({
+  //       where: {
+  //         company_id: req.user.company_id,
+  //       },
+  //       attributes: ["id", "name"],
+  //     });
+  //     return helper.success(res, variables.Success, teamList);
+  //   } catch (error) {
+  //     console.log("Error while getting team list for report:", error);
+  //     return helper.failed(res, variables.BadRequest, error.message);
+  //   }
+  // };
 
-  getMemberList = async (req, res) => {
-    try {
-      const teamList = await User.findAll({
-        where: {
-          company_id: req.user.company_id,
-          isAdmin: 0,
-        },
-        attributes: ["id", "fullname"],
-      });
-      return helper.success(res, variables.Success, teamList);
-    } catch (error) {
-      console.log("Error while getting team list for report:", error);
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
+  // getMemberList = async (req, res) => {
+  //   try {
+  //     const teamList = await User.findAll({
+  //       where: {
+  //         company_id: req.user.company_id,
+  //         isAdmin: 0,
+  //       },
+  //       attributes: ["id", "fullname"],
+  //     });
+  //     return helper.success(res, variables.Success, teamList);
+  //   } catch (error) {
+  //     console.log("Error while getting team list for report:", error);
+  //     return helper.failed(res, variables.BadRequest, error.message);
+  //   }
+  // };
 
   getBrowserHistoryReport = async (req, res) => {
     try {
@@ -610,8 +582,14 @@ class exportReportController {
         return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
 
-      if (!teamId) {
-        return helper.failed(res, variables.BadRequest, "Please select the team");
+      if (!teamId) return helper.failed(res, variables.ValidationError, "Team must be selected");
+
+      let teamExists = await team.findOne({ where: { id: teamId, company_id: req.user.company_id } });
+      if (!teamExists) return helper.failed(res, variables.NotFound, "Team does not exists");
+
+      if (userId) {
+        let userExists = await User.findOne({ where: { id: userId, company_id: req.user.company_id, teamId: teamId } });
+        if (!userExists) return helper.failed(res, variables.NotFound, "User does not exists in Selected Team");
       }
 
       const validOptions = [1, 2, 3, 4];
@@ -649,27 +627,24 @@ class exportReportController {
           return helper.failed(res, variables.BadRequest, "User not found!!!");
         }
         browserHistory = await UserHistory.sequelize.query(
-          `
-            SELECT 
-    uh.website_name, 
-    d.name AS departmentName, 
-    uh.url, 
-    IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
-    uh.vispullitTime
-FROM 
-    user_histories AS uh
-LEFT JOIN 
-    users AS u ON uh.userId = u.id
-LEFT JOIN 
-    departments AS d ON u.departmentId = d.id
-LEFT JOIN 
-    productive_websites AS pw 
-    ON uh.website_name = pw.website_name AND pw.company_id = :companyId
-WHERE 
-    uh.userId = :userId
-    AND uh.createdAt BETWEEN :startDate AND :endDate
-
-          `,
+          ` SELECT 
+                uh.website_name, 
+                d.name AS departmentName, 
+                uh.url, 
+                IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
+                uh.vispullitTime
+            FROM 
+                user_histories AS uh
+            LEFT JOIN 
+                users AS u ON uh.userId = u.id
+            LEFT JOIN 
+                departments AS d ON u.departmentId = d.id
+            LEFT JOIN 
+                productive_websites AS pw 
+                ON uh.website_name = pw.website_name AND pw.company_id = :companyId
+            WHERE 
+                uh.userId = :userId
+                AND uh.createdAt BETWEEN :startDate AND :endDate;`,
           {
             type: QueryTypes.SELECT,
             replacements: {
@@ -693,34 +668,31 @@ WHERE
         }
         const userIds = team.map((user) => user.id);
         browserHistory = await UserHistory.sequelize.query(
-          `
-            SELECT 
-    uh.website_name, 
-    d.name AS departmentName, 
-    uh.url, 
-    IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
-    uh.visitTime
-FROM 
-    user_histories AS uh
-LEFT JOIN 
-    users AS u ON uh.userId = u.id
-LEFT JOIN 
-    departments AS d ON u.departmentId = d.id
-LEFT JOIN 
-    productive_websites AS pw 
-    ON uh.website_name = pw.website_name AND pw.company_id = :companyId
-WHERE 
-    uh.userId IN (:userIds)
-    AND uh.createdAt BETWEEN :startDate AND :endDate
-
-          `,
+          ` SELECT 
+                uh.website_name, 
+                d.name AS departmentName, 
+                uh.url, 
+                IF(pw.website_name IS NOT NULL, 'Productive', 'Nonproductive') AS is_productive, 
+                uh.visitTime
+            FROM 
+                user_histories AS uh
+            LEFT JOIN 
+                users AS u ON uh.userId = u.id
+            LEFT JOIN 
+                departments AS d ON u.departmentId = d.id
+            LEFT JOIN 
+                productive_websites AS pw 
+                ON uh.website_name = pw.website_name AND pw.company_id = :companyId
+            WHERE 
+                uh.userId IN (:userIds)
+                AND uh.createdAt BETWEEN :startDate AND :endDate;`,
           {
             type: QueryTypes.SELECT,
             replacements: {
               companyId: req.user.company_id,
-              userIds, // Array of user IDs
-              startDate: date.startDate, // Start date for filtering
-              endDate: date.endDate, // End date for filtering
+              userIds,
+              startDate: date.startDate,
+              endDate: date.endDate,
             },
           }
         );
@@ -743,38 +715,62 @@ WHERE
     try {
       let { filePath } = req.body;
       const fileName = path.basename(filePath);
+      const fileExtension = path.extname(fileName).toLowerCase();
+
       if (typeof filePath !== "string" || !filePath.trim()) {
         return helper.failed(res, variables.BadRequest, "Invalid file path provided");
       }
 
       const normalizedPath = path.resolve(filePath);
-      // Check if the file exists and is accessible
+
       await fs.promises.access(normalizedPath, fs.constants.F_OK);
 
+      let contentType;
+      switch (fileExtension) {
+        case ".pdf":
+          contentType = "application/pdf";
+          break;
+        case ".xlsx":
+          contentType =
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+          break;
+        case ".xls":
+          contentType = "application/vnd.ms-excel";
+          break;
+        default:
+          return helper.failed(res, variables.BadRequest, "Unsupported file type");
+      }
+
+      // Set response headers
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${fileName}"`
       );
-      res.setHeader(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      );
-      // Send the file as a download
+      res.setHeader("Content-Type", contentType);
+
+      // Send the file
       return res.download(normalizedPath, (err) => {
         if (err) {
           console.error("Error sending file:", err);
-          return helper.failed(res, variables.BadRequest, "File download failed");
+          return helper.failed(
+            res,
+            variables.BadRequest,
+            "File download failed"
+          );
         }
       });
     } catch (err) {
       console.error("Error during file download:", err);
 
-      // Handle specific error types
       if (err.code === "ENOENT") {
         return helper.failed(res, variables.BadRequest, "File not found");
       }
 
-      return helper.failed(res, variables.ServerError, "An error occurred while processing the file download");
+      return helper.failed(
+        res,
+        variables.ServerError,
+        "An error occurred while processing the file download"
+      );
     }
   };
 }

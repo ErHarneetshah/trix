@@ -519,9 +519,9 @@ export default {
       return "N/A";
     }
   },
-  getUserInCompany: async (companyId) => {
+  getUserInCompany: async (companyId, teamId) => {
     const users = await User.findAll({
-      where: { company_id: companyId, isAdmin: 0 },
+      where: { company_id: companyId, isAdmin: 0, teamId: teamId },
       attributes: ["id", "fullname"],
       include: [
         {
@@ -1180,14 +1180,14 @@ export default {
         "Date": "2024-12-18", // Assuming you want to report for a specific date
         "Total Active Hours": userTimeLog
           ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2)
-          : "0.00",
+          : 0,
         "Idle time": userTimeLog ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
         "Time on Productive Apps": userProdAppAnalysis
           ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2)
-          : "0.00",
+          : 0,
         "Time on Non Productive Apps": userProdAppAnalysis
           ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2)
-          : "0.00",
+          : 0,
         "Productive Websites Count": userProdWebCount
         ? (userProdWebCount.productive_count)
         : 0, 
