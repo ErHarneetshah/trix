@@ -744,7 +744,12 @@ downloadExportReport = async (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.setHeader("Content-Type", contentType);
 
-    res.download(filePath);
+    return res.download(normalizedPath, (err) => {
+      if (err) {
+        console.error("Error sending file:", err);
+        return res.status(500).json({ message: "File download failed" });
+      }
+    });
     // Stream the file to the response
     // const fileStream = fs.createReadStream(normalizedPath);
     // fileStream.pipe(res).on("error", (err) => {
