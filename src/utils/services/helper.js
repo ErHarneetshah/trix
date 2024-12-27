@@ -7,8 +7,42 @@ import appConfig from "../../app/config/appConfig.js";
 import JWT from "jsonwebtoken";
 import { parse } from "tldts";
 import moment from "moment";
+import rolePermissionController from "../../app/controllers/admin/rolePermissionController.js";
 
 export default {
+  checkRolePermission: async (moduleName, method) => {
+    try {
+      const permissionInstance = new rolePermissionController();
+      const getPermission = await permissionInstance.getSpecificRolePermissions(req.user.roleId, moduleName);
+      const permissions = getPermission.dataValues.permissions;
+      const reqMethod = method;
+      if (reqMethod in permissions) {
+        if (permissions[reqMethod]) {
+          return {
+            success: true,
+            message: "Permission granted",
+          };
+        } else {
+          return {
+            success: false,
+            message: "You are not allowed to access this resource",
+          };
+        }
+      } else {
+        return {
+          success: false,
+          message: "Permission does not exist",
+        };
+      }
+    } catch (error) {
+      console.error("Error checking role permission:", error);
+      return {
+        success: false,
+        message: "An error occurred while checking permissions",
+      };
+    }
+  },
+
   success: (res, statusCode, message, data = null, extra = null) => {
     var result = {
       status: "1",
@@ -70,6 +104,7 @@ export default {
         length: 10,
         numbers: true,
         uppercase: false,
+        symbols: true,
         excludeSimilarCharacters: true,
         strict: true,
       });
@@ -118,27 +153,27 @@ export default {
   getDateRange: async (option, customStart, customEnd) => {
     const today = moment();
     let startDate, endDate;
-  
+
     option = String(option);
-  
+
     switch (option) {
       case "1": // Yesterday
         startDate = today.clone().subtract(1, "days").startOf("day").format("YYYY-MM-DD HH:mm:ss");
         endDate = today.clone().subtract(1, "days").endOf("day").format("YYYY-MM-DD HH:mm:ss");
         break;
-  
+
       case "2": // Last week
         endDate = today.clone().startOf("week").subtract(1, "days").endOf("day").format("YYYY-MM-DD HH:mm:ss");
         startDate = moment(endDate, "YYYY-MM-DD HH:mm:ss").subtract(6, "days").startOf("day").format("YYYY-MM-DD HH:mm:ss");
         break;
-  
+
       case "3": // Last month
         const firstDayOfThisMonth = today.clone().startOf("month");
         const lastDayOfPreviousMonth = firstDayOfThisMonth.clone().subtract(1, "days");
         startDate = lastDayOfPreviousMonth.clone().startOf("month").startOf("day").format("YYYY-MM-DD HH:mm:ss");
         endDate = lastDayOfPreviousMonth.endOf("day").format("YYYY-MM-DD HH:mm:ss");
         break;
-  
+
       case "4": // Custom range
         if (!customStart || !customEnd) {
           throw new Error("Both customStart and customEnd must be provided for 'custom range'.");
@@ -146,12 +181,11 @@ export default {
         startDate = moment(customStart).startOf("day").format("YYYY-MM-DD HH:mm:ss");
         endDate = moment(customEnd).endOf("day").format("YYYY-MM-DD HH:mm:ss");
         break;
-  
+
       default:
         return { status: 0, message: "Invalid option!!!" };
     }
-  
+
     return { startDate, endDate };
   },
-  
 };

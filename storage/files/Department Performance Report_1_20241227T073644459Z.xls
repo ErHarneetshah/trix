@@ -1,0 +1,4 @@
+Department,Total Employees,Average Attendance Rate,Average Login Time,Average Productive Time (App),Average Non Productive Time (App),Most Non Productive Website,Most Productive Website,Most Non Productive App,Most Productive App
+Upper Management,1,,,0.0000,0.0000,N/A,N/A,N/A,N/A
+Development,9,,0.45000000,54.0000,149.0000,N/A,N/A,Finder,Cliq
+Designing,,,,,,,,,
