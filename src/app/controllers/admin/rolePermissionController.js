@@ -57,18 +57,33 @@ class rolePermissionController {
     }
   };
 
-  getSpecificRolePermissions = async (roleId, moduleName) => {
+  getSpecificRolePermissions = async (roleId, moduleName, companyId) => {
     try {
-      const roleModuledata = await rolePermission.findOne({
-        where: { roleId: roleId, modules: moduleName, company_id: req.user.company_id },
+      const roleModuleData = await rolePermission.findOne({
+        where: { roleId: roleId, modules: moduleName, company_id: companyId },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!roleModuledata) return helper.failed(res, variables.NotFound, "Module Permission Not Available!");
 
-      return roleModuledata;
-      // return helper.success(res, variables.Success, "All Data Fetched Successfully!", roleModuledata);
+      if (!roleModuleData) {
+        return {
+          success: false,
+          message: "Module Permission Not Available!",
+          data: null,
+        };
+      }
+
+      return {
+        success: true,
+        message: "Module permissions fetched successfully",
+        data: roleModuleData,
+      };
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, error.message);
+      console.error("Error fetching role permissions:", error);
+      return {
+        success: false,
+        message: error.message,
+        data: null,
+      };
     }
   };
 

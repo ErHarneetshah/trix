@@ -534,6 +534,24 @@ export default {
     return { status: true, message: "User's data retrived successfully", data: users };
   },
 
+  getUserInCompanyWithoutTeam: async (companyId) => {
+    const users = await User.findAll({
+      where: { company_id: companyId, isAdmin: 0 },
+      attributes: ["id", "fullname"],
+      include: [
+        {
+          model: department,
+          as: "department",
+          attributes: ["name"],
+        },
+      ],
+    });
+
+    if (!users) return { status: false, message: "No user data found in company" };
+
+    return { status: true, message: "User's data retrived successfully", data: users };
+  },
+
   getProdWebCount: async (userIds, startOfDay, endOfDay) => {
     //? To get everything in a single query
     // `WITH RECURSIVE DateRange AS (
