@@ -44,7 +44,7 @@ const updateAdminDetails = async (req, res) => {
       fullname: "required|string|min:3|max:100",
       email: "required|email",
       mobile: "required|string|regex:/^\\d{10}$/",
-      password: "string|regex:/^[a-zA-Z0-9!@#$%^&*]{6,16}$/",
+      password: "string|regex:/^(?=.[A-Z])(?=.\\d)(?=.[!@#$%^&])[A-Za-z\\d!@#$%^&*]{8,}$/",
       confirm_password: "required_with:password|same:password",
     };
 
