@@ -1,8 +1,6 @@
-import moment from "moment";
 import fs from "fs";
 import path from "path";
 import PDFDocument from "pdfkit";
-import ExcelJS from "exceljs";
 import { fileURLToPath } from "url";
 import { Op, fn, col, Sequelize, literal } from "sequelize";
 import department from "../../database/models/departmentModel.js";
@@ -12,7 +10,6 @@ import User from "../../database/models/userModel.js";
 import helper from "./helper.js";
 import exportHistories from "../../database/models/exportHistoryModel.js";
 import variables from "../../app/config/variableConfig.js";
-import { finished } from "stream";
 
 // Helper function to get the working days of a department's users
 const getWorkingDays = async (dateRange, userIds, companyId) => {
@@ -519,9 +516,9 @@ export default {
       return "N/A";
     }
   },
-  getUserInCompany: async (companyId) => {
+  getUserInCompany: async (companyId, teamId) => {
     const users = await User.findAll({
-      where: { company_id: companyId, isAdmin: 0 },
+      where: { company_id: companyId, isAdmin: 0, teamId: teamId },
       attributes: ["id", "fullname"],
       include: [
         {
@@ -674,53 +671,6 @@ GROUP BY u.id;`;
     });
 
     return results;
-  },
-
-  generateProductivityReport: async (data) => {
-    const { users, ProdAppAnalysis, TimeLogs, ProductiveWebsite } = data;
-    const report = users.map((user) => {
-      const userProdAppAnalysis = ProdAppAnalysis.find((item) => item.userId === user.id);
-      const userProdWebCount = ProductiveWebsite.find((item) => item.userId === user.id);
-      const userTimeLog = TimeLogs.find((item) => item.userId === user.id);
-  
-      const totalTimeSpentOnProductiveApps = userProdAppAnalysis
-        ? userProdAppAnalysis.total_time_spent_on_productive_apps
-        : 0;
-      const activeTimeInSeconds = userTimeLog ? userTimeLog.active_time_in_seconds : 0;
-  
-      const averageProductivePercentage =
-        activeTimeInSeconds > 0
-          ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100
-          : 0;
-  
-      return {
-        "Employee Name": user.fullname,
-        "Department": user.department.name,
-        "Date": "2024-12-18", // Assuming you want to report for a specific date
-        "Total Active Hours": userTimeLog
-          ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2)
-          : "0.00",
-        "Idle time": userTimeLog ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
-        "Time on Productive Apps": userProdAppAnalysis
-          ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2)
-          : "0.00",
-        "Time on Non Productive Apps": userProdAppAnalysis
-          ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2)
-          : "0.00",
-        "Productive Websites Count": userProdWebCount
-        ? (userProdWebCount.productive_count)
-        : 0, 
-        "Non Productive Websites Count": userProdWebCount
-        ? (userProdWebCount.non_productive_count)
-        : 0,
-        "Average Productive %": averageProductivePercentage.toFixed(2) + "%",
-        "Most Used Productive App": userProdAppAnalysis
-          ? userProdAppAnalysis.app_name_with_max_time
-          : "N/A",
-      };
-    });
-  
-    return report;
   },
 
   getTimeLogDetails: async (userIds, startOfDay, endOfDay) => {
@@ -1143,5 +1093,75 @@ GROUP BY u.id, tl.createdAt;`;
       console.error("Error generating file:", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
+  },
+  
+  generateProductivityReport: async (data) => {
+    const { users, ProdAppAnalysis, TimeLogs, ProductiveWebsite } = data;
+    const report = users.map((user) => {
+      const userProdAppAnalysis = ProdAppAnalysis.find((item) => item.userId === user.id);
+      const userProdWebCount = ProductiveWebsite.find((item) => item.userId === user.id);
+      const userTimeLog = TimeLogs.find((item) => item.userId === user.id);
+  
+      const totalTimeSpentOnProductiveApps = userProdAppAnalysis
+        ? userProdAppAnalysis.total_time_spent_on_productive_apps
+        : 0;
+      const activeTimeInSeconds = userTimeLog ? userTimeLog.active_time_in_seconds : 0;
+  
+      const averageProductivePercentage =
+        activeTimeInSeconds > 0
+          ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100
+          : 0;
+  
+      // return {
+      //   "Employee Name": user.fullname,
+      //   "Department": user.department.name,
+      //   // "Date": "2024-12-18", // Assuming you want to report for a specific date
+      //   "Total Active Hours": userTimeLog
+      //     ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2)
+      //     : 0,
+      //   "Idle time": userTimeLog ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
+      //   "Time on Productive Apps": userProdAppAnalysis
+      //     ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2)
+      //     : 0,
+      //   "Time on Non Productive Apps": userProdAppAnalysis
+      //     ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2)
+      //     : 0,
+      //   "Productive Websites Count": userProdWebCount
+      //   ? (userProdWebCount.productive_count)
+      //   : 0, 
+      //   "Non Productive Websites Count": userProdWebCount
+      //   ? (userProdWebCount.non_productive_count)
+      //   : 0,
+      //   "Average Productive %": averageProductivePercentage.toFixed(2) + "%",
+      //   "Most Used Productive App": userProdAppAnalysis
+      //     ? userProdAppAnalysis.app_name_with_max_time
+      //     : "N/A",
+      // };
+      return {
+        "Employee Name": user.fullname || "N/A",
+        "Department": user.department?.name || "N/A",
+        // "Date": "2024-12-18", // Uncomment and modify if you want to include a specific date
+        "Total Active Hours": userTimeLog?.active_time_in_seconds
+          ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2)
+          : "0.00",
+        "Idle time": userTimeLog?.idle_Time
+          ? (userTimeLog.idle_Time / 3600).toFixed(2)
+          : "0.00",
+        "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps
+          ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2)
+          : "0.00",
+        "Time on Non Productive Apps": userProdAppAnalysis?.total_time_spent_on_non_productive_apps
+          ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2)
+          : "0.00",
+        "Productive Websites Count": userProdWebCount?.productive_count || 0,
+        "Non Productive Websites Count": userProdWebCount?.non_productive_count || 0,
+        "Average Productive %": averageProductivePercentage
+          ? averageProductivePercentage.toFixed(2) + "%"
+          : "0.00%",
+        "Most Used Productive App": userProdAppAnalysis?.app_name_with_max_time || "N/A",
+      };      
+    });
+  
+    return report;
   },
 };
