@@ -1001,7 +1001,7 @@ export default {
         console.log("XLS file written successfully:", filePath);
 
         const newAppInfo = await exportHistories.create(
-          { reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime },
+          { reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime,data:JSON.stringify(reportData) },
           { transaction: dbTransaction }
         );
 

@@ -46,6 +46,9 @@
     "nodemon": "^3.1.7",
     "openai": "^4.77.0",
     "path": "^0.12.7",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.1",
+    "pdf2json": "^3.1.4",
     "pdfkit": "^0.15.2",
     "punycode": "^2.3.1",
     "sequelize": "^6.37.5",
@@ -54,6 +57,7 @@
     "url": "^0.11.4",
     "validate.js": "^0.13.1",
     "validatorjs": "^3.22.1",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "xlsx": "^0.18.5"
   }
 }
