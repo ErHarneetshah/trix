@@ -84,9 +84,9 @@ class exportReportController {
  readExcel = async(filepath) => {
   try {
     const workbook = xlsx.readFile(filepath);
-    const sheetName = workbook.SheetNames[0]; // Get the first sheet
+    const sheetName = workbook.SheetNames[0]; 
     const sheet = workbook.Sheets[sheetName];
-    const jsonData = xlsx.utils.sheet_to_json(sheet);
+    let jsonData = xlsx.utils.sheet_to_json(sheet, { raw: false });
     return jsonData;
   } catch (err) {
     console.error('Error reading Excel file:', err);
