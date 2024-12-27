@@ -711,68 +711,55 @@ class exportReportController {
     }
   };
 
-  downloadExportReport = async (req, res) => {
-    try {
-      let { filePath } = req.body;
-      const fileName = path.basename(filePath);
-      const fileExtension = path.extname(fileName).toLowerCase();
 
-      if (typeof filePath !== "string" || !filePath.trim()) {
-        return helper.failed(res, variables.BadRequest, "Invalid file path provided");
-      }
 
-      const normalizedPath = path.resolve(filePath);
+downloadExportReport = async (req, res) => {
+  try {
+    const { filePath } = req.body;
 
-      await fs.promises.access(normalizedPath, fs.constants.F_OK);
-
-      let contentType;
-      switch (fileExtension) {
-        case ".pdf":
-          contentType = "application/pdf";
-          break;
-        case ".xlsx":
-          contentType =
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-          break;
-        case ".xls":
-          contentType = "application/vnd.ms-excel";
-          break;
-        default:
-          return helper.failed(res, variables.BadRequest, "Unsupported file type");
-      }
-
-      // Set response headers
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${fileName}"`
-      );
-      res.setHeader("Content-Type", contentType);
-
-      // Send the file
-      return res.download(normalizedPath, (err) => {
-        if (err) {
-          console.error("Error sending file:", err);
-          return helper.failed(
-            res,
-            variables.BadRequest,
-            "File download failed"
-          );
-        }
-      });
-    } catch (err) {
-      console.error("Error during file download:", err);
-
-      if (err.code === "ENOENT") {
-        return helper.failed(res, variables.BadRequest, "File not found");
-      }
-
-      return helper.failed(
-        res,
-        variables.ServerError,
-        "An error occurred while processing the file download"
-      );
+    if (!filePath || typeof filePath !== "string" || !filePath.trim()) {
+      return res.status(400).json({ message: "Invalid file path provided" });
     }
-  };
+
+    const normalizedPath = path.resolve(filePath);
+    const fileName = path.basename(normalizedPath);
+    const fileExtension = path.extname(fileName).toLowerCase();
+
+    // Check if the file exists
+    // await fs.promises.access(normalizedPath, fs.constants.F_OK);
+
+    // Determine the content type
+    const mimeTypes = {
+      ".pdf": "application/pdf",
+      ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ".xls": "application/vnd.ms-excel",
+    };
+
+    const contentType = mimeTypes[fileExtension];
+    if (!contentType) {
+      return res.status(400).json({ message: "Unsupported file type" });
+    }
+
+    // Set headers for download
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Type", contentType);
+
+    res.download(filePath);
+    // Stream the file to the response
+    // const fileStream = fs.createReadStream(normalizedPath);
+    // fileStream.pipe(res).on("error", (err) => {
+    //   console.error("Error streaming file:", err);
+    //   res.status(500).json({ message: "Error sending file" });
+    // });
+  } catch (err) {
+    console.error("Error during file download:", err);
+    if (err.code === "ENOENT") {
+      return helper.failed(res, variables.BadRequest, "File Not Found");
+    }
+     return helper.failed(res, variables.BadRequest, "An error occurred while processing the file download");
+  }
+};
+
 }
 
 export default exportReportController;
