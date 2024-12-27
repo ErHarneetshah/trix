@@ -180,7 +180,7 @@ class teamMemberTimeLogController {
 
       logWhere.company_id = company_id;
 
-      const alldata = await GenerateReportHelper.getUserInCompany(company_id);
+      const alldata = await GenerateReportHelper.getUserInCompanyWithoutTeam(company_id);
 
       for (const user of alldata.data) {
         if (user.id) {

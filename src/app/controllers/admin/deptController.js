@@ -18,8 +18,8 @@ class deptController {
     try {
       // ___________-------- Role Permisisons Exists or not ---------________________
       const routeMethod = req.method;
-      const isApproved = await helper.checkRolePermission(req.user.roleId, "department", routeMethod);
-      if (!isApproved) return helper.failed(res, variables.BadRequest, isApproved.message);
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "department", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.BadRequest, isApproved.message);
       // ___________-------- Role Permisisons Exists or not ---------________________
 
       // ___________---------- Search, Limit, Pagination ----------_______________
