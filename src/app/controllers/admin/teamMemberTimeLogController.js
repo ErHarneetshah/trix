@@ -191,6 +191,7 @@ class teamMemberTimeLogController {
       const timeLogQuery2 = `SELECT
     u.id AS userId,
     u.fullname AS name,
+    u.currentStatus AS currentStatus,
     s.start_time AS startTime,
     s.end_time AS endTime,
     t.logged_in_time AS logged_in_time,
@@ -224,8 +225,8 @@ LEFT JOIN
     timelogs t ON u.id = t.user_id
     AND t.createdAt BETWEEN :startOfDay AND :endOfDay
 LEFT JOIN 
-    app_histories ah ON u.id = ah.userId -- Join with app_histories for productive/non-productive time calculation
-    AND ah.startTime BETWEEN :startOfDay AND :endOfDay -- Filter for the date range
+    app_histories ah ON u.id = ah.userId
+    AND ah.startTime BETWEEN :startOfDay AND :endOfDay
 WHERE 
     u.id IN (:userIds)
     AND u.createdAt <= :endOfDay
@@ -240,6 +241,7 @@ GROUP BY
       const results = await sequelize.query(timeLogQuery2, {
         type: Sequelize.QueryTypes.SELECT,
         replacements,
+        logging: console.log
       });
 
       let updatedJson = commonfuncitons.createResponse2(results);
@@ -259,16 +261,16 @@ GROUP BY
         } else if (tab.toLowerCase() === "slacking") {
           updatedJson = updatedJson.filter((item) => item.user.is_slacking === true);
         } else if (tab.toLowerCase() === "productive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.logged_in_time !== null);
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.logged_in_time !== null && item.productiveTime !== "0h 0m 0s");
         } else if (tab.toLowerCase() === "nonproductive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.logged_in_time !== null);
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.logged_in_time !== null && item.productiveTime !== "0h 0m 0s" );
         }
       }
 
       const count = updatedJson.length;
 
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: updatedJson });
+      return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: results });
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
