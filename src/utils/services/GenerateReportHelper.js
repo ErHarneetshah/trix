@@ -968,8 +968,7 @@ GROUP BY u.id, tl.createdAt;`;
           await dbTransaction.rollback();
           return { status: 0 };
         }
-      } 
-      else if (format === "pdf") {
+      } else if (format === "pdf") {
         // try {
         //   const doc = new PDFDocument({ compress: false });
         //   const fileStream = fs.createWriteStream(filePath);
@@ -1020,21 +1019,23 @@ GROUP BY u.id, tl.createdAt;`;
         try {
           const doc = new PDFDocument({ compress: false });
           const fileStream = fs.createWriteStream(filePath);
-      
+
           doc.pipe(fileStream);
-      
+
           // Add report title
           doc.fontSize(10).text(reportName, { align: "center", underline: true }).moveDown(2);
-      
+
           // Define table properties
           const tableTop = 100; // Starting Y position for the table
-          const columnWidths = [50, 60, 50, 50, 60, 50, 50, 50, 50]; 
+          // const columnWidths = [50, 60, 50, 50, 60, 50, 50, 50, 50];
+          const columnWidths = Array(headers.length).fill(55);
           const rowHeight = 40;
-      
+
           // Draw table headers
           let xPos = 50; // Starting X position
           let yPos = tableTop;
-      
+
+
           headers.forEach((header, index) => {
             doc
               .rect(xPos, yPos, columnWidths[index], rowHeight)
@@ -1048,9 +1049,9 @@ GROUP BY u.id, tl.createdAt;`;
               });
             xPos += columnWidths[index];
           });
-      
+
           yPos += rowHeight; // Move to the next row
-      
+
           // Draw table data
           reportData.forEach((row) => {
             xPos = 50; // Reset X position for each row
@@ -1070,16 +1071,16 @@ GROUP BY u.id, tl.createdAt;`;
             });
             yPos += rowHeight; // Move to the next row
           });
-      
+
           // Finalize PDF
           doc.end();
-      
+
           // Await file writing completion
           await new Promise((resolve, reject) => {
             fileStream.on("finish", resolve);
             fileStream.on("error", reject);
           });
-      
+
           // Save details to the database
           const newAppInfo = await exportHistories.create({
             reportName,
@@ -1089,7 +1090,7 @@ GROUP BY u.id, tl.createdAt;`;
             periodFrom: fromTime,
             periodTo: toTime,
           });
-      
+
           if (newAppInfo) {
             await dbTransaction.commit();
             return { status: 1 };
@@ -1102,8 +1103,7 @@ GROUP BY u.id, tl.createdAt;`;
           await dbTransaction.rollback();
           return helper.failed(res, variables.BadRequest, "File generation failed");
         }
-      } 
-      else {
+      } else {
         await dbTransaction.rollback();
         return helper.failed(res, variables.BadRequest, "Unsupported File Request");
       }
@@ -1112,24 +1112,19 @@ GROUP BY u.id, tl.createdAt;`;
       return helper.failed(res, variables.BadRequest, error.message);
     }
   },
-  
+
   generateProductivityReport: async (data) => {
     const { users, ProdAppAnalysis, TimeLogs, ProductiveWebsite } = data;
     const report = users.map((user) => {
       const userProdAppAnalysis = ProdAppAnalysis.find((item) => item.userId === user.id);
       const userProdWebCount = ProductiveWebsite.find((item) => item.userId === user.id);
       const userTimeLog = TimeLogs.find((item) => item.userId === user.id);
-  
-      const totalTimeSpentOnProductiveApps = userProdAppAnalysis
-        ? userProdAppAnalysis.total_time_spent_on_productive_apps
-        : 0;
+
+      const totalTimeSpentOnProductiveApps = userProdAppAnalysis ? userProdAppAnalysis.total_time_spent_on_productive_apps : 0;
       const activeTimeInSeconds = userTimeLog ? userTimeLog.active_time_in_seconds : 0;
-  
-      const averageProductivePercentage =
-        activeTimeInSeconds > 0
-          ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100
-          : 0;
-  
+
+      const averageProductivePercentage = activeTimeInSeconds > 0 ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100 : 0;
+
       // return {
       //   "Employee Name": user.fullname,
       //   "Department": user.department.name,
@@ -1146,7 +1141,7 @@ GROUP BY u.id, tl.createdAt;`;
       //     : 0,
       //   "Productive Websites Count": userProdWebCount
       //   ? (userProdWebCount.productive_count)
-      //   : 0, 
+      //   : 0,
       //   "Non Productive Websites Count": userProdWebCount
       //   ? (userProdWebCount.non_productive_count)
       //   : 0,
@@ -1157,29 +1152,19 @@ GROUP BY u.id, tl.createdAt;`;
       // };
       return {
         "Employee Name": user.fullname || "N/A",
-        "Department": user.department?.name || "N/A",
+        Department: user.department?.name || "N/A",
         // "Date": "2024-12-18", // Uncomment and modify if you want to include a specific date
-        "Total Active Hours": userTimeLog?.active_time_in_seconds
-          ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2)
-          : "0.00",
-        "Idle time": userTimeLog?.idle_Time
-          ? (userTimeLog.idle_Time / 3600).toFixed(2)
-          : "0.00",
-        "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps
-          ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2)
-          : "0.00",
-        "Time on Non Productive Apps": userProdAppAnalysis?.total_time_spent_on_non_productive_apps
-          ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2)
-          : "0.00",
+        "Total Active Hours": userTimeLog?.active_time_in_seconds ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
+        "Idle time": userTimeLog?.idle_Time ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
+        "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
+        "Time on Non Productive Apps": userProdAppAnalysis?.total_time_spent_on_non_productive_apps ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2) : "0.00",
         "Productive Websites Count": userProdWebCount?.productive_count || 0,
         "Non Productive Websites Count": userProdWebCount?.non_productive_count || 0,
-        "Average Productive %": averageProductivePercentage
-          ? averageProductivePercentage.toFixed(2) + "%"
-          : "0.00%",
+        "Average Productive %": averageProductivePercentage ? averageProductivePercentage.toFixed(2) + "%" : "0.00%",
         "Most Used Productive App": userProdAppAnalysis?.app_name_with_max_time || "N/A",
-      };      
+      };
     });
-  
+
     return report;
   },
 };

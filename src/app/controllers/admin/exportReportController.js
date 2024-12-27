@@ -103,7 +103,7 @@ class exportReportController {
       let userIds = [];
 
       if (userId) {
-        users = await User.findOne({
+        let checkuser = await User.findAll({
           where: { id: userId, teamId: teamId, company_id: req.user.company_id },
           attributes: ["id", "fullname"],
           include: [
@@ -114,7 +114,9 @@ class exportReportController {
             },
           ],
         })
-        if (!users) return helper.failed(res, variables.ValidationError, "User does not exists in Selected Team")
+
+        if (!checkuser) return helper.failed(res, variables.ValidationError, "User does not exists in Selected Team")
+        users =  { status: true, message: "User's data retrived successfully", data: checkuser };
         userIds = [userId];
 
       } else {
@@ -135,16 +137,16 @@ class exportReportController {
       let headers = [
         "Employee Name",
         "Department",
-        // "Date",
         "Total Active Hours",
         "Idle time",
         "Time on Productive Apps",
         "Time on Non Productive Apps",
-        "Productive Websites",
-        "Non Productive Websites",
+        "Productive Websites Count",
+        "Non Productive Websites Count",
         "Average Productive %",
         "Most Used Productive App",
       ];
+      
       let data = { users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis, TimeLogs: TimeLogsDetails };
 
       let updatedJson = await GenerateReportHelper.generateProductivityReport(data);
