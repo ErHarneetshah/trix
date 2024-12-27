@@ -149,7 +149,7 @@ class exportReportController {
 
       let updatedJson = await GenerateReportHelper.generateProductivityReport(data);
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive Report", req.user.company_id, updatedJson, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive_Report", req.user.company_id, updatedJson, headers);
 
       if (result.status) {
         return helper.success(res, variables.Success, "Productivity Report Generated Successfully", updatedJson);
@@ -272,7 +272,7 @@ class exportReportController {
 
       let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Time in", "Shift Time Out", "Time Out"];
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance_Report", req.user.company_id, attendanceReport, headers);
       if (result.status) {
         return helper.success(res, variables.Success, "Attendance Report Generated Successfully");
       } else {
@@ -364,7 +364,7 @@ class exportReportController {
 
       let headers = ["Name", "Department", "Application", "Productive/Non Producitve"];
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application Usage Report", req.user.company_id, applicationUsage, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application_Usage_Report", req.user.company_id, applicationUsage, headers);
       if (result.status) {
         return helper.success(res, variables.Success, "Application Usage Report Generated Successfully");
       } else {
@@ -531,7 +531,7 @@ class exportReportController {
 
       let headers = ["Name", "Department", "Url", "Time"];
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized_Web_Report", req.user.company_id, unauthorizedAccessReport, headers);
       if (result.status) {
         return helper.success(res, variables.Success, "Unauthorized Web Report Generated Successfully", unauthorizedAccessReport);
       } else {
@@ -699,7 +699,7 @@ class exportReportController {
       }
       let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Visit Time"];
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistory, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser_History_Report", req.user.company_id, browserHistory, headers);
       if (result.status) {
         return helper.success(res, variables.Success, "Browser History Report Generated Successfully", browserHistory);
       } else {
