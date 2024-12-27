@@ -16,8 +16,12 @@ class deptController {
   //* ________-------- GET All Departments ---------______________
   getAllDept = async (req, res) => {
     try {
-      const routeUrl = req.originalUrl;
-      console.log(routeUrl);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "department", routeMethod);
+      if (!isApproved) return helper.failed(res, variables.BadRequest, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       let searchable = ["name"];
@@ -84,6 +88,12 @@ class deptController {
 
   //* ________-------- POST Add Department ---------______________
   addDept = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "department", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.BadRequest, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { name, parentDeptId } = req.body;
@@ -117,6 +127,12 @@ class deptController {
 
   //* ________-------- PUT Update Department ---------______________
   updateDept = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "department", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.BadRequest, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       let { id, name, parentDeptId } = req.body;
@@ -191,6 +207,12 @@ class deptController {
 
   //* ________-------- DELETE Delete Department ---------______________
   deleteDept = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "department", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.BadRequest, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;

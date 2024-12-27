@@ -28,6 +28,10 @@ await sequelize.query(
 process.env.TZ = "Asia/Kolkata"; console.log(`Server timezone set to: ${process.env.TZ}`);
 console.log(`Current server time: ${new Date().toString()}`);
 
+app.get('/get_timezone',(req,res,next)=>{
+  res.send(`Server timezone set to: ${process.env.TZ} and Current server time: ${new Date().toString()}`)
+});
+
 const httpServer = createServer(app);
 const appConfig = new appConfiguration();
 const dbConfig = appConfig.getConfig();

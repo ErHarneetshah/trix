@@ -10,10 +10,10 @@ import moment from "moment";
 import rolePermissionController from "../../app/controllers/admin/rolePermissionController.js";
 
 export default {
-  checkRolePermission: async (moduleName, method) => {
+  checkRolePermission: async (roleId, moduleName, method) => {
     try {
       const permissionInstance = new rolePermissionController();
-      const getPermission = await permissionInstance.getSpecificRolePermissions(req.user.roleId, moduleName);
+      const getPermission = await permissionInstance.getSpecificRolePermissions(roleId, moduleName);
       const permissions = getPermission.dataValues.permissions;
       const reqMethod = method;
       if (reqMethod in permissions) {
