@@ -19,5 +19,6 @@ router.post("/downloadExportReport", authMiddleware,verifyAdminMiddleware, expor
 
 
 router.get("/getExportHistory",authMiddleware,verifyAdminMiddleware, exportReportInstance.getExportHistoryReport);
+router.get("/viewHistory",authMiddleware,verifyAdminMiddleware, exportReportInstance.viewFile);
 
 export default router;

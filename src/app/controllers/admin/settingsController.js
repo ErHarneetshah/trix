@@ -447,7 +447,7 @@ const addProductiveWebsites = async (req, res) => {
       return helper.failed(res, variables.NotFound, "Department is not exist.");
     }
 
-    const existingApp = await ProductiveWebsite.findOne({ where: { website } });
+    const existingApp = await ProductiveWebsite.findOne({ where: { website , company_id:  req.user.company_id}  });
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "Website with this name or URL already exists");
     }

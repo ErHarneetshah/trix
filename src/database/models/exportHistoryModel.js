@@ -27,6 +27,10 @@ const exportHistories = sequelize.define('exportHistories', {
     },periodTo:{
         type: DataTypes.DATE,
         allowNull: true,
+    }
+    ,data:{
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
     },
 }, {
     timestamps: true,

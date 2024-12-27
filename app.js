@@ -45,7 +45,9 @@ app.use(routes);
 app.get('/get_timezone',(req,res,next)=>{
   res.send(`Server timezone set to: ${process.env.TZ} and Current server time: ${new Date().toString()}`)
 });
+
 app.get("/export/:path", (req, res) => {
+  console.log(__dirname + "/storage/files/" +  req.params.path);
   res.sendFile(__dirname + "/storage/files/" +  req.params.path);
 });
 
@@ -54,9 +56,9 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.static('assets'));
 app.use(express.static('storage/files'));
+app.use(express.static('storage'));
 
 //================ image get =====================//
-
 const updatedPath = path.join(__dirname, "assets"); // Adjusted to join the paths properly
 
 app.get("/image/:type/:path", (req, res) => {

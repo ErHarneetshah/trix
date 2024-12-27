@@ -1,5 +1,5 @@
 import { Op, Sequelize, QueryTypes, literal, fn, col } from "sequelize";
-import fs from "fs";
+import fs from "fs/promises";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import exportReports from "../../../database/models/exportReportsModel.js";
@@ -15,6 +15,8 @@ import { endOfDay } from "date-fns";
 import moment from "moment";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 import path from "path";
+import { PDFDocument } from "pdf-lib";
+import xlsx from "xlsx";
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
@@ -65,6 +67,68 @@ class exportReportController {
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
+  };
+
+
+  servePdf = async(filepath,res) => {
+  res.setHeader('Content-Type', 'application/pdf');
+  fs.readFile(filepath)
+    .then(data => res.end(data))
+    .catch(err => {
+      console.error('Error reading PDF:', err);
+      res.status(500).json({ error: 'Failed to serve PDF.' });
+    });
+  };
+  
+  // Helper function to read Excel files
+ readExcel = async(filepath) => {
+  try {
+    const workbook = xlsx.readFile(filepath);
+    const sheetName = workbook.SheetNames[0]; 
+    const sheet = workbook.Sheets[sheetName];
+    let jsonData = xlsx.utils.sheet_to_json(sheet, { raw: false });
+    return jsonData;
+  } catch (err) {
+    console.error('Error reading Excel file:', err);
+    throw err;
+  }
+  };
+  
+  viewFile = async (req, res) => {
+    const { filepath } = req.query;
+
+    
+    if (!filepath) {
+      return res.status(400).json({ error: 'Filepath is required.' });
+    }
+  
+    // check that the file path exit or not
+    const existingFilePath = await exportHistories.findOne({ where: { filePath : filepath } });
+    if (!existingFilePath) {
+      return helper.failed(res, variables.NotFound, "This file path does not exist in our records");
+    }
+    const absolutePath = path.resolve(filepath); // Make the path absolute
+  
+    try {
+      // Check if the file exists
+      await fs.access(absolutePath);
+  
+      const ext = path.extname(absolutePath).toLowerCase(); // Get the file extension
+      if (ext === '.pdf') {
+        // Serve the PDF directly for viewing
+        this.servePdf(absolutePath, res);
+      } else if (ext === '.xlsx' || ext === '.xls') {
+        // Read and send Excel content as JSON
+        const content = await this.readExcel(absolutePath);
+        res.json({ type: 'excel', content });
+      } else {
+        res.status(400).json({ error: 'Unsupported file type. Only PDF and Excel files are supported.' });
+      }
+    } catch (err) {
+      console.error('Error reading file:', err);
+      res.status(500).json({ error: 'Failed to process the file.' });
+    }
+
   };
 
   getProductiveReport = async (req, res) => {
@@ -730,7 +794,8 @@ class exportReportController {
       if (!filePath || typeof filePath !== "string" || !filePath.trim()) {
         return res.status(400).json({ message: "Invalid file path provided" });
       }
-
+  
+      // Normalize and resolve the file path
       const normalizedPath = path.resolve(filePath);
       const fileName = path.basename(normalizedPath);
       const fileExtension = path.extname(fileName).toLowerCase();
@@ -754,7 +819,7 @@ class exportReportController {
       res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
       res.setHeader("Content-Type", contentType);
 
-      return res.download(normalizedPath, fileName, (err) => {
+      res.download(normalizedPath, (err) => {
         if (err) {
           console.error("Error sending file:", err);
           return res.status(500).json({ message: "File download failed" });
@@ -762,7 +827,7 @@ class exportReportController {
       });
     } catch (err) {
       console.error("Error during file download:", err);
-
+  
       if (err.code === "ENOENT") {
         return res.status(500).json({ message: "File not found" });
       }
