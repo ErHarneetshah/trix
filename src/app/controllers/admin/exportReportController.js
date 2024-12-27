@@ -753,10 +753,12 @@ downloadExportReport = async (req, res) => {
     // });
   } catch (err) {
     console.error("Error during file download:", err);
+
     if (err.code === "ENOENT") {
-      return helper.failed(res, variables.BadRequest, "File Not Found");
+      return res.status(500).json({ message: "File not found" });
     }
-     return helper.failed(res, variables.BadRequest, "An error occurred while processing the file download");
+
+    res.status(500).json({ message: "An error occurred while processing the file download" });
   }
 };
 
