@@ -640,6 +640,53 @@ GROUP BY u.id;`;
     return results;
   },
 
+  generateProductivityReport: async (data) => {
+    const { users, ProdAppAnalysis, TimeLogs, ProductiveWebsite } = data;
+    const report = users.map((user) => {
+      const userProdAppAnalysis = ProdAppAnalysis.find((item) => item.userId === user.id);
+      const userProdWebCount = ProductiveWebsite.find((item) => item.userId === user.id);
+      const userTimeLog = TimeLogs.find((item) => item.userId === user.id);
+  
+      const totalTimeSpentOnProductiveApps = userProdAppAnalysis
+        ? userProdAppAnalysis.total_time_spent_on_productive_apps
+        : 0;
+      const activeTimeInSeconds = userTimeLog ? userTimeLog.active_time_in_seconds : 0;
+  
+      const averageProductivePercentage =
+        activeTimeInSeconds > 0
+          ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100
+          : 0;
+  
+      return {
+        "Employee Name": user.fullname,
+        "Department": user.department.name,
+        "Date": "2024-12-18", // Assuming you want to report for a specific date
+        "Total Active Hours": userTimeLog
+          ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2)
+          : "0.00",
+        "Idle time": userTimeLog ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
+        "Time on Productive Apps": userProdAppAnalysis
+          ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2)
+          : "0.00",
+        "Time on Non Productive Apps": userProdAppAnalysis
+          ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2)
+          : "0.00",
+        "Productive Websites Count": userProdWebCount
+        ? (userProdWebCount.productive_count)
+        : 0, 
+        "Non Productive Websites Count": userProdWebCount
+        ? (userProdWebCount.non_productive_count)
+        : 0,
+        "Average Productive %": averageProductivePercentage.toFixed(2) + "%",
+        "Most Used Productive App": userProdAppAnalysis
+          ? userProdAppAnalysis.app_name_with_max_time
+          : "N/A",
+      };
+    });
+  
+    return report;
+  },
+
   getTimeLogDetails: async (userIds, startOfDay, endOfDay) => {
     const query = `SELECT u.id AS userId,
        tl.id AS timelogId,

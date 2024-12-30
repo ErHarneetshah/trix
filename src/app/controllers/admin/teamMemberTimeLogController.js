@@ -113,7 +113,7 @@ class teamMemberTimeLogController {
     s.end_time AS endTime,
     t.logged_in_time AS logged_in_time,
     t.logged_out_time AS logged_out_time,
-    t.early_going AS early_going,
+    t.early_going AS early_going, 
     t.late_coming AS late_coming,
     IFNULL(SUM(t.active_time), 0) + IFNULL(SUM(t.spare_time), 0) + IFNULL(SUM(t.idle_time), 0) AS active_time,
     CASE 
