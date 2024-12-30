@@ -130,9 +130,9 @@ class teamController {
           },
         ],
       });
-      if (!specificData) return helper.failed(res, variables.NotFound, `Data not Found of matching attributes `);
+      if (!specificData) return helper.failed(res, variables.NotFound, `Team Not Found`);
 
-      return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
+      return helper.success(res, variables.Success, "Team details fetched successfully", specificData);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -162,15 +162,15 @@ class teamController {
         transaction: dbTransaction,
       });
 
-      const existingTeamWithSameParam = await team.findOne({
-        where: {
-          company_id: req.user.company_id,
-          departmentId: requestData.departmentId,
-          shiftId: requestData.shiftId,
-        },
-        transaction: dbTransaction,
-      });
-      if (existingTeamWithSameParam) return helper.failed(res, variables.ValidationError, "Team Already Exists under different name!");
+      // const existingTeamWithSameParam = await team.findOne({
+      //   where: {
+      //     company_id: req.user.company_id,
+      //     departmentId: requestData.departmentId,
+      //     shiftId: requestData.shiftId,
+      //   },
+      //   transaction: dbTransaction,
+      // });
+      // if (existingTeamWithSameParam) return helper.failed(res, variables.ValidationError, "Team Already Exists under different name!");
 
       const existingTeamWithSameName = await team.findOne({
         where: {
@@ -230,7 +230,7 @@ class teamController {
           where: {
             name: updateFields.name,
             company_id: req.user.company_id,
-            id: { [Op.ne]: id }, // Exclude the current record by id
+            id: { [Op.ne]: id },
           },
           transaction: dbTransaction,
         });
@@ -297,7 +297,7 @@ class teamController {
 
       const isUsedInUsers = await User.findOne({ where: { teamId: id } });
       if (isUsedInUsers) {
-        return helper.failed(res, variables.BadRequest, "Team cannot be deleted because it is in use by other records.");
+        return helper.failed(res, variables.BadRequest, "Team cannot be deleted because it's in use in other records.");
       }
 
       // Create and save the new user

@@ -29,9 +29,6 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       unique: true,
       allowNull: false,
-      //  validate: {
-      //     isEmail: true, // Ensures the value is a valid email
-      //  },
     },
     password: {
       type: DataTypes.STRING,
@@ -140,7 +137,6 @@ const User = sequelize.define(
               {
                 model: User,
                 where: { currentStatus: 1 },
-                // required: true,
               },
             ],
           });

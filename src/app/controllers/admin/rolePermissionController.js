@@ -93,11 +93,10 @@ class rolePermissionController {
     }
   };
 
-  addRolePermissions = async (module, roleId, company_id, transaction) => {
+  addRolePermissions = async (module, roleId, routeMethod, company_id, transaction) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
-    const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "permissions", routeMethod);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(roleId, "permissions", routeMethod);
+    if (!isApproved) throw new Error("Not Permitted for this request");
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     try {

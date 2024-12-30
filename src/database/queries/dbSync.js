@@ -24,20 +24,15 @@ import reportSettings from "../models/reportSettingsModel.js";
 import languageDropdown from "../models/languageModel.js";
 import languageSettings from "../models/languageSettingsModel.js";
 import exportReports from "../models/exportReportsModel.js";
+import exportHistories from "../models/exportHistoryModel.js";
 
 (async () => {
   try {
-    //console.log('Initializing database connection...');
-
     const forceSync = process.argv.includes('--force');
-    //console.log(`Synchronizing models${forceSync ? ' with force' : ''}...`);
     await sequelize.sync({ force: forceSync, alter: true });
-
-    //console.log(`Models synchronized successfully${forceSync ? ' (forced)' : ''}.`);
   } catch (error) {
     console.error('Error synchronizing models:', error);
   } finally {
     await sequelize.close();
-    //console.log('Database connection closed.');
   }
 })();

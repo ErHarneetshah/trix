@@ -53,11 +53,11 @@ const shift = sequelize.define(
       async beforeCreate(shift) {
         try {
           let calTotalHrTime = await calTotalHr(shift.start_time, shift.end_time);
-          if (calTotalHr < 5) return helper.failed(res, variables.ValidationError, "Start Time and End Time Must have a difference of 5 hours or more");
+          if (calTotalHrTime < 5) throw new Error("Start & End Time Must have atleast 5 hours difference");
 
           shift.total_hours = calTotalHrTime;
         } catch (error) {
-          return helper.failed(res, variables.BadRequest, error.message);
+          throw new Error(error.message);
         }
       },
       async beforeUpdate(shift) {

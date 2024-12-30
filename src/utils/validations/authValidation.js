@@ -7,14 +7,12 @@ class authValidationSchema {
     try {
       const { status, message } = await CValidator(data, {
         name: "required|regex:/^[a-zA-Z-' ]+$/",
-        companyName: "required|regex:/^[a-zA-Z-' ]+$/",
+        companyName: "required|min:3|max:50|regex:/^[a-zA-Z-' ]+$/",
         email: "required|email",
-        password: "required|min:8|max:50",
+        password: "required|password_regex|min:8",
         confirmPassword: "required|same:password",
         employeeNumber: "required|numeric",
         mobile: "required|numeric|digits:10"
-        // companyName: "required|regex:/^[a-zA-Z ]*$/|min:3|max:50",
-        // companyAddress: "required|string|min:10",
       });
    
       if (!status) {

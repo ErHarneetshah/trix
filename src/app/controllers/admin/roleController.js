@@ -92,6 +92,7 @@ class roleController {
       if (existingRole) return helper.failed(res, variables.ValidationError, "Role Already Exists!");
 
       // Create and save the new user
+      const routeMethod = req.method;
       const addNewRole = await role.create({ name: name, company_id: req.user.company_id }, { transaction: dbTransaction });
       if (!addNewRole) {
         if (dbTransaction) await dbTransaction.rollback();
@@ -102,7 +103,7 @@ class roleController {
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       for (const module of permissionModules) {
-        await permissionInstance.addRolePermissions(module, addNewRole.id, req.user.company_id, dbTransaction);
+        await permissionInstance.addRolePermissions(module, addNewRole.id, routeMethod, req.user.company_id, dbTransaction);
       }
 
       await dbTransaction.commit();

@@ -38,7 +38,7 @@ export const UserHistory = sequelize.define(
   }
 );
 
-await UserHistory.sync({ alter: 1 });
+// await UserHistory.sync({ alter: 1 });
 
 UserHistory.afterCreate(async (data) => {
   if (!/^https?:\/\//i.test(data.url)) {
