@@ -302,7 +302,7 @@ GROUP BY
               AND timelogs.logged_in_time IS NOT NULL
               AND timelogs.logged_out_time IS NOT NULL
             GROUP BY timelogs.user_id
-            HAVING totalTimeSpent <= 0.6 * totalTimeLog
+            HAVING totalTimeSpent >= 0.6 * totalTimeLog
           ) AS productiveEntries;`,
         {
           replacements: {
