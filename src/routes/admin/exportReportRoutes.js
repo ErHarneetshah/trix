@@ -15,7 +15,9 @@ router.post("/getUnauthorizedWebReport", authMiddleware,verifyAdminMiddleware,  
 // router.post("/getTeamList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getTeamList);
 // router.post("/getMemberList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getMemberList);
 router.post("/getBrowserHistoryReport",authMiddleware,verifyAdminMiddleware, exportReportInstance.getBrowserHistoryReport);
-router.post("/downloadExportReport", authMiddleware,verifyAdminMiddleware, exportReportInstance.downloadExportReport);
+router.get("/downloadExportReport", authMiddleware,verifyAdminMiddleware, exportReportInstance.downloadExportReport);
+router.get("/downloadExportReportTest", exportReportInstance.downloadExportReportTest);
+
 
 
 router.get("/getExportHistory",authMiddleware,verifyAdminMiddleware, exportReportInstance.getExportHistoryReport);

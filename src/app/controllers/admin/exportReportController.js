@@ -789,7 +789,56 @@ class exportReportController {
 
   downloadExportReport = async (req, res) => {
     try {
-      const { filePath } = req.body;
+      const { filePath } = req.query;
+
+      if (!filePath || typeof filePath !== "string" || !filePath.trim()) {
+        return res.status(400).json({ message: "Invalid file path provided" });
+      }
+  
+      // Normalize and resolve the file path
+      const normalizedPath = path.resolve(filePath);
+      const fileName = path.basename(normalizedPath);
+      const fileExtension = path.extname(fileName).toLowerCase();
+
+      // Check if the file exists
+      // await fs.promises.access(normalizedPath, fs.constants.F_OK);
+
+      // Determine the content type
+      const mimeTypes = {
+        ".pdf": "application/pdf",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".xls": "application/vnd.ms-excel",
+      };
+
+      const contentType = mimeTypes[fileExtension];
+      if (!contentType) {
+        return res.status(400).json({ message: "Unsupported file type" });
+      }
+
+      // Set headers for download
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      res.setHeader("Content-Type", contentType);
+
+      res.download(normalizedPath, (err) => {
+        if (err) {
+          console.error("Error sending file:", err);
+          return res.status(500).json({ message: "File download failed" });
+        }
+      });
+    } catch (err) {
+      console.error("Error during file download:", err);
+  
+      if (err.code === "ENOENT") {
+        return res.status(500).json({ message: "File not found" });
+      }
+
+      res.status(500).json({ message: "An error occurred while processing the file download" });
+    }
+  };
+
+  downloadExportReportTest = async (req, res) => {
+    try {
+      const { filePath } = req.query;
 
       if (!filePath || typeof filePath !== "string" || !filePath.trim()) {
         return res.status(400).json({ message: "Invalid file path provided" });

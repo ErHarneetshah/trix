@@ -178,9 +178,9 @@ GROUP BY
         } else if (tab.toLowerCase() === "slacking") {
           updatedJson = updatedJson.filter((item) => item.user.is_slacking === true);
         } else if (tab.toLowerCase() === "productive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.logged_in_time !== null && item.productiveTime.trim() !== "0h 0m 0s");
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.logged_in_time !== null && item.productiveTimeInSeconds !== 0);
         } else if (tab.toLowerCase() === "nonproductive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.logged_in_time !== null && item.productiveTime.trim()!== "0h 0m 0s");
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.logged_in_time !== null && item.productiveTimeInSeconds !== 0);
         }
       }
 

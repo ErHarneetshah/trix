@@ -376,13 +376,13 @@ class authController extends jwtService {
   logout = async (req, res) => {
     try {
       let token = await accessToken.findOne({ where: { token: req.sessionToken } });
-      if (!token) return helper.failed(res, variables.NotFound, "Already Logout");
+      if (!token) return helper.success(res, variables.Success, "Already Logout");
 
       await token.destroy();
 
       return helper.success(res, variables.Success, "Logout Successfully");
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, error.message);
+      return helper.failed(res, variables.Unauthorized, error.message);
     }
   };
 
