@@ -171,6 +171,14 @@ class teamMemberController {
         transaction: dbTransaction,
       });
 
+      const existingAnyUser = await User.findOne({
+        where: { email: requestData.email},
+        transaction: dbTransaction,
+      });
+      if (existingUser) {
+        return helper.failed(res, variables.BadRequest, "This mail already exists in emonitrix system!");
+      }
+
       if (existingUser) {
         return helper.failed(res, variables.BadRequest, "User already exists with this mail!");
       }
