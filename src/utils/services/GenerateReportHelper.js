@@ -1076,8 +1076,8 @@ GROUP BY u.id, tl.createdAt;`;
           "Idle time": userTimeLog?.idle_Time ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
           "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
           "Time on Non Productive Apps": userProdAppAnalysis?.total_time_spent_on_non_productive_apps ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2) : "0.00",
-          "Productive Websites Count": userProdWebCount?.productive_count || 0,
-          "Non Productive Websites Count": userProdWebCount?.non_productive_count || 0,
+          "Productive Websites Count": userProdWebCount?.productive_count ?? "0",
+          "Non Productive Websites Count": userProdWebCount?.non_productive_count ?? "0",
           "Average Productive %": averageProductivePercentage ? averageProductivePercentage.toFixed(2) + "%" : "0.00%",
           "Most Used Productive App": userProdAppAnalysis?.app_name_with_max_time || "N/A",
         };
