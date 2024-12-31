@@ -1,6 +1,6 @@
 import Validator from 'validatorjs';
 
-const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
+const urlPattern = /^(https?:\/\/)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(\/.*)?$/;
 Validator.register('valid_url', value => urlPattern.test(value), "The site must be a valid URL.");
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]/;
