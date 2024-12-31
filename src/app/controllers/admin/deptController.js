@@ -163,16 +163,16 @@ class deptController {
       // ___________-------- Dept exists with same name or not ---------________________
       if (parentDeptId) {
         if (existingDept.isRootId) {
-          parentDeptId = null;
+          return helper.failed(res, variables.ValidationError, "Not Permitted to Update Root Department's Parent Department");
         } else {
-          const existingDeptWithName = await department.findOne({
+          const existingParentDept = await department.findOne({
             where: {
               id: parentDeptId,
               company_id: req.user.company_id,
             },
             transaction: dbTransaction,
           });
-          if (!existingDeptWithName) return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
+          if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
         }
       }
 
@@ -231,7 +231,7 @@ class deptController {
       const isUsedInTeams = await team.findOne({ where: { departmentId: id } });
 
       if (isUsedInTeams || isUsedInProductiveAndNonApps || isUsedInUsers) {
-        return helper.failed(res, variables.BadRequest, "Department cannot be deleted because it is in use by other records.");
+        return helper.failed(res, variables.BadRequest, "Department cannot be deleted because it's used in other records.");
       }
 
       // ___________-------- Delete Department ---------________________

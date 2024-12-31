@@ -64,7 +64,7 @@ class desigController {
         where: { id: id, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!desigData) return helper.failed(res, variables.NotFound, "Designation Data Not Found in company data");
+      if (!desigData) return helper.failed(res, variables.NotFound, "Designation Not Found in company");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", desigData);
     } catch (error) {

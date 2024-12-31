@@ -2,9 +2,7 @@ import authValidation from "../../../utils/validations/authValidation.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import User from "../../../database/models/userModel.js";
 import jwtService from "../../../utils/services/jwtService.js";
-import accessToken, {
-  createAccessToken,
-} from "../../../database/models/accessTokenModel.js";
+import accessToken, { createAccessToken } from "../../../database/models/accessTokenModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import { getShiftData } from "../../../utils/validations/socketValidation.js";
@@ -25,7 +23,6 @@ import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 import { Notification } from "../../../database/models/Notification.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
 import languageSettings from "../../../database/models/languageSettingsModel.js";
-import { addMonths } from "date-fns";
 import commonfuncitons from "../../../utils/services/commonfuncitons.js";
 
 class authController extends jwtService {
@@ -35,18 +32,8 @@ class authController extends jwtService {
       const requestData = req.body;
 
       // Validating request body
-      const validationResult = await authValidation.companyRegisterValid(
-        requestData,
-        res
-      );
-      if (!validationResult.status)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          {},
-          validationResult.message
-        );
+      const validationResult = await authValidation.companyRegisterValid(requestData, res);
+      if (!validationResult.status) return helper.sendResponse(res, variables.ValidationError, 0, {}, validationResult.message);
 
       // Check if the user already exists
       const existingCompany = await company.findOne({
@@ -54,13 +41,7 @@ class authController extends jwtService {
         transaction: dbTransaction,
       });
       if (existingCompany) {
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Company already exists with this Name!"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Company already exists with this Name!");
       }
 
       const existingCompanyWithEmail = await company.findOne({
@@ -68,7 +49,7 @@ class authController extends jwtService {
         transaction: dbTransaction,
       });
       if (existingCompanyWithEmail) {
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Company already exists with this Email!");
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Company already exists with this Email!");
       }
 
       //* -------------- Create Company --------------------------
@@ -85,13 +66,7 @@ class authController extends jwtService {
 
       if (!createCompany || !createCompany.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Unable to Register Company"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Register Company");
       }
 
       //* -------------- Create Report Settings --------------------------
@@ -106,13 +81,7 @@ class authController extends jwtService {
 
       if (!createReportSettings || !createReportSettings.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Unable to Create Report Settings for this Company"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create Report Settings for this Company");
       }
 
       //* -------------- Create Department --------------------------
@@ -129,13 +98,7 @@ class authController extends jwtService {
 
       if (!createDepartment || !createDepartment.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Unable to Create Department for this Company"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create Department for this Company");
       }
 
       //* -------------- Create Designation --------------------------
@@ -151,13 +114,7 @@ class authController extends jwtService {
 
       if (!createDesignation || !createDesignation.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Unable to Create Designation for this Company"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create Designation for this Company");
       }
 
       //* -------------- Create Role --------------------------
@@ -173,13 +130,7 @@ class authController extends jwtService {
 
       if (!createRole || !createRole.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Unable to Create Role for this Company"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create Role for this Company");
       }
 
       //* -------------- Create Role Permissions --------------------------
@@ -188,22 +139,10 @@ class authController extends jwtService {
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       for (const module of createPermissionModules) {
-        let addedPermissions =
-          await permissionInstance.addSuperAdminPermissions(
-            module,
-            createRole.id,
-            createCompany.id,
-            dbTransaction
-          );
+        let addedPermissions = await permissionInstance.addSuperAdminPermissions(module, createRole.id, createCompany.id, dbTransaction);
         if (!addedPermissions) {
           if (dbTransaction) await dbTransaction.rollback();
-          return helper.sendResponse(
-            res,
-            variables.BadRequest,
-            0,
-            null,
-            "Unable to Create Role Permission for this Company"
-          );
+          return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create Role Permission for this Company");
         }
       }
 
@@ -224,13 +163,7 @@ class authController extends jwtService {
 
       if (!createShift || !createShift.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Unable to Create Shift for this Company"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create Shift for this Company");
       }
 
       //* -------------- Create Team --------------------------
@@ -276,13 +209,7 @@ class authController extends jwtService {
 
       if (!createUser || !createUser.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Unable to Create User for this Company"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create User for this Company");
       }
 
       //* -------------- Update Department --------------------------
@@ -301,7 +228,7 @@ class authController extends jwtService {
 
       if (!updateDept || updateDept[0] === 0) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(res, variables.BadRequest, 0, null, "Unable to Add Reporting Manager for Department");
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Add Reporting Manager for Department");
       }
 
       //* -------------- Create Language Settings --------------------------
@@ -317,13 +244,7 @@ class authController extends jwtService {
 
       if (!createLanguages || !createLanguages.id) {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Unable to Create Language Settings for this Company"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create Language Settings for this Company");
       }
 
       //* -------------- Create Access Token --------------------------
@@ -331,14 +252,7 @@ class authController extends jwtService {
       if (!token) return helper.failed(res, variables.serviceUnavailabe, "Unable to create access token");
 
       const expireTime = this.calculateTime();
-      await createAccessToken(
-        createUser.id,
-        createUser.isAdmin,
-        createUser.company_id,
-        token,
-        expireTime,
-        dbTransaction
-      );
+      await createAccessToken(createUser.id, createUser.isAdmin, createUser.company_id, token, expireTime, dbTransaction);
 
       await dbTransaction.commit();
       return helper.success(res, variables.Success, "Register Successfully", {
@@ -347,13 +261,7 @@ class authController extends jwtService {
       });
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.BadRequest,
-        0,
-        null,
-        error.message
-      );
+      return helper.sendResponse(res, variables.BadRequest, 0, {}, error.message);
     }
   };
 
@@ -362,15 +270,8 @@ class authController extends jwtService {
     try {
       let requestData = req.body;
 
-      let validationResult = await authValidation.loginValid(requestData, res); 
-      if (!validationResult.status)
-        return helper.sendResponse(
-          res,
-          variables.ValidationError,
-          0,
-          {},
-          validationResult.message
-        );
+      let validationResult = await authValidation.loginValid(requestData, res);
+      if (!validationResult.status) return helper.sendResponse(res, variables.ValidationError, 0, {}, validationResult.message);
 
       //* Request parameters
       let email = requestData.email;
@@ -400,54 +301,24 @@ class authController extends jwtService {
             attributes: ["name"],
           },
         ],
-      }); 
+      });
       if (!user) {
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Invalid Credentials"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Invalid Credentials");
       }
 
-      let comparePwd = await bcrypt.compare(password, user.password); 
+      let comparePwd = await bcrypt.compare(password, user.password);
       if (!comparePwd) {
-        return helper.sendResponse(
-          res,
-          variables.BadRequest,
-          0,
-          null,
-          "Incorrect Credentials!!!"
-        );
+        return helper.sendResponse(res, variables.BadRequest, 0, null, "Incorrect Credentials!!!");
       }
 
       if (!user.status) {
-        return helper.sendResponse(
-          res,
-          variables.Forbidden,
-          0,
-          null,
-          "Your Account has been De-Activated. Contact Support"
-        );
+        return helper.sendResponse(res, variables.Forbidden, 0, null, "Your Account has been De-Activated. Contact Support");
       }
       let token;
       if (user.isAdmin) {
-        token = this.generateToken(
-          user.id.toString(),
-          user.isAdmin,
-          user.company_id,
-          "1d"
-        );
+        token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
-        await createAccessToken(
-          user.id,
-          user.isAdmin,
-          user.company_id,
-          token,
-          expireTime,
-          dbTransaction
-        );
+        await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
       } else {
         let now = new Date();
         let currentHours = now.getHours();
@@ -456,30 +327,20 @@ class authController extends jwtService {
 
         let shiftStart = shiftData.start_time.split(":").map(Number);
         let shiftEnd = shiftData.end_time.split(":").map(Number);
-        
+
         let shiftStartInMinutes = shiftStart[0] * 60 + shiftStart[1];
         let shiftEndInMinutes = shiftEnd[0] * 60 + shiftEnd[1];
         let currentInMinutes = currentHours * 60 + currentMinutes;
 
-        
         if (shiftEndInMinutes < shiftStartInMinutes) {
           shiftEndInMinutes += 24 * 60;
           if (currentInMinutes < shiftStartInMinutes) {
-            currentInMinutes += 24 * 60; 
+            currentInMinutes += 24 * 60;
           }
         }
-        
-        if (
-          currentInMinutes < shiftStartInMinutes ||
-          currentInMinutes > shiftEndInMinutes
-        ) {
-          return helper.sendResponse(
-            res,
-            variables.Forbidden,
-            0,
-            {},
-            "Your shift is over. You cannot log in at this time."
-          );
+
+        if (currentInMinutes < shiftStartInMinutes || currentInMinutes > shiftEndInMinutes) {
+          return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
         }
         ///////------  Previous Code --------///////
         // let now = new Date();
@@ -497,34 +358,17 @@ class authController extends jwtService {
         //   return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
         // }
 
-        token = this.generateToken(
-          user.id.toString(),
-          user.isAdmin,
-          user.company_id,
-          "1d"
-        );
+        token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
 
         const generatedToken = await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
         if (!generatedToken) return helper.sendResponse(res, variables.BadRequest, 0, null, "Token Did not saved in db");
       }
       await dbTransaction.commit();
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        { token: token, user: user },
-        "Login Successfully"
-      );
+      return helper.sendResponse(res, variables.Success, 1, { token: token, user: user }, "Login Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      return helper.sendResponse(
-        res,
-        variables.Forbidden,
-        0,
-        null,
-        error.message
-      );
+      return helper.sendResponse(res, variables.Forbidden, 0, null, error.message);
     }
   };
 
@@ -532,13 +376,13 @@ class authController extends jwtService {
   logout = async (req, res) => {
     try {
       let token = await accessToken.findOne({ where: { token: req.sessionToken } });
-      if (!token) return helper.failed(res, variables.NotFound, "Already Logout");
+      if (!token) return helper.success(res, variables.Success, "Already Logout");
 
       await token.destroy();
 
       return helper.success(res, variables.Success, "Logout Successfully");
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, error.message);
+      return helper.failed(res, variables.Unauthorized, error.message);
     }
   };
 
@@ -548,9 +392,7 @@ class authController extends jwtService {
     const now = new Date(); // Current date and time
 
     // Add 1 day to the current date
-    const oneDayFromNow = new Date(
-      now.getTime() + oneDayInMilliseconds
-    ).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" });
+    const oneDayFromNow = new Date(now.getTime() + oneDayInMilliseconds).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" });
     return oneDayFromNow;
   };
 
@@ -587,11 +429,7 @@ class authController extends jwtService {
         create = await Device.findOne({ where: { user_id: id } });
       }
       io.to(`Admin_${req.user.company_id}`).emit("getSystemDetail", create);
-      return helper.success(
-        res,
-        variables.Success,
-        "system configration add successfully"
-      );
+      return helper.success(res, variables.Success, "system configration add successfully");
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -611,18 +449,9 @@ class authController extends jwtService {
         },
         attributes: ["website"],
       });
-      return helper.success(
-        res,
-        variables.Success,
-        "Blocked websites fetched successfully!!",
-        blockedWebsites
-      );
+      return helper.success(res, variables.Success, "Blocked websites fetched successfully!!", blockedWebsites);
     } catch (error) {
-      return helper.failed(
-        res,
-        variables.BadRequest,
-        "Error in blocked Website!!!"
-      );
+      return helper.failed(res, variables.BadRequest, "Error in blocked Website!!!");
     }
   };
 
@@ -638,12 +467,7 @@ class authController extends jwtService {
       let Absent_data = await Model.query(web_query, {
         type: QueryTypes.SELECT,
       });
-      return helper.success(
-        res,
-        variables.Success,
-        "Absent Calender Data fetched successfully!!",
-        Absent_data
-      );
+      return helper.success(res, variables.Success, "Absent Calender Data fetched successfully!!", Absent_data);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -653,21 +477,13 @@ class authController extends jwtService {
     try {
       let data = await Notification.findAll({ where: { is_read: 0 } });
       if (!data || data.length == 0) {
-        return helper.success(
-          res,
-          variables.Success,
-          "No unread notifications found."
-        );
+        return helper.success(res, variables.Success, "No unread notifications found.");
       }
       await Notification.update({ is_read: 1 }, { where: { is_read: 0 } });
       io.to(`Admin_${req.user.company_id}`).emit("newNotification", {
         notificationCount: 0,
       });
-      return helper.success(
-        res,
-        variables.Success,
-        "Notification Data cleared successfully"
-      );
+      return helper.success(res, variables.Success, "Notification Data cleared successfully");
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -693,19 +509,10 @@ class authController extends jwtService {
       });
 
       if (!data || data.length == 0) {
-        return helper.success(
-          res,
-          variables.Success,
-          "No notifications found."
-        );
+        return helper.success(res, variables.Success, "No notifications found.");
       }
 
-      return helper.success(
-        res,
-        variables.Success,
-        "Notification Data fetched successfully",
-        data
-      );
+      return helper.success(res, variables.Success, "Notification Data fetched successfully", data);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -713,14 +520,7 @@ class authController extends jwtService {
 
   advanced_setting = async (req, res) => {
     try {
-      let {
-        screen_capture,
-        broswer_capture,
-        app_capture,
-        screen_capture_time,
-        broswer_capture_time,
-        app_capture_time,
-      } = req.body;
+      let { screen_capture, broswer_capture, app_capture, screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
 
       // Normalize boolean inputs (convert string 'true'/'false' to actual booleans)
       const normalizeBoolean = (value) => {
@@ -763,24 +563,11 @@ class authController extends jwtService {
       ];
 
       for (const validation of validations) {
-        if (
-          validation.validValues &&
-          !validation.validValues.includes(validation.value)
-        ) {
-          return helper.failed(
-            res,
-            variables.BadRequest,
-            `Invalid value for ${
-              validation.key
-            }. Allowed values are: ${validation.validValues.join(", ")}.`
-          );
+        if (validation.validValues && !validation.validValues.includes(validation.value)) {
+          return helper.failed(res, variables.BadRequest, `Invalid value for ${validation.key}. Allowed values are: ${validation.validValues.join(", ")}.`);
         }
         if (validation.minValue && validation.value < validation.minValue) {
-          return helper.failed(
-            res,
-            variables.BadRequest,
-            `${validation.key} must be at least ${validation.minValue}.`
-          );
+          return helper.failed(res, variables.BadRequest, `${validation.key} must be at least ${validation.minValue}.`);
         }
       }
 
@@ -802,11 +589,7 @@ class authController extends jwtService {
         });
       }
 
-      return helper.success(
-        res,
-        variables.Success,
-        "Advanced settings updated successfully!"
-      );
+      return helper.success(res, variables.Success, "Advanced settings updated successfully!");
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -817,24 +600,12 @@ class authController extends jwtService {
       let id = req.user.id;
       let data = await User.findOne({
         where: { id },
-        attributes: [
-          "screen_capture_time",
-          "broswer_capture_time",
-          "app_capture_time",
-          "screen_capture",
-          "broswer_capture",
-          "app_capture",
-        ],
+        attributes: ["screen_capture_time", "broswer_capture_time", "app_capture_time", "screen_capture", "broswer_capture", "app_capture"],
       });
       if (!data) {
         return helper.failed(res, variables.NotFound, "Data Not Found!!");
       }
-      return helper.success(
-        res,
-        variables.Success,
-        "Advanced settings updated successfully!",
-        data
-      );
+      return helper.success(res, variables.Success, "Advanced settings updated successfully!", data);
     } catch (error) {
       return helper.failed(res, variables.BadRequest, error.message);
     }
