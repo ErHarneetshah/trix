@@ -16,8 +16,12 @@ class deptController {
   //* ________-------- GET All Departments ---------______________
   getAllDept = async (req, res) => {
     try {
-      const routeUrl = req.originalUrl;
-      console.log(routeUrl);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "department", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       let searchable = ["name"];
@@ -84,6 +88,12 @@ class deptController {
 
   //* ________-------- POST Add Department ---------______________
   addDept = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "department", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { name, parentDeptId } = req.body;
@@ -117,6 +127,12 @@ class deptController {
 
   //* ________-------- PUT Update Department ---------______________
   updateDept = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "department", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       let { id, name, parentDeptId } = req.body;
@@ -147,16 +163,16 @@ class deptController {
       // ___________-------- Dept exists with same name or not ---------________________
       if (parentDeptId) {
         if (existingDept.isRootId) {
-          parentDeptId = null;
+          return helper.failed(res, variables.ValidationError, "Not Permitted to Update Root Department's Parent Department");
         } else {
-          const existingDeptWithName = await department.findOne({
+          const existingParentDept = await department.findOne({
             where: {
               id: parentDeptId,
               company_id: req.user.company_id,
             },
             transaction: dbTransaction,
           });
-          if (!existingDeptWithName) return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
+          if (!existingParentDept) return helper.failed(res, variables.ValidationError, "Parent Department does not exists!");
         }
       }
 
@@ -191,6 +207,12 @@ class deptController {
 
   //* ________-------- DELETE Delete Department ---------______________
   deleteDept = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "department", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;
@@ -209,7 +231,7 @@ class deptController {
       const isUsedInTeams = await team.findOne({ where: { departmentId: id } });
 
       if (isUsedInTeams || isUsedInProductiveAndNonApps || isUsedInUsers) {
-        return helper.failed(res, variables.BadRequest, "Department cannot be deleted because it is in use by other records.");
+        return helper.failed(res, variables.BadRequest, "Department cannot be deleted because it's used in other records.");
       }
 
       // ___________-------- Delete Department ---------________________

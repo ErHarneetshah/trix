@@ -70,89 +70,6 @@ class teamMemberTimeLogController {
     }
   };
 
-  getTeamMemberLogFiltered = async (req, res) => {
-    try {
-      // ___________---------- Search, Limit, Pagination ----------_______________
-      let { searchParam, limit, page, date, tab } = req.query;
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
-      let userWhere = {};
-      let logWhere = {};
-      // ___________---------- Search, Limit, Pagination ----------_______________
-
-      let startOfDay;
-      let endOfDay;
-
-      if(date){
-        startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
-        endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
-      }else{
-        startOfDay = moment.tz(moment(), "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
-        endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
-      }
-      logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
-
-      logWhere.company_id = req.user.company_id;
-
-      const alldata = await TimeLog.findAndCountAll({
-        where: logWhere,
-        offset: offset,
-        limit: limit,
-        include: [
-          {
-            model: User,
-            as: "user",
-            attributes: ["id", "fullname", "currentStatus"],
-            include: [
-              {
-                model: AppHistoryEntry,
-                as: "productivity",
-                required: false,
-              },
-            ],
-          },
-          {
-            model: shift,
-            as: "shift",
-            attributes: ["start_time", "end_time"],
-          },
-        ],
-        order: [["createdAt", "DESC"]],
-      });
-
-      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
-
-      let result = commonfuncitons.createResponse(alldata.rows);
-
-      if (searchParam) {
-        const regex = new RegExp(searchParam, "i");
-        result = result.filter((item) => regex.test(item.user.fullname));
-      }
-
-      if (tab) {
-        if (tab.toLowerCase() === "working") {
-          result = result.filter((item) => item.logged_out_time === null && item.user.currentStatus === true);
-        } else if (tab.toLowerCase() === "absent") {
-          result = result.filter((item) => item.user.currentStatus === false);
-        } else if (tab.toLowerCase() === "late") {
-          result = result.filter((item) => item.late_coming === true);
-        } else if (tab.toLowerCase() === "slacking") {
-          result = result.filter((item) => item.user.is_slacking === true);
-        } else if (tab.toLowerCase() === "productive") {
-          result = result.filter((item) => item.user.is_productive === true && item.user.productiveTime != 0 && item.user.nonProductiveTime != 0);
-        } else if (tab.toLowerCase() === "nonProductive") {
-          result = result.filter((item) => item.user.is_productive === false && item.user.nonProductiveTime != 0 && item.user.productiveTime != 0);
-        }
-      }
-
-      const count = result.length;
-
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: result });
-    } catch (error) {
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
-
 
   getTeamMemberLogFiltered2 = async (req, res) => {
     try {
@@ -180,7 +97,7 @@ class teamMemberTimeLogController {
 
       logWhere.company_id = company_id;
 
-      const alldata = await GenerateReportHelper.getUserInCompany(company_id);
+      const alldata = await GenerateReportHelper.getUserInCompanyWithoutTeam(company_id);
 
       for (const user of alldata.data) {
         if (user.id) {
@@ -191,11 +108,12 @@ class teamMemberTimeLogController {
       const timeLogQuery2 = `SELECT
     u.id AS userId,
     u.fullname AS name,
+    u.currentStatus AS currentStatus,
     s.start_time AS startTime,
     s.end_time AS endTime,
     t.logged_in_time AS logged_in_time,
     t.logged_out_time AS logged_out_time,
-    t.early_going AS early_going,
+    t.early_going AS early_going, 
     t.late_coming AS late_coming,
     IFNULL(SUM(t.active_time), 0) + IFNULL(SUM(t.spare_time), 0) + IFNULL(SUM(t.idle_time), 0) AS active_time,
     CASE 
@@ -224,8 +142,8 @@ LEFT JOIN
     timelogs t ON u.id = t.user_id
     AND t.createdAt BETWEEN :startOfDay AND :endOfDay
 LEFT JOIN 
-    app_histories ah ON u.id = ah.userId -- Join with app_histories for productive/non-productive time calculation
-    AND ah.startTime BETWEEN :startOfDay AND :endOfDay -- Filter for the date range
+    app_histories ah ON u.id = ah.userId
+    AND ah.startTime BETWEEN :startOfDay AND :endOfDay
 WHERE 
     u.id IN (:userIds)
     AND u.createdAt <= :endOfDay
@@ -240,6 +158,7 @@ GROUP BY
       const results = await sequelize.query(timeLogQuery2, {
         type: Sequelize.QueryTypes.SELECT,
         replacements,
+        logging: console.log
       });
 
       let updatedJson = commonfuncitons.createResponse2(results);
@@ -259,9 +178,9 @@ GROUP BY
         } else if (tab.toLowerCase() === "slacking") {
           updatedJson = updatedJson.filter((item) => item.user.is_slacking === true);
         } else if (tab.toLowerCase() === "productive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.logged_in_time !== null);
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.logged_in_time !== null && item.productiveTimeInSeconds !== 0);
         } else if (tab.toLowerCase() === "nonproductive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.logged_in_time !== null);
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.logged_in_time !== null && item.productiveTimeInSeconds !== 0);
         }
       }
 
@@ -284,24 +203,6 @@ GROUP BY
       let formattedDate;
       startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DDTHH:mm:ssZ");
 
-      // if (date) {
-      //   startOfDay = new Date(date);
-      //   startOfDay.setHours(0, 0, 0, 0);
-      //   endOfDay = new Date(date);
-      //   endOfDay.setHours(23, 59, 59, 999);
-      //   formattedDate = new Date(date).toISOString().split('T')[0];
-
-      //   logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
-      // } else {
-      //   startOfDay = new Date();
-      //   startOfDay.setHours(0, 0, 0, 0);
-      //   endOfDay = new Date();
-      //   endOfDay.setHours(23, 59, 59, 999);
-      //   formattedDate = new Date().toISOString().split('T')[0];
-      //   console.log(formattedDate);
-
-      //   logWhere.updatedAt = { [Op.between]: [startOfDay, endOfDay] };
-      // }
       if(date){
         startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
         endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");

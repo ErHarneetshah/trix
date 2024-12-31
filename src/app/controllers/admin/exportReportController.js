@@ -167,7 +167,7 @@ class exportReportController {
       let userIds = [];
 
       if (userId) {
-        users = await User.findOne({
+        let checkuser = await User.findAll({
           where: { id: userId, teamId: teamId, company_id: req.user.company_id },
           attributes: ["id", "fullname"],
           include: [
@@ -177,10 +177,11 @@ class exportReportController {
               attributes: ["name"],
             },
           ],
-        })
-        if (!users) return helper.failed(res, variables.ValidationError, "User does not exists in Selected Team")
-        userIds = [userId];
+        });
 
+        if (!checkuser) return helper.failed(res, variables.ValidationError, "User does not exists in Selected Team");
+        users = { status: true, message: "User's data retrived successfully", data: checkuser };
+        userIds = [checkuser.id];
       } else {
         users = await GenerateReportHelper.getUserInCompany(req.user.company_id, teamId);
         for (const user of users.data) {
@@ -189,31 +190,42 @@ class exportReportController {
           }
         }
       }
+      let ProdWebCount;
+      let ProdAppAnalysis;
+      let TimeLogsDetails;
 
-      let ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
-      let ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
-      let TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
-
+      if (userIds.length == 0) {
+        ProdWebCount = [];
+        ProdAppAnalysis = [];
+        TimeLogsDetails = [];
+      } else {
+        ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
+        console.log(ProdWebCount);
+        ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
+        console.log(ProdAppAnalysis);
+        TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
+        console.log(TimeLogsDetails);
+      }
       // let finalJson = await GenerateReportHelper.combineJson(users, ProdWebCount)
 
       let headers = [
         "Employee Name",
         "Department",
-        "Date",
         "Total Active Hours",
         "Idle time",
         "Time on Productive Apps",
         "Time on Non Productive Apps",
-        "Productive Websites",
-        "Non Productive Websites",
+        "Productive Websites Count",
+        "Non Productive Websites Count",
         "Average Productive %",
         "Most Used Productive App",
       ];
+
       let data = { users: users.data, ProductiveWebsite: ProdWebCount, ProdAppAnalysis: ProdAppAnalysis, TimeLogs: TimeLogsDetails };
 
       let updatedJson = await GenerateReportHelper.generateProductivityReport(data);
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive Report", req.user.company_id, updatedJson, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Productive_Report", req.user.company_id, updatedJson, headers);
 
       if (result.status) {
         return helper.success(res, variables.Success, "Productivity Report Generated Successfully", updatedJson);
@@ -336,7 +348,7 @@ class exportReportController {
 
       let headers = ["Employee Name", "Team", "Date", "Day", "Attendance Status", "Shift Time In", "Time in", "Shift Time Out", "Time Out"];
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance Report", req.user.company_id, attendanceReport, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Attendance_Report", req.user.company_id, attendanceReport, headers);
       if (result.status) {
         return helper.success(res, variables.Success, "Attendance Report Generated Successfully");
       } else {
@@ -428,7 +440,7 @@ class exportReportController {
 
       let headers = ["Name", "Department", "Application", "Productive/Non Producitve"];
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application Usage Report", req.user.company_id, applicationUsage, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Application_Usage_Report", req.user.company_id, applicationUsage, headers);
       if (result.status) {
         return helper.success(res, variables.Success, "Application Usage Report Generated Successfully");
       } else {
@@ -577,7 +589,7 @@ class exportReportController {
         INNER JOIN users As u ON uh.userId = u.id
         INNER JOIN departments ON u.departmentId = departments.id
         WHERE uh.website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id = :companyId
-            AND uh.date BETWEEN :startDate AND :endDate   ${teamId ? "AND u.teamId = :teamId" : ""} AND u.isAdmin = 0
+            AND uh.date BETWEEN :startDate AND :endDate   ${teamId ? "AND team.id = :teamId" : ""} AND u.isAdmin = 0
         ${userId ? "AND u.id = :userId" : ""}
         ORDER BY uh.visitTime DESC`,
         {
@@ -595,7 +607,7 @@ class exportReportController {
 
       let headers = ["Name", "Department", "Url", "Time"];
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized Web Report", req.user.company_id, unauthorizedAccessReport, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Unauthorized_Web_Report", req.user.company_id, unauthorizedAccessReport, headers);
       if (result.status) {
         return helper.success(res, variables.Success, "Unauthorized Web Report Generated Successfully", unauthorizedAccessReport);
       } else {
@@ -712,10 +724,10 @@ class exportReportController {
           {
             type: QueryTypes.SELECT,
             replacements: {
-              userId,         // Array of user IDs
-              startDate: date.startDate,  // Start date for filtering
-              endDate: date.endDate,      // End date for filtering
-              companyId: req.user.company_id
+              userId, // Array of user IDs
+              startDate: date.startDate, // Start date for filtering
+              endDate: date.endDate, // End date for filtering
+              companyId: req.user.company_id,
             },
           }
         );
@@ -763,7 +775,7 @@ class exportReportController {
       }
       let headers = ["Name", "Department", "Url", "Productive/Non-Productivity", "Visit Time"];
 
-      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser History Report", req.user.company_id, browserHistory, headers);
+      const result = await GenerateReportHelper.downloadFileDynamically(res, date.startDate, date.endDate, format, "Browser_History_Report", req.user.company_id, browserHistory, headers);
       if (result.status) {
         return helper.success(res, variables.Success, "Browser History Report Generated Successfully", browserHistory);
       } else {
@@ -775,92 +787,41 @@ class exportReportController {
     }
   };
 
-  // downloadExportReport = async (req, res) => {
-  //   try {
-  //     let { filePath } = req.body;
-  //     const fileName = path.basename(filePath);
-  //     const fileExtension = path.extname(fileName).toLowerCase();
-
-  //     if (typeof filePath !== "string" || !filePath.trim()) {
-  //       return helper.failed(res, variables.BadRequest, "Invalid file path provided");
-  //     }
-
-  //     const normalizedPath = path.resolve(filePath);
-
-  //     await fs.promises.access(normalizedPath, fs.constants.F_OK);
-
-  //     let contentType;
-  //     switch (fileExtension) {
-  //       case ".pdf":
-  //         contentType = "application/pdf";
-  //         break;
-  //       case ".xlsx":
-  //         contentType =
-  //           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-  //         break;
-  //       case ".xls":
-  //         contentType = "application/vnd.ms-excel";
-  //         break;
-  //       default:
-  //         return helper.failed(res, variables.BadRequest, "Unsupported file type");
-  //     }
-
-  //     // Set response headers
-  //     res.setHeader(
-  //       "Content-Disposition",
-  //       `attachment; filename="${fileName}"`
-  //     );
-  //     res.setHeader("Content-Type", contentType);
-
-  //     // Send the file
-  //     return res.download(normalizedPath, (err) => {
-  //       if (err) {
-  //         console.error("Error sending file:", err);
-  //         return helper.failed(
-  //           res,
-  //           variables.BadRequest,
-  //           "File download failed"
-  //         );
-  //       }
-  //     });
-  //   } catch (err) {
-  //     console.error("Error during file download:", err);
-
-  //     if (err.code === "ENOENT") {
-  //       return helper.failed(res, variables.BadRequest, "File not found");
-  //     }
-
-  //     return helper.failed(
-  //       res,
-  //       variables.ServerError,
-  //       "An error occurred while processing the file download"
-  //     );
-  //   }
-  // };
-
-   downloadExportReport = async (req, res) => {
+  downloadExportReport = async (req, res) => {
     try {
-      const { filePath } = req.body;
-  
-      // Validate the file path
-      if (typeof filePath !== "string" || !filePath.trim()) {
+      const { filePath } = req.query;
+
+      if (!filePath || typeof filePath !== "string" || !filePath.trim()) {
         return res.status(400).json({ message: "Invalid file path provided" });
       }
   
       // Normalize and resolve the file path
       const normalizedPath = path.resolve(filePath);
-  
-      // Check if the file exists
-      await fs.access(normalizedPath);
-  
-      // Get the file name
       const fileName = path.basename(normalizedPath);
-      console.log(`File sent: ${normalizedPath}`);
+      const fileExtension = path.extname(fileName).toLowerCase();
 
-      // Trigger download
-      return res.download(normalizedPath, fileName, (err) => {
+      // Check if the file exists
+      // await fs.promises.access(normalizedPath, fs.constants.F_OK);
+
+      // Determine the content type
+      const mimeTypes = {
+        ".pdf": "application/pdf",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".xls": "application/vnd.ms-excel",
+      };
+
+      const contentType = mimeTypes[fileExtension];
+      if (!contentType) {
+        return res.status(400).json({ message: "Unsupported file type" });
+      }
+
+      // Set headers for download
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      res.setHeader("Content-Type", contentType);
+
+      res.download(normalizedPath, (err) => {
         if (err) {
-          console.error("Error downloading file:", err);
+          console.error("Error sending file:", err);
           return res.status(500).json({ message: "File download failed" });
         }
       });
@@ -868,10 +829,59 @@ class exportReportController {
       console.error("Error during file download:", err);
   
       if (err.code === "ENOENT") {
-        return res.status(404).json({ message: "File not found" });
+        return res.status(500).json({ message: "File not found" });
+      }
+
+      res.status(500).json({ message: "An error occurred while processing the file download" });
+    }
+  };
+
+  downloadExportReportTest = async (req, res) => {
+    try {
+      const { filePath } = req.query;
+
+      if (!filePath || typeof filePath !== "string" || !filePath.trim()) {
+        return res.status(400).json({ message: "Invalid file path provided" });
       }
   
-      return res.status(500).json({ message: "An error occurred during the file download" });
+      // Normalize and resolve the file path
+      const normalizedPath = path.resolve(filePath);
+      const fileName = path.basename(normalizedPath);
+      const fileExtension = path.extname(fileName).toLowerCase();
+
+      // Check if the file exists
+      // await fs.promises.access(normalizedPath, fs.constants.F_OK);
+
+      // Determine the content type
+      const mimeTypes = {
+        ".pdf": "application/pdf",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".xls": "application/vnd.ms-excel",
+      };
+
+      const contentType = mimeTypes[fileExtension];
+      if (!contentType) {
+        return res.status(400).json({ message: "Unsupported file type" });
+      }
+
+      // Set headers for download
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      res.setHeader("Content-Type", contentType);
+
+      res.download(normalizedPath, (err) => {
+        if (err) {
+          console.error("Error sending file:", err);
+          return res.status(500).json({ message: "File download failed" });
+        }
+      });
+    } catch (err) {
+      console.error("Error during file download:", err);
+  
+      if (err.code === "ENOENT") {
+        return res.status(500).json({ message: "File not found" });
+      }
+
+      res.status(500).json({ message: "An error occurred while processing the file download" });
     }
   };
 }

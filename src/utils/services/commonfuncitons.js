@@ -209,8 +209,11 @@ const createResponse2 = (inputData) => {
       user: {
         id: data.userId,
         fullname: data.name,
+        currentStatus: data.currentStatus,
         productiveTime: productiveTime,
+        productiveTimeInSeconds: totalProductiveTimeSeconds,
         nonProductiveTime: nonProductiveTime,
+        nonProductiveTimeInSeconds: totalNonProductiveTimeSeconds,
         is_productive: isProductive,
         is_slacking: isSlacking,
       },

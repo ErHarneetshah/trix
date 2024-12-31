@@ -10,8 +10,6 @@ router.get('/topFiveEffective', authMiddleware, dashboardDataController.topFiveE
 router.get('/topFiveAbsentUsers', authMiddleware, dashboardDataController.topFiveAbsentUsers);
 router.get('/topFiveOfflineLoggedUsers', authMiddleware, dashboardDataController.getTopFiveOfflineLoggedUsers);
 router.get('/topFiveLateComingUsers', authMiddleware, dashboardDataController.topFiveLateComingUsers);
-
-
 router.get('/getDashbaordData', authMiddleware, dashboardDataController.getDashbaordData);
 
 

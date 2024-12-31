@@ -10,6 +10,12 @@ import User from "../../../database/models/userModel.js";
 
 class roleController {
   getAllRole = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "role", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     try {
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
@@ -67,6 +73,12 @@ class roleController {
   };
 
   addRole = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "role", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     const permissionInstance = new rolePermissionController();
     try {
@@ -80,6 +92,7 @@ class roleController {
       if (existingRole) return helper.failed(res, variables.ValidationError, "Role Already Exists!");
 
       // Create and save the new user
+      const routeMethod = req.method;
       const addNewRole = await role.create({ name: name, company_id: req.user.company_id }, { transaction: dbTransaction });
       if (!addNewRole) {
         if (dbTransaction) await dbTransaction.rollback();
@@ -90,7 +103,7 @@ class roleController {
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
       for (const module of permissionModules) {
-        await permissionInstance.addRolePermissions(module, addNewRole.id, req.user.company_id, dbTransaction);
+        await permissionInstance.addRolePermissions(module, addNewRole.id, routeMethod, req.user.company_id, dbTransaction);
       }
 
       await dbTransaction.commit();
@@ -102,6 +115,12 @@ class roleController {
   };
 
   updateRole = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "role", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, name } = req.body;
@@ -147,6 +166,12 @@ class roleController {
   };
 
   deleteRole = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "role", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;

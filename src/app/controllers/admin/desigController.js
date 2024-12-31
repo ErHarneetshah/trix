@@ -9,6 +9,12 @@ class desigController {
   //* ________-------- GET All Designation ---------______________
   getAllDesig = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod);
+      if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       limit = parseInt(limit) || 1;
@@ -58,7 +64,7 @@ class desigController {
         where: { id: id, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!desigData) return helper.failed(res, variables.NotFound, "Designation Data Not Found in company data");
+      if (!desigData) return helper.failed(res, variables.NotFound, "Designation Not Found in company");
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", desigData);
     } catch (error) {
@@ -68,6 +74,12 @@ class desigController {
 
   //* ________-------- POST Add Designation ---------______________
   addDesig = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { name } = req.body;
@@ -94,6 +106,12 @@ class desigController {
 
   //* ________-------- PUT Update Designation ---------______________
   updateDesig = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, name } = req.body;
@@ -141,7 +159,13 @@ class desigController {
   };
 
   //* ________-------- DELETE Delete Designation ---------______________
-  deleteDept = async (req, res) => {
+  deleteDesig = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;

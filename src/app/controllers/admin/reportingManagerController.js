@@ -10,6 +10,12 @@ class reportingManagerController {
   //* ________-------- GET All Report Managers ---------______________
   getAllReportManager = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "reportingManager", routeMethod);
+      if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       let searchable = ["name", `$reportingManager.fullname$`];
@@ -102,6 +108,12 @@ class reportingManagerController {
 
   //* ________-------- PUT Add Report Managers ---------______________
   updateReportManager = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "reportingManager", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, reportManagerId } = req.body;

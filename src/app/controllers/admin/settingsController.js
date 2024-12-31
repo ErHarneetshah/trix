@@ -13,6 +13,7 @@ import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 import uploadPhotos from "../../../utils/services/commonfuncitons.js";
 import commonfuncitons from "../../../utils/services/commonfuncitons.js";
+import bcrypt from "bcrypt";
 
 const getAdminDetails = async (req, res) => {
   try {
@@ -37,12 +38,14 @@ const getAdminDetails = async (req, res) => {
 
 const updateAdminDetails = async (req, res) => {
   try {
-    const { fullname, email, mobile } = req.body;
+    const { fullname, email, mobile, password ,confirm_password } = req.body;
 
     const rules = {
       fullname: "required|string|min:3|max:100",
       email: "required|email",
       mobile: "required|string|regex:/^\\d{10}$/",
+      password: 'string|password_regex',
+      confirm_password: "required_with:password|same:password",
     };
 
     const { status, message } = await validate(req.body, rules);
@@ -53,11 +56,21 @@ const updateAdminDetails = async (req, res) => {
     const user = await User.findOne({
       where: { id: req.user.id, company_id: req.user.company_id },
     });
+
     if (!user) {
       return helper.failed(res, variables.BadRequest, "User not exists");
     }
-
-    await User.update({ fullname, email, mobile }, { where: { id: req.user.id, company_id: req.user.company_id } });
+    
+    if(password){
+      let comparePwd = await bcrypt.compare(password, user.password);
+      if (comparePwd) {
+        return helper.failed(res, variables.ValidationError, "Password cannot be same as previous one.");
+      }
+      let pass = await bcrypt.hash(password, 10);
+      await User.update({ fullname, email, mobile , password: pass }, { where: { id: req.user.id, company_id: req.user.company_id } });
+    }else{
+      await User.update({ fullname, email, mobile }, { where: { id: req.user.id, company_id: req.user.company_id } });
+    }
     return helper.success(res, variables.Success, "Admin Profile Updated Successfully");
   } catch (error) {
     console.error("Error updating admin details:", error);
@@ -66,6 +79,12 @@ const updateAdminDetails = async (req, res) => {
 };
 
 const getBlockedWebsites = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "blockedWebsite", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   try {
     let { departmentId, limit, page } = req.query;
 
@@ -116,6 +135,12 @@ const getBlockedWebsites = async (req, res) => {
 };
 
 const addBlockWebsites = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "blockedWebsite", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   try {
     const { departmentId, website } = req.body;
     const rules = {
@@ -166,6 +191,12 @@ const addBlockWebsites = async (req, res) => {
 };
 
 const updateSitesStatus = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "blockedWebsite", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   try {
     const { id, status } = req.body;
 
@@ -193,6 +224,12 @@ const updateSitesStatus = async (req, res) => {
 };
 
 const addProductiveApps = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "productiveApp", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   try {
     const { department_id, app_name } = req.body;
     const rules = {
@@ -236,9 +273,13 @@ const addProductiveApps = async (req, res) => {
 };
 
 const getAppInfo = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "productiveApp", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
   try {
     let { departmentId, limit, page } = req.query;
-
 
     limit = parseInt(limit) || 10;
     let offset = (page - 1) * limit || 0;
@@ -288,6 +329,12 @@ const getAppInfo = async (req, res) => {
 };
 
 const getReportStatus = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "reportSettings", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   const getStatus = await reportSettings.findOne({
     where: { company_id: req.user.company_id },
     attributes: ["status"],
@@ -303,6 +350,12 @@ const getReportStatus = async (req, res) => {
 };
 
 const updateReportSettings = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "reportSettings", routeMethod);
+  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  
   try {
     const { exportType } = req.body;
 
@@ -322,12 +375,9 @@ const updateReportSettings = async (req, res) => {
     await reportSettings.update({ status: exportType }, { where: { company_id: req.user.company_id } });
 
     // Update the user's `next_reports_schedule_date`
-    let resultDate = (exportType === 1) ? commonfuncitons.getNextMonthDate() : (exportType === 2) ? commonfuncitons.getNextMondayDate() : (exportType === 3) ? commonfuncitons.getTomorrowDate() : "Unknown Error";
-    await User.update(
-      { next_reports_schedule_date: resultDate },
-      { where: { id: req.user.id } }
-    );
-    
+    let resultDate =
+      exportType === 1 ? commonfuncitons.getNextMonthDate() : exportType === 2 ? commonfuncitons.getNextMondayDate() : exportType === 3 ? commonfuncitons.getTomorrowDate() : "Unknown Error";
+    await User.update({ next_reports_schedule_date: resultDate }, { where: { id: req.user.id } });
 
     return helper.success(res, variables.Success, "Report Settings Updated Successfully");
   } catch (error) {

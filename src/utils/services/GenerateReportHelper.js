@@ -1,8 +1,6 @@
-import moment from "moment";
 import fs from "fs";
 import path from "path";
 import PDFDocument from "pdfkit";
-import ExcelJS from "exceljs";
 import { fileURLToPath } from "url";
 import { Op, fn, col, Sequelize, literal } from "sequelize";
 import department from "../../database/models/departmentModel.js";
@@ -12,7 +10,6 @@ import User from "../../database/models/userModel.js";
 import helper from "./helper.js";
 import exportHistories from "../../database/models/exportHistoryModel.js";
 import variables from "../../app/config/variableConfig.js";
-import { finished } from "stream";
 
 // Helper function to get the working days of a department's users
 const getWorkingDays = async (dateRange, userIds, companyId) => {
@@ -537,105 +534,42 @@ export default {
     return { status: true, message: "User's data retrived successfully", data: users };
   },
 
+  getUserInCompanyWithoutTeam: async (companyId) => {
+    const users = await User.findAll({
+      where: { company_id: companyId, isAdmin: 0 },
+      attributes: ["id", "fullname"],
+      include: [
+        {
+          model: department,
+          as: "department",
+          attributes: ["name"],
+        },
+      ],
+    });
+
+    if (!users) return { status: false, message: "No user data found in company" };
+
+    return { status: true, message: "User's data retrived successfully", data: users };
+  },
+
   getProdWebCount: async (userIds, startOfDay, endOfDay) => {
-    //     const query = `
-    //                SELECT
-    //     u.id AS userId,
-    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
-    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count,
-    //     DATE(uh.createdAt) AS record_date  -- Extracting the date part of the createdAt field
-    // FROM
-    //     users u
-    // LEFT JOIN
-    //     user_histories uh ON u.id = uh.userId
-    //     AND uh.createdAt BETWEEN :startOfDay AND :endOfDay
-    // LEFT JOIN
-    //     productive_websites pw ON uh.website_name = pw.website_name
-    // WHERE
-    //     u.id IN (:userIds)
-    // GROUP BY
-    //     u.id, record_date;  -- Group by user and record_date
-    //             `;
-
-    //? To get everything in a single query
-    // `WITH RECURSIVE DateRange AS (
-    //     SELECT :startOfDay AS record_date
-    //     UNION ALL
-    //     SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
-    //     FROM DateRange
-    //     WHERE record_date < :endOfDay
-    // )
-    // SELECT
-    //     u.id AS userId,
-    //     dr.record_date,  -- Include all dates from DateRange
-
-    //     -- Data from app_histories
-    //     a.appName,
-    //     a.is_productive,
-    //     IFNULL(SUM(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS time_spent_seconds,
-    //     IFNULL(COUNT(a.id), 0) AS session_count,
-    //     (
-    //         SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
-    //         FROM app_histories ah
-    //         WHERE ah.userId = u.id
-    //         AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
-    //     ) AS total_time_spent_seconds,
-    //     IFNULL(MAX(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS max_time_spent_seconds,
-
-    //     -- Data from user_histories
-    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
-    //     COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count
-
-    // FROM
-    //     users u
-    // CROSS JOIN
-    //     DateRange dr
-    // LEFT JOIN
-    //     app_histories a
-    //     ON u.id = a.userId
-    //     AND DATE(a.createdAt) = dr.record_date  -- Match specific date
-    // LEFT JOIN
-    //     user_histories uh
-    //     ON u.id = uh.userId
-    //     AND DATE(uh.createdAt) = dr.record_date  -- Match specific date
-    // LEFT JOIN
-    //     productive_websites pw
-    //     ON uh.website_name = pw.website_name
-
-    // WHERE
-    //     u.id IN (:userIds)
-
-    // GROUP BY
-    //     u.id, dr.record_date, a.appName, a.is_productive;
-    // `;
-
-    const query = `WITH RECURSIVE DateRange AS (
-                  SELECT :startOfDay AS record_date
-                  UNION ALL
-                  SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
-                  FROM DateRange
-                  WHERE record_date < :endOfDay
-              )
-              SELECT 
+    const query = `SELECT
                   u.id AS userId,
                   COUNT(DISTINCT CASE WHEN pw.website_name IS NOT NULL THEN uh.website_name END) AS productive_count,
-                  COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count,
-                  dr.record_date  -- Include all dates from DateRange
-              FROM 
+                  COUNT(DISTINCT CASE WHEN pw.website_name IS NULL THEN uh.website_name END) AS non_productive_count
+              FROM
                   users u
-              CROSS JOIN 
-                  DateRange dr
-              LEFT JOIN 
-                  user_histories uh 
-                  ON u.id = uh.userId 
-                  AND DATE(uh.createdAt) = dr.record_date  -- Match specific date
-              LEFT JOIN 
-                  productive_websites pw 
+              LEFT JOIN
+                  user_histories uh
+                  ON u.id = uh.userId
+                  AND uh.createdAt BETWEEN :startOfDay AND :endOfDay
+              LEFT JOIN
+                  productive_websites pw
                   ON uh.website_name = pw.website_name
-              WHERE 
+              WHERE
                   u.id IN (:userIds)
-              GROUP BY 
-                  u.id, dr.record_date;  -- Group by user and each date
+              GROUP BY
+                  u.id
               `;
 
     const results = await sequelize.query(query, {
@@ -645,74 +579,54 @@ export default {
         userIds,
       },
       type: sequelize.QueryTypes.SELECT,
+      logging: console.log
     });
 
     return results;
   },
 
   getProdAppDetails: async (userIds, startOfDay, endOfDay) => {
-    //     const query = `SELECT
-    //     userId,
-    //     appName,
-    //     is_productive,
-    //     IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS time_spent_seconds,
-    //     IFNULL(COUNT(*), 0) AS session_count,
-    //     (
-    //         SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0)
-    //         FROM app_histories ah
-    //         WHERE ah.userId = a.userId
-    //         AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
-    //     ) AS total_time_spent_seconds,
-    //     IFNULL(MAX(TIMESTAMPDIFF(SECOND, startTime, endTime)), 0) AS max_time_spent_seconds,
-    //     DATE(a.createdAt) AS record_date  -- Extracting the date part of the createdAt field
-    // FROM
-    //     app_histories a
-    // WHERE
-    //     a.userId IN (:userIds)
-    // GROUP BY
-    //     userId, appName, is_productive, record_date;
-    // `;
-
-    const query = `WITH RECURSIVE DateRange AS (
-                      SELECT :startOfDay AS record_date
-                      UNION ALL
-                      SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
-                      FROM DateRange
-                      WHERE record_date < :endOfDay
-                  )
-                  SELECT 
-                      u.id AS userId,
-                      IFNULL(SUM(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS time_spent_seconds,
-                      IFNULL(COUNT(a.id), 0) AS session_count,
-                      (
-                          SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
-                          FROM app_histories ah
-                          WHERE ah.userId = u.id
-                          AND DATE(ah.createdAt) = dr.record_date
-                          AND ah.is_productive = 1  -- Time spent on productive apps
-                      ) AS total_time_spent_on_productive_apps,  -- Time spent on productive apps on this date
-                      (
-                          SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
-                          FROM app_histories ah
-                          WHERE ah.userId = u.id
-                          AND DATE(ah.createdAt) = dr.record_date
-                          AND ah.is_productive = 0  -- Time spent on non-productive apps
-                      ) AS total_time_spent_on_non_productive_apps,  -- Time spent on non-productive apps on this date
-                      IFNULL(MAX(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS max_time_spent_seconds,
-                      dr.record_date  -- Ensures all dates are included
-                  FROM 
-                      users u
-                  CROSS JOIN 
-                      DateRange dr
-                  LEFT JOIN 
-                      app_histories a 
-                      ON u.id = a.userId 
-                      AND DATE(a.createdAt) = dr.record_date  -- Match specific date
-                  WHERE 
-                      u.id IN (:userIds)
-                  GROUP BY 
-                      u.id, dr.record_date;
-                  `;
+    const query = `WITH ranked_apps AS (
+  SELECT
+    u.id AS userId,
+    a.appName,
+    TIMESTAMPDIFF(SECOND, a.startTime, a.endTime) AS time_spent_seconds
+  FROM users u
+  LEFT JOIN app_histories a ON u.id = a.userId
+  WHERE a.createdAt BETWEEN :startOfDay AND :endOfDay
+  ORDER BY time_spent_seconds DESC
+  LIMIT 1
+)
+SELECT
+  u.id AS userId,
+  IFNULL(SUM(TIMESTAMPDIFF(SECOND, a.startTime, a.endTime)), 0) AS time_spent_seconds,
+  IFNULL(COUNT(a.id), 0) AS session_count,
+  (
+    SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
+    FROM app_histories ah
+    WHERE ah.userId = u.id
+      AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
+      AND ah.is_productive = 1
+  ) AS total_time_spent_on_productive_apps,
+  (
+    SELECT IFNULL(SUM(TIMESTAMPDIFF(SECOND, ah.startTime, ah.endTime)), 0)
+    FROM app_histories ah
+    WHERE ah.userId = u.id
+      AND ah.createdAt BETWEEN :startOfDay AND :endOfDay
+      AND ah.is_productive = 0
+  ) AS total_time_spent_on_non_productive_apps,
+  (
+    SELECT time_spent_seconds
+    FROM ranked_apps
+    WHERE userId = u.id
+  ) AS max_time_spent_on_app,
+  ranked_apps.appName AS app_name_with_max_time
+FROM users u
+LEFT JOIN app_histories a ON u.id = a.userId
+  AND a.createdAt BETWEEN :startOfDay AND :endOfDay
+LEFT JOIN ranked_apps ON ranked_apps.userId = u.id
+WHERE u.id IN (:userIds)
+GROUP BY u.id;`;
 
     const results = await sequelize.query(query, {
       replacements: {
@@ -726,31 +640,69 @@ export default {
     return results;
   },
 
+  generateProductivityReport: async (data) => {
+    const { users, ProdAppAnalysis, TimeLogs, ProductiveWebsite } = data;
+    const report = users.map((user) => {
+      const userProdAppAnalysis = ProdAppAnalysis.find((item) => item.userId === user.id);
+      const userProdWebCount = ProductiveWebsite.find((item) => item.userId === user.id);
+      const userTimeLog = TimeLogs.find((item) => item.userId === user.id);
+  
+      const totalTimeSpentOnProductiveApps = userProdAppAnalysis
+        ? userProdAppAnalysis.total_time_spent_on_productive_apps
+        : 0;
+      const activeTimeInSeconds = userTimeLog ? userTimeLog.active_time_in_seconds : 0;
+  
+      const averageProductivePercentage =
+        activeTimeInSeconds > 0
+          ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100
+          : 0;
+  
+      return {
+        "Employee Name": user.fullname,
+        "Department": user.department.name,
+        "Date": "2024-12-18", // Assuming you want to report for a specific date
+        "Total Active Hours": userTimeLog
+          ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2)
+          : "0.00",
+        "Idle time": userTimeLog ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
+        "Time on Productive Apps": userProdAppAnalysis
+          ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2)
+          : "0.00",
+        "Time on Non Productive Apps": userProdAppAnalysis
+          ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2)
+          : "0.00",
+        "Productive Websites Count": userProdWebCount
+        ? (userProdWebCount.productive_count)
+        : 0, 
+        "Non Productive Websites Count": userProdWebCount
+        ? (userProdWebCount.non_productive_count)
+        : 0,
+        "Average Productive %": averageProductivePercentage.toFixed(2) + "%",
+        "Most Used Productive App": userProdAppAnalysis
+          ? userProdAppAnalysis.app_name_with_max_time
+          : "N/A",
+      };
+    });
+  
+    return report;
+  },
+
   getTimeLogDetails: async (userIds, startOfDay, endOfDay) => {
-    const query = `WITH RECURSIVE DateRange AS (
-                            SELECT :startOfDay AS record_date
-                            UNION ALL
-                            SELECT DATE_ADD(record_date, INTERVAL 1 DAY)
-                            FROM DateRange
-                            WHERE record_date < :endOfDay
-                        )
-                        SELECT 
-                            u.id AS userId,
-                            tl.id AS timelogId,
-                            dr.record_date 
-                        FROM 
-                            users u
-                        CROSS JOIN 
-                            DateRange dr
-                        LEFT JOIN 
-                            timelogs tl 
-                            ON u.id = tl.user_id 
-                            AND DATE(tl.createdAt) = dr.record_date
-                        WHERE 
-                            u.id IN (:userIds)
-                        ORDER BY 
-                            u.id, dr.record_date, tl.createdAt;
-                            `;
+    const query = `SELECT u.id AS userId,
+       tl.id AS timelogId,
+       (IFNULL(SUM(tl.active_time), 0) + IFNULL(SUM(tl.spare_time), 0) + IFNULL(SUM(tl.idle_time), 0)) / 60 AS active_time_in_hours,
+       (IFNULL(SUM(tl.active_time), 0) + IFNULL(SUM(tl.spare_time), 0) + IFNULL(SUM(tl.idle_time), 0)) * 60 AS active_time_in_seconds,
+       IFNULL(SUM(tl.idle_time), 0) / 60 As idle_Time,
+       CASE
+           WHEN tl.user_id IS NOT NULL THEN 'Present'
+           ELSE 'Absent'
+       END AS attendance
+FROM users u
+LEFT JOIN timelogs tl
+       ON u.id = tl.user_id
+       AND tl.createdAt BETWEEN :startOfDay AND :endOfDay
+WHERE u.id IN (:userIds)
+GROUP BY u.id, tl.createdAt;`;
 
     const results = await sequelize.query(query, {
       replacements: {
@@ -986,10 +938,12 @@ export default {
       const directoryPath = path.resolve(__dirname, "../../../storage/files");
       const filePath = path.join(directoryPath, fileName);
 
+
       // Ensure the directory exists
       if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
       }
+
       const keys = reportData.length === 0 ? [] : Object.keys(reportData[0]);
       if (format === "xls") {
         const csvContent = [
@@ -1012,8 +966,7 @@ export default {
           await dbTransaction.rollback();
           return { status: 0 };
         }
-      } 
-      else if (format === "pdf") {
+      } else if (format === "pdf") {
         // try {
         //   const doc = new PDFDocument({ compress: false });
         //   const fileStream = fs.createWriteStream(filePath);
@@ -1064,21 +1017,23 @@ export default {
         try {
           const doc = new PDFDocument({ compress: false });
           const fileStream = fs.createWriteStream(filePath);
-      
+
           doc.pipe(fileStream);
-      
+
           // Add report title
           doc.fontSize(10).text(reportName, { align: "center", underline: true }).moveDown(2);
-      
+
           // Define table properties
           const tableTop = 100; // Starting Y position for the table
-          const columnWidths = [50, 60, 50, 50, 60, 50, 50, 50, 50]; 
+          // const columnWidths = [50, 60, 50, 50, 60, 50, 50, 50, 50];
+          const columnWidths = Array(headers.length).fill(55);
           const rowHeight = 40;
-      
+
           // Draw table headers
           let xPos = 50; // Starting X position
           let yPos = tableTop;
-      
+
+
           headers.forEach((header, index) => {
             doc
               .rect(xPos, yPos, columnWidths[index], rowHeight)
@@ -1092,9 +1047,9 @@ export default {
               });
             xPos += columnWidths[index];
           });
-      
+
           yPos += rowHeight; // Move to the next row
-      
+
           // Draw table data
           reportData.forEach((row) => {
             xPos = 50; // Reset X position for each row
@@ -1114,16 +1069,16 @@ export default {
             });
             yPos += rowHeight; // Move to the next row
           });
-      
+
           // Finalize PDF
           doc.end();
-      
+
           // Await file writing completion
           await new Promise((resolve, reject) => {
             fileStream.on("finish", resolve);
             fileStream.on("error", reject);
           });
-      
+
           // Save details to the database
           const newAppInfo = await exportHistories.create({
             reportName,
@@ -1133,7 +1088,7 @@ export default {
             periodFrom: fromTime,
             periodTo: toTime,
           });
-      
+
           if (newAppInfo) {
             await dbTransaction.commit();
             return { status: 1 };
@@ -1146,8 +1101,7 @@ export default {
           await dbTransaction.rollback();
           return helper.failed(res, variables.BadRequest, "File generation failed");
         }
-      } 
-      else {
+      } else {
         await dbTransaction.rollback();
         return helper.failed(res, variables.BadRequest, "Unsupported File Request");
       }
@@ -1156,51 +1110,51 @@ export default {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   },
-  
+
   generateProductivityReport: async (data) => {
     const { users, ProdAppAnalysis, TimeLogs, ProductiveWebsite } = data;
-    const report = users.map((user) => {
+    let report;
+
+    if(ProdAppAnalysis == 0 || TimeLogs == 0 || ProductiveWebsite == 0)
+    {
+      report = [{
+        "Employee Name": "N/A",
+        "Department": "N/A",
+        "Total Active Hours": "N/A",
+        "Idle time": "N/A",
+        "Time on Productive Apps": "N/A",
+        "Time on Non Productive Apps": "N/A",
+        "Productive Websites Count": "N/A",
+        "Non Productive Websites Count": "N/A",
+        "Average Productive %": "N/A",
+        "Most Used Productive App": "N/A",
+      }];
+    }else{
+    report = users.map((user) => {
       const userProdAppAnalysis = ProdAppAnalysis.find((item) => item.userId === user.id);
       const userProdWebCount = ProductiveWebsite.find((item) => item.userId === user.id);
       const userTimeLog = TimeLogs.find((item) => item.userId === user.id);
-  
-      const totalTimeSpentOnProductiveApps = userProdAppAnalysis
-        ? userProdAppAnalysis.total_time_spent_on_productive_apps
-        : 0;
+
+      const totalTimeSpentOnProductiveApps = userProdAppAnalysis ? userProdAppAnalysis.total_time_spent_on_productive_apps : 0;
       const activeTimeInSeconds = userTimeLog ? userTimeLog.active_time_in_seconds : 0;
-  
-      const averageProductivePercentage =
-        activeTimeInSeconds > 0
-          ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100
-          : 0;
-  
+
+      const averageProductivePercentage = activeTimeInSeconds > 0 ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100 : 0;
+
       return {
-        "Employee Name": user.fullname,
-        "Department": user.department.name,
-        "Date": "2024-12-18", // Assuming you want to report for a specific date
-        "Total Active Hours": userTimeLog
-          ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2)
-          : 0,
-        "Idle time": userTimeLog ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
-        "Time on Productive Apps": userProdAppAnalysis
-          ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2)
-          : 0,
-        "Time on Non Productive Apps": userProdAppAnalysis
-          ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2)
-          : 0,
-        "Productive Websites Count": userProdWebCount
-        ? (userProdWebCount.productive_count)
-        : 0, 
-        "Non Productive Websites Count": userProdWebCount
-        ? (userProdWebCount.non_productive_count)
-        : 0,
-        "Average Productive %": averageProductivePercentage.toFixed(2) + "%",
-        "Most Used Productive App": userProdAppAnalysis
-          ? userProdAppAnalysis.app_name_with_max_time
-          : "N/A",
+        "Employee Name": user.fullname || "N/A",
+        Department: user.department?.name || "N/A",
+        "Total Active Hours": userTimeLog?.active_time_in_seconds ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
+        "Idle time": userTimeLog?.idle_Time ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
+        "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
+        "Time on Non Productive Apps": userProdAppAnalysis?.total_time_spent_on_non_productive_apps ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2) : "0.00",
+        "Productive Websites Count": userProdWebCount?.productive_count || 0,
+        "Non Productive Websites Count": userProdWebCount?.non_productive_count || 0,
+        "Average Productive %": averageProductivePercentage ? averageProductivePercentage.toFixed(2) + "%" : "0.00%",
+        "Most Used Productive App": userProdAppAnalysis?.app_name_with_max_time || "N/A",
       };
     });
-  
+  }
+
     return report;
   },
 };

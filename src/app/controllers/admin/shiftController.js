@@ -9,6 +9,12 @@ import team from "../../../database/models/teamModel.js";
 class shiftController {
   getAllShift = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "shifts", routeMethod);
+      if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       let searchable = ["name", "status"];
@@ -25,11 +31,11 @@ class shiftController {
         order: [["id", "DESC"]],
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Shift is available!");
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+      return helper.success(res, variables.Success, "Shifts fetched successfully!", alldata);
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, error.message);
+      return helper.failed(res, variables.BadRequest, "Unable to fetch shifts");
     }
   };
 
@@ -39,11 +45,11 @@ class shiftController {
         where: { status: true, company_id: req.user.company_id },
         attributes: { exclude: ["createdAt", "updatedAt", "status"] },
       });
-      if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
+      if (!alldata) return helper.failed(res, variables.NotFound, "No Shift is available!");
 
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+      return helper.success(res, variables.Success, "Shifts fetched successfully!", alldata);
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, "Unable to fetch data");
+      return helper.failed(res, variables.BadRequest, "Unable to Fetch Shifts");
     }
   };
 
@@ -59,17 +65,23 @@ class shiftController {
         },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!specificData) return helper.failed(res, variables.NotFound, `Data not Found of matching attributes `);
+      if (!specificData) return helper.failed(res, variables.NotFound, `No Shift Found`);
 
-      return helper.success(res, variables.Success, "Data Fetched Succesfully", specificData);
+      return helper.success(res, variables.Success, "Shift Fetched Succesfully", specificData);
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, error.message);
+      return helper.failed(res, variables.BadRequest, "Unable to Fetch Shift");
     }
   };
 
   //! same shift parameters adding again issue
 
   addShift = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "shifts", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const requestData = req.body;
@@ -143,6 +155,12 @@ class shiftController {
   };
 
   updateShift = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "shifts", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { id, days, ...updateFields } = req.body;
@@ -160,18 +178,13 @@ class shiftController {
         }
       }
 
-      if (updateFields.start_time && updateFields.end_time) {
-        if (updateFields.start_time == updateFields.end_time) {
-          return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
-        }
-      }
-
       const existingShift = await shift.findOne({
         where: { id: id, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
       if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in company!");
 
+      if(updateFields.name){
       const existingShiftWithName = await shift.findOne({
         where: {
           name: updateFields.name,
@@ -182,6 +195,12 @@ class shiftController {
       });
       if (existingShiftWithName) {
         return helper.failed(res, variables.ValidationError, "Shift name already exists in different record!");
+      }
+    }
+
+    if (updateFields.start_time && updateFields.end_time) {
+      if (updateFields.start_time == updateFields.end_time) {
+        return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
       }
 
       const existingShiftWithparam = await shift.findOne({
@@ -198,6 +217,7 @@ class shiftController {
       if (existingShiftWithparam) {
         return helper.failed(res, variables.ValidationError, "Shift already exists with same parameter in different record!");
       }
+    }
 
       let updated;
 
@@ -235,6 +255,12 @@ class shiftController {
   };
 
   deleteShift = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "shifts", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;

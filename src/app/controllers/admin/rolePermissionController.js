@@ -7,6 +7,12 @@ import app_modules from "../../../database/models/moduleModel.js";
 
 class rolePermissionController {
   getAllRolePermissions = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "permissions", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     try {
       const alldata = await rolePermission.findAndCountAll({
         where: { company_id: req.user.company_id },
@@ -57,22 +63,42 @@ class rolePermissionController {
     }
   };
 
-  getSpecificRolePermissions = async (roleId, moduleName) => {
+  getSpecificRolePermissions = async (roleId, moduleName, companyId) => {
     try {
-      const roleModuledata = await rolePermission.findOne({
-        where: { roleId: roleId, modules: moduleName, company_id: req.user.company_id },
+      const roleModuleData = await rolePermission.findOne({
+        where: { roleId: roleId, modules: moduleName, company_id: companyId },
         attributes: { exclude: ["createdAt", "updatedAt"] },
       });
-      if (!roleModuledata) return helper.failed(res, variables.NotFound, "No Data is available!");
 
-      return roleModuledata;
-      // return helper.success(res, variables.Success, "All Data Fetched Successfully!", roleModuledata);
+      if (!roleModuleData) {
+        return {
+          success: false,
+          message: "Module Permission Not Available!",
+          data: null,
+        };
+      }
+
+      return {
+        success: true,
+        message: "Module permissions fetched successfully",
+        data: roleModuleData,
+      };
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, error.message);
+      console.error("Error fetching role permissions:", error);
+      return {
+        success: false,
+        message: error.message,
+        data: null,
+      };
     }
   };
 
-  addRolePermissions = async (module, roleId, company_id, transaction) => {
+  addRolePermissions = async (module, roleId, routeMethod, company_id, transaction) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const isApproved = await helper.checkRolePermission(roleId, "permissions", routeMethod);
+    if (!isApproved) throw new Error("Not Permitted for this request");
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     try {
       if (isNaN(roleId)) throw new Error("Role Id must be in number");
       const permissionData = {
@@ -185,6 +211,12 @@ class rolePermissionController {
   // };
 
   updateMultipleRolePermission = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "permissions", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { rolesModulesPermissions } = req.body;
@@ -281,6 +313,12 @@ class rolePermissionController {
   };
 
   updateMultipleRolePermissionOnce = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "permissions", routeMethod);
+    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    
     const dbTransaction = await sequelize.transaction();
     try {
       const { roleName, allTrue } = req.body;

@@ -89,6 +89,7 @@ const setupSocketIO = (io) => {
   io.on("connection", async (socket) => {
     socket.join(`Admin_${socket.user.company_id}`);
     if (socket.user.isAdmin) {
+      console.log(socket.user.userId);
       let userData = await User.findOne({ where: { id: socket.user.userId } });
       userData.socket_id = socket.id;
       userData.currentStatus = 1;
