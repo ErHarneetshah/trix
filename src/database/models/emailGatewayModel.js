@@ -36,6 +36,10 @@ const emailGateway = sequelize.define('email_gateways', {
         },
         comment: 'Username (email address) for authentication',
     },
+    fromUsername: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
     password: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -61,9 +65,6 @@ const emailGateway = sequelize.define('email_gateways', {
         allowNull: false,
         defaultValue: 1,
         comment: '1 => Active, 0 => Not Active',
-    },fromUsername: {
-        type: DataTypes.STRING,
-        allowNull: false,
     }
 }, {
     timestamps: true,
