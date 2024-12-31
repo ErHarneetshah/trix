@@ -654,8 +654,8 @@ GROUP BY u.id;`;
 
       return {
         "Employee Name": user.fullname,
-        Department: user.department.name,
-        Date: "2024-12-18", // Assuming you want to report for a specific date
+        "Department": user.department.name,
+        "Date": "2024-12-18", // Assuming you want to report for a specific date
         "Total Active Hours": userTimeLog ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
         "Idle time": userTimeLog ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
         "Time on Productive Apps": userProdAppAnalysis ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
@@ -1047,7 +1047,7 @@ GROUP BY u.id, tl.createdAt;`;
       report = [
         {
           "Employee Name": "N/A",
-          Department: "N/A",
+          "Department": "N/A",
           "Total Active Hours": "N/A",
           "Idle time": "N/A",
           "Time on Productive Apps": "N/A",
@@ -1071,7 +1071,7 @@ GROUP BY u.id, tl.createdAt;`;
 
         return {
           "Employee Name": user.fullname || "N/A",
-          Department: user.department?.name || "N/A",
+          "Department": user.department?.name || "N/A",
           "Total Active Hours": userTimeLog?.active_time_in_seconds ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
           "Idle time": userTimeLog?.idle_Time ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
           "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
