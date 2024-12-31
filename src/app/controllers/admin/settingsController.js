@@ -48,7 +48,7 @@ const updateAdminDetails = async (req, res) => {
       confirm_password: "required_with:password|same:password",
     };
 
-    const { status, message } = await validate(req.body, rules);
+    const { status, message } = await validate(req.body, rules);    
     if (status === 0) {
       return helper.failed(res, variables.ValidationError, message);
     }
@@ -113,7 +113,7 @@ const getBlockedWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name", "status", "logo"],
+      attributes: ["id", "website", "website_name", "status", "logo","departmentId"],
       include: [
         {
           model: department,
@@ -158,6 +158,9 @@ const addBlockWebsites = async (req, res) => {
       return helper.failed(res, variables.ValidationError, message);
     }
 
+    const isValidSite = await helper.validateDomain(website);
+    if(!isValidSite.status) return helper.failed(res, variables.ValidationError, isValidSite.message);
+
     const isDepartmentExists = await department.findOne({
       where: {
         id: departmentId,
@@ -170,7 +173,7 @@ const addBlockWebsites = async (req, res) => {
     }
 
     const existingApp = await BlockedWebsites.findOne({
-      where: { website: website, companyId: req.user.company_id },
+      where: { website: website, companyId: req.user.company_id,departmentId : departmentId},
     });
 
     if (existingApp) {
@@ -436,6 +439,9 @@ const addProductiveWebsites = async (req, res) => {
       return helper.failed(res, variables.ValidationError, errorMessage);
     }
 
+    const isValidSite = await helper.validateDomain(website);
+    if(!isValidSite.status) return helper.failed(res, variables.ValidationError, isValidSite.message);
+
     const isDepartmentExists = await department.findOne({
       where: {
         id: departmentId,
@@ -447,7 +453,7 @@ const addProductiveWebsites = async (req, res) => {
       return helper.failed(res, variables.NotFound, "Department is not exist.");
     }
 
-    const existingApp = await ProductiveWebsite.findOne({ where: { website , company_id:  req.user.company_id}  });
+    const existingApp = await ProductiveWebsite.findOne({ where: { website , company_id:  req.user.company_id, department_id: departmentId}  });
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "Website with this name or URL already exists");
     }
