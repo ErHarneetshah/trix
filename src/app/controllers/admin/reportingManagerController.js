@@ -12,7 +12,7 @@ class reportingManagerController {
     try {
       // ___________-------- Role Permisisons Exists or not ---------________________
       const routeMethod = req.method;
-      const isApproved = await helper.checkRolePermission(req.user.roleId, "reportingManager", routeMethod);
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "reportingManager", routeMethod, req.user.company_id);
       if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
       // ___________-------- Role Permisisons Exists or not ---------________________
 
@@ -110,7 +110,7 @@ class reportingManagerController {
   updateReportManager = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "reportingManager", routeMethod);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "reportingManager", routeMethod, req.user.company_id);
     if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
