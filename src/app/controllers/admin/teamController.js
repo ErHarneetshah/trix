@@ -13,7 +13,7 @@ class teamController {
     try {
       // ___________-------- Role Permisisons Exists or not ---------________________
       const routeMethod = req.method;
-      const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod);
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod, req.user.company_id);
       if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
       // ___________-------- Role Permisisons Exists or not ---------________________
 
@@ -141,7 +141,7 @@ class teamController {
   addTeam = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod, req.user.company_id);
     if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
@@ -208,7 +208,7 @@ class teamController {
   updateTeam = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod, req.user.company_id);
     if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
@@ -280,7 +280,7 @@ class teamController {
   deleteTeam = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod, req.user.company_id);
     if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 

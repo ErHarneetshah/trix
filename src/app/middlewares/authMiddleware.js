@@ -30,7 +30,7 @@ const authMiddleware = async (req, res, next) => {
 
     const user = await User.findOne({
       where: { id: decoded.userId },
-      attributes: { exclude: ["password"] }, // Exclude password from result
+      attributes: { exclude: ["password"] },
     });
     if (!user) return helper.failed(res, variables.NotFound, "User not found in system!");
 
@@ -43,7 +43,7 @@ const authMiddleware = async (req, res, next) => {
       return helper.failed(res, variables.Unauthorized, "Already Logout");
     }
     console.log("Authentication Middleware Issue: ", e.message);
-    return helper.failed(res, variables.BadRequest, "Unable to Authenticate User");
+    return helper.failed(res, variables.Unauthorized, "Authentication Failed");
   }
 };
 

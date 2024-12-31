@@ -8,6 +8,7 @@ import JWT from "jsonwebtoken";
 import { parse } from "tldts";
 import moment from "moment";
 import rolePermissionController from "../../app/controllers/admin/rolePermissionController.js";
+import dns from "dns";
 
 export default {
   checkRolePermission: async (roleId, moduleName, method, company_id) => {
@@ -124,6 +125,30 @@ export default {
       return this.failed(res, variables.UnknownError, error.message);
     }
   },
+
+  validateDomain: async (url) => {
+    try {
+      const domain = new URL(url).hostname; // Extract the domain from the URL
+      
+      const dnsCheck = await new Promise((resolve, reject) => {
+        dns.lookup(domain, (err, address) => {
+          if (err) {
+            console.log(`${domain} is not valid or does not resolve.`);
+            reject({ status: false, message: "Website URL is not Valid" });
+          } else {
+            console.log(`${domain} is valid and resolves to ${address}.`);
+            resolve({ status: true, message: "Website URL is Valid" });
+          }
+        });
+      });
+  
+      return dnsCheck;
+    } catch (err) {
+      return { status: false, message: "Website URL is not Valid" };
+    }
+  },
+  
+
 
   searchCondition: async (searchParam, searchable, otherField = null, otherParam = null) => {
     let where = {};
