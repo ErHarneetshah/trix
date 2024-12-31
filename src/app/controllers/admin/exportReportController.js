@@ -178,7 +178,6 @@ class exportReportController {
             },
           ],
         });
-
         if (!checkuser) return helper.failed(res, variables.ValidationError, "User does not exists in Selected Team");
         users = { status: true, message: "User's data retrived successfully", data: checkuser };
         userIds = [checkuser.id];

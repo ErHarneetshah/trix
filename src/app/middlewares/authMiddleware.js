@@ -43,7 +43,7 @@ const authMiddleware = async (req, res, next) => {
       return helper.failed(res, variables.Unauthorized, "Already Logout");
     }
     console.log("Authentication Middleware Issue: ", e.message);
-    return helper.failed(res, variables.BadRequest, "Unable to Authenticate User");
+    return helper.failed(res, variables.Unauthorized, "Authentication Failed");
   }
 };
 

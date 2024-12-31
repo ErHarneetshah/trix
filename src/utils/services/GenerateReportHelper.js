@@ -579,7 +579,7 @@ export default {
         userIds,
       },
       type: sequelize.QueryTypes.SELECT,
-      logging: console.log
+      logging: console.log,
     });
 
     return results;
@@ -646,44 +646,27 @@ GROUP BY u.id;`;
       const userProdAppAnalysis = ProdAppAnalysis.find((item) => item.userId === user.id);
       const userProdWebCount = ProductiveWebsite.find((item) => item.userId === user.id);
       const userTimeLog = TimeLogs.find((item) => item.userId === user.id);
-  
-      const totalTimeSpentOnProductiveApps = userProdAppAnalysis
-        ? userProdAppAnalysis.total_time_spent_on_productive_apps
-        : 0;
+
+      const totalTimeSpentOnProductiveApps = userProdAppAnalysis ? userProdAppAnalysis.total_time_spent_on_productive_apps : 0;
       const activeTimeInSeconds = userTimeLog ? userTimeLog.active_time_in_seconds : 0;
-  
-      const averageProductivePercentage =
-        activeTimeInSeconds > 0
-          ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100
-          : 0;
-  
+
+      const averageProductivePercentage = activeTimeInSeconds > 0 ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100 : 0;
+
       return {
         "Employee Name": user.fullname,
-        "Department": user.department.name,
-        "Date": "2024-12-18", // Assuming you want to report for a specific date
-        "Total Active Hours": userTimeLog
-          ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2)
-          : "0.00",
+        Department: user.department.name,
+        Date: "2024-12-18", // Assuming you want to report for a specific date
+        "Total Active Hours": userTimeLog ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
         "Idle time": userTimeLog ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
-        "Time on Productive Apps": userProdAppAnalysis
-          ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2)
-          : "0.00",
-        "Time on Non Productive Apps": userProdAppAnalysis
-          ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2)
-          : "0.00",
-        "Productive Websites Count": userProdWebCount
-        ? (userProdWebCount.productive_count)
-        : 0, 
-        "Non Productive Websites Count": userProdWebCount
-        ? (userProdWebCount.non_productive_count)
-        : 0,
+        "Time on Productive Apps": userProdAppAnalysis ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
+        "Time on Non Productive Apps": userProdAppAnalysis ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2) : "0.00",
+        "Productive Websites Count": userProdWebCount ? userProdWebCount.productive_count : 0,
+        "Non Productive Websites Count": userProdWebCount ? userProdWebCount.non_productive_count : 0,
         "Average Productive %": averageProductivePercentage.toFixed(2) + "%",
-        "Most Used Productive App": userProdAppAnalysis
-          ? userProdAppAnalysis.app_name_with_max_time
-          : "N/A",
+        "Most Used Productive App": userProdAppAnalysis ? userProdAppAnalysis.app_name_with_max_time : "N/A",
       };
     });
-  
+
     return report;
   },
 
@@ -938,7 +921,6 @@ GROUP BY u.id, tl.createdAt;`;
       const directoryPath = path.resolve(__dirname, "../../../storage/files");
       const filePath = path.join(directoryPath, fileName);
 
-
       // Ensure the directory exists
       if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
@@ -955,7 +937,7 @@ GROUP BY u.id, tl.createdAt;`;
         console.log("XLS file written successfully:", filePath);
 
         const newAppInfo = await exportHistories.create(
-          { reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime,data:JSON.stringify(reportData) },
+          { reportName: reportName, company_id: company_id, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime, data: JSON.stringify(reportData) },
           { transaction: dbTransaction }
         );
 
@@ -967,139 +949,85 @@ GROUP BY u.id, tl.createdAt;`;
           return { status: 0 };
         }
       } else if (format === "pdf") {
-        // try {
-        //   const doc = new PDFDocument({ compress: false });
-        //   const fileStream = fs.createWriteStream(filePath);
+        const doc = new PDFDocument({ compress: false });
+        const fileStream = fs.createWriteStream(filePath);
 
-        //   doc.pipe(fileStream);
+        doc.pipe(fileStream);
 
-        //   // Add content to the PDF
-        //   doc.fontSize(18).text(reportName, { align: "center" }).moveDown();
-        //   const headerText = headers.join(" | ");
-        //   doc.fontSize(12).text(headerText, { underline: true }).moveDown();
+        // Add report title
+        doc.fontSize(10).text(reportName, { align: "center", underline: true }).moveDown(2);
 
-        //   reportData.forEach((row) => {
-        //     const rowText = keys.map((key) => row[key] || "").join(" | "); // Dynamically map data to headers
-        //     doc.fontSize(10).text(rowText);
-        //   });
+        // Define table properties
+        const tableTop = 100; // Starting Y position for the table
+        // const columnWidths = [50, 60, 50, 50, 60, 50, 50, 50, 50];
+        const columnWidths = Array(headers.length).fill(55);
+        const rowHeight = 40;
 
-        //   doc.end();
+        // Draw table headers
+        let xPos = 50; // Starting X position
+        let yPos = tableTop;
 
-        //   // Await for the file writing to finish
-        //   await new Promise((resolve, reject) => {
-        //     fileStream.on("finish", resolve);
-        //     fileStream.on("error", reject);
-        //   });
+        headers.forEach((header, index) => {
+          doc
+            .rect(xPos, yPos, columnWidths[index], rowHeight)
+            .fillAndStroke("#f0f0f0", "black") // Background and border color
+            .fillColor("black")
+            .fontSize(6)
+            .text(header, xPos + 5, yPos + 5, {
+              width: columnWidths[index] - 10, // Adjust width for padding
+              align: "center",
+              ellipsis: true,
+            });
+          xPos += columnWidths[index];
+        });
 
-        //   // Save details to the database
-        //   const newAppInfo = await exportHistories.create({
-        //     reportName,
-        //     company_id,
-        //     filePath,
-        //     reportExtension: format,
-        //     periodFrom: fromTime,
-        //     periodTo: toTime,
-        //   });
+        yPos += rowHeight; // Move to the next row
 
-        //   if (newAppInfo) {
-        //     await dbTransaction.commit();
-        //     return { status: 1 };
-        //   } else {
-        //     await dbTransaction.rollback();
-        //     return { status: 0 };
-        //   }
-        // } catch (err) {
-        //   console.error("Error generating PDF report:", err);
-        //   await dbTransaction.rollback();
-        //   return helper.failed(res, variables.BadRequest, "File generation failed");
-        // }
-
-        try {
-          const doc = new PDFDocument({ compress: false });
-          const fileStream = fs.createWriteStream(filePath);
-
-          doc.pipe(fileStream);
-
-          // Add report title
-          doc.fontSize(10).text(reportName, { align: "center", underline: true }).moveDown(2);
-
-          // Define table properties
-          const tableTop = 100; // Starting Y position for the table
-          // const columnWidths = [50, 60, 50, 50, 60, 50, 50, 50, 50];
-          const columnWidths = Array(headers.length).fill(55);
-          const rowHeight = 40;
-
-          // Draw table headers
-          let xPos = 50; // Starting X position
-          let yPos = tableTop;
-
-
-          headers.forEach((header, index) => {
+        // Draw table data
+        reportData.forEach((row) => {
+          xPos = 50; // Reset X position for each row
+          keys.forEach((key, index) => {
+            const cellText = row[key] || "";
             doc
               .rect(xPos, yPos, columnWidths[index], rowHeight)
-              .fillAndStroke("#f0f0f0", "black") // Background and border color
+              .stroke()
               .fillColor("black")
               .fontSize(6)
-              .text(header, xPos + 5, yPos + 5, {
+              .text(cellText, xPos + 5, yPos + 5, {
                 width: columnWidths[index] - 10, // Adjust width for padding
                 align: "center",
-                ellipsis: true,
+                ellipsis: true, // Truncate text with "..."
               });
             xPos += columnWidths[index];
           });
-
           yPos += rowHeight; // Move to the next row
+        });
 
-          // Draw table data
-          reportData.forEach((row) => {
-            xPos = 50; // Reset X position for each row
-            keys.forEach((key, index) => {
-              const cellText = row[key] || "";
-              doc
-                .rect(xPos, yPos, columnWidths[index], rowHeight)
-                .stroke()
-                .fillColor("black")
-                .fontSize(6)
-                .text(cellText, xPos + 5, yPos + 5, {
-                  width: columnWidths[index] - 10, // Adjust width for padding
-                  align: "center",
-                  ellipsis: true, // Truncate text with "..."
-                });
-              xPos += columnWidths[index];
-            });
-            yPos += rowHeight; // Move to the next row
-          });
+        // Finalize PDF
+        doc.end();
 
-          // Finalize PDF
-          doc.end();
+        // Await file writing completion
+        await new Promise((resolve, reject) => {
+          fileStream.on("finish", resolve);
+          fileStream.on("error", reject);
+        });
 
-          // Await file writing completion
-          await new Promise((resolve, reject) => {
-            fileStream.on("finish", resolve);
-            fileStream.on("error", reject);
-          });
+        // Save details to the database
+        const newAppInfo = await exportHistories.create({
+          reportName,
+          company_id,
+          filePath,
+          reportExtension: format,
+          periodFrom: fromTime,
+          periodTo: toTime,
+        });
 
-          // Save details to the database
-          const newAppInfo = await exportHistories.create({
-            reportName,
-            company_id,
-            filePath,
-            reportExtension: format,
-            periodFrom: fromTime,
-            periodTo: toTime,
-          });
-
-          if (newAppInfo) {
-            await dbTransaction.commit();
-            return { status: 1 };
-          } else {
-            await dbTransaction.rollback();
-            return { status: 0 };
-          }
-        } catch (err) {
-          console.error("Error generating PDF report:", err);
+        if (newAppInfo) {
+          await dbTransaction.commit();
+          return { status: 1 };
+        } else {
           await dbTransaction.rollback();
-          return helper.failed(res, variables.BadRequest, "File generation failed");
+          return { status: 0 };
         }
       } else {
         await dbTransaction.rollback();
@@ -1115,45 +1043,46 @@ GROUP BY u.id, tl.createdAt;`;
     const { users, ProdAppAnalysis, TimeLogs, ProductiveWebsite } = data;
     let report;
 
-    if(ProdAppAnalysis == 0 || TimeLogs == 0 || ProductiveWebsite == 0)
-    {
-      report = [{
-        "Employee Name": "N/A",
-        "Department": "N/A",
-        "Total Active Hours": "N/A",
-        "Idle time": "N/A",
-        "Time on Productive Apps": "N/A",
-        "Time on Non Productive Apps": "N/A",
-        "Productive Websites Count": "N/A",
-        "Non Productive Websites Count": "N/A",
-        "Average Productive %": "N/A",
-        "Most Used Productive App": "N/A",
-      }];
-    }else{
-    report = users.map((user) => {
-      const userProdAppAnalysis = ProdAppAnalysis.find((item) => item.userId === user.id);
-      const userProdWebCount = ProductiveWebsite.find((item) => item.userId === user.id);
-      const userTimeLog = TimeLogs.find((item) => item.userId === user.id);
+    if (ProdAppAnalysis == 0 || TimeLogs == 0 || ProductiveWebsite == 0) {
+      report = [
+        {
+          "Employee Name": "N/A",
+          Department: "N/A",
+          "Total Active Hours": "N/A",
+          "Idle time": "N/A",
+          "Time on Productive Apps": "N/A",
+          "Time on Non Productive Apps": "N/A",
+          "Productive Websites Count": "N/A",
+          "Non Productive Websites Count": "N/A",
+          "Average Productive %": "N/A",
+          "Most Used Productive App": "N/A",
+        },
+      ];
+    } else {
+      report = users.map((user) => {
+        const userProdAppAnalysis = ProdAppAnalysis.find((item) => item.userId === user.id);
+        const userProdWebCount = ProductiveWebsite.find((item) => item.userId === user.id);
+        const userTimeLog = TimeLogs.find((item) => item.userId === user.id);
 
-      const totalTimeSpentOnProductiveApps = userProdAppAnalysis ? userProdAppAnalysis.total_time_spent_on_productive_apps : 0;
-      const activeTimeInSeconds = userTimeLog ? userTimeLog.active_time_in_seconds : 0;
+        const totalTimeSpentOnProductiveApps = userProdAppAnalysis ? userProdAppAnalysis.total_time_spent_on_productive_apps : 0;
+        const activeTimeInSeconds = userTimeLog ? userTimeLog.active_time_in_seconds : 0;
 
-      const averageProductivePercentage = activeTimeInSeconds > 0 ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100 : 0;
+        const averageProductivePercentage = activeTimeInSeconds > 0 ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100 : 0;
 
-      return {
-        "Employee Name": user.fullname || "N/A",
-        Department: user.department?.name || "N/A",
-        "Total Active Hours": userTimeLog?.active_time_in_seconds ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
-        "Idle time": userTimeLog?.idle_Time ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
-        "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
-        "Time on Non Productive Apps": userProdAppAnalysis?.total_time_spent_on_non_productive_apps ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2) : "0.00",
-        "Productive Websites Count": userProdWebCount?.productive_count || 0,
-        "Non Productive Websites Count": userProdWebCount?.non_productive_count || 0,
-        "Average Productive %": averageProductivePercentage ? averageProductivePercentage.toFixed(2) + "%" : "0.00%",
-        "Most Used Productive App": userProdAppAnalysis?.app_name_with_max_time || "N/A",
-      };
-    });
-  }
+        return {
+          "Employee Name": user.fullname || "N/A",
+          Department: user.department?.name || "N/A",
+          "Total Active Hours": userTimeLog?.active_time_in_seconds ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
+          "Idle time": userTimeLog?.idle_Time ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
+          "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
+          "Time on Non Productive Apps": userProdAppAnalysis?.total_time_spent_on_non_productive_apps ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2) : "0.00",
+          "Productive Websites Count": userProdWebCount?.productive_count || 0,
+          "Non Productive Websites Count": userProdWebCount?.non_productive_count || 0,
+          "Average Productive %": averageProductivePercentage ? averageProductivePercentage.toFixed(2) + "%" : "0.00%",
+          "Most Used Productive App": userProdAppAnalysis?.app_name_with_max_time || "N/A",
+        };
+      });
+    }
 
     return report;
   },
