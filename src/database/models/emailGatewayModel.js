@@ -32,7 +32,7 @@ const emailGateway = sequelize.define('email_gateways', {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
-            isEmail: true,
+            isEmail: false,
         },
         comment: 'Username (email address) for authentication',
     },
