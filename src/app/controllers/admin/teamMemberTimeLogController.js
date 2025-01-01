@@ -303,6 +303,7 @@ GROUP BY
               AND timelogs.logged_out_time IS NOT NULL
             GROUP BY timelogs.user_id
             HAVING totalTimeSpent >= 0.6 * totalTimeLog
+            AND totalTimeLog > 0
           ) AS productiveEntries;`,
         {
           replacements: {
@@ -337,6 +338,7 @@ GROUP BY
               AND timelogs.logged_out_time IS NOT NULL
             GROUP BY timelogs.user_id
             HAVING totalTimeSpent <= 0.6 * totalTimeLog
+            AND totalTimeLog > 0
           ) AS productiveEntries;
 `,
         {
