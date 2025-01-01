@@ -9,36 +9,33 @@ const sendM = async (to, subject, message, cc = '', from = "", attachment = null
         });
 
         if (activeEmailServer) {
-            // let transporter = nodeMailer.createTransport({
-            //     host: activeEmailServer.host,
-            //     port: activeEmailServer.port,
-            //     secure: false,
-            //     auth: {
-            //         user: activeEmailServer.username,
-            //         pass: activeEmailServer.password
-            //     }
-            // });
+            let transporter = nodeMailer.createTransport({
+                host: activeEmailServer.host,
+                port: activeEmailServer.port,
+                secure: false,
+                auth: {
+                    user: activeEmailServer.username,
+                    pass: activeEmailServer.password,
+                }
+            });
 
-            // try {
-            //     await transporter.verify();
-            //     //console.log("SMTP server is ready to take our messages.");
-            // } catch (verifyError) {
-            //     console.error("SMTP server verification failed:", verifyError.message);
-            //     return { success: false, message: "SMTP server verification failed.", error: verifyError };
-            // }
-            console.log("oooooooooooo");
+            try {
+                await transporter.verify();
+                //console.log("SMTP server is ready to take our messages.");
+            } catch (verifyError) {
+                console.error("SMTP server verification failed:", verifyError.message);
+                return { success: false, message: "SMTP server verification failed.", error: verifyError };
+            }
             let mailOptions = {
-                from: activeEmailServer.fromUsername,
+                from: `${activeEmailServer.username} <${activeEmailServer.fromUsername}>`,
                 to: to,
                 subject: subject || 'Test',
                 text: message,
                 html: '<b>' + message + '</b>',
                 attachments: attachment ? [attachment] : [],
             };
-            console.log(mailOptions,"ddddddddddddd");
-            const info = await sendMail(mailOptions);
-            console.log(info,"dsdswdfsf");
-
+            console.log(mailOptions);
+            const info = await transporter.sendMail(mailOptions);
             if (info.messageId) {
                 return { success: true, message: "Email sent successfully.", info };
             }
@@ -46,7 +43,7 @@ const sendM = async (to, subject, message, cc = '', from = "", attachment = null
             return { success: false, message: "Failed to send email." };
         }
     } catch (error) {
-        //console.log({ 'mailer_error': error });
+        console.log({ 'mailer_error': error });
         return 0;
     }
 

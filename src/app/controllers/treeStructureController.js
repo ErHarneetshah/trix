@@ -87,7 +87,7 @@ async function getUserTree(parentDept, companyId) {
 
 const viewTreeStructure = async (req, res, next) => {
   try {
-    const companyId = 1;
+    const companyId = req.user.company_id;
 
     let tree = {};
     if (myCache.has(`company_${companyId}`)) {

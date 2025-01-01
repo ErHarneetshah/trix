@@ -16,13 +16,14 @@ const authMiddleware = async (req, res, next) => {
       return helper.failed(res, variables.BadRequest, "Access Denied. No Token Provided");
 
     const token = authHeader.replace("Bearer ", "");
-
     const access_token = await accessToken.findOne({ where: {token: token } });
     if (access_token) {
       if (new Date() > access_token.expiry_time) {
         await accessToken.destroy({ where: { token: token } });
         return helper.failed(res, variables.BadRequest, "Token Expired. Please log in again");
       }
+    }else{
+      return helper.failed(res, variables.BadRequest, "Token Expired. Please log in again");
     }
 
     // Verify the token

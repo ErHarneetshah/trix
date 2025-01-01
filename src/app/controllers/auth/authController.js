@@ -316,9 +316,13 @@ class authController extends jwtService {
       }
       let token;
       if (user.isAdmin) {
+        //Deleting previous sessions here
+        await accessToken.destroy({ where: { userId: user.id } });
+
         token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
         await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
+        
       } else {
         let now = new Date();
         let currentHours = now.getHours();
@@ -357,6 +361,10 @@ class authController extends jwtService {
         // if (currentHours > endHours || (currentHours == endHours && currentMinutes > endMinutes)) {
         //   return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
         // }
+
+        //Deleting previous sessions here
+        await accessToken.destroy({ where: { userId: user.id } });
+
 
         token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
