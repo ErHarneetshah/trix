@@ -192,7 +192,7 @@ const createResponse2 = (inputData) => {
 
     if (activeTimeThreshold != 0) {
       isProductive = totalProductiveTimeSeconds >= activeTimeThreshold;
-      isSlacking = activeTime >= idleTimeThreshold;
+      isSlacking = data.idle_time >= idleTimeThreshold;
     } else {
       isProductive = false;
       isSlacking = false;

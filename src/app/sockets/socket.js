@@ -261,7 +261,7 @@ const handleAdminSocket = async (socket, io) => {
           clientSocket.leave(newRoom);
         }
       }
-
+      console.log("socket call");
       const response = await getUserReport(data);
       io.to(newRoom).emit("getUserReport", response);
     } catch (error) {
@@ -398,6 +398,8 @@ const getUserStats = async (io, socket) => {
 
 const getUserReport = async (data) => {
   try {
+    console.log(data);
+    
     let user = await User.findOne({
       where: { id: data.id },
       include: [
@@ -413,6 +415,8 @@ const getUserReport = async (data) => {
         },
       ],
     });
+    console.log(user.dataValues);
+    
 
     if (!user) {
       return {
