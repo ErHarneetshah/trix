@@ -56,6 +56,11 @@ const addEmailGateeways = async (req, res) => {
       fromUsername: "required|string",
     };
 
+    const { status, message } = await validate(req.body, rules);
+    if (status === 0) {
+      return helper.failed(res, variables.ValidationError, message);
+    }
+
     if (encryption) {
         encryption = encryption.toLowerCase();
       if (!encryptionOptions.includes(encryption)) {
@@ -77,10 +82,7 @@ const addEmailGateeways = async (req, res) => {
       );
     }
 
-    const { status, message } = await validate(req.body, rules);
-    if (status === 0) {
-      return helper.failed(res, variables.ValidationError, message);
-    }
+    
 
     const selectedEncryption = encryptionOptions.includes(encryption)
       ? encryption
@@ -103,7 +105,7 @@ const addEmailGateeways = async (req, res) => {
       return helper.failed(
         res,
         variables.BadRequest,
-        "Email gateway verification failed. Please check your credentials and try again."
+        "Email Gateway Verification Failed. Please check your credentials and try again."
       );
     }
 

@@ -31,9 +31,6 @@ const emailGateway = sequelize.define('email_gateways', {
     username: {
         type: DataTypes.STRING,
         allowNull: false,
-        validate: {
-            isEmail: true,
-        },
         comment: 'Username (email address) for authentication',
     },
     password: {

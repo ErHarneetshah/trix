@@ -567,7 +567,6 @@ class exportReportController {
       if (!definedPeriod || !validOptions.includes(definedPeriod)) {
         return helper.failed(res, variables.BadRequest, "Please select a valid date option");
       }
-      console.log("test2");
 
       let date;
       if (definedPeriod) {
@@ -589,7 +588,7 @@ class exportReportController {
         INNER JOIN users As u ON uh.userId = u.id
         INNER JOIN departments ON u.departmentId = departments.id
         WHERE uh.website_name not in(select website_name from productive_websites where company_id=:companyId) and uh.company_id = :companyId
-            AND uh.date BETWEEN :startDate AND :endDate   ${teamId ? "AND team.id = :teamId" : ""} AND u.isAdmin = 0
+            AND uh.date BETWEEN :startDate AND :endDate   ${teamId ? "AND u.teamId = :teamId" : ""} AND u.isAdmin = 0
         ${userId ? "AND u.id = :userId" : ""}
         ORDER BY uh.visitTime DESC`,
         {

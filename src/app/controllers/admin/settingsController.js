@@ -334,7 +334,7 @@ const getAppInfo = async (req, res) => {
 const getReportStatus = async (req, res) => {
   // ___________-------- Role Permisisons Exists or not ---------________________
   const routeMethod = req.method;
-  const isApproved = await helper.checkRolePermission(req.user.roleId, "reportSettings", routeMethod);
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "reportSettings",req.user.company_id, routeMethod);
   if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
   // ___________-------- Role Permisisons Exists or not ---------________________
 
@@ -355,7 +355,7 @@ const getReportStatus = async (req, res) => {
 const updateReportSettings = async (req, res) => {
   // ___________-------- Role Permisisons Exists or not ---------________________
   const routeMethod = req.method;
-  const isApproved = await helper.checkRolePermission(req.user.roleId, "reportSettings", routeMethod);
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "reportSettings",req.user.company_id, routeMethod);
   if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
   // ___________-------- Role Permisisons Exists or not ---------________________
   
