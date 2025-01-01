@@ -285,25 +285,26 @@ GROUP BY
 
       const [productiveResult] = await sequelize.query(
         `
-        SELECT COUNT(*) AS count
-          FROM (
-            SELECT 
-              timelogs.id, 
-              timelogs.user_id, 
-              (timelogs.idle_time + timelogs.active_time + timelogs.spare_time) AS totalTimeLog,
-              COALESCE(SUM(TIMESTAMPDIFF(MINUTE, appHistory.startTime, appHistory.endTime)), 0) AS totalTimeSpent
-            FROM timelogs
-            LEFT JOIN app_histories AS appHistory
-              ON timelogs.user_id = appHistory.userId
-              AND appHistory.is_productive = 1
-            WHERE 
-              timelogs.company_id = :company_id
-              AND timelogs.date = :dateOnly
-              AND timelogs.logged_in_time IS NOT NULL
-              AND timelogs.logged_out_time IS NOT NULL
-            GROUP BY timelogs.user_id
-            HAVING totalTimeSpent >= 0.6 * totalTimeLog
-          ) AS productiveEntries;`,
+          SELECT COUNT(*) AS count
+            FROM (
+              SELECT 
+                timelogs.id, 
+                timelogs.user_id, 
+                (timelogs.idle_time + timelogs.active_time + timelogs.spare_time) AS totalTimeLog,
+                COALESCE(SUM(TIMESTAMPDIFF(MINUTE, appHistory.startTime, appHistory.endTime)), 0) AS totalTimeSpent
+              FROM timelogs
+              LEFT JOIN app_histories AS appHistory
+                ON timelogs.user_id = appHistory.userId
+                AND appHistory.is_productive = 1
+              WHERE 
+                timelogs.company_id = :company_id
+                AND timelogs.date = :dateOnly
+                AND timelogs.logged_in_time IS NOT NULL
+                AND timelogs.logged_out_time IS NOT NULL
+              GROUP BY timelogs.user_id
+              HAVING totalTimeSpent >= 0.6 * totalTimeLog
+              AND totalTimeLog > 0 
+            ) AS productiveEntries;`,
         {
           replacements: {
             company_id: req.user.company_id,
@@ -337,6 +338,7 @@ GROUP BY
               AND timelogs.logged_out_time IS NOT NULL
             GROUP BY timelogs.user_id
             HAVING totalTimeSpent <= 0.6 * totalTimeLog
+            AND totalTimeLog > 0 
           ) AS productiveEntries;
 `,
         {
