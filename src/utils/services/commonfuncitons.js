@@ -197,6 +197,11 @@ const createResponse2 = (inputData) => {
       isProductive = false;
       isSlacking = false;
     }
+
+    let absent = false;
+    if(data.logged_out_time === null && data.logged_in_time === null){
+      absent = true;
+    }
     // Constructing the response object
     return {
       user_id: data.userId,
@@ -206,6 +211,7 @@ const createResponse2 = (inputData) => {
       logged_out_time: data.logged_out_time,
       early_going: data.early_going,
       late_coming: data.late_coming,
+      wasAbsent: absent,
       user: {
         id: data.userId,
         fullname: data.name,

@@ -11,7 +11,7 @@ class desigController {
     try {
       // ___________-------- Role Permisisons Exists or not ---------________________
       const routeMethod = req.method;
-      const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod);
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod, req.user.company_id);
       if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
       // ___________-------- Role Permisisons Exists or not ---------________________
 
@@ -76,7 +76,7 @@ class desigController {
   addDesig = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod, req.user.company_id);
     if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
@@ -108,7 +108,7 @@ class desigController {
   updateDesig = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod, req.user.company_id);
     if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
@@ -162,7 +162,7 @@ class desigController {
   deleteDesig = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "designation", routeMethod, req.user.company_id);
     if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
