@@ -17,7 +17,7 @@ const verifyUser = async (req, res, next) => {
     if (access_token) {
       if (new Date() > access_token.expiry_time) {
         await accessToken.destroy({ where: { token } });
-        return res.json({ status: variables.BadRequest, message: 'Token expired. Please log in again.' });
+        return res.json({ status: variables.Unauthorized, message: 'Token expired. Please log in again.' });
       }
     }
 
@@ -39,9 +39,9 @@ const verifyUser = async (req, res, next) => {
   } catch (e) {
     logger.errorLogger(`Error occurred: ${e.message}`);
     if (e.name === 'TokenExpiredError') {
-      return res.json({ status: variables.BadRequest, message: 'Token expired. Please log in again.' });
+      return res.json({ status: variables.Unauthorized, message: 'Token expired. Please log in again.' });
     }
-    res.json({ status: variables.BadRequest, message: 'Invalid token.' });
+    res.json({ status: variables.Unauthorized, message: 'Invalid token.' });
   }
 };
 

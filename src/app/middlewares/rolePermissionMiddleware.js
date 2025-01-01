@@ -31,7 +31,7 @@ const rolePermissionMiddleware = async (req, res, next) => {
     }
   } catch (e) {
     if (e.name === "TokenExpiredError") {
-      return helper.failed(res, variables.BadRequest, "Token Expired. Please login again");
+      return helper.failed(res, variables.Unauthorized, "Token Expired. Please login again");
     }
     return helper.failed(res, variables.BadRequest, e.message);
   }

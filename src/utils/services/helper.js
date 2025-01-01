@@ -112,11 +112,11 @@ export default {
     try {
       const generatedPass = generator.generate({
         length: 10,
-        numbers: true,                 // Include numbers
-        uppercase: true,               // Include uppercase letters
-        symbols: true,                 // Include symbols
-        excludeSimilarCharacters: true,// Exclude visually similar characters
-        strict: true                   // Ensure at least one character from each selected pool
+        numbers: true,
+        uppercase: true,
+        symbols: true,
+        excludeSimilarCharacters: true,
+        strict: true
     });
     if (generatedPass) return generatedPass;    
 

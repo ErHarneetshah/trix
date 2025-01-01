@@ -20,10 +20,10 @@ const authMiddleware = async (req, res, next) => {
     if (access_token) {
       if (new Date() > access_token.expiry_time) {
         await accessToken.destroy({ where: { token: token } });
-        return helper.failed(res, variables.BadRequest, "Token Expired. Please log in again");
+        return helper.failed(res, variables.Unauthorized, "Token Expired. Please log in again");
       }
     }else{
-      return helper.failed(res, variables.BadRequest, "Token Expired. Please log in again");
+      return helper.failed(res, variables.Unauthorized, "Token Expired. Please log in again");
     }
 
     // Verify the token
