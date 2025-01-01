@@ -15,7 +15,7 @@ const sendM = async (to, subject, message, cc = '', from = "", attachment = null
                 secure: false,
                 auth: {
                     user: activeEmailServer.username,
-                    pass: activeEmailServer.password
+                    pass: activeEmailServer.password,
                 }
             });
 
@@ -26,15 +26,15 @@ const sendM = async (to, subject, message, cc = '', from = "", attachment = null
                 console.error("SMTP server verification failed:", verifyError.message);
                 return { success: false, message: "SMTP server verification failed.", error: verifyError };
             }
-            
             let mailOptions = {
-                from: from || activeEmailServer.username,
+                from: from || activeEmailServer.fromUsername,
                 to: to,
                 subject: subject || 'Test',
                 text: message,
                 html: '<b>' + message + '</b>',
                 attachments: attachment ? [attachment] : [],
             };
+            console.log(mailOptions);
             const info = await transporter.sendMail(mailOptions);
             if (info.messageId) {
                 return { success: true, message: "Email sent successfully.", info };
@@ -43,7 +43,7 @@ const sendM = async (to, subject, message, cc = '', from = "", attachment = null
             return { success: false, message: "Failed to send email." };
         }
     } catch (error) {
-        //console.log({ 'mailer_error': error });
+        console.log({ 'mailer_error': error });
         return 0;
     }
 
