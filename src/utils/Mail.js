@@ -27,7 +27,7 @@ const sendM = async (to, subject, message, cc = '', from = "", attachment = null
                 return { success: false, message: "SMTP server verification failed.", error: verifyError };
             }
             let mailOptions = {
-                from: from || activeEmailServer.fromUsername,
+                from: `${activeEmailServer.username} <${activeEmailServer.fromUsername}>`,
                 to: to,
                 subject: subject || 'Test',
                 text: message,
