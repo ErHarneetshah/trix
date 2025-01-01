@@ -204,7 +204,7 @@ class teamMemberController {
 
         if (!sendmail.success) {
           await dbTransaction.rollback();
-          return helper.failed(res, variables.BadRequest, sendmail.message);
+          return helper.failed(res, variables.BadRequest, "Please Set the Email Credentials First");
         }
         await dbTransaction.commit();
         return helper.success(res, variables.Success, "Team Member Added Successfully", {
@@ -214,7 +214,7 @@ class teamMemberController {
         });
       } else {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.UnknownError, "Unknow Error Occured While creating User Setting");
+        return helper.failed(res, variables.UnknownError, "Unable to add user for now");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
