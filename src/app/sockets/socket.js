@@ -500,7 +500,7 @@ const singleUserProductiveAppAndNonproductiveApps = async (userId, date) => {
       !Array.isArray(productiveAppsData)
     ) {
       console.error("Invalid data format.");
-      return { success: false, message: "Invalid data format.", data: [] };
+      return { success: false, message: "User was absent on this date or the entered date.", data: [] };
     }
 
     const [primaryData, secondaryData, primaryKey, secondaryKey] =
@@ -662,7 +662,7 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (
       !Array.isArray(nonProductiveWebsitesData) ||
       !Array.isArray(productiveWebsitesData)
     ) {
-      return { success: false, message: "Invalid data format", data: [] };
+      return { success: false, message: "User was absent on this date or the entered date", data: [] };
     }
 
     const [primaryData, secondaryData, primaryKey, secondaryKey] =
