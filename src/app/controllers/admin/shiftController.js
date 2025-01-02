@@ -11,8 +11,8 @@ class shiftController {
     try {
       // ___________-------- Role Permisisons Exists or not ---------________________
       const routeMethod = req.method;
-      const isApproved = await helper.checkRolePermission(req.user.roleId, "shifts", routeMethod, req.user.company_id);
-      if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Shifts", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
       // ___________-------- Role Permisisons Exists or not ---------________________
 
       // ___________---------- Search, Limit, Pagination ----------_______________
@@ -78,8 +78,8 @@ class shiftController {
   addShift = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "shifts", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Shifts", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
@@ -157,8 +157,8 @@ class shiftController {
   updateShift = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "shifts", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Shifts", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
@@ -219,7 +219,6 @@ class shiftController {
       }
     }
 
-      let updated;
 
       if (days) {
         await shift.update(
@@ -257,8 +256,8 @@ class shiftController {
   deleteShift = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "shifts", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Shifts", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();

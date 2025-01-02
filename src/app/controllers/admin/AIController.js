@@ -15,17 +15,13 @@ const openai = new OpenAI({
 });
 
 async function getOpenAIResponse(userId, question, date) {
-  
   let user = await User.findOne({ where: { id: userId } });
   if (!user) {
     return { message: "User not found", status: 0 };
   }
 
   let siteUsageData = await UserHistory.findAll({
-    attributes: [
-      "website_name",
-      [sequelize.fn("COUNT", sequelize.col("website_name")), "count"],
-    ],
+    attributes: ["website_name", [sequelize.fn("COUNT", sequelize.col("website_name")), "count"]],
     where: {
       date: {
         [Op.eq]: date,
@@ -38,14 +34,7 @@ async function getOpenAIResponse(userId, question, date) {
   });
 
   let appUsageData = await AppHistoryEntry.findAll({
-    attributes: [
-      "appName",
-      [
-        sequelize.literal("SUM(TIMESTAMPDIFF(SECOND, startTime, endTime))"),
-        "totalTimeSpent",
-      ],
-      [sequelize.fn("COUNT", sequelize.col("appName")), "count"],
-    ],
+    attributes: ["appName", [sequelize.literal("SUM(TIMESTAMPDIFF(SECOND, startTime, endTime))"), "totalTimeSpent"], [sequelize.fn("COUNT", sequelize.col("appName")), "count"]],
     where: {
       userId: userId,
       date: date,
@@ -67,19 +56,14 @@ async function getOpenAIResponse(userId, question, date) {
       "date",
       [sequelize.fn("SUM", sequelize.col("active_time")), "totalDuration"],
       [sequelize.fn("COUNT", sequelize.col("logged_in_time")), "sessionsCount"],
-      [
-        sequelize.literal(
-          'GROUP_CONCAT(CONCAT(logged_in_time, " - ", logged_out_time))'
-        ),
-        "sessions",
-      ], 
+      [sequelize.literal('GROUP_CONCAT(CONCAT(logged_in_time, " - ", logged_out_time))'), "sessions"],
     ],
     where: {
-      user_id: userId, 
-      date: date, 
+      user_id: userId,
+      date: date,
     },
-    group: ["date"], 
-    order: [[sequelize.literal("totalDuration"), "DESC"]], 
+    group: ["date"],
+    order: [[sequelize.literal("totalDuration"), "DESC"]],
     raw: true,
   });
 
@@ -87,7 +71,7 @@ async function getOpenAIResponse(userId, question, date) {
     const sessions = entry.sessions.split(",").map((session) => {
       const [start, end] = session.split(" - ");
 
-      const startTime = new Date(`1970-01-01T${start}:00Z`); 
+      const startTime = new Date(`1970-01-01T${start}:00Z`);
       const endTime = new Date(`1970-01-01T${end}:00Z`);
       const duration = (endTime - startTime) / (1000 * 60);
 
@@ -96,14 +80,14 @@ async function getOpenAIResponse(userId, question, date) {
 
     return {
       date: entry.date,
-      totalDuration: entry.totalDuration, 
+      totalDuration: entry.totalDuration,
       sessions: sessions,
     };
   });
-  
-  let productive_app = await ProductiveApp.findAll({where:{company_id:user.company_id,department_id:user.departmentId}});
-  let productive_website = await ProductiveWebsite.findAll({where:{company_id:user.company_id,department_id:user.departmentId}});  
-  
+
+  let productive_app = await ProductiveApp.findAll({ where: { company_id: user.company_id, department_id: user.departmentId } });
+  let productive_website = await ProductiveWebsite.findAll({ where: { company_id: user.company_id, department_id: user.departmentId } });
+
   const prompt = `
   Act as a professional AI assistant. Respond to user questions based on the provided data.
   The question is: "${question}"
@@ -128,27 +112,26 @@ async function getOpenAIResponse(userId, question, date) {
         { role: "user", content: prompt },
       ],
     });
-    console.log(response.choices[0]);
-    
+
     return response.choices[0].message.content;
   } catch (error) {
-    console.log(error);
-    
+
     console.error("Error calling OpenAI:", message.error);
   }
 }
 
 const aiController = {
   getUserAnswerStream: async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "AI Reports", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const { userId, question, date } = req.query;
 
     if (!userId || !question || !date) {
-      return helper.sendResponse(
-        res,
-        variables.ValidationError,
-        0,
-        "Missing required fields: userId, question, or date"
-      );
+      return helper.sendResponse(res, variables.ValidationError, 0, "Missing required fields: userId, question, or date");
     }
 
     try {
@@ -156,41 +139,27 @@ const aiController = {
       if (openAIResponse && openAIResponse.status == 0) {
         throw new Error(openAIResponse.message);
       }
-      return helper.sendResponse(
-        res,
-        variables.Success,
-        1,
-        { response: openAIResponse },
-        "AI Report Get Successfully!!"
-      );
+      return helper.sendResponse(res, variables.Success, 1, { response: openAIResponse }, "AI Report Get Successfully!!");
     } catch (error) {
-      return helper.sendResponse(
-        res,
-        variables.ValidationError,
-        0,
-        error.message
-      );
+      return helper.sendResponse(res, variables.ValidationError, 0, error.message);
     }
   },
 
   getUserdata: async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "AI Reports", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let data = await User.findAll({
         where: { company_id: req.user.company_id, isAdmin: 0 },
         attributes: ["id", "fullname"],
       });
-      return helper.success(
-        res,
-        variables.Success,
-        "Data Fetched Succesfully",
-        data
-      );
+      return helper.success(res, variables.Success, "Data Fetched Succesfully", data);
     } catch (error) {
-      return helper.failed(
-        res,
-        variables.BadRequest,
-        "Error fetching user data"
-      );
+      return helper.failed(res, variables.BadRequest, "Error fetching user data");
     }
   },
 };

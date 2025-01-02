@@ -44,7 +44,6 @@ const authMiddleware = async (req, res, next) => {
     if (e.name === "TokenExpiredError") {
       return helper.failed(res, variables.Unauthorized, "Already Logout");
     }
-    console.log("Authentication Middleware Issue: ", e.message);
     return helper.failed(res, variables.Unauthorized, "Authentication Failed");
   }
 };

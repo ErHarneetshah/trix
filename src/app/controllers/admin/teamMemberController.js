@@ -16,8 +16,8 @@ class teamMemberController {
     try {
       // ___________-------- Role Permisisons Exists or not ---------________________
       const routeMethod = req.method;
-      const isApproved = await helper.checkRolePermission(req.user.roleId, "teamMembers", routeMethod, req.user.company_id);
-      if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Team Members", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
       // ___________-------- Role Permisisons Exists or not ---------________________
 
       // ___________---------- Search, Limit, Pagination ----------_______________
@@ -128,14 +128,13 @@ class teamMemberController {
   addTeamMembers = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "teamMembers", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Team Members", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
     try {
       const requestData = req.body;
-      //console.log(requestData.departmentId, requestData.designationId, requestData.teamId, requestData.roleId)
       // Validating request body
       const validationResult = await teamsValidationSchema.teamMemberValid(requestData, res);
       if (!validationResult.status) return helper.failed(res, variables.BadRequest, validationResult.message);
@@ -225,8 +224,8 @@ class teamMemberController {
   updateTeamMembers = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "teamMembers", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Team Members", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
@@ -262,10 +261,6 @@ class teamMemberController {
       });
       if (!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
 
-      // const existsDesig = await designation.findOne({
-      //   where: {id: updateFields.designationId, company_id: req.user.company_id}
-      // })
-      // if(!existsDesig) return helper.failed(res, variables.BadRequest, "Designation Does Not Exists");
 
       const existsRole = await role.findOne({
         where: { id: updateFields.roleId, company_id: req.user.company_id },
@@ -299,6 +294,12 @@ class teamMemberController {
 
   updateSettings = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Settings", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let { id, screen_capture_time, broswer_capture_time, app_capture_time, screen_capture, broswer_capture, app_capture } = req.body;
 
       if (!id || isNaN(id)) {
@@ -408,7 +409,6 @@ class teamMemberController {
   };
 
   generateNewPassword = async (req, res) => {
-
     let { userId } = req.body;
 
     if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
@@ -447,7 +447,6 @@ class teamMemberController {
   };
 
   deactivateActivateTeamMember = async (req, res) => {
-
     let { userId } = req.body;
 
     if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");

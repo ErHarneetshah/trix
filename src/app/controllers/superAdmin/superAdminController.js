@@ -14,7 +14,6 @@ export default {
  getAllAdmins : async (req, res) => {
   try {
     const routeUrl = req.originalUrl;
-    console.log(routeUrl);
     // ___________---------- Search, Limit, Pagination ----------_______________
     let { search, limit, page } = req.query;
     
@@ -59,7 +58,6 @@ export default {
      return  res.status(200).json(result)
  
   } catch (error) {
-    console.log(error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 }

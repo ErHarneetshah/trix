@@ -38,14 +38,16 @@ const generateDummyData = async (transaction) => {
     { name: "Blocked Website" },
     { name: "Productive Application" },
     { name: "Report Settings" },
-    { name: "Dashboard" },
-    { name: "All Team Member Dashboard" },
+    // { name: "Dashboard" },
+    // { name: "All Team Member Dashboard" },
     { name: "Authentication" },
     { name: "Export Report" },
     { name: "Team Structure" },
     { name: "AI Reports" },
     { name: "Compare Reports" },
     { name: "Work Reports" },
+    { name: "Email Gateway" },
+    { name: "Language" },
 
   ];
   
@@ -57,7 +59,6 @@ const generateDummyData = async (transaction) => {
     }, { transaction });
   }
   
-  //console.log("Dummy data inserted successfully!");
 };
 
 const generateLanguageSeeder = async (transaction) => {

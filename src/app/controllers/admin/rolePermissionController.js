@@ -27,9 +27,6 @@ class rolePermissionController {
         ],
       });
       if (!alldata || alldata.length === 0) return helper.failed(res, variables.NotFound, "No Data is available!");
-
-      console.log(alldata.rows);
-
       // Restructure the data to match the desired response
       const transformedData = alldata.rows.reduce((accumulator, currentItem) => {
         const { id, modules, permissions, role } = currentItem;
@@ -65,8 +62,13 @@ class rolePermissionController {
     }
   };
 
-  getSpecificRolePermissions = async (roleId, moduleName, companyId) => {
+  getSpecificRolePermissions = async (roleId, moduleName, routeMethod, companyId) => {
     try {
+      // // ___________-------- Role Permisisons Exists or not ---------________________
+      // const isApproved = await helper.checkRolePermission(roleId, "Role Permissions", routeMethod, companyId);
+      // if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // // ___________-------- Role Permisisons Exists or not ---------________________
+
       const roleModuleData = await rolePermission.findOne({
         where: { roleId: roleId, modules: moduleName, company_id: companyId },
         attributes: { exclude: ["createdAt", "updatedAt"] },
@@ -98,7 +100,7 @@ class rolePermissionController {
   addRolePermissions = async (module, roleId, routeMethod, company_id, transaction) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const isApproved = await helper.checkRolePermission(roleId, "Role Permissions", routeMethod, company_id);
-    if (!isApproved) throw new Error("Not Permitted for this request");
+    if (!isApproved.success) throw new Error("Not Permitted for this request");
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     try {
@@ -149,8 +151,8 @@ class rolePermissionController {
   updateMultipleRolePermission = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "permissions", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Role Permissions", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
@@ -242,91 +244,6 @@ class rolePermissionController {
 
       await dbTransaction.commit();
       return helper.success(res, variables.Success, "Role permissions updated successfully!");
-    } catch (error) {
-      if (dbTransaction) await dbTransaction.rollback();
-      return helper.failed(res, variables.BadRequest, error.message);
-    }
-  };
-
-  updateMultipleRolePermissionOnce = async (req, res) => {
-    // ___________-------- Role Permisisons Exists or not ---------________________
-    const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "permissions", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
-    // ___________-------- Role Permisisons Exists or not ---------________________
-    
-    const dbTransaction = await sequelize.transaction();
-    try {
-      const { roleName, allTrue } = req.body;
-      if (!roleName || typeof roleName !== "string") return helper.failed(res, variables.NotFound, "Role Name is required!");
-      if (!allTrue || isNaN(allTrue)) return helper.failed(res, variables.NotFound, "Check is Required and in numbers!");
-
-      if (!["0", "1"].includes(String(allTrue))) {
-        return helper.failed(res, variables.ValidationError, "Invalid allTrue check. Only values 0 and 1 are allowed");
-      }
-
-      const moduleNames = await app_modules.findAll({
-        attributes: ["name"],
-      });
-
-      const existRole = await role.findOne({
-        where: { name: roleName, company_id: req.user.company_id },
-        attributes: ["id"],
-        transaction: dbTransaction,
-      });
-      if (!existRole) return helper.failed(res, variables.ValidationError, "Role Name Does not exists in Roles!");
-
-      let updated;
-
-      for (const moduleName of moduleNames) {
-        const existingRolePermission = await rolePermission.findOne({
-          where: {
-            roleId: existRole.id,
-            modules: moduleName.name,
-            company_id: req.user.company_id,
-          },
-          transaction: dbTransaction,
-        });
-
-        if (!existingRolePermission) {
-          return helper.failed(res, variables.ValidationError, `Role Permission does not exist for module ${moduleName.name}!`);
-        }
-
-        if (allTrue) {
-          await rolePermission.update(
-            {
-              permissions: {
-                POST: true,
-                GET: true,
-                PUT: true,
-                DELETE: true,
-              },
-            },
-            {
-              where: { roleId: existRole.id, modules: moduleName.name, company_id: req.user.company_id },
-              transaction: dbTransaction,
-            }
-          );
-        } else {
-          await rolePermission.update(
-            {
-              permissions: {
-                POST: false,
-                GET: false,
-                PUT: false,
-                DELETE: false,
-              },
-            },
-            {
-              where: { roleId: existRole.id, modules: moduleName.name, company_id: req.user.company_id },
-              transaction: dbTransaction,
-            }
-          );
-        }
-      }
-
-      await dbTransaction.commit();
-      return helper.success(res, variables.Success, "Role permissions Updated Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       return helper.failed(res, variables.BadRequest, error.message);

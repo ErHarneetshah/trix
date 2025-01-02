@@ -74,7 +74,6 @@ const generateDummyData = async (transaction) => {
     await teamMemberDailyLog.create(requestData, { transaction });
   }
 
-  //console.log("Dummy data inserted successfully!");
 };
 
 (async () => {

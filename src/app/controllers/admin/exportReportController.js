@@ -3,7 +3,6 @@ import fs from "fs/promises";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import exportReports from "../../../database/models/exportReportsModel.js";
-import validate from "../../../utils/CustomValidation.js";
 import team from "../../../database/models/teamModel.js";
 import User from "../../../database/models/userModel.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
@@ -11,15 +10,18 @@ import { UserHistory } from "../../../database/models/UserHistory.js";
 import exportHistories from "../../../database/models/exportHistoryModel.js";
 import department from "../../../database/models/departmentModel.js";
 import GenerateReportHelper from "../../../utils/services/GenerateReportHelper.js";
-import { endOfDay } from "date-fns";
 import moment from "moment";
-import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
 import path from "path";
-import { PDFDocument } from "pdf-lib";
 import xlsx from "xlsx";
 
 class exportReportController {
   getReportsDataSet = async (req, res) => {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Export Report", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     try {
       const alldata = await exportReports.findAll();
       if (!alldata) return helper.failed(res, variables.NotFound, "No Report Data Found in Table");
@@ -32,6 +34,12 @@ class exportReportController {
 
   getExportHistoryReport = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Export Report", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page, date } = req.query;
       limit = parseInt(limit) || 10;
@@ -69,6 +77,7 @@ class exportReportController {
     }
   };
 
+  //* Helping Function
   servePdf = async (filepath, res) => {
     res.setHeader("Content-Type", "application/pdf");
     fs.readFile(filepath)
@@ -79,7 +88,7 @@ class exportReportController {
       });
   };
 
-  // Helper function to read Excel files
+  //* Helping Function
   readExcel = async (filepath) => {
     try {
       const workbook = xlsx.readFile(filepath);
@@ -93,6 +102,7 @@ class exportReportController {
     }
   };
 
+  //* Helping Function
   viewFile = async (req, res) => {
     const { filepath } = req.query;
 
@@ -130,6 +140,12 @@ class exportReportController {
 
   getProductiveReport = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Export Report", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       if (!format || format.trim() === "") {
         format = "xls";
@@ -198,11 +214,8 @@ class exportReportController {
         TimeLogsDetails = [];
       } else {
         ProdWebCount = await GenerateReportHelper.getProdWebCount(userIds, date.startDate, date.endDate);
-        console.log(ProdWebCount);
         ProdAppAnalysis = await GenerateReportHelper.getProdAppDetails(userIds, date.startDate, date.endDate);
-        console.log(ProdAppAnalysis);
         TimeLogsDetails = await GenerateReportHelper.getTimeLogDetails(userIds, date.startDate, date.endDate);
-        console.log(TimeLogsDetails);
       }
       // let finalJson = await GenerateReportHelper.combineJson(users, ProdWebCount)
 
@@ -237,6 +250,12 @@ class exportReportController {
 
   getAttendanceReport = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Export Report", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let { fromDate, toDate, definedPeriod, format, teamId, userId, limit, offset } = req.body;
       if (!format || format.trim() === "") {
         format = "xls";
@@ -361,6 +380,12 @@ class exportReportController {
 
   getApplicationUsageReport = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Export Report", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       if (!format || format.trim() === "") {
         format = "xls";
@@ -455,6 +480,12 @@ class exportReportController {
 
   getDeptPerformReport = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Export Report", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let { company_id } = req.user;
       let { definedPeriod, fromDate, toDate, format, teamId } = req.body;
       if (!format || format.trim() === "") {
@@ -485,7 +516,6 @@ class exportReportController {
       const performanceArray = [];
       for (const element of allDepartments) {
         const totalEmployeesDepartmentWise = await GenerateReportHelper.getTotalEmployeeDepartmentWise(element.id, dateRange, "user_ids");
-        console.log(totalEmployeesDepartmentWise);
         //getting attendance average
         const avgAttendence = await GenerateReportHelper.getAttendanceAvg(dateRange, totalEmployeesDepartmentWise, company_id);
         //getting logged in time average
@@ -542,13 +572,18 @@ class exportReportController {
         return helper.success(res, variables.Success, "Department Performance Report Generation Failed");
       }
     } catch (error) {
-      console.log(`departmentPerformanceReport ${error.message}`);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   getUnauthorizedWebReport = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Export Report", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let companyId = req.user.company_id;
       let { fromDate, toDate, definedPeriod, teamId, userId, format } = req.body;
       if (!format || format.trim() === "") {
@@ -557,7 +592,6 @@ class exportReportController {
       if (format && !["xls", "pdf"].includes(format)) {
         return helper.failed(res, variables.BadRequest, 'Invalid format. Only "xls" or "pdf" are allowed.');
       }
-      console.log("test1");
       const validOptions = [1, 2, 3, 4];
 
       if (!teamId) return helper.failed(res, variables.ValidationError, "Team must be selected");
@@ -585,7 +619,6 @@ class exportReportController {
           date = await helper.getDateRange(definedPeriod);
         }
       }
-      console.log("test3");
 
       // Query to fetch unauthorized access
       const unauthorizedAccessReport = await UserHistory.sequelize.query(
@@ -608,7 +641,6 @@ class exportReportController {
           },
         }
       );
-      console.log("test4", unauthorizedAccessReport);
 
       let headers = ["Name", "Department", "Url", "Time"];
 
@@ -624,39 +656,14 @@ class exportReportController {
     }
   };
 
-  // getTeamList = async (req, res) => {
-  //   try {
-  //     const teamList = await team.findAll({
-  //       where: {
-  //         company_id: req.user.company_id,
-  //       },
-  //       attributes: ["id", "name"],
-  //     });
-  //     return helper.success(res, variables.Success, teamList);
-  //   } catch (error) {
-  //     console.log("Error while getting team list for report:", error);
-  //     return helper.failed(res, variables.BadRequest, error.message);
-  //   }
-  // };
-
-  // getMemberList = async (req, res) => {
-  //   try {
-  //     const teamList = await User.findAll({
-  //       where: {
-  //         company_id: req.user.company_id,
-  //         isAdmin: 0,
-  //       },
-  //       attributes: ["id", "fullname"],
-  //     });
-  //     return helper.success(res, variables.Success, teamList);
-  //   } catch (error) {
-  //     console.log("Error while getting team list for report:", error);
-  //     return helper.failed(res, variables.BadRequest, error.message);
-  //   }
-  // };
-
   getBrowserHistoryReport = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Export Report", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let { fromDate, toDate, definedPeriod, format, teamId, userId } = req.body;
       if (!format || format.trim() === "") {
         format = "xls";
@@ -789,13 +796,18 @@ class exportReportController {
         return helper.success(res, variables.Success, "Browser History Report Generation Failed");
       }
     } catch (error) {
-      console.log("Error while generating browser history report:", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   downloadExportReport = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Export Report", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       const { filePath } = req.query;
 
       if (!filePath || typeof filePath !== "string" || !filePath.trim()) {
@@ -806,58 +818,6 @@ class exportReportController {
       const normalizedPath = path.resolve(filePath);
       const fileName = path.basename(normalizedPath);
       const fileExtension = path.extname(fileName).toLowerCase();
-
-      // Check if the file exists
-      // await fs.promises.access(normalizedPath, fs.constants.F_OK);
-
-      // Determine the content type
-      const mimeTypes = {
-        ".pdf": "application/pdf",
-        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        ".xls": "application/vnd.ms-excel",
-      };
-
-      const contentType = mimeTypes[fileExtension];
-      if (!contentType) {
-        return res.status(400).json({ message: "Unsupported file type" });
-      }
-
-      // Set headers for download
-      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-      res.setHeader("Content-Type", contentType);
-
-      res.download(normalizedPath, (err) => {
-        if (err) {
-          console.error("Error sending file:", err);
-          return res.status(500).json({ message: "File download failed" });
-        }
-      });
-    } catch (err) {
-      console.error("Error during file download:", err);
-
-      if (err.code === "ENOENT") {
-        return res.status(500).json({ message: "File not found" });
-      }
-
-      res.status(500).json({ message: "An error occurred while processing the file download" });
-    }
-  };
-
-  downloadExportReportTest = async (req, res) => {
-    try {
-      const { filePath } = req.query;
-
-      if (!filePath || typeof filePath !== "string" || !filePath.trim()) {
-        return res.status(400).json({ message: "Invalid file path provided" });
-      }
-
-      // Normalize and resolve the file path
-      const normalizedPath = path.resolve(filePath);
-      const fileName = path.basename(normalizedPath);
-      const fileExtension = path.extname(fileName).toLowerCase();
-
-      // Check if the file exists
-      // await fs.promises.access(normalizedPath, fs.constants.F_OK);
 
       // Determine the content type
       const mimeTypes = {

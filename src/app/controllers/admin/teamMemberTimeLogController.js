@@ -13,6 +13,12 @@ import moment from "moment";
 class teamMemberTimeLogController {
   getAllTeamMemberLog = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Team Member Log", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page, date } = req.query;
       let searchable = ["$user.fullname$"];
@@ -72,6 +78,12 @@ class teamMemberTimeLogController {
 
   getTeamMemberLogFiltered2 = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Team Member Log", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page, date, tab } = req.query;
       limit = parseInt(limit) || 10;
@@ -159,7 +171,6 @@ GROUP BY
       const results = await sequelize.query(timeLogQuery2, {
         type: Sequelize.QueryTypes.SELECT,
         replacements,
-        // logging: console.log,
       });
 
       let updatedJson = commonfuncitons.createResponse2(results);
@@ -179,7 +190,6 @@ GROUP BY
         } else if (tab.toLowerCase() === "slacking") {
           updatedJson = updatedJson.filter((item) => item.user.is_slacking == true);
         } else if (tab.toLowerCase() === "productive") {
-          // console.log(updatedJson[4].user.is_productive === true && updatedJson[4].user.productiveTimeInSeconds > 0  && !updatedJson[4].wasAbsent)
           updatedJson = updatedJson.filter((item) => item.user.is_productive === true && (item.user.productiveTimeInSeconds ?? 0) > 0 && !item.wasAbsent);
         } else if (tab.toLowerCase() === "nonproductive") {
           updatedJson = updatedJson.filter((item) => item.user.is_productive === false && (item.user.productiveTimeInSeconds ?? 0) > 0 && !item.wasAbsent);
@@ -196,6 +206,12 @@ GROUP BY
 
   getFilterCount = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Team Member Log", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let { date } = req.query;
       let logWhere = {};
       let userWhere = {};
@@ -214,10 +230,6 @@ GROUP BY
         formattedDate = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
       }
       logWhere.createdAt = { [Op.between]: [startOfDay, endOfDay] };
-
-      console.log(startOfDay);
-      console.log(endOfDay);
-      console.log(formattedDate);
 
       userWhere.currentStatus = 1;
       let companyId = req.user.company_id;
@@ -276,8 +288,6 @@ GROUP BY
       });
       if (!lateCount) lateCount = 0;
 
-      //console.log({ startOfDay });
-      console.log(startOfDay);
       let dateOnly = startOfDay.split(" ")[0];
 
       const [productiveResult] = await sequelize.query(

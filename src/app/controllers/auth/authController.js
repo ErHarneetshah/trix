@@ -356,7 +356,6 @@ class authController extends jwtService {
         // // let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
         // let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
 
-        // //console.log(endHours, endMinutes, currentHours, currentMinutes);
 
         // if (currentHours > endHours || (currentHours == endHours && currentMinutes > endMinutes)) {
         //   return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");

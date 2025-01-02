@@ -14,7 +14,7 @@ export default {
   checkRolePermission: async (roleId, moduleName, method, company_id) => {
     try {
       const permissionInstance = new rolePermissionController();
-      const getPermission = await permissionInstance.getSpecificRolePermissions(roleId, moduleName, company_id);
+      const getPermission = await permissionInstance.getSpecificRolePermissions(roleId, moduleName, method, company_id);
       if (!getPermission.success) {
         return {
           success: "false",
@@ -80,8 +80,6 @@ export default {
     if (data != null || data == []) {
       result["data"] = data;
     }
-
-    //console.log({ result });
 
     return res.status(statusCode).json(result);
   },

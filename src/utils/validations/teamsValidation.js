@@ -16,8 +16,6 @@ class teamsValidationSchema {
         teamId: "required",
       });
 
-      // //console.log("Team Member Validation -------------------------");
-      // //console.log(status);
       if (!status) {
         return { status: false, message: message };
       }
@@ -31,7 +29,6 @@ class teamsValidationSchema {
 
   static shiftValid = async (data, res) => {
     try {
-      // //console.log("Shift Validation -------------------------");
       const { status, message } = await CValidator(data, {
         name: "required|string",
         start_time: `required`,
@@ -40,7 +37,6 @@ class teamsValidationSchema {
         "days.*": "required|string|in:Mon,Tue,Wed,Thu,Fri,Sat,Sun",
       });
 
-      // //console.log(status);
       if (!status) {
         return { status: false, message: message };
       }
@@ -54,14 +50,12 @@ class teamsValidationSchema {
 
   static teamsValid = async (data, res) => {
     try {
-      // //console.log("Teams Validation -------------------------");
       const { status, message } = await CValidator(data, {
         name: "required|string",
         departmentId: "required|integer",
         shiftId: "required|integer"
       });
 
-      // //console.log(status);
       if (!status) {
         return { status: false, message: message };
       }

@@ -7,7 +7,6 @@ import rolePermissionMiddleware from "../../app/middlewares/rolePermissionMiddle
 const router = express.Router();
 const deptInstance = new deptController();
 
-router.get("/getTestMiddleware",  authMiddleware,rolePermissionMiddleware,   deptInstance.getTestData);
 router.get("/getAllDept",  authMiddleware,   deptInstance.getAllDept);
 router.get("/getDeptDropdown",  authMiddleware,   deptInstance.getDeptDropdown);
 router.get("/getSpecificDept",  authMiddleware,   deptInstance.getSpecificDept);
