@@ -172,7 +172,7 @@ class teamMemberController {
       });
 
       const existingAnyUser = await User.findOne({
-        where: { email: requestData.email},
+        where: { email: requestData.email },
         transaction: dbTransaction,
       });
       if (existingUser) {
@@ -407,14 +407,14 @@ class teamMemberController {
     }
   };
 
-  generateNewPassword = async(req,res) => {
+  generateNewPassword = async (req, res) => {
 
     let { userId } = req.body;
 
     if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
     // CHECK THIS ID EXITS IN THE USERS TABLE 
 
-   let isUserExists = await User.findOne({
+    let isUserExists = await User.findOne({
       where: {
         id: userId,
         company_id: req.user.company_id,
@@ -429,7 +429,7 @@ class teamMemberController {
     const hashedPassword = await bcrypt.hash(plainTextPassword, 10);
 
     // update the user password in users table
-    await User.update({password: hashedPassword }, { where: { id: userId, company_id: req.user.company_id } });
+    await User.update({ password: hashedPassword }, { where: { id: userId, company_id: req.user.company_id } });
 
     // after updating the password now send the email
 
@@ -443,17 +443,17 @@ class teamMemberController {
     }
 
     return helper.success(res, variables.Success, "New Password Generated Successfully.Please check your Email.");
- 
+
   };
 
-  deactivateTeamMember = async(req,res) => {
+  deactivateActivateTeamMember = async (req, res) => {
 
     let { userId } = req.body;
 
     if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
     // CHECK THIS ID EXITS IN THE USERS TABLE 
 
-   let isUserExists = await User.findOne({
+    let isUserExists = await User.findOne({
       where: {
         id: userId,
         company_id: req.user.company_id,
@@ -464,8 +464,11 @@ class teamMemberController {
       return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
     }
 
-    await User.update({status: 0 }, { where: { id: userId, company_id: req.user.company_id } });
-    return helper.success(res, variables.Success, `This user deactivated successfully.`);
+    let status = isUserExists.status == 1 ? 0 : (isUserExists.status == 0 ? 1 : 0);
+    let message = isUserExists.status == 1 ? "This user deactivated successfully" : (isUserExists.status == 0 ? "This user activated successfully" : 0);
+
+    await User.update({ status: status }, { where: { id: userId, company_id: req.user.company_id } });
+    return helper.success(res, variables.Success, message);
   };
 }
 
