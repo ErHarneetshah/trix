@@ -625,6 +625,7 @@ class authController extends jwtService {
 
     try {
       let { email } = req.query;
+      console.log(email);
       const rules = {
         email: "required|email",
       };
@@ -643,6 +644,7 @@ class authController extends jwtService {
         return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
       }
 
+      console.log(isUserExist);
       let otp = Math.floor(100000 + Math.random() * 900000);
       let otpExpireTime = new Date();
       otpExpireTime.setMinutes(otpExpireTime.getMinutes() + 2);
