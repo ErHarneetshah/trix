@@ -306,13 +306,14 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Invalid Credentials");
       }
 
-      if(!user.status) return helper.failed(res, variables.Unauthorized, "Your Account has been De-Activated. Contact Support");
-
       let comparePwd = await bcrypt.compare(password, user.password);
       if (!comparePwd) {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Incorrect Credentials!!!");
       }
-      
+
+      if (!user.status) {
+        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Your Account has been De-Activated. Contact Support");
+      }
       let token;
       if (user.isAdmin) {
         //Deleting previous sessions here
