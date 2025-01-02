@@ -24,6 +24,8 @@ import { Notification } from "../../../database/models/Notification.js";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
 import languageSettings from "../../../database/models/languageSettingsModel.js";
 import commonfuncitons from "../../../utils/services/commonfuncitons.js";
+import validate from "../../../utils/CustomValidation.js";
+import H from "../../../utils/Mail.js";
 
 class authController extends jwtService {
   companyRegister = async (req, res) => {
@@ -52,6 +54,8 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, {}, "Company already exists with this Email!");
       }
 
+      let companyPrefix = await helper.prefixInit(requestData.companyName);
+
       //* -------------- Create Company --------------------------
       const createCompany = await company.create(
         {
@@ -68,6 +72,20 @@ class authController extends jwtService {
         if (dbTransaction) await dbTransaction.rollback();
         return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Register Company");
       }
+
+      companyPrefix = `${companyPrefix}_${createCompany.id}`;
+
+      const updateCompany = await company.update(
+        {
+          companyEmpPrefix: companyPrefix,
+        },
+        {
+          where: {
+            id: createCompany.id,
+          },
+          transaction: dbTransaction,
+        }
+      );
 
       //* -------------- Create Report Settings --------------------------
       const createReportSettings = await reportSettings.create(
@@ -184,9 +202,18 @@ class authController extends jwtService {
         throw new Error("Unable to Create Team Record for this company.");
       }
 
+      let companyUserCount = await User.count({
+        where:{
+          company_id: createCompany.id
+        }
+      })
+
+      companyUserCount++;
+
       //* -------------- Create User -------------------------
       const createUser = await User.create(
         {
+          empId: `${companyPrefix}_${companyUserCount}`,
           company_id: createCompany.id,
           fullname: requestData.name,
           email: requestData.email,
@@ -322,7 +349,7 @@ class authController extends jwtService {
         token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
         await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
-        
+
       } else {
         let now = new Date();
         let currentHours = now.getHours();
@@ -617,6 +644,102 @@ class authController extends jwtService {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
+
+  sendOtp = async (req, res) => {
+
+    try {
+      let { email } = req.body;
+      console.log(email);
+      const rules = {
+        email: "required|email",
+      };
+
+      const { status, message } = await validate(req.body, rules);
+
+      if (status === 0) {
+        return helper.failed(res, variables.ValidationError, message);
+      }
+
+      let isUserExist = await User.findOne({
+        where: { email: email },
+      });
+
+      if (!isUserExist) {
+        return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
+      }
+
+      console.log(isUserExist);
+      let otp = Math.floor(100000 + Math.random() * 900000);
+      let otpExpireTime = new Date();
+      otpExpireTime.setMinutes(otpExpireTime.getMinutes() + 2);
+      // UPDATE THE USERS TABLE
+      await User.update({ otp: otp , otp_expire_time: otpExpireTime}, { where: { id: isUserExist.id} });
+
+      const textMessage = `Hello ${isUserExist.fullname},\n\nYour OTP is ${otp},\n\nBest regards`;
+
+      const subject = "Emonitrix-Otp for Forgot Password";
+      const sendmail = await H.sendM(isUserExist.email, subject, textMessage);
+
+      if (!sendmail.success) {
+        return helper.failed(res, variables.BadRequest, "Failed to send Email. Please try Again!");
+      }
+      return helper.success(res, variables.Success, "OTP is sent to your email.Please check your Email.");
+    } catch (error) {
+      return helper.failed(res, variables.BadRequest, "No User Found in our Records");
+    }
+  };
+
+  changePassword = async (req, res) => {
+    try {
+      let { otp, password, confirmPassword  } = req.body;
+
+      const rules = {
+        otp: "required|integer",
+        password: 'string|password_regex',
+        confirmPassword: "required_with:password|same:password",
+      };
+  
+      const { status, message } = await validate(req.body, rules);    
+      if (status === 0) {
+        return helper.failed(res, variables.ValidationError, message);
+      }
+  
+      // Find user by OTP
+      const user = await User.findOne({ where: { otp: otp } });
+  
+      if (!user) {
+        return helper.failed(res, variables.NotFound, "Invalid OTP.");
+
+      }
+  
+      // Check if OTP is expired
+      if (new Date() > user.otp_expire_time) {
+        return helper.failed(res, variables.NotFound, "OTP has expired.");
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+  
+      // Update user's password
+      await User.update(
+        { password: hashedPassword, otp: null, otp_expire_time: null },
+        { where: { id: user.id } }
+      );
+      const textMessage = `Hello ${user.fullname},\n\nYour  password changed successfully!\n\nHere are your login details:\nEmail: ${user.email}\nPassword: ${password}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
+
+      const subject = "Emonitrix-Updated Password";
+      const sendmail = await H.sendM(user.email, subject, textMessage);
+
+      if (!sendmail.success) {
+        return helper.failed(res, variables.BadRequest, "Failed to send Email");
+      }
+      return helper.success(res, variables.Success, "Password updated successfully.Please check your updated password email.");
+  
+    } catch (error) {
+      console.error("Error generateNewPassword:", error.message);
+      return helper.failed(res, variables.Failure, "Failed to getTeamMember");
+    }
+  };
+
 }
 
 export default authController;

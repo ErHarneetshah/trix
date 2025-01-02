@@ -25,6 +25,10 @@ const company = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    companyEmpPrefix: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     status: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
