@@ -98,22 +98,22 @@ class rolePermissionController {
   };
 
   addRolePermissions = async (module, roleId, routeMethod, company_id, transaction) => {
-    // ___________-------- Role Permisisons Exists or not ---------________________
-    const isApproved = await helper.checkRolePermission(roleId, "Role Permissions", routeMethod, company_id);
-    if (!isApproved.success) throw new Error("Not Permitted for this request");
-    // ___________-------- Role Permisisons Exists or not ---------________________
+    // // ___________-------- Role Permisisons Exists or not ---------________________
+    // const isApproved = await helper.checkRolePermission(roleId, "Role Permissions", routeMethod, company_id);
+    // if (!isApproved.success) throw new Error("Not Permitted for this request");
+    // // ___________-------- Role Permisisons Exists or not ---------________________
 
     try {
       if (isNaN(roleId)) throw new Error("Role Id must be in number");
       const permissionData = {
         roleId,
-        modules: module.aliasName,
+        modules: module.name,
         company_id: company_id,
         permissions: {
-          POST: false,
-          GET: false,
-          PUT: false,
-          DELETE: false,
+          POST: true,
+          GET: true,
+          PUT: true,
+          DELETE: true,
         },
       };
 
@@ -130,7 +130,7 @@ class rolePermissionController {
       if (isNaN(roleId)) throw new Error("Role Id must be in number");
       const permissionData = {
         roleId,
-        modules: module.aliasName,
+        modules: module.name,
         company_id: company_id,
         permissions: {
           POST: true,
@@ -249,6 +249,65 @@ class rolePermissionController {
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
+
+  resetRolePermissions = async (req, res) => {
+    const dbTransaction = await sequelize.transaction();
+    try {
+      // Step 1: Fetch company_id and roleId from role_permissions
+      const existingPermissions = await role.findAll({
+        attributes: ["company_id", "id"],
+      });
+  
+      // Step 2: Store existing permissions
+      const permissionsBackup = existingPermissions.map(permission => ({
+        company_id: permission.company_id,
+        roleId: permission.id,
+      }));
+  
+      console.log("Existing Permissions Backup:", permissionsBackup);
+  
+      // Step 3: Truncate the role_permissions table
+      await rolePermission.destroy({ truncate: true, cascade: false });
+  
+      // Step 4: Add new role permissions for each module
+      const permissionInstance = new rolePermissionController();
+      const createPermissionModules = await app_modules.findAll({
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      });
+  
+      for (const permission of permissionsBackup) {
+        for (const module of createPermissionModules) {
+          const addedPermissions = await permissionInstance.addRolePermissions(
+            module,
+            permission.roleId, // Use roleId from permissionsBackup
+            "PUT",
+            permission.company_id, // Use company_id from permissionsBackup
+            dbTransaction
+          );
+  
+          if (!addedPermissions) {
+            if (dbTransaction) await dbTransaction.rollback();
+            return helper.sendResponse(
+              res,
+              variables.BadRequest,
+              0,
+              {},
+              "Unable to Create Role Permission for this Company"
+            );
+          }
+        }
+      }
+  
+      // Commit transaction
+      await dbTransaction.commit();
+      return helper.sendResponse(res, variables.Success, 1, {}, "Role Permissions Updated Successfully");
+    } catch (error) {
+      // Rollback transaction on error
+      if (dbTransaction) await dbTransaction.rollback();
+      console.error("Error updating role permissions:", error);
+      return helper.sendResponse(res, variables.ServerError, 0, {}, "Internal Server Error");
+    }
+  }
 }
 
 export default rolePermissionController;

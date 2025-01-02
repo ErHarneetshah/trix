@@ -38,8 +38,8 @@ const generateDummyData = async (transaction) => {
     { name: "Blocked Website" },
     { name: "Productive Application" },
     { name: "Report Settings" },
-    // { name: "Dashboard" },
-    // { name: "All Team Member Dashboard" },
+    { name: "Dashboard" },
+    { name: "All Team Member Dashboard" },
     { name: "Authentication" },
     { name: "Export Report" },
     { name: "Team Structure" },
@@ -48,6 +48,9 @@ const generateDummyData = async (transaction) => {
     { name: "Work Reports" },
     { name: "Email Gateway" },
     { name: "Language" },
+    { name: "Productive Website" },
+    { name: "Settings" },
+    { name: "Team Member Log" },
 
   ];
   
