@@ -38,15 +38,119 @@ import nodemailer from "nodemailer";
 //     }
 // };
 
+// const addEmailGateeways = async (req, res) => {
+//   try {
+//     let { protocol, host, username, password, port, encryption,fromUsername} = req.body;
+
+//     //console.log(req.body);
+//     // Default encryption type
+//     const defaultEncryption = "tls";
+//     const encryptionOptions = ["tls", "ssl"];
+
+//     const rules = {
+//       protocol: "required|string|min:2|max:50",
+//       host: "required|string|min:2|max:50",
+//       username: "required|string|min:1|max:100",
+//       password: "required|string|min:6",
+//       port: "required|numeric|min:1|max:65535",
+//       fromUsername: "required|string",
+//     };
+
+//     const { status, message } = await validate(req.body, rules);
+//     if (status === 0) {
+//       return helper.failed(res, variables.ValidationError, message);
+//     }
+
+//     if (encryption) {
+//         encryption = encryption.toLowerCase();
+//       if (!encryptionOptions.includes(encryption)) {
+//         return helper.failed(
+//           res,
+//           variables.ValidationError,
+//           "Invalid Email encryption provided"
+//         );
+//       }
+//     }
+
+//     const isport = parseInt(req.body.port, 10);
+//     const validPorts = [587, 465, 25];
+//     if (!validPorts.includes(isport)) {
+//       return helper.failed(
+//         res,
+//         variables.ValidationError,
+//         "Invalid SMTP port provided"
+//       );
+//     }
+
+    
+
+//     const selectedEncryption = encryptionOptions.includes(encryption)
+//       ? encryption
+//       : defaultEncryption;
+
+//     const transporter = nodemailer.createTransport({
+//       host,
+//       port,
+//       secure: false,
+//       auth: {
+//         user: username,
+//         pass: password,
+//       },
+//     });
+
+//     console.log(object);
+//     try {
+//       await transporter.verify();
+//     } catch (verifyError) {
+//       console.error("Email gateway verification failed:", verifyError);
+//       return helper.failed(
+//         res,
+//         variables.BadRequest,
+//      verifyError.message
+//       );
+//     }
+
+//     await emailGateway.destroy({ where: { company_id: req.user.company_id } });
+//     await sequelize.query(
+//       `ALTER TABLE \`${emailGateway.getTableName()}\` AUTO_INCREMENT = 1;`
+//     );
+
+//     // Save the new gateway
+//     const gateway = await emailGateway.create({
+//       company_id: req.user.company_id,
+//       protocol,
+//       host,
+//       username,
+//       password,
+//       port,
+//       encryption: selectedEncryption,
+//       fromUsername:fromUsername,
+
+//     });
+
+//     return helper.success(
+//       res,
+//       variables.Created,
+//       "Created the Email Gateway Successfully",
+//       gateway
+//     );
+//   } catch (error) {
+//     console.error("Error while creating the email gateway setup:", error);
+//     return helper.failed(res, variables.BadRequest, error.message);
+//   }
+// };
+
+
 const addEmailGateeways = async (req, res) => {
   try {
-    let { protocol, host, username, password, port, encryption,fromUsername} = req.body;
+    let { protocol, host, username, password, port, encryption, fromUsername } = req.body;
 
-    //console.log(req.body);
-    // Default encryption type
+    // Default encryption type and options
     const defaultEncryption = "tls";
     const encryptionOptions = ["tls", "ssl"];
+    const validPorts = [587, 465, 25];
 
+    // Validation rules
     const rules = {
       protocol: "required|string|min:2|max:50",
       host: "required|string|min:2|max:50",
@@ -56,57 +160,60 @@ const addEmailGateeways = async (req, res) => {
       fromUsername: "required|string",
     };
 
-    if (encryption) {
-        encryption = encryption.toLowerCase();
-      if (!encryptionOptions.includes(encryption)) {
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Invalid Email encryption provided"
-        );
-      }
-    }
-
-    const isport = parseInt(req.body.port, 10);
-    const validPorts = [587, 465, 25];
-    if (!validPorts.includes(isport)) {
-      return helper.failed(
-        res,
-        variables.ValidationError,
-        "Invalid SMTP port provided"
-      );
-    }
-
     const { status, message } = await validate(req.body, rules);
     if (status === 0) {
       return helper.failed(res, variables.ValidationError, message);
     }
 
-    const selectedEncryption = encryptionOptions.includes(encryption)
-      ? encryption
-      : defaultEncryption;
+    // Ensure encryption type is valid or use default
+    encryption = encryption ? encryption.toLowerCase() : defaultEncryption;
+    if (!encryptionOptions.includes(encryption)) {
+      return helper.failed(
+        res,
+        variables.ValidationError,
+        "Invalid email encryption type provided. Use 'tls' or 'ssl'."
+      );
+    }
 
-    const transporter = nodemailer.createTransport({
+    // Validate SMTP port
+    port = parseInt(port, 10);
+    if (!validPorts.includes(port)) {
+      return helper.failed(
+        res,
+        variables.ValidationError,
+        `Invalid SMTP port provided. Valid ports are ${validPorts.join(", ")}.`
+      );
+    }
+
+    // Configure nodemailer
+    const transporterConfig = {
       host,
       port,
-      secure: false,
+      secure: encryption === "ssl", // 'secure' is true only for SSL
       auth: {
         user: username,
         pass: password,
       },
-    });
+    };
 
-    try {
-      await transporter.verify();
-    } catch (verifyError) {
-      console.error("Email gateway verification failed:", verifyError);
-      return helper.failed(
-        res,
-        variables.BadRequest,
-        "Email gateway verification failed. Please check your credentials and try again."
-      );
-    }
+    const transporter = nodemailer.createTransport(transporterConfig);
 
+    // Log configuration for debugging
+    console.log("SMTP Configuration:", transporterConfig);
+
+    // Verify SMTP credentials
+    // try {
+    //   await transporter.verify();
+    // } catch (verifyError) {
+    //   console.error("SMTP verification failed:", verifyError);
+    //   return helper.failed(
+    //     res,
+    //     variables.BadRequest,
+    //     "SMTP verification failed: " + verifyError.message
+    //   );
+    // }
+
+    // Reset existing gateways for the company
     await emailGateway.destroy({ where: { company_id: req.user.company_id } });
     await sequelize.query(
       `ALTER TABLE \`${emailGateway.getTableName()}\` AUTO_INCREMENT = 1;`
@@ -120,15 +227,14 @@ const addEmailGateeways = async (req, res) => {
       username,
       password,
       port,
-      encryption: selectedEncryption,
-      fromUsername:fromUsername,
-
+      encryption,
+      fromUsername,
     });
 
     return helper.success(
       res,
       variables.Created,
-      "Created the Email Gateway Successfully",
+      "Email gateway created successfully.",
       gateway
     );
   } catch (error) {
@@ -136,6 +242,7 @@ const addEmailGateeways = async (req, res) => {
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
+
 
 const checkEmailServer = async (req, res) => {
   const { to, subject, message } = req.body;

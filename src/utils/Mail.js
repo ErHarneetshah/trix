@@ -34,7 +34,7 @@ const sendM = async (to, subject, message, cc = '', from = "", attachment = null
                 html: '<b>' + message + '</b>',
                 attachments: attachment ? [attachment] : [],
             };
-            console.log(mailOptions);
+          
             const info = await transporter.sendMail(mailOptions);
             if (info.messageId) {
                 return { success: true, message: "Email sent successfully.", info };

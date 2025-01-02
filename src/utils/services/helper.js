@@ -114,7 +114,7 @@ export default {
         length: 10,
         numbers: true,
         uppercase: true,
-        symbols: true,
+        symbols: false,
         excludeSimilarCharacters: true,
         strict: true
     });

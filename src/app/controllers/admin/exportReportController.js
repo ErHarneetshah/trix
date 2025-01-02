@@ -573,7 +573,6 @@ class exportReportController {
       if (!definedPeriod || !validOptions.includes(definedPeriod)) {
         return helper.failed(res, variables.BadRequest, "Please select a valid date option");
       }
-      console.log("test2");
 
       let date;
       if (definedPeriod) {
