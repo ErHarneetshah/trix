@@ -222,4 +222,14 @@ export default {
 
     return { startDate, endDate };
   },
+
+  prefixInit: async (name) => {
+    name = name.trim();  
+    if (name.length >= 4) {
+      return name.slice(0, 4);
+    }
+  
+    return `${name}`; 
+  },
+  
 };

@@ -54,6 +54,8 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, {}, "Company already exists with this Email!");
       }
 
+      let companyPrefix = await helper.prefixInit(requestData.companyName);
+
       //* -------------- Create Company --------------------------
       const createCompany = await company.create(
         {
@@ -70,6 +72,20 @@ class authController extends jwtService {
         if (dbTransaction) await dbTransaction.rollback();
         return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Register Company");
       }
+
+      companyPrefix = `${companyPrefix}_${createCompany.id}`;
+
+      const updateCompany = await company.update(
+        {
+          companyEmpPrefix: companyPrefix,
+        },
+        {
+          where: {
+            id: createCompany.id,
+          },
+          transaction: dbTransaction,
+        }
+      );
 
       //* -------------- Create Report Settings --------------------------
       const createReportSettings = await reportSettings.create(
@@ -186,9 +202,18 @@ class authController extends jwtService {
         throw new Error("Unable to Create Team Record for this company.");
       }
 
+      let companyUserCount = await User.count({
+        where:{
+          company_id: createCompany.id
+        }
+      })
+
+      companyUserCount++;
+
       //* -------------- Create User -------------------------
       const createUser = await User.create(
         {
+          empId: `${companyPrefix}_${companyUserCount}`,
           company_id: createCompany.id,
           fullname: requestData.name,
           email: requestData.email,
