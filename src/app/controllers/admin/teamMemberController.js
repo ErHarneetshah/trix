@@ -36,7 +36,7 @@ class teamMemberController {
         limit: limit,
         order: [["id", "DESC"]],
         attributes: {
-          exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt", "status"],
+          exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt"],
         },
         include: [
           {
@@ -408,11 +408,10 @@ class teamMemberController {
   };
 
   generateNewPassword = async (req, res) => {
-
     let { userId } = req.body;
 
     if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
-    // CHECK THIS ID EXITS IN THE USERS TABLE 
+    // CHECK THIS ID EXITS IN THE USERS TABLE
 
     let isUserExists = await User.findOne({
       where: {
@@ -443,11 +442,9 @@ class teamMemberController {
     }
 
     return helper.success(res, variables.Success, "New Password Generated Successfully.Please check your Email.");
-
   };
 
   deactivateActivateTeamMember = async (req, res) => {
-
     let { userId } = req.body;
 
     if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
@@ -463,8 +460,14 @@ class teamMemberController {
       return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
     }
 
-    let status = isUserExists.status == 1 ? 0 : (isUserExists.status == 0 ? 1 : 0);
-    let message = isUserExists.status == 1 ? "This user deactivated successfully" : (isUserExists.status == 0 ? "This user activated successfully" : 0);
+    if (isUserExists.isAdmin) {
+      return helper.failed(res, variables.NotFound, "This User cannot be deactivated");
+    }
+
+    console.log(isUserExists.status);
+
+    let status = isUserExists.status == 1 ? 0 : 1;
+    let message = isUserExists.status == 1 ? "This user deactivated successfully" : "This user activated successfully";
 
     await User.update({ status: status }, { where: { id: userId, company_id: req.user.company_id } });
     return helper.success(res, variables.Success, message);
