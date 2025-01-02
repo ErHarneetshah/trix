@@ -649,13 +649,13 @@ class authController extends jwtService {
   sendOtp = async (req, res) => {
 
     try {
-      let { email } = req.query;
+      let { email } = req.body;
       console.log(email);
       const rules = {
         email: "required|email",
       };
 
-      const { status, message } = await validate(req.query, rules);
+      const { status, message } = await validate(req.body, rules);
 
       if (status === 0) {
         return helper.failed(res, variables.ValidationError, message);
