@@ -625,7 +625,6 @@ class authController extends jwtService {
 
     try {
       let { email } = req.query;
-      console.log(email);
       const rules = {
         email: "required|email",
       };
@@ -656,19 +655,16 @@ class authController extends jwtService {
       const sendmail = await H.sendM(isUserExist.email, subject, textMessage);
 
       if (!sendmail.success) {
-        return helper.failed(res, variables.BadRequest, "Failed to send Email");
+        return helper.failed(res, variables.BadRequest, "Failed to send Email. Please try Again!");
       }
       return helper.success(res, variables.Success, "OTP is sent to your email.Please check your Email.");
     } catch (error) {
-      console.error("Error generateNewPassword:", error.message);
-      return helper.failed(res, variables.Failure, "Failed to getTeamMember");
+      return helper.failed(res, variables.BadRequest, "No User Found in our Records");
     }
   };
 
   changePassword = async (req, res) => {
     try {
-
-      // Validate request body
       let { otp, password, confirmPassword  } = req.body;
 
       const rules = {
@@ -683,7 +679,7 @@ class authController extends jwtService {
       }
   
       // Find user by OTP
-      const user = await User.findOne({ where: { otp } });
+      const user = await User.findOne({ where: { otp: otp } });
   
       if (!user) {
         return helper.failed(res, variables.NotFound, "Invalid OTP.");
@@ -692,11 +688,9 @@ class authController extends jwtService {
   
       // Check if OTP is expired
       if (new Date() > user.otp_expire_time) {
-
         return helper.failed(res, variables.NotFound, "OTP has expired.");
       }
-  
-      
+
       const hashedPassword = await bcrypt.hash(password, 10);
   
       // Update user's password
