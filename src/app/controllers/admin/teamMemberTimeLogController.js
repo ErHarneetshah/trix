@@ -70,7 +70,6 @@ class teamMemberTimeLogController {
     }
   };
 
-
   getTeamMemberLogFiltered2 = async (req, res) => {
     try {
       // ___________---------- Search, Limit, Pagination ----------_______________
@@ -86,10 +85,10 @@ class teamMemberTimeLogController {
       let company_id = req.user.company_id;
       let userIds = [];
 
-      if(date){
+      if (date) {
         startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
         endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
-      }else{
+      } else {
         startOfDay = moment.tz(moment(), "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
         endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
       }
@@ -104,7 +103,7 @@ class teamMemberTimeLogController {
           userIds.push(user.id);
         }
       }
-      
+
       const timeLogQuery2 = `SELECT
     u.id AS userId,
     u.fullname AS name,
@@ -115,6 +114,8 @@ class teamMemberTimeLogController {
     t.logged_out_time AS logged_out_time,
     t.early_going AS early_going, 
     t.late_coming AS late_coming,
+    t.idle_time AS idle_time,
+    t.spare_time AS spare_time, 
     IFNULL(SUM(t.active_time), 0) + IFNULL(SUM(t.spare_time), 0) + IFNULL(SUM(t.idle_time), 0) AS active_time,
     CASE 
         WHEN t.user_id IS NOT NULL THEN 'Present'
@@ -148,7 +149,7 @@ WHERE
     u.id IN (:userIds)
     AND u.createdAt <= :endOfDay
 GROUP BY 
-    u.id, u.fullname, s.id, t.logged_in_time, t.logged_out_time, t.early_going, t.late_coming, t.user_id;`
+    u.id, u.fullname, s.id, t.logged_in_time, t.logged_out_time, t.early_going, t.late_coming, t.user_id;`;
       const replacements = {
         startOfDay,
         endOfDay,
@@ -158,7 +159,7 @@ GROUP BY
       const results = await sequelize.query(timeLogQuery2, {
         type: Sequelize.QueryTypes.SELECT,
         replacements,
-        logging: console.log
+        // logging: console.log,
       });
 
       let updatedJson = commonfuncitons.createResponse2(results);
@@ -176,16 +177,16 @@ GROUP BY
         } else if (tab.toLowerCase() === "late") {
           updatedJson = updatedJson.filter((item) => item.late_coming === 1);
         } else if (tab.toLowerCase() === "slacking") {
-          updatedJson = updatedJson.filter((item) => item.user.is_slacking === true);
+          updatedJson = updatedJson.filter((item) => item.user.is_slacking == true);
         } else if (tab.toLowerCase() === "productive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && item.productiveTimeInSeconds !== 0 && !item.wasAbsent);
+          // console.log(updatedJson[4].user.is_productive === true && updatedJson[4].user.productiveTimeInSeconds > 0  && !updatedJson[4].wasAbsent)
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === true && (item.user.productiveTimeInSeconds ?? 0) > 0 && !item.wasAbsent);
         } else if (tab.toLowerCase() === "nonproductive") {
-          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && item.productiveTimeInSeconds !== 0 && !item.wasAbsent);
+          updatedJson = updatedJson.filter((item) => item.user.is_productive === false && (item.user.productiveTimeInSeconds ?? 0) > 0 && !item.wasAbsent);
         }
       }
 
       const count = updatedJson.length;
-
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: updatedJson });
     } catch (error) {
@@ -203,11 +204,11 @@ GROUP BY
       let formattedDate;
       startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DDTHH:mm:ssZ");
 
-      if(date){
+      if (date) {
         startOfDay = moment.tz(date, "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
         endOfDay = moment.tz(date, "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
-        formattedDate = new Date(date).toISOString().split('T')[0];
-      }else{
+        formattedDate = new Date(date).toISOString().split("T")[0];
+      } else {
         startOfDay = moment.tz(moment(), "Asia/Kolkata").startOf("day").format("YYYY-MM-DD HH:mm:ss");
         endOfDay = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
         formattedDate = moment.tz(moment(), "Asia/Kolkata").endOf("day").format("YYYY-MM-DD HH:mm:ss");
@@ -218,7 +219,6 @@ GROUP BY
       console.log(endOfDay);
       console.log(formattedDate);
 
-
       userWhere.currentStatus = 1;
       let companyId = req.user.company_id;
 
@@ -226,11 +226,11 @@ GROUP BY
         where: {
           company_id: companyId,
           status: 1,
-          isAdmin:0,
+          isAdmin: 0,
           [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
         },
       });
-      if(!employeeCount) employeeCount = 0;
+      if (!employeeCount) employeeCount = 0;
 
       let workingCount = await TimeLog.count({
         where: {
@@ -239,12 +239,12 @@ GROUP BY
           [Op.and]: Sequelize.literal(`DATE(createdAt) = '${formattedDate}'`),
         },
       });
-      if(!workingCount) workingCount = 0;
+      if (!workingCount) workingCount = 0;
 
       let absentCount = await User.count({
         where: {
           company_id: companyId,
-          isAdmin:0,
+          isAdmin: 0,
           status: 1,
           [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
           id: {
@@ -255,8 +255,7 @@ GROUP BY
           },
         },
       });
-      if(!absentCount) absentCount = 0;
-
+      if (!absentCount) absentCount = 0;
 
       let slackingCount = await TimeLog.count({
         where: {
@@ -268,7 +267,6 @@ GROUP BY
         },
       });
 
-
       let lateCount = await TimeLog.count({
         where: {
           company_id: req.user.company_id,
@@ -276,8 +274,7 @@ GROUP BY
           late_coming: 1,
         },
       });
-      if(!lateCount) lateCount = 0;
-
+      if (!lateCount) lateCount = 0;
 
       //console.log({ startOfDay });
       console.log(startOfDay);
@@ -302,20 +299,21 @@ GROUP BY
               AND timelogs.logged_in_time IS NOT NULL
               AND timelogs.logged_out_time IS NOT NULL
             GROUP BY timelogs.user_id
-            HAVING totalTimeSpent >= 0.6 * totalTimeLog
+            HAVING totalTimeSpent >= totalTimeLog / 60
+            AND totalTimeLog > 0
+            AND totalTimeSpent > 0
           ) AS productiveEntries;`,
         {
           replacements: {
             company_id: req.user.company_id,
-            dateOnly
+            dateOnly,
           },
           type: QueryTypes.SELECT,
         }
       );
 
       let productiveCount = productiveResult.count;
-      if(!productiveCount) productiveCount = 0;
-
+      if (!productiveCount) productiveCount = 0;
 
       const [nonProductiveResult] = await sequelize.query(
         `
@@ -336,21 +334,22 @@ GROUP BY
               AND timelogs.logged_in_time IS NOT NULL
               AND timelogs.logged_out_time IS NOT NULL
             GROUP BY timelogs.user_id
-            HAVING totalTimeSpent <= 0.6 * totalTimeLog
+            HAVING totalTimeSpent <= totalTimeLog / 60
+            AND totalTimeLog > 0
+            AND totalTimeSpent > 0
           ) AS productiveEntries;
 `,
         {
           replacements: {
             company_id: req.user.company_id,
-            dateOnly
+            dateOnly,
           },
           type: QueryTypes.SELECT,
         }
       );
 
       let nonProductiveCount = nonProductiveResult.count;
-      if(!nonProductiveCount) nonProductiveCount = 0;
-
+      if (!nonProductiveCount) nonProductiveCount = 0;
 
       const countsData = [
         { count: employeeCount, name: "employee" },

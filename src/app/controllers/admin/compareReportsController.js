@@ -5,46 +5,54 @@ import sequelize from "../../../database/queries/dbConnection.js";
 import chartController from "./Charts/chartController.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
 
-
 const getCompareReportsData = async (req, res, next) => {
-    try {
-        const { company_id, createdAt, departmentId } = req.user;
-        const { userId, date } = req.query;
-        if (!date || isNaN(new Date(date)) || isNaN(new Date(createdAt))) {
-            throw new Error('Invalid date or user joining date.');
-        }
+  try {
+    const { company_id, createdAt, departmentId } = req.user;
+    const { userId, date } = req.query;
+    if (!date || isNaN(new Date(date)) || isNaN(new Date(createdAt))) {
+      throw new Error("Invalid date or user joining date.");
+    }
 
-        const formattedDate = new Date(date).toISOString().split('T')[0];
-        const joiningDate = new Date(createdAt).toISOString().split('T')[0];
+    const formattedDate = new Date(date).toISOString().split("T")[0];
+    const joiningDate = new Date(createdAt).toISOString().split("T")[0];
+    console.log([formattedDate, joiningDate]);
 
-        if (formattedDate < joiningDate) {
-            throw new Error('User was not part of the organization on this date.');
-        }
+    if (formattedDate < joiningDate) {
+      throw new Error("User was not part of the organization on this date.");
+    }
 
-        const userLogging = await TimeLog.findOne({
-            where: {
-                user_id: userId,
-                company_id: company_id,
-                createdAt: {
-                    [Op.eq]: formattedDate,
-                },
-            },
-        });
+    const startOfDay = new Date(formattedDate);
+    startOfDay.setHours(0, 0, 0, 0);
 
-        if (!userLogging) {
-            throw new Error('User was absent on this date or the entered date is invalid.');
-        }
+    const endOfDay = new Date(formattedDate);
+    endOfDay.setHours(23, 59, 59, 999);
 
-        const replacements = {
-            departmentId: departmentId,
-            companyId: company_id,
-            userId: userId,
-            createdAt: formattedDate
-        };
+    const userLogging = await TimeLog.findOne({
+      where: {
+        user_id: userId,
+        company_id: company_id,
+        createdAt: {
+          [Op.gte]: startOfDay,
+          [Op.lt]: endOfDay,
+        },
+      },
+      logging: console.log,
+    });
 
-        const queries = [
-            {
-                query: `
+    if (!userLogging) {
+      throw new Error("User was absent on this date or the entered date is invalid.");
+    }
+
+    const replacements = {
+      departmentId: departmentId,
+      companyId: company_id,
+      userId: userId,
+      createdAt: formattedDate,
+    };
+
+    const queries = [
+      {
+        query: `
                         SELECT ah.appName, 
                             SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)) AS total_time_minutes
                         FROM app_histories AS ah
@@ -54,10 +62,10 @@ const getCompareReportsData = async (req, res, next) => {
                         AND ah.userId = :userId
                         GROUP BY ah.appName;
                 `,
-                key: 'productiveApps'
-            },
-            {
-                query: `
+        key: "productiveApps",
+      },
+      {
+        query: `
                     SELECT ah.appName, 
                         SUM(TIMESTAMPDIFF(MINUTE, ah.startTime, ah.endTime)) AS total_time_minutes
                     FROM app_histories AS ah
@@ -69,10 +77,10 @@ const getCompareReportsData = async (req, res, next) => {
                     AND DATE(ah.createdAt) = :createdAt
                     GROUP BY ah.appName;
                 `,
-                key: 'nonProductiveApps'
-            },
-            {
-                query: `
+        key: "nonProductiveApps",
+      },
+      {
+        query: `
                     SELECT COALESCE(COUNT(uh.id), 0) AS total_counts, uh.website_name 
                     FROM user_histories AS uh
                     INNER JOIN productive_websites AS pw 
@@ -82,10 +90,10 @@ const getCompareReportsData = async (req, res, next) => {
                     AND DATE(uh.createdAt) = :createdAt
                     GROUP BY uh.website_name;
                 `,
-                key: 'productiveWebsites'
-            },
-            {
-                query: `
+        key: "productiveWebsites",
+      },
+      {
+        query: `
                     SELECT COUNT(uh.id) AS total_counts, uh.website_name 
                     FROM user_histories AS uh
                     WHERE uh.website_name NOT IN (
@@ -98,116 +106,98 @@ const getCompareReportsData = async (req, res, next) => {
                     AND DATE(uh.createdAt) = :createdAt
                     GROUP BY uh.website_name;
                 `,
-                key: 'nonProductiveWebsites'
-            }
-        ];
+        key: "nonProductiveWebsites",
+      },
+    ];
 
-        const queryPromises = queries.map(({ query, key }) =>
-            sequelize.query(query, { type: Sequelize.QueryTypes.SELECT, replacements })
-                .then(result => ({ [key]: result }))
-        );
+    const queryPromises = queries.map(({ query, key }) => sequelize.query(query, { type: Sequelize.QueryTypes.SELECT, replacements }).then((result) => ({ [key]: result })));
 
-        const results = await Promise.all(queryPromises);
+    const results = await Promise.all(queryPromises);
 
-        const combinedResult = results.reduce((acc, result) => {
-            return { ...acc, ...result };
-        }, {});
+    const combinedResult = results.reduce((acc, result) => {
+      return { ...acc, ...result };
+    }, {});
 
-        const offlineTime = userLogging.idle_time;
-        const loggedInTime = userLogging.logged_in_time;
-        const timeAtWork = await getActiveTime(userLogging.id);
+    const offlineTime = userLogging.idle_time;
+    const loggedInTime = userLogging.logged_in_time;
+    const timeAtWork = await getActiveTime(userLogging.id);
 
-        combinedResult.offlineTime = offlineTime;
-        combinedResult.loggedInTime = loggedInTime;
-        combinedResult.timeAtWork = timeAtWork;
+    combinedResult.offlineTime = offlineTime;
+    combinedResult.loggedInTime = loggedInTime;
+    combinedResult.timeAtWork = timeAtWork;
 
+    combinedResult.effectiveness = calculateEffectiveness(timeAtWork, offlineTime);
 
-        combinedResult.effectiveness = calculateEffectiveness(timeAtWork, offlineTime);
+    // return res.json(combinedResult);
+    return helper.success(res, variables.Success, "Compare Report Data Fetched Successfully", combinedResult);
+  } catch (error) {
+    console.error(error.message);
 
-        // return res.json(combinedResult);
-        return helper.success(
-            res,
-            variables.Success,
-            "Compare Report Data Fetched Successfully",
-            combinedResult
-        );
-
-    } catch (error) {
-        console.error(error.message);
-
-        return helper.failed(
-            res,
-            500,
-            error.message
-        );
-
-    }
+    return helper.failed(res, 400, error.message);
+  }
 };
 
 // Placeholder function for effectiveness calculation
 const calculateEffectiveness = (timeAtWork, offlineTime) => {
-    const totalTime = timeAtWork + offlineTime;
-    return totalTime ? (timeAtWork / totalTime) * 100 : 0; // Effectiveness as a percentage
+  const totalTime = timeAtWork + offlineTime;
+  return totalTime ? (timeAtWork / totalTime) * 100 : 0; // Effectiveness as a percentage
 };
-
 
 const getActiveTime = async (timelogId) => {
-    try {
-        const userLogging = await TimeLog.findOne({
-            where: {
-                id: timelogId
-            },
-        });
+  try {
+    const userLogging = await TimeLog.findOne({
+      where: {
+        id: timelogId,
+      },
+    });
 
-        if (!userLogging) {
-            return 0;
-        }
-
-        if (userLogging.active_time) {
-            return userLogging.active_time;
-        } else {
-            const time1 = userLogging.logged_in_time;
-            const time2 = userLogging.logged_out_time;
-
-            if (!time1 || !time2) {
-                return 0;
-            }
-
-            const toMinutes = (time) => {
-                const [hours, minutes] = time.split(':').map(Number);
-                return hours * 60 + minutes;
-            };
-
-            let diffMinutes = toMinutes(time2) - toMinutes(time1);
-
-            if (diffMinutes < 0) {
-                diffMinutes += 24 * 60;
-            }
-
-            return diffMinutes;
-        }
-    } catch (error) {
-        console.error(error);
-        return 0; // Return 0 in case of an error
+    if (!userLogging) {
+      return 0;
     }
+
+    if (userLogging.active_time) {
+      return userLogging.active_time;
+    } else {
+      const time1 = userLogging.logged_in_time;
+      const time2 = userLogging.logged_out_time;
+
+      if (!time1 || !time2) {
+        return 0;
+      }
+
+      const toMinutes = (time) => {
+        const [hours, minutes] = time.split(":").map(Number);
+        return hours * 60 + minutes;
+      };
+
+      let diffMinutes = toMinutes(time2) - toMinutes(time1);
+
+      if (diffMinutes < 0) {
+        diffMinutes += 24 * 60;
+      }
+
+      return diffMinutes;
+    }
+  } catch (error) {
+    console.error(error);
+    return 0; // Return 0 in case of an error
+  }
 };
 
-
 const getAllUsers = async (req, res, next) => {
-    try {
-        const { company_id } = req.user;
-        const query = `SELECT u.id,u.fullname,d.name FROM users as u left join departments as d on u.departmentId=d.id where u.company_id=:companyId and  u.status=1 and u.isAdmin=0;`;
-        const result = await sequelize.query(query, {
-            type: Sequelize.QueryTypes.SELECT,
-            replacements: { companyId: company_id },
-        })
+  try {
+    const { company_id } = req.user;
+    const query = `SELECT u.id,u.fullname,d.name FROM users as u left join departments as d on u.departmentId=d.id where u.company_id=:companyId and  u.status=1 and u.isAdmin=0;`;
+    const result = await sequelize.query(query, {
+      type: Sequelize.QueryTypes.SELECT,
+      replacements: { companyId: company_id },
+    });
 
-        // const transformedResult = result.map(item => `${item.fullname}-${item.name}-${item.id}`);
-        return helper.success(res, variables.Success, "All Users Fetched Successfully", result);
-
-    } catch (error) {
-        return helper.failed(res, variables.badGateway, error.message);
-    }
-}
+    // const transformedResult = result.map(item => `${item.fullname}-${item.name}-${item.id}`);
+    return helper.success(res, variables.Success, "All Users Fetched Successfully", result);
+  } catch (error) {
+    return helper.failed(res, variables.badGateway, error.message);
+  }
+};
 
 export default { getCompareReportsData, getAllUsers };

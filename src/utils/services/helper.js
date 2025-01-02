@@ -113,12 +113,12 @@ export default {
       const generatedPass = generator.generate({
         length: 10,
         numbers: true,
-        uppercase: false,
+        uppercase: true,
         symbols: true,
         excludeSimilarCharacters: true,
-        strict: true,
-      });
-      if (generatedPass) return generatedPass;
+        strict: true
+    });
+    if (generatedPass) return generatedPass;    
 
       return this.failed(res, variables.BadRequest, "Unable to generate password for team member!");
     } catch (error) {

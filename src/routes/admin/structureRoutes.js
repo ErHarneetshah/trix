@@ -7,7 +7,7 @@ const router = express.Router();
 
 
 
-router.get("/view", treeStructureController.viewTreeStructure);
+router.get("/view", authMiddleware, treeStructureController.viewTreeStructure);
 // router.get("/getShiftDropdown",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getShiftDropdown);
 // router.get("/getSpecificShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getSpecificShift);
 // router.post("/addShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.addShift);

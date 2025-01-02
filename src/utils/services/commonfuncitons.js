@@ -183,16 +183,16 @@ const createResponse2 = (inputData) => {
     const nonProductiveTime = totalNonProductiveTimeSeconds > 0 ? formatTime(convertSecondsToHMS(totalNonProductiveTimeSeconds)) : "0h 0m 0s";
 
     // Calculate thresholds
-    const activeTime = data.active_time + data.spare_time + data.idle_time;
-    const activeTimeThreshold = Math.floor(activeTime * 0.6);
-    const idleTimeThreshold = Math.floor(activeTime * 0.4);
+    const activeTime = parseInt(data.active_time ?? 0, 10) + parseInt(data.spare_time ?? 0, 10) + parseInt(data.idle_time ?? 0, 10);
+    const activeTimeThreshold = activeTime/60;
+    const idleTimeThreshold = activeTime/40;
 
     let isProductive;
     let isSlacking;
 
-    if (activeTimeThreshold != 0) {
+    if (activeTimeThreshold != 0 && idleTimeThreshold != 0) {
       isProductive = totalProductiveTimeSeconds >= activeTimeThreshold;
-      isSlacking = activeTime >= idleTimeThreshold;
+      isSlacking = parseInt(data.idle_time ?? 0, 10) >= idleTimeThreshold;
     } else {
       isProductive = false;
       isSlacking = false;
@@ -207,7 +207,7 @@ const createResponse2 = (inputData) => {
       user_id: data.userId,
       shift_id: data.shiftId,
       logged_in_time: data.logged_in_time,
-      active_time: data.active_time,
+      active_time: (data.active_time ?? 0),
       logged_out_time: data.logged_out_time,
       early_going: data.early_going,
       late_coming: data.late_coming,

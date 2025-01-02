@@ -709,7 +709,7 @@ const productiveAppsAndproductiveWebsites = async (req, res, next) => {
 
     // Validate data format
     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
-      return helper.failed(res, 400, "Invalid data format", []);
+      return helper.failed(res, 400, "User was absent on this date or the entered date", []);
     }
 
     // Determine which dataset is larger and iterate over it
@@ -1097,6 +1097,9 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
       type: Sequelize.QueryTypes.SELECT,
     });
 
+    console.log({results});
+    
+
     // Format results for pie chart data
     const pieChartData = results.map((result) => ({
       name: result.hour,
@@ -1209,12 +1212,12 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, ne
     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date, company_id, departmentId });
     const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date, company_id, departmentId });
 
-    //console.log(nonProductiveWebsitesData);
-    //console.log(productiveWebsitesData);
+    console.log(nonProductiveWebsitesData,"nonProductiveWebsitesData");
+    console.log(productiveWebsitesData,"productiveWebsitesData");
 
     // Validate data format
     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {
-      return helper.failed(res, 400, "Invalid data format", []);
+      return helper.failed(res, 400, "User was absent on this date or the entered date", []);
     }
 
     // Determine which dataset is larger and iterate over it
@@ -1252,7 +1255,7 @@ const singleUserProductiveAppAndNonproductiveApps = async (req, res, next) => {
     const productiveAppsData = await singleUserNonProductiveAppData('', '', '', 'function', { userId, date, company_id, departmentId });
 
     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
-      return helper.failed(res, 400, "Invalid data format", []);
+      return helper.failed(res, 400, "User was absent on this date or the entered date", []);
     }
 
     const [primaryData, secondaryData, primaryKey, secondaryKey] =

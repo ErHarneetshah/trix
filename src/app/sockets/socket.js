@@ -1,7 +1,4 @@
-import {
-  getShiftData,
-  verifyToken,
-} from "../../utils/validations/socketValidation.js";
+import { getShiftData, verifyToken } from "../../utils/validations/socketValidation.js";
 import { Notification } from "../../database/models/Notification.js";
 import { UserHistory } from "../../database/models/UserHistory.js";
 import User from "../../database/models/userModel.js";
@@ -20,7 +17,22 @@ import department from "../../database/models/departmentModel.js";
 import designation from "../../database/models/designationModel.js";
 
 const userData = async (id) => {
-  let user = await User.findOne({ where: { id: id } });
+  let user = await User.findOne({
+    where: { id: id },
+    include: [
+      {
+        model: department,
+        as: "department",
+        attributes: ["name"],
+      },
+      {
+        model: designation,
+        as: "designation",
+        attributes: ["name"],
+      },
+    ],
+  });
+
   let today = new Date().toISOString().split("T")[0];
 
   let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${id} GROUP by url`;
@@ -37,12 +49,10 @@ const userData = async (id) => {
   let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
   // Fetch productive and non-productive app data
-  const productiveAndNonProductiveData =
-    await singleUserProductiveAppAndNonproductiveApps(id, today);
+  const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(id, today);
 
   // Fetch productive and non-productive website data
-  const productiveAndNonProductiveWebData =
-    await singleUserProductiveWebsitesAndNonproductiveWebsites(id, today);
+  const productiveAndNonProductiveWebData = await singleUserProductiveWebsitesAndNonproductiveWebsites(id, today);
 
   if (!user) {
     return socket.emit("error", {
@@ -58,8 +68,7 @@ const userData = async (id) => {
       userHistories,
       appHistories,
       productiveAndNonProductiveData: productiveAndNonProductiveData || [],
-      productiveAndNonProductiveWebData:
-        productiveAndNonProductiveWebData || [],
+      productiveAndNonProductiveWebData: productiveAndNonProductiveWebData || [],
     },
   };
   return response;
@@ -107,9 +116,7 @@ const setupSocketIO = (io) => {
 
       let shiftData = await getShiftData(user.teamId);
 
-      let [shiftHours, shiftMinutes] = shiftData.start_time
-        .split(":")
-        .map(Number);
+      let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
       let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
 
       let shiftStartTotalMinutes = shiftHours * 60 + shiftMinutes;
@@ -122,10 +129,7 @@ const setupSocketIO = (io) => {
         }
       }
 
-      let logicalShiftDate =
-        now.getHours() >= shiftHours
-          ? today
-          : new Date(now - 86400000).toISOString().split("T")[0];
+      let logicalShiftDate = now.getHours() >= shiftHours ? today : new Date(now - 86400000).toISOString().split("T")[0];
 
       let timeLog = await TimeLog.findOne({
         where: {
@@ -142,9 +146,7 @@ const setupSocketIO = (io) => {
 
       if (timeLog) {
         if (timeLog.logged_out_time != null) {
-          const [logoutHours, logoutMinutes] = timeLog.logged_out_time
-            .split(":")
-            .map(Number);
+          const [logoutHours, logoutMinutes] = timeLog.logged_out_time.split(":").map(Number);
           let logoutTotalMinutes = logoutHours * 60 + logoutMinutes;
 
           if (logoutTotalMinutes < shiftStartTotalMinutes) {
@@ -164,9 +166,7 @@ const setupSocketIO = (io) => {
           lateComing = 1;
           lateComingDuration = `${Math.floor(lateMinutes / 60)
             .toString()
-            .padStart(2, "0")}:${(lateMinutes % 60)
-            .toString()
-            .padStart(2, "0")}`;
+            .padStart(2, "0")}:${(lateMinutes % 60).toString().padStart(2, "0")}`;
         }
 
         let formattedHours = String(currentHours % 24).padStart(2, "0");
@@ -261,7 +261,7 @@ const handleAdminSocket = async (socket, io) => {
           clientSocket.leave(newRoom);
         }
       }
-
+      console.log("socket call");
       const response = await getUserReport(data);
       io.to(newRoom).emit("getUserReport", response);
     } catch (error) {
@@ -398,6 +398,8 @@ const getUserStats = async (io, socket) => {
 
 const getUserReport = async (data) => {
   try {
+    console.log(data);
+
     let user = await User.findOne({
       where: { id: data.id },
       include: [
@@ -422,9 +424,7 @@ const getUserReport = async (data) => {
       };
     }
 
-    let today = data.date
-      ? new Date(data.date).toISOString().split("T")[0]
-      : new Date().toISOString().split("T")[0];
+    let today = data.date ? new Date(data.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
 
     // Fetch web history
     let web_query = `SELECT url, count(id) as visits FROM user_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY url`;
@@ -443,15 +443,10 @@ const getUserReport = async (data) => {
     let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
     // Fetch productive and non-productive app data
-    const productiveAndNonProductiveData =
-      await singleUserProductiveAppAndNonproductiveApps(data.id, today);
+    const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(data.id, today);
 
     // Fetch productive and non-productive website data
-    const productiveAndNonProductiveWebData =
-      await singleUserProductiveWebsitesAndNonproductiveWebsites(
-        data.id,
-        today
-      );
+    const productiveAndNonProductiveWebData = await singleUserProductiveWebsitesAndNonproductiveWebsites(data.id, today);
 
     // Combine the response data
     return {
@@ -463,8 +458,7 @@ const getUserReport = async (data) => {
         userHistories,
         appHistories,
         productiveAndNonProductiveData: productiveAndNonProductiveData || [],
-        productiveAndNonProductiveWebData:
-          productiveAndNonProductiveWebData || [],
+        productiveAndNonProductiveWebData: productiveAndNonProductiveWebData || [],
       },
     };
   } catch (error) {
@@ -495,33 +489,18 @@ const singleUserProductiveAppAndNonproductiveApps = async (userId, date) => {
       date,
     });
 
-    if (
-      !Array.isArray(nonProductiveAppsData) ||
-      !Array.isArray(productiveAppsData)
-    ) {
+    if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       console.error("Invalid data format.");
-      return { success: false, message: "Invalid data format.", data: [] };
+      return { success: false, message: "User was absent on this date or the entered date.", data: [] };
     }
 
     const [primaryData, secondaryData, primaryKey, secondaryKey] =
       nonProductiveAppsData.length >= productiveAppsData.length
-        ? [
-            nonProductiveAppsData,
-            productiveAppsData,
-            "non_productive_apps_total_time",
-            "productive_apps_value",
-          ]
-        : [
-            productiveAppsData,
-            nonProductiveAppsData,
-            "productive_apps_value",
-            "non_productive_apps_total_time",
-          ];
+        ? [nonProductiveAppsData, productiveAppsData, "non_productive_apps_total_time", "productive_apps_value"]
+        : [productiveAppsData, nonProductiveAppsData, "productive_apps_value", "non_productive_apps_total_time"];
 
     const combinedData = primaryData.map((primaryItem) => {
-      const matchingSecondaryItem = secondaryData.find(
-        (secondaryItem) => secondaryItem.name === primaryItem.name
-      );
+      const matchingSecondaryItem = secondaryData.find((secondaryItem) => secondaryItem.name === primaryItem.name);
       return {
         period: primaryItem.name,
         [primaryKey]: parseFloat(primaryItem.value || "0.0"),
@@ -531,10 +510,7 @@ const singleUserProductiveAppAndNonproductiveApps = async (userId, date) => {
 
     return combinedData;
   } catch (error) {
-    console.error(
-      "Error in singleUserProductiveAppAndNonproductiveApps:",
-      error
-    );
+    console.error("Error in singleUserProductiveAppAndNonproductiveApps:", error);
     return { success: false, message: "Internal Server Error", data: [] };
   }
 };
@@ -643,10 +619,7 @@ const singleUserProductiveAppData = async ({ userId, date }) => {
 
 // Website data Calculate: ----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-const singleUserProductiveWebsitesAndNonproductiveWebsites = async (
-  userId,
-  date
-) => {
+const singleUserProductiveWebsitesAndNonproductiveWebsites = async (userId, date) => {
   try {
     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData({
       userId,
@@ -658,32 +631,17 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (
       date,
     });
 
-    if (
-      !Array.isArray(nonProductiveWebsitesData) ||
-      !Array.isArray(productiveWebsitesData)
-    ) {
-      return { success: false, message: "Invalid data format", data: [] };
+    if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {
+      return { success: false, message: "User was absent on this date or the entered date", data: [] };
     }
 
     const [primaryData, secondaryData, primaryKey, secondaryKey] =
       nonProductiveWebsitesData.length >= productiveWebsitesData.length
-        ? [
-            nonProductiveWebsitesData,
-            productiveWebsitesData,
-            "non_productive_websites_total_time",
-            "productive_websites_value",
-          ]
-        : [
-            productiveWebsitesData,
-            nonProductiveWebsitesData,
-            "productive_websites_value",
-            "non_productive_websites_total_time",
-          ];
+        ? [nonProductiveWebsitesData, productiveWebsitesData, "non_productive_websites_total_time", "productive_websites_value"]
+        : [productiveWebsitesData, nonProductiveWebsitesData, "productive_websites_value", "non_productive_websites_total_time"];
 
     const combinedData = primaryData.map((primaryItem) => {
-      const matchingSecondaryItem = secondaryData.find(
-        (secondaryItem) => secondaryItem.name === primaryItem.name
-      );
+      const matchingSecondaryItem = secondaryData.find((secondaryItem) => secondaryItem.name === primaryItem.name);
       return {
         period: primaryItem.name,
         [primaryKey]: parseFloat(primaryItem.value || "0.0"),
@@ -693,10 +651,7 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (
 
     return combinedData;
   } catch (error) {
-    console.error(
-      "Error in singleUserProductiveWebsitesAndNonproductiveWebsites:",
-      error
-    );
+    console.error("Error in singleUserProductiveWebsitesAndNonproductiveWebsites:", error);
     return { success: false, message: "Internal Server Error", data: [] };
   }
 };
@@ -865,9 +820,7 @@ export const adminController = {
       });
       let totalUsers = users.length;
       let activeUsers = users.filter((user) => user.currentStatus == 1).length;
-      let inactiveUsers = users.filter(
-        (user) => user.currentStatus == 0
-      ).length;
+      let inactiveUsers = users.filter((user) => user.currentStatus == 0).length;
 
       io.to(`Admin_${socket.user.company_id}`).emit("userCount", {
         totalUsers,
@@ -898,23 +851,13 @@ export const adminController = {
       let urlStats = await UserHistory.findAll({
         where: { date: today },
         attributes: [
-          [
-            Sequelize.fn(
-              "REGEXP_SUBSTR",
-              Sequelize.col("url"),
-              "^(?:https?:\\/\\/)?(?:[^@\\/\n]+@)?(?:www\\.)?([^:\\/?\n]+)"
-            ),
-            "host",
-          ],
+          [Sequelize.fn("REGEXP_SUBSTR", Sequelize.col("url"), "^(?:https?:\\/\\/)?(?:[^@\\/\n]+@)?(?:www\\.)?([^:\\/?\n]+)"), "host"],
           [Sequelize.fn("COUNT", Sequelize.col("url")), "count"],
         ],
         group: ["host"],
         order: [[Sequelize.literal("count"), "DESC"]],
       });
-      io.to(`Admin_${socket.user.company_id}`).emit(
-        "urlHostUsageStats",
-        urlStats
-      );
+      io.to(`Admin_${socket.user.company_id}`).emit("urlHostUsageStats", urlStats);
       // socket.emit("urlHostUsageStats", urlStats);
     } catch (error) {
       console.error("Error updating URL host stats:", error.message);
@@ -930,12 +873,7 @@ const handleUserSocket = async (socket, io) => {
   socket.join(`privateRoom_${socket.user.userId}`);
 
   socket.on("newNotification", async (data) => {
-    let notificationCount = await notifyAdmin(
-      socket.user.userId,
-      data.type,
-      data.time,
-      data.url
-    );
+    let notificationCount = await notifyAdmin(socket.user.userId, data.type, data.time, data.url);
     if (notificationCount.error) {
       socket.emit("newNotification", {
         message: "Failed to send notification",
@@ -984,9 +922,7 @@ const handleUserSocket = async (socket, io) => {
       }
 
       let today = new Date().toISOString().split("T")[0];
-      let parsedVisitTime = isNaN(new Date(visitTime))
-        ? new Date()
-        : new Date(visitTime);
+      let parsedVisitTime = isNaN(new Date(visitTime)) ? new Date() : new Date(visitTime);
 
       let company_id = user?.company_id;
 
@@ -998,10 +934,7 @@ const handleUserSocket = async (socket, io) => {
         company_id,
         visitTime: parsedVisitTime,
       });
-      io.to(`privateRoom_${userId}`).emit(
-        "getUserReport",
-        await userData(userId)
-      );
+      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
       socket.emit("historySuccess", {
         message: "History uploaded successfully",
       });
@@ -1040,10 +973,7 @@ const handleUserSocket = async (socket, io) => {
           })
         )
       );
-      io.to(`privateRoom_${userId}`).emit(
-        "getUserReport",
-        await userData(userId)
-      );
+      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
       socket.emit("imageSuccess", { message: "Images uploaded successfully" });
     } catch (error) {
       //console.log("Error uploading images:", error);
@@ -1103,10 +1033,7 @@ const handleUserSocket = async (socket, io) => {
           });
         }
       }
-      io.to(`privateRoom_${userId}`).emit(
-        "getUserReport",
-        await userData(userId)
-      );
+      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
       socket.emit("appHistorySuccess", {
         message: "App history uploaded successfully",
       });
@@ -1138,9 +1065,7 @@ const handleUserSocket = async (socket, io) => {
 
       let shiftData = await getShiftData(userData.teamId);
       let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
-      let [loginHours, loginMinutes] = time_data.logged_in_time
-        .split(":")
-        .map(Number);
+      let [loginHours, loginMinutes] = time_data.logged_in_time.split(":").map(Number);
       console.log({ time_data: time_data.logged_in_time });
 
       let shiftEndTimeInMinutes = endHours * 60 + endMinutes;
@@ -1154,20 +1079,14 @@ const handleUserSocket = async (socket, io) => {
       }
 
       let duration = logoutTimeInMinutes - loginTimeInMinutes;
-      let activeTime =
-        parseInt(duration) -
-        parseInt(time_data.spare_time || 0) -
-        parseInt(time_data.idle_time || 0);
+      let activeTime = parseInt(duration) - parseInt(time_data.spare_time || 0) - parseInt(time_data.idle_time || 0);
 
       let earlyGoing = logoutTimeInMinutes < shiftEndTimeInMinutes ? 1 : 0;
 
       let adjustedLogoutHours = Math.floor(logoutTimeInMinutes / 60) % 24;
       let adjustedLogoutMinutes = logoutTimeInMinutes % 60;
 
-      let formattedLogoutTime = `${String(adjustedLogoutHours).padStart(
-        2,
-        "0"
-      )}:${String(adjustedLogoutMinutes).padStart(2, "0")}`;
+      let formattedLogoutTime = `${String(adjustedLogoutHours).padStart(2, "0")}:${String(adjustedLogoutMinutes).padStart(2, "0")}`;
 
       await time_data.update({
         logged_out_time: formattedLogoutTime,
@@ -1201,14 +1120,7 @@ const getUserSettings = async (socket) => {
   try {
     let user = await User.findOne({
       where: { id: socket.user.userId },
-      attributes: [
-        "screen_capture_time",
-        "broswer_capture_time",
-        "app_capture_time",
-        "screen_capture",
-        "broswer_capture",
-        "app_capture",
-      ],
+      attributes: ["screen_capture_time", "broswer_capture_time", "app_capture_time", "screen_capture", "broswer_capture", "app_capture"],
     });
     if (!user) {
       return { error: "User not found" };
@@ -1248,10 +1160,7 @@ const notifyAdmin = async (id, type, time, url) => {
         title: type == 1 ? "Login successful" : "Logout successful",
         company_id,
         date: today,
-        message:
-          type == 1
-            ? `${user?.fullname} login successfully`
-            : `${user?.fullname} logout successfully`,
+        message: type == 1 ? `${user?.fullname} login successfully` : `${user?.fullname} logout successfully`,
       });
     } else if (type == 3) {
       if (!time) {
