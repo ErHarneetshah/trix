@@ -6,6 +6,6 @@
 // const router = express.Router();
 // const dashInstance = new dashboardController();
 
-// router.get("/dashboard",authMiddleware,verifyAdminMiddleware,dashInstance.getDashboardData)
+// router.get("/dashboard",authMiddleware,dashInstance.getDashboardData)
 
 // export default router;

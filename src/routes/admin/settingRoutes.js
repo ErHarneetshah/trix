@@ -26,33 +26,33 @@ router.get("/", (req, res) => {
 });
 
 
-router.get('/get-admin-details', authMiddleware, verifyAdminMiddleware, settingsController.getAdminDetails);
-router.put('/update-admin-details', authMiddleware, verifyAdminMiddleware, settingsController.updateAdminDetails);
+router.get('/get-admin-details', authMiddleware,  settingsController.getAdminDetails);
+router.put('/update-admin-details', authMiddleware,  settingsController.updateAdminDetails);
 
-router.post('/add-blocked-websites', authMiddleware, verifyAdminMiddleware, settingsController.addBlockWebsites);
-router.get('/get-blocked-websites', authMiddleware, verifyAdminMiddleware, settingsController.getBlockedWebsites);
-router.post('/update-sites-status', authMiddleware, verifyAdminMiddleware, settingsController.updateSitesStatus);
+router.post('/add-blocked-websites', authMiddleware,  settingsController.addBlockWebsites);
+router.get('/get-blocked-websites', authMiddleware,  settingsController.getBlockedWebsites);
+router.post('/update-sites-status', authMiddleware,  settingsController.updateSitesStatus);
 
-router.post('/add-productive-apps', authMiddleware, verifyAdminMiddleware, uploadImageWithPath, settingsController.addProductiveApps);
-router.get('/get-app-info', authMiddleware, verifyAdminMiddleware, settingsController.getAppInfo);
+router.post('/add-productive-apps', authMiddleware,  uploadImageWithPath, settingsController.addProductiveApps);
+router.get('/get-app-info', authMiddleware,  settingsController.getAppInfo);
 
-router.get('/get-report-status', authMiddleware, verifyAdminMiddleware, settingsController.getReportStatus);
-router.put('/update-report-status', authMiddleware, verifyAdminMiddleware, settingsController.updateReportSettings);
+router.get('/get-report-status', authMiddleware,  settingsController.getReportStatus);
+router.put('/update-report-status', authMiddleware,  settingsController.updateReportSettings);
 
 //email gateway routes
-router.post('/add-email-gateways', authMiddleware, verifyAdminMiddleware, emailGatewayController.addEmailGateeways);
-router.post('/check-email-server', authMiddleware, verifyAdminMiddleware, emailGatewayController.checkEmailServer);
-router.get('/get-email-list', authMiddleware, verifyAdminMiddleware, emailGatewayController.getEmailList);
+router.post('/add-email-gateways', authMiddleware,  emailGatewayController.addEmailGateeways);
+router.post('/check-email-server', authMiddleware,  emailGatewayController.checkEmailServer);
+router.get('/get-email-list', authMiddleware,  emailGatewayController.getEmailList);
 
 
 //add productive websites
-router.post('/add-productive-websites', authMiddleware, verifyAdminMiddleware, settingsController.addProductiveWebsites);
-router.get('/get-productive-websites', authMiddleware, verifyAdminMiddleware, settingsController.getProductiveWebsites);
+router.post('/add-productive-websites', authMiddleware,  settingsController.addProductiveWebsites);
+router.get('/get-productive-websites', authMiddleware,  settingsController.getProductiveWebsites);
 
 //language settings routes
-router.get('/get-language-dropdown', authMiddleware, verifyAdminMiddleware, languageController.getLanguageDropdown);
-router.put('/update-language', authMiddleware, verifyAdminMiddleware, languageController.updateLanguage);
-router.get('/get-theme-status', authMiddleware, verifyAdminMiddleware, languageController.getThemeStatus);
+router.get('/get-language-dropdown', authMiddleware,  languageController.getLanguageDropdown);
+router.put('/update-language', authMiddleware,  languageController.updateLanguage);
+router.get('/get-theme-status', authMiddleware,  languageController.getThemeStatus);
 
 
 export default router;
