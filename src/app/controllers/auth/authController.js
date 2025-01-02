@@ -317,7 +317,7 @@ class authController extends jwtService {
       let token;
       if (user.isAdmin) {
         //Deleting previous sessions here
-        await accessToken.destroy({ where: { userId: user.id } });
+        // await accessToken.destroy({ where: { userId: user.id } });  //! commenting for now
 
         token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
@@ -363,7 +363,7 @@ class authController extends jwtService {
         // }
 
         //Deleting previous sessions here
-        await accessToken.destroy({ where: { userId: user.id } });
+        // await accessToken.destroy({ where: { userId: user.id } }); //! commenting for now
 
 
         token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
