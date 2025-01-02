@@ -13,7 +13,7 @@ router.post("/addTeamMembers",  authMiddleware,   teamMemberInstance.addTeamMemb
 router.put("/updateTeamMembers", authMiddleware,   teamMemberInstance.updateTeamMembers);
 router.put("/updateTeamMemberSettings", authMiddleware,   teamMemberInstance.updateSettings);
 router.get("/getTeamList",authMiddleware ,teamMemberInstance.getTeamlist);
-router.post("/generatePassword", authMiddleware,  teamMemberInstance.generateNewPassword);
-router.post("/deactivateTeamMember", authMiddleware,   teamMemberInstance.deactivateTeamMember);
+router.post("/generatePassword", authMiddleware,   teamMemberInstance.generateNewPassword);
+router.post("/deactivateTeamMember", authMiddleware,   teamMemberInstance.deactivateActivateTeamMember);
 
 export default router;

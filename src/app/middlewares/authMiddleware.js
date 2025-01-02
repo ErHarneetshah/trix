@@ -35,7 +35,7 @@ const authMiddleware = async (req, res, next) => {
     });
     if (!user) return helper.failed(res, variables.NotFound, "User not found in system!");
 
-    if(!parseInt(user.status)) return helper.failed(res, variables.Unauthorized, "Your are not Allowed to Authorize!");
+    if(!user.dataValues.status) return helper.failed(res, variables.Unauthorized, "Your are not Allowed to Authorize!");
 
     req.user = user;
     req.sessionToken = token;

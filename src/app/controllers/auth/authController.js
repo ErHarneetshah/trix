@@ -312,7 +312,7 @@ class authController extends jwtService {
       }
 
       if (!user.status) {
-        return helper.sendResponse(res, variables.Forbidden, 0, null, "Your Account has been De-Activated. Contact Support");
+        return helper.sendResponse(res, variables.Unauthorized, 0, null, "Your Account has been De-Activated. Contact Support");
       }
       let token;
       if (user.isAdmin) {
