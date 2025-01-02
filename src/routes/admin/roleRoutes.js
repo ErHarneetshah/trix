@@ -6,11 +6,11 @@ import roleController from "../../app/controllers/admin/roleController.js";
 const router = express.Router();
 const roleInstance = new roleController();
 
-router.get("/getAllRole",  authMiddleware,verifyAdminMiddleware,   roleInstance.getAllRole);
-router.get("/getRoleDropdown",  authMiddleware,verifyAdminMiddleware,   roleInstance.getRoleDropdown);
-router.get("/getSpecificRole",  authMiddleware,verifyAdminMiddleware,   roleInstance.getSpecificRole);
-router.post("/addRole",  authMiddleware,verifyAdminMiddleware,   roleInstance.addRole);
-router.put("/updateRole", authMiddleware,verifyAdminMiddleware,   roleInstance.updateRole);
-router.delete("/deleteRole", authMiddleware,verifyAdminMiddleware,   roleInstance.deleteRole);
+router.get("/getAllRole",  authMiddleware,   roleInstance.getAllRole);
+router.get("/getRoleDropdown",  authMiddleware,   roleInstance.getRoleDropdown);
+router.get("/getSpecificRole",  authMiddleware,   roleInstance.getSpecificRole);
+router.post("/addRole",  authMiddleware,   roleInstance.addRole);
+router.put("/updateRole", authMiddleware,   roleInstance.updateRole);
+router.delete("/deleteRole", authMiddleware,   roleInstance.deleteRole);
 
 export default router;
