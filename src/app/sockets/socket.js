@@ -17,7 +17,22 @@ import department from "../../database/models/departmentModel.js";
 import designation from "../../database/models/designationModel.js";
 
 const userData = async (id) => {
-  let user = await User.findOne({ where: { id: id } });
+  let user = await User.findOne({
+    where: { id: id },
+    include: [
+      {
+        model: department,
+        as: "department",
+        attributes: ["name"],
+      },
+      {
+        model: designation,
+        as: "designation",
+        attributes: ["name"],
+      },
+    ],
+  });
+
   let today = new Date().toISOString().split("T")[0];
 
   let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${id} GROUP by url`;
@@ -400,7 +415,6 @@ const getUserReport = async (data) => {
         },
       ],
     });
-    console.log(user.dataValues);
 
     if (!user) {
       return {
@@ -409,20 +423,6 @@ const getUserReport = async (data) => {
         data: null,
       };
     }
-    await user.reload({
-      include: [
-        {
-          model: department,
-          as: "department",
-          attributes: ["name"],
-        },
-        {
-          model: designation,
-          as: "designation",
-          attributes: ["name"],
-        },
-      ],
-    });
 
     let today = data.date ? new Date(data.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
 
