@@ -13,4 +13,6 @@ router.post("/addTeamMembers",  authMiddleware,verifyAdminMiddleware,   teamMemb
 router.put("/updateTeamMembers", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updateTeamMembers);
 router.put("/updateTeamMemberSettings", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updateSettings);
 router.get("/getTeamList",authMiddleware ,teamMemberInstance.getTeamlist);
+router.post("/generatePassword", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.generateNewPassword);
+
 export default router;

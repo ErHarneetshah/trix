@@ -406,6 +406,45 @@ class teamMemberController {
       return helper.failed(res, variables.Failure, "Failed to getTeamMember");
     }
   };
+
+  generateNewPassword = async(req,res) => {
+
+    let { userId } = req.body;
+
+    if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
+    // CHECK THIS ID EXITS IN THE USERS TABLE 
+
+   let isUserExists = await User.findOne({
+      where: {
+        id: userId,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if (!isUserExists) {
+      return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
+    }
+
+    const plainTextPassword = await helper.generatePass();
+    const hashedPassword = await bcrypt.hash(plainTextPassword, 10);
+
+    // update the user password in users table
+    await User.update({password: hashedPassword }, { where: { id: userId, company_id: req.user.company_id } });
+
+    // after updating the password now send the email
+
+    const textMessage = `Hello ${isUserExists.fullname},\n\nYour new password generated successfully!\n\nHere are your login details:\nEmail: ${isUserExists.email}\nPassword: ${plainTextPassword}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
+
+    const subject = "Emonitrix-Generate New Password";
+    const sendmail = await H.sendM(isUserExists.email, subject, textMessage);
+
+    if (!sendmail.success) {
+      return helper.failed(res, variables.BadRequest, "Please Set the Email Credentials First");
+    }
+
+    return helper.success(res, variables.Success, "New Password Generated Successfully.Please check your Email.");
+ 
+  };
 }
 
 export default teamMemberController;
