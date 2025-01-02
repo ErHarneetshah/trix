@@ -445,6 +445,28 @@ class teamMemberController {
     return helper.success(res, variables.Success, "New Password Generated Successfully.Please check your Email.");
  
   };
+
+  deactivateTeamMember = async(req,res) => {
+
+    let { userId } = req.body;
+
+    if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
+    // CHECK THIS ID EXITS IN THE USERS TABLE 
+
+   let isUserExists = await User.findOne({
+      where: {
+        id: userId,
+        company_id: req.user.company_id,
+      },
+    });
+
+    if (!isUserExists) {
+      return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
+    }
+
+    await User.update({status: 0 }, { where: { id: userId, company_id: req.user.company_id } });
+    return helper.success(res, variables.Success, `This user deactivated successfully.`);
+  };
 }
 
 export default teamMemberController;
