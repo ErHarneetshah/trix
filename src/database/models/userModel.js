@@ -100,6 +100,13 @@ const User = sequelize.define(
     },
     next_reports_schedule_date: {
       type: DataTypes.DATE,
+    },
+    otp: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },  otp_expire_time: {
+      type: DataTypes.DATE,
+      allowNull: true,
     }
   },
   {

@@ -408,69 +408,78 @@ class teamMemberController {
   };
 
   generateNewPassword = async (req, res) => {
-    let { userId } = req.body;
+    try {
+      let { userId } = req.body;
 
-    if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
-    // CHECK THIS ID EXITS IN THE USERS TABLE
+      if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
+      // CHECK THIS ID EXITS IN THE USERS TABLE
 
-    let isUserExists = await User.findOne({
-      where: {
-        id: userId,
-        company_id: req.user.company_id,
-      },
-    });
+      let isUserExists = await User.findOne({
+        where: {
+          id: userId,
+          company_id: req.user.company_id,
+        },
+      });
 
-    if (!isUserExists) {
-      return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
+      if (!isUserExists) {
+        return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
+      }
+
+      const plainTextPassword = await helper.generatePass();
+      const hashedPassword = await bcrypt.hash(plainTextPassword, 10);
+
+      // update the user password in users table
+      await User.update({ password: hashedPassword }, { where: { id: userId, company_id: req.user.company_id } });
+
+      // after updating the password now send the email
+
+      const textMessage = `Hello ${isUserExists.fullname},\n\nYour new password generated successfully!\n\nHere are your login details:\nEmail: ${isUserExists.email}\nPassword: ${plainTextPassword}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
+
+      const subject = "Emonitrix-Generate New Password";
+      const sendmail = await H.sendM(isUserExists.email, subject, textMessage);
+
+      if (!sendmail.success) {
+        return helper.failed(res, variables.BadRequest, "Failed to send Email");
+      }
+
+      return helper.success(res, variables.Success, "New Password Generated Successfully.Please check your Email.");
+    } catch (error) {
+      console.error("Error generateNewPassword:", error.message);
+      return helper.failed(res, variables.Failure, "Failed to generateNewPassword");
     }
-
-    const plainTextPassword = await helper.generatePass();
-    const hashedPassword = await bcrypt.hash(plainTextPassword, 10);
-
-    // update the user password in users table
-    await User.update({ password: hashedPassword }, { where: { id: userId, company_id: req.user.company_id } });
-
-    // after updating the password now send the email
-
-    const textMessage = `Hello ${isUserExists.fullname},\n\nYour new password generated successfully!\n\nHere are your login details:\nEmail: ${isUserExists.email}\nPassword: ${plainTextPassword}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
-
-    const subject = "Emonitrix-Generate New Password";
-    const sendmail = await H.sendM(isUserExists.email, subject, textMessage);
-
-    if (!sendmail.success) {
-      return helper.failed(res, variables.BadRequest, "Please Set the Email Credentials First");
-    }
-
-    return helper.success(res, variables.Success, "New Password Generated Successfully.Please check your Email.");
   };
 
   deactivateActivateTeamMember = async (req, res) => {
-    let { userId } = req.body;
+    try {
+      let { userId } = req.body;
 
-    if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
+      if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
+      // CHECK THIS ID EXITS IN THE USERS TABLE
 
-    let isUserExists = await User.findOne({
-      where: {
-        id: userId,
-        company_id: req.user.company_id,
-      },
-    });
+      let isUserExists = await User.findOne({
+        where: {
+          id: userId,
+          company_id: req.user.company_id,
+        },
+      });
 
-    if (!isUserExists) {
-      return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
+      if (!isUserExists) {
+        return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
+      }
+
+      if (isUserExists.isAdmin) {
+        return helper.failed(res, variables.NotFound, "This User cannot be deactivated");
+      }
+
+      let status = isUserExists.status == 1 ? 0 : 1;
+      let message = isUserExists.status == 1 ? "This user deactivated successfully" : "This user activated successfully";
+
+      await User.update({ status: status }, { where: { id: userId, company_id: req.user.company_id } });
+      return helper.success(res, variables.Success, message);
+    } catch (error) {
+      console.error("Error deactivateActivateTeamMember:", error.message);
+      return helper.failed(res, variables.Failure, "Failed to deactivateActivateTeamMember");
     }
-
-    if (isUserExists.isAdmin) {
-      return helper.failed(res, variables.NotFound, "This User cannot be deactivated");
-    }
-
-    console.log(isUserExists.status);
-
-    let status = isUserExists.status == 1 ? 0 : 1;
-    let message = isUserExists.status == 1 ? "This user deactivated successfully" : "This user activated successfully";
-
-    await User.update({ status: status }, { where: { id: userId, company_id: req.user.company_id } });
-    return helper.success(res, variables.Success, message);
   };
 }
 
