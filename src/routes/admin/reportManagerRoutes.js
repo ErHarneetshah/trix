@@ -6,11 +6,11 @@ import reportingManagerController from "../../app/controllers/admin/reportingMan
 const router = express.Router();
 const reportManagerInstance = new reportingManagerController();
 
-router.get("/getAllReportManager",  authMiddleware,verifyAdminMiddleware,   reportManagerInstance.getAllReportManager);
-router.get("/getReportManagerDropdown",  authMiddleware,verifyAdminMiddleware,   reportManagerInstance.getReportManagerDropdown);
-router.put("/updateReportManager", authMiddleware,verifyAdminMiddleware,   reportManagerInstance.updateReportManager);
-// router.post("/addReportManager",  authMiddleware,verifyAdminMiddleware,   reportManagerInstance.addReportManager);
-// router.delete("/deleteReportManager", authMiddleware,verifyAdminMiddleware,   reportManagerInstance.deleteReportManager);
+router.get("/getAllReportManager",  authMiddleware,   reportManagerInstance.getAllReportManager);
+router.get("/getReportManagerDropdown",  authMiddleware,   reportManagerInstance.getReportManagerDropdown);
+router.put("/updateReportManager", authMiddleware,   reportManagerInstance.updateReportManager);
+// router.post("/addReportManager",  authMiddleware,   reportManagerInstance.addReportManager);
+// router.delete("/deleteReportManager", authMiddleware,   reportManagerInstance.deleteReportManager);
 
 //* Under Progress Routes
 router.post("/addReportManager",  (req, res) => {

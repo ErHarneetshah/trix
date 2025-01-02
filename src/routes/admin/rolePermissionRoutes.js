@@ -6,7 +6,7 @@ import rolePermissionController from "../../app/controllers/admin/rolePermission
 const router = express.Router();
 const rolePermissionInstance = new rolePermissionController();
 
-router.get("/getAllRolePermission",  authMiddleware,verifyAdminMiddleware,   rolePermissionInstance.getAllRolePermissions);
-router.put("/updateRolePermission", authMiddleware,verifyAdminMiddleware,   rolePermissionInstance.updateMultipleRolePermission);
+router.get("/getAllRolePermission",  authMiddleware,   rolePermissionInstance.getAllRolePermissions);
+router.put("/updateRolePermission", authMiddleware,   rolePermissionInstance.updateMultipleRolePermission);
 
 export default router;

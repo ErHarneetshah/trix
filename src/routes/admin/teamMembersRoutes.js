@@ -6,14 +6,14 @@ import teamMemberController from "../../app/controllers/admin/teamMemberControll
 const router = express.Router();
 const teamMemberInstance = new teamMemberController();
 
-router.get("/getAllTeamMembers",  authMiddleware,verifyAdminMiddleware,   teamMemberInstance.getAllTeamMembers);
-router.get("/getSpecificTeamMembers",  authMiddleware,verifyAdminMiddleware,   teamMemberInstance.getSpecificTeamMembers);
-router.get("/getMembersInTeam",  authMiddleware,verifyAdminMiddleware,   teamMemberInstance.getMembersInTeam);
-router.post("/addTeamMembers",  authMiddleware,verifyAdminMiddleware,   teamMemberInstance.addTeamMembers);
-router.put("/updateTeamMembers", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updateTeamMembers);
-router.put("/updateTeamMemberSettings", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.updateSettings);
+router.get("/getAllTeamMembers",  authMiddleware,   teamMemberInstance.getAllTeamMembers);
+router.get("/getSpecificTeamMembers",  authMiddleware,   teamMemberInstance.getSpecificTeamMembers);
+router.get("/getMembersInTeam",  authMiddleware,   teamMemberInstance.getMembersInTeam);
+router.post("/addTeamMembers",  authMiddleware,   teamMemberInstance.addTeamMembers);
+router.put("/updateTeamMembers", authMiddleware,   teamMemberInstance.updateTeamMembers);
+router.put("/updateTeamMemberSettings", authMiddleware,   teamMemberInstance.updateSettings);
 router.get("/getTeamList",authMiddleware ,teamMemberInstance.getTeamlist);
-router.post("/generatePassword", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.generateNewPassword);
-router.post("/deactivateTeamMember", authMiddleware,verifyAdminMiddleware,   teamMemberInstance.deactivateActivateTeamMember);
+router.post("/generatePassword", authMiddleware,   teamMemberInstance.generateNewPassword);
+router.post("/deactivateTeamMember", authMiddleware,   teamMemberInstance.deactivateActivateTeamMember);
 
 export default router;
