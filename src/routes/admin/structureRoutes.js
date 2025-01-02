@@ -8,10 +8,10 @@ const router = express.Router();
 
 
 router.get("/view", authMiddleware, treeStructureController.viewTreeStructure);
-// router.get("/getShiftDropdown",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getShiftDropdown);
-// router.get("/getSpecificShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.getSpecificShift);
-// router.post("/addShift",  authMiddleware,verifyAdminMiddleware,   shiftInstance.addShift);
-// router.put("/updateShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.updateShift);
-// router.delete("/deleteShift", authMiddleware,verifyAdminMiddleware,   shiftInstance.deleteShift);
+// router.get("/getShiftDropdown",  authMiddleware,   shiftInstance.getShiftDropdown);
+// router.get("/getSpecificShift",  authMiddleware,   shiftInstance.getSpecificShift);
+// router.post("/addShift",  authMiddleware,   shiftInstance.addShift);
+// router.put("/updateShift", authMiddleware,   shiftInstance.updateShift);
+// router.delete("/deleteShift", authMiddleware,   shiftInstance.deleteShift);
 
 export default router;
