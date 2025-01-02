@@ -22,4 +22,8 @@ router.post("/markall_notification",authMiddleware, authInstance.markAsRead);
 router.get("/get_notification",authMiddleware, authInstance.notification_page);
 router.put("/advanced_setting",authMiddleware, authInstance.advanced_setting);
 router.get("/get_advanced_setting",authMiddleware, authInstance.get_advanced_setting);
+
+router.post("/sendEmail", authInstance.sendOtp);
+router.post("/changePassword", authInstance.changePassword);
+
 export default router;
