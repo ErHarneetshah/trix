@@ -10,6 +10,7 @@ import team from "../../../database/models/teamModel.js";
 import { Op } from "sequelize";
 import H from "../../../utils/Mail.js";
 import bcrypt from "bcrypt";
+import company from "../../../database/models/company.js";
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
@@ -22,45 +23,79 @@ class teamMemberController {
 
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
+      limit = parseInt(limit);
+      let offset = (page - 1) * limit;
       let searchable = ["fullname", "email", "mobile", "country", "$department.name$", "$designation.name$", "$role.name$", "$team.name$"];
       let where = await helper.searchCondition(searchParam, searchable);
       where.isAdmin = 0;
       where.company_id = req.user.company_id;
       // ___________-----------------------------------------------_______________
 
-      const alldata = await User.findAndCountAll({
-        where: where,
-        offset: offset,
-        limit: limit,
-        order: [["id", "DESC"]],
-        attributes: {
-          exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt"],
-        },
-        include: [
-          {
-            model: department,
-            as: "department",
-            attributes: ["name"],
+      let alldata;
+
+      if (parseInt(limit) > 0 && parseInt(offset) > 0) {
+        alldata = await User.findAndCountAll({
+          where: where,
+          offset: offset,
+          limit: limit,
+          order: [["id", "DESC"]],
+          attributes: {
+            exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt"],
           },
-          {
-            model: designation,
-            as: "designation",
-            attributes: ["name"],
+          include: [
+            {
+              model: department,
+              as: "department",
+              attributes: ["name"],
+            },
+            {
+              model: designation,
+              as: "designation",
+              attributes: ["name"],
+            },
+            {
+              model: role,
+              as: "role",
+              attributes: ["name"],
+            },
+            {
+              model: team,
+              as: "team",
+              attributes: ["name"],
+            },
+          ],
+        });
+      } else {
+        alldata = await User.findAndCountAll({
+          where: where,
+          order: [["id", "DESC"]],
+          attributes: {
+            exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt"],
           },
-          {
-            model: role,
-            as: "role",
-            attributes: ["name"],
-          },
-          {
-            model: team,
-            as: "team",
-            attributes: ["name"],
-          },
-        ],
-      });
+          include: [
+            {
+              model: department,
+              as: "department",
+              attributes: ["name"],
+            },
+            {
+              model: designation,
+              as: "designation",
+              attributes: ["name"],
+            },
+            {
+              model: role,
+              as: "role",
+              attributes: ["name"],
+            },
+            {
+              model: team,
+              as: "team",
+              attributes: ["name"],
+            },
+          ],
+        });
+      }
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
@@ -185,6 +220,10 @@ class teamMemberController {
       const plainTextPassword = await helper.generatePass();
       const hashedPassword = await bcrypt.hash(plainTextPassword, 10);
 
+      const companyPrefix = await company.findOne({ where: { id: req.user.company_id } });
+      const newEmployeeCount = parseInt(companyPrefix.employeeCount) + 1;
+
+      requestData.empId = `${companyPrefix.companyEmpPrefix}-${newEmployeeCount}`;
       requestData.password = hashedPassword;
       requestData.screen_capture_time = 60;
       requestData.app_capture_time = 60;
@@ -194,6 +233,16 @@ class teamMemberController {
       const teamMember = await User.create(requestData, {
         transaction: dbTransaction,
       });
+
+      const updateEmpCount = await company.update(
+        { employeeCount: Number(newEmployeeCount) },
+        {
+          where: {
+            id: req.user.company_id,
+          },
+          transaction: dbTransaction,
+        }
+      );
 
       if (teamMember) {
         const textMessage = `Hello ${teamMember.fullname},\n\nYour account has been created successfully!\n\nHere are your login details:\n\nUsername: ${teamMember.fullname}\nEmail: ${teamMember.email}\nPassword: ${plainTextPassword}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
@@ -260,7 +309,6 @@ class teamMemberController {
         where: { id: updateFields.departmentId, company_id: req.user.company_id },
       });
       if (!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
-
 
       const existsRole = await role.findOne({
         where: { id: updateFields.roleId, company_id: req.user.company_id },

@@ -227,7 +227,7 @@ export default {
       return name.slice(0, 4);
     }
   
-    return `${name}`; 
+    return name.toUpperCase(); 
   },
   
 };

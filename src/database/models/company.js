@@ -29,36 +29,17 @@ const company = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    employeeCount: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      default: 0,
+    },
     status: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: 1,
       comment: "0 for Inactive, 1 for active",
     },
-    // screen_capture_time: {
-    //   type: DataTypes.STRING,
-    //   defaultValue: 60,
-    // },
-    // broswer_capture_time: {
-    //   type: DataTypes.STRING,
-    //   defaultValue: 60,
-    // },
-    // app_capture_time: {
-    //   type: DataTypes.STRING,
-    //   defaultValue: 60,
-    // },
-    // screen_capture: {
-    //   type: DataTypes.BOOLEAN,
-    //   defaultValue: 1,
-    // },
-    // broswer_capture: {
-    //   type: DataTypes.BOOLEAN,
-    //   defaultValue: 1,
-    // },
-    // app_capture: {
-    //   type: DataTypes.BOOLEAN,
-    //   defaultValue: 1,
-    // },
   },
   {
     timestamps: true,
@@ -93,5 +74,5 @@ const company = sequelize.define(
   }
 );
 
-// await company.sync({ alter: 1 });
+await company.sync({ alter: 1 });
 export default company;

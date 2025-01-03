@@ -73,7 +73,7 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Register Company");
       }
 
-      companyPrefix = `${companyPrefix}_${createCompany.id}`;
+      companyPrefix = `${companyPrefix}-${createCompany.id}`;
 
       const updateCompany = await company.update(
         {
@@ -213,7 +213,7 @@ class authController extends jwtService {
       //* -------------- Create User -------------------------
       const createUser = await User.create(
         {
-          empId: `${companyPrefix}_${companyUserCount}`,
+          empId: `${companyPrefix}-${companyUserCount}`,
           company_id: createCompany.id,
           fullname: requestData.name,
           email: requestData.email,
@@ -238,6 +238,16 @@ class authController extends jwtService {
         if (dbTransaction) await dbTransaction.rollback();
         return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create User for this Company");
       }
+
+      const updateEmpCount = await company.increment(
+        { employeeCount: Number(companyUserCount) },
+        {
+          where: {
+            id: createCompany.id,
+          },
+          transaction: dbTransaction,
+        }
+      );
 
       //* -------------- Update Department --------------------------
       const updateDept = await department.update(
@@ -675,7 +685,7 @@ class authController extends jwtService {
       // UPDATE THE USERS TABLE
       await User.update({ otp: otp , otp_expire_time: otpExpireTime}, { where: { id: isUserExist.id} });
 
-      const textMessage = `Hello ${isUserExist.fullname},\n\nYour OTP is ${otp},\n\nBest regards`;
+      const textMessage = `Hello ${isUserExist.fullname},\n\nYour OTP is ${otp}. This OTP is valid for only 2 mimnutes.\n\nBest regards`;
 
       const subject = "Emonitrix-Otp for Forgot Password";
       const sendmail = await H.sendM(isUserExist.email, subject, textMessage);

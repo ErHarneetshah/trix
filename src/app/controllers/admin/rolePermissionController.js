@@ -65,10 +65,10 @@ class rolePermissionController {
 
   getSpecificRolePermissions = async (roleId, moduleName, routeMethod, companyId) => {
     try {
-      // ___________-------- Role Permisisons Exists or not ---------________________
-      const isApproved = await helper.checkRolePermission(roleId, "Role Permissions", routeMethod, companyId);
-      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
-      // ___________-------- Role Permisisons Exists or not ---------________________
+      // // ___________-------- Role Permisisons Exists or not ---------________________
+      // const isApproved = await helper.checkRolePermission(roleId, "Role Permissions", routeMethod, companyId);
+      // if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // // ___________-------- Role Permisisons Exists or not ---------________________
 
       const roleModuleData = await rolePermission.findOne({
         where: { roleId: roleId, modules: moduleName, company_id: companyId },
