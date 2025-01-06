@@ -21,10 +21,6 @@ const company = sequelize.define(
       unique: true,
       allowNull: false,
      },
-    employeeNumber: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
     companyEmpPrefix: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -32,7 +28,32 @@ const company = sequelize.define(
     employeeCount: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      default: 0,
+      defaultValue: 0,
+      Comment: "Current Employee Count in company",
+    },
+    currentPlanId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    planEmployeeCount: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      Comment: "Employee Count allowed for the company based on plan",
+      defaultValue: 10,
+    },
+    planStartDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
+    planEndDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+      defaultValue: () => {
+        const today = new Date();
+        today.setDate(today.getDate() + 7);
+        return today.toISOString().split('T')[0];
+      },
     },
     status: {
       type: DataTypes.BOOLEAN,
@@ -74,5 +95,5 @@ const company = sequelize.define(
   }
 );
 
-await company.sync({ alter: 1 });
+// await company.sync({ alter: 1 });
 export default company;
