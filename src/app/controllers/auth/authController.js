@@ -688,7 +688,7 @@ class authController extends jwtService {
       const textMessage = `Hello ${isUserExist.fullname},\n\nYour OTP is ${otp}. This OTP is valid for only 2 mimnutes.\n\nBest regards`;
 
       const subject = "Emonitrix-Otp for Forgot Password";
-      const sendmail = await H.sendM(isUserExist.email, subject, textMessage);
+      const sendmail = await H.sendM(req.user.company_id, isUserExist.email, subject, textMessage);
 
       if (!sendmail.success) {
         return helper.failed(res, variables.BadRequest, "Failed to send Email. Please try Again!");
@@ -737,7 +737,7 @@ class authController extends jwtService {
       const textMessage = `Hello ${user.fullname},\n\nYour  password changed successfully!\n\nHere are your login details:\nEmail: ${user.email}\nPassword: ${password}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
 
       const subject = "Emonitrix-Updated Password";
-      const sendmail = await H.sendM(user.email, subject, textMessage);
+      const sendmail = await H.sendM(req.user.company_id, user.email, subject, textMessage);
 
       if (!sendmail.success) {
         return helper.failed(res, variables.BadRequest, "Failed to send Email");
