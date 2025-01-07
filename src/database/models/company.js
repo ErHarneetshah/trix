@@ -34,6 +34,7 @@ const company = sequelize.define(
     currentPlanId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      defaultValue: 0,
     },
     planEmployeeCount: {
       type: DataTypes.INTEGER,
@@ -95,5 +96,5 @@ const company = sequelize.define(
   }
 );
 
-// await company.sync({ alter: 1 });
+await company.sync({ alter: 1 });
 export default company;
