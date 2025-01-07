@@ -678,7 +678,6 @@ class authController extends jwtService {
         return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
       }
 
-      console.log(isUserExist);
       let otp = Math.floor(100000 + Math.random() * 900000);
       let otpExpireTime = new Date();
       otpExpireTime.setMinutes(otpExpireTime.getMinutes() + 2);
@@ -688,14 +687,14 @@ class authController extends jwtService {
       const textMessage = `Hello ${isUserExist.fullname},\n\nYour OTP is ${otp}. This OTP is valid for only 2 mimnutes.\n\nBest regards`;
 
       const subject = "Emonitrix-Otp for Forgot Password";
-      const sendmail = await H.sendM(req.user.company_id, isUserExist.email, subject, textMessage);
+      const sendmail = await H.sendM(isUserExist.company_id, isUserExist.email, subject, textMessage);
 
       if (!sendmail.success) {
         return helper.failed(res, variables.BadRequest, "Failed to send Email. Please try Again!");
       }
       return helper.success(res, variables.Success, "OTP is sent to your email.Please check your Email.");
     } catch (error) {
-      return helper.failed(res, variables.BadRequest, "No User Found in our Records");
+      return helper.failed(res, variables.BadRequest, "Unable to Fulfil Request. Please Try Again!");
     }
   };
 
@@ -737,7 +736,7 @@ class authController extends jwtService {
       const textMessage = `Hello ${user.fullname},\n\nYour  password changed successfully!\n\nHere are your login details:\nEmail: ${user.email}\nPassword: ${password}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
 
       const subject = "Emonitrix-Updated Password";
-      const sendmail = await H.sendM(req.user.company_id, user.email, subject, textMessage);
+      const sendmail = await H.sendM(user.company_id, user.email, subject, textMessage);
 
       if (!sendmail.success) {
         return helper.failed(res, variables.BadRequest, "Failed to send Email");
@@ -746,7 +745,7 @@ class authController extends jwtService {
   
     } catch (error) {
       console.error("Error generateNewPassword:", error.message);
-      return helper.failed(res, variables.Failure, "Failed to getTeamMember");
+      return helper.failed(res, variables.BadRequest, "Failed to getTeamMember");
     }
   };
 

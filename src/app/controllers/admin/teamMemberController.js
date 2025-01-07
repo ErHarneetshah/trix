@@ -421,7 +421,7 @@ class teamMemberController {
       return helper.sendResponse(res, variables.Success, 1, {}, "Settings Updated Successfully");
     } catch (error) {
       console.error("Error updating settings:", error.message);
-      return helper.failed(res, variables.Failure, "Failed to update settings");
+      return helper.failed(res, variables.BadRequest, "Failed to update settings");
     }
   };
 
@@ -452,7 +452,7 @@ class teamMemberController {
       return helper.sendResponse(res, variables.Success, 1, data, "Team List Fetched Successfully");
     } catch (error) {
       console.error("Error getTeamMember:", error.message);
-      return helper.failed(res, variables.Failure, "Failed to getTeamMember");
+      return helper.failed(res, variables.BadRequest, "Failed to getTeamMember");
     }
   };
 
@@ -494,7 +494,7 @@ class teamMemberController {
       return helper.success(res, variables.Success, "New Password Generated Successfully.Please check your Email.");
     } catch (error) {
       console.error("Error generateNewPassword:", error.message);
-      return helper.failed(res, variables.Failure, "Failed to generateNewPassword");
+      return helper.failed(res, variables.BadRequest, "Failed to generateNewPassword");
     }
   };
 
@@ -513,21 +513,21 @@ class teamMemberController {
       });
 
       if (!isUserExists) {
-        return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
+        return helper.failed(res, variables.NotFound, "User does not exist in our records.");
       }
 
       if (isUserExists.isAdmin) {
-        return helper.failed(res, variables.NotFound, "This User cannot be deactivated");
+        return helper.failed(res, variables.NotFound, "User cannot be deactivated");
       }
 
       let status = isUserExists.status == 1 ? 0 : 1;
-      let message = isUserExists.status == 1 ? "This user deactivated successfully" : "This user activated successfully";
+      let message = isUserExists.status == 1 ? "User Deactivated Successfully" : "User Activated Successfully";
 
       await User.update({ status: status }, { where: { id: userId, company_id: req.user.company_id } });
       return helper.success(res, variables.Success, message);
     } catch (error) {
       console.error("Error deactivateActivateTeamMember:", error.message);
-      return helper.failed(res, variables.Failure, "Failed to deactivateActivateTeamMember");
+      return helper.failed(res, variables.BadRequest, "Failed to Update User Status");
     }
   };
 }
