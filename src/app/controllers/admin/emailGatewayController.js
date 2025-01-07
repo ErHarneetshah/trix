@@ -29,7 +29,7 @@ const addEmailGateeways = async (req, res) => {
       username: "required|string|min:1|max:100",
       password: "required|string|min:6",
       port: "required|numeric|min:1|max:65535",
-      fromUsername: "required|string",
+      fromUsername: "required|email",
     };
 
     const { status, message } = await validate(req.body, rules);
@@ -55,7 +55,7 @@ const addEmailGateeways = async (req, res) => {
       port,
       secure: encryption === "ssl", // 'secure' is true only for SSL
       auth: {
-        user: username,
+        user: fromUsername,
         pass: password,
       },
     };

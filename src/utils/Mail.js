@@ -8,14 +8,13 @@ const sendM = async (company_id, to, subject, message, cc = '', from = "", attac
             where: { is_active: 1, company_id: company_id }
         });
 
-        console.log("enter sendM")
         if (activeEmailServer) {
             let transporter = nodeMailer.createTransport({
                 host: activeEmailServer.host,
                 port: activeEmailServer.port,
                 secure: false,
                 auth: {
-                    user: activeEmailServer.username,
+                    user: activeEmailServer.fromUsername,
                     pass: activeEmailServer.password,
                 }
             });
@@ -34,7 +33,6 @@ const sendM = async (company_id, to, subject, message, cc = '', from = "", attac
                 html: '<b>' + message + '</b>',
                 attachments: attachment ? [attachment] : [],
             };
-          
             const info = await transporter.sendMail(mailOptions);
             if (info.messageId) {
                 return { success: true, message: "Email sent successfully.", info };
