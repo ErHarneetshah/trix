@@ -2,10 +2,16 @@ import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
 import { Op, Sequelize } from "sequelize";
 import sequelize from "../../../database/queries/dbConnection.js";
-import chartController from "./Charts/chartController.js";
 import TimeLog from "../../../database/models/timeLogsModel.js";
 
+//* Route Function
 const getCompareReportsData = async (req, res, next) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Compare Reports", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   try {
     const { company_id, createdAt, departmentId } = req.user;
     const { userId, date } = req.query;
@@ -15,7 +21,6 @@ const getCompareReportsData = async (req, res, next) => {
 
     const formattedDate = new Date(date).toISOString().split("T")[0];
     const joiningDate = new Date(createdAt).toISOString().split("T")[0];
-    console.log([formattedDate, joiningDate]);
 
     if (formattedDate < joiningDate) {
       throw new Error("User was not part of the organization on this date.");
@@ -36,7 +41,6 @@ const getCompareReportsData = async (req, res, next) => {
           [Op.lt]: endOfDay,
         },
       },
-      logging: console.log,
     });
 
     if (!userLogging) {
@@ -137,7 +141,6 @@ const getCompareReportsData = async (req, res, next) => {
   }
 };
 
-// Placeholder function for effectiveness calculation
 const calculateEffectiveness = (timeAtWork, offlineTime) => {
   const totalTime = timeAtWork + offlineTime;
   return totalTime ? (timeAtWork / totalTime) * 100 : 0; // Effectiveness as a percentage
@@ -184,7 +187,14 @@ const getActiveTime = async (timelogId) => {
   }
 };
 
+//* Route Function
 const getAllUsers = async (req, res, next) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Compare Reports ", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  
   try {
     const { company_id } = req.user;
     const query = `SELECT u.id,u.fullname,d.name FROM users as u left join departments as d on u.departmentId=d.id where u.company_id=:companyId and  u.status=1 and u.isAdmin=0;`;

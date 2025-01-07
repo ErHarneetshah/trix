@@ -10,57 +10,92 @@ import team from "../../../database/models/teamModel.js";
 import { Op } from "sequelize";
 import H from "../../../utils/Mail.js";
 import bcrypt from "bcrypt";
+import company from "../../../database/models/company.js";
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
     try {
       // ___________-------- Role Permisisons Exists or not ---------________________
       const routeMethod = req.method;
-      const isApproved = await helper.checkRolePermission(req.user.roleId, "teamMembers", routeMethod, req.user.company_id);
-      if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Team Members", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
       // ___________-------- Role Permisisons Exists or not ---------________________
 
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
-      limit = parseInt(limit) || 10;
-      let offset = (page - 1) * limit || 0;
+      limit = parseInt(limit);
+      let offset = (page - 1) * limit;
       let searchable = ["fullname", "email", "mobile", "country", "$department.name$", "$designation.name$", "$role.name$", "$team.name$"];
       let where = await helper.searchCondition(searchParam, searchable);
       where.isAdmin = 0;
       where.company_id = req.user.company_id;
       // ___________-----------------------------------------------_______________
 
-      const alldata = await User.findAndCountAll({
-        where: where,
-        offset: offset,
-        limit: limit,
-        order: [["id", "DESC"]],
-        attributes: {
-          exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt", "status"],
-        },
-        include: [
-          {
-            model: department,
-            as: "department",
-            attributes: ["name"],
+      let alldata;
+
+      if (parseInt(limit) > 0 && parseInt(offset) > 0) {
+        alldata = await User.findAndCountAll({
+          where: where,
+          offset: offset,
+          limit: limit,
+          order: [["id", "DESC"]],
+          attributes: {
+            exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt"],
           },
-          {
-            model: designation,
-            as: "designation",
-            attributes: ["name"],
+          include: [
+            {
+              model: department,
+              as: "department",
+              attributes: ["name"],
+            },
+            {
+              model: designation,
+              as: "designation",
+              attributes: ["name"],
+            },
+            {
+              model: role,
+              as: "role",
+              attributes: ["name"],
+            },
+            {
+              model: team,
+              as: "team",
+              attributes: ["name"],
+            },
+          ],
+        });
+      } else {
+        alldata = await User.findAndCountAll({
+          where: where,
+          order: [["id", "DESC"]],
+          attributes: {
+            exclude: ["password", "isAdmin", "workstationId", "createdAt", "updatedAt"],
           },
-          {
-            model: role,
-            as: "role",
-            attributes: ["name"],
-          },
-          {
-            model: team,
-            as: "team",
-            attributes: ["name"],
-          },
-        ],
-      });
+          include: [
+            {
+              model: department,
+              as: "department",
+              attributes: ["name"],
+            },
+            {
+              model: designation,
+              as: "designation",
+              attributes: ["name"],
+            },
+            {
+              model: role,
+              as: "role",
+              attributes: ["name"],
+            },
+            {
+              model: team,
+              as: "team",
+              attributes: ["name"],
+            },
+          ],
+        });
+      }
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
@@ -128,14 +163,13 @@ class teamMemberController {
   addTeamMembers = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "teamMembers", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Team Members", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
     try {
       const requestData = req.body;
-      //console.log(requestData.departmentId, requestData.designationId, requestData.teamId, requestData.roleId)
       // Validating request body
       const validationResult = await teamsValidationSchema.teamMemberValid(requestData, res);
       if (!validationResult.status) return helper.failed(res, variables.BadRequest, validationResult.message);
@@ -172,7 +206,7 @@ class teamMemberController {
       });
 
       const existingAnyUser = await User.findOne({
-        where: { email: requestData.email},
+        where: { email: requestData.email },
         transaction: dbTransaction,
       });
       if (existingUser) {
@@ -186,6 +220,10 @@ class teamMemberController {
       const plainTextPassword = await helper.generatePass();
       const hashedPassword = await bcrypt.hash(plainTextPassword, 10);
 
+      const companyPrefix = await company.findOne({ where: { id: req.user.company_id } });
+      const newEmployeeCount = parseInt(companyPrefix.employeeCount) + 1;
+
+      requestData.empId = `${companyPrefix.companyEmpPrefix}-${newEmployeeCount}`;
       requestData.password = hashedPassword;
       requestData.screen_capture_time = 60;
       requestData.app_capture_time = 60;
@@ -195,6 +233,16 @@ class teamMemberController {
       const teamMember = await User.create(requestData, {
         transaction: dbTransaction,
       });
+
+      const updateEmpCount = await company.update(
+        { employeeCount: Number(newEmployeeCount) },
+        {
+          where: {
+            id: req.user.company_id,
+          },
+          transaction: dbTransaction,
+        }
+      );
 
       if (teamMember) {
         const textMessage = `Hello ${teamMember.fullname},\n\nYour account has been created successfully!\n\nHere are your login details:\n\nUsername: ${teamMember.fullname}\nEmail: ${teamMember.email}\nPassword: ${plainTextPassword}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
@@ -225,8 +273,8 @@ class teamMemberController {
   updateTeamMembers = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "teamMembers", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Team Members", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
@@ -262,11 +310,6 @@ class teamMemberController {
       });
       if (!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
 
-      // const existsDesig = await designation.findOne({
-      //   where: {id: updateFields.designationId, company_id: req.user.company_id}
-      // })
-      // if(!existsDesig) return helper.failed(res, variables.BadRequest, "Designation Does Not Exists");
-
       const existsRole = await role.findOne({
         where: { id: updateFields.roleId, company_id: req.user.company_id },
       });
@@ -299,6 +342,12 @@ class teamMemberController {
 
   updateSettings = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Settings", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let { id, screen_capture_time, broswer_capture_time, app_capture_time, screen_capture, broswer_capture, app_capture } = req.body;
 
       if (!id || isNaN(id)) {
@@ -404,6 +453,81 @@ class teamMemberController {
     } catch (error) {
       console.error("Error getTeamMember:", error.message);
       return helper.failed(res, variables.Failure, "Failed to getTeamMember");
+    }
+  };
+
+  generateNewPassword = async (req, res) => {
+    try {
+      let { userId } = req.body;
+
+      if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
+      // CHECK THIS ID EXITS IN THE USERS TABLE
+
+      let isUserExists = await User.findOne({
+        where: {
+          id: userId,
+          company_id: req.user.company_id,
+        },
+      });
+
+      if (!isUserExists) {
+        return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
+      }
+
+      const plainTextPassword = await helper.generatePass();
+      const hashedPassword = await bcrypt.hash(plainTextPassword, 10);
+
+      // update the user password in users table
+      await User.update({ password: hashedPassword }, { where: { id: userId, company_id: req.user.company_id } });
+
+      // after updating the password now send the email
+
+      const textMessage = `Hello ${isUserExists.fullname},\n\nYour new password generated successfully!\n\nHere are your login details:\nEmail: ${isUserExists.email}\nPassword: ${plainTextPassword}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
+
+      const subject = "Emonitrix-Generate New Password";
+      const sendmail = await H.sendM(isUserExists.email, subject, textMessage);
+
+      if (!sendmail.success) {
+        return helper.failed(res, variables.BadRequest, "Failed to send Email");
+      }
+
+      return helper.success(res, variables.Success, "New Password Generated Successfully.Please check your Email.");
+    } catch (error) {
+      console.error("Error generateNewPassword:", error.message);
+      return helper.failed(res, variables.Failure, "Failed to generateNewPassword");
+    }
+  };
+
+  deactivateActivateTeamMember = async (req, res) => {
+    try {
+      let { userId } = req.body;
+
+      if (!userId || isNaN(userId)) return helper.failed(res, variables.ValidationError, "Id is required and in number");
+      // CHECK THIS ID EXITS IN THE USERS TABLE
+
+      let isUserExists = await User.findOne({
+        where: {
+          id: userId,
+          company_id: req.user.company_id,
+        },
+      });
+
+      if (!isUserExists) {
+        return helper.failed(res, variables.NotFound, "This user does not exist in our records.");
+      }
+
+      if (isUserExists.isAdmin) {
+        return helper.failed(res, variables.NotFound, "This User cannot be deactivated");
+      }
+
+      let status = isUserExists.status == 1 ? 0 : 1;
+      let message = isUserExists.status == 1 ? "This user deactivated successfully" : "This user activated successfully";
+
+      await User.update({ status: status }, { where: { id: userId, company_id: req.user.company_id } });
+      return helper.success(res, variables.Success, message);
+    } catch (error) {
+      console.error("Error deactivateActivateTeamMember:", error.message);
+      return helper.failed(res, variables.Failure, "Failed to deactivateActivateTeamMember");
     }
   };
 }

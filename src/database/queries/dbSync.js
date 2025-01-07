@@ -25,6 +25,7 @@ import languageDropdown from "../models/languageModel.js";
 import languageSettings from "../models/languageSettingsModel.js";
 import exportReports from "../models/exportReportsModel.js";
 import exportHistories from "../models/exportHistoryModel.js";
+import paymentLog from "../models/paymentLogModel.js";
 
 (async () => {
   try {

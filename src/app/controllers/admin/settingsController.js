@@ -1,6 +1,4 @@
 import User from "../../../database/models/userModel.js";
-import sequelize from "../../../database/queries/dbConnection.js";
-import { Op, QueryTypes } from "sequelize";
 import reportSettings from "../../../database/models/reportSettingsModel.js";
 import helper from "../../../utils/services/helper.js";
 import variables from "../../config/variableConfig.js";
@@ -8,10 +6,8 @@ import department from "../../../database/models/departmentModel.js";
 import validate from "../../../utils/CustomValidation.js";
 import { BlockedWebsites } from "../../../database/models/BlockedWebsite.js";
 import designation from "../../../database/models/designationModel.js";
-
 import { ProductiveApp } from "../../../database/models/ProductiveApp.js";
 import ProductiveWebsite from "../../../database/models/ProductiveWebsite.js";
-import uploadPhotos from "../../../utils/services/commonfuncitons.js";
 import commonfuncitons from "../../../utils/services/commonfuncitons.js";
 import bcrypt from "bcrypt";
 
@@ -38,17 +34,17 @@ const getAdminDetails = async (req, res) => {
 
 const updateAdminDetails = async (req, res) => {
   try {
-    const { fullname, email, mobile, password ,confirm_password } = req.body;
+    const { fullname, email, mobile, password, confirm_password } = req.body;
 
     const rules = {
       fullname: "required|string|min:3|max:100",
       email: "required|email",
       mobile: "required|string|regex:/^\\d{10}$/",
-      password: 'string|password_regex',
+      password: "string|password_regex",
       confirm_password: "required_with:password|same:password",
     };
 
-    const { status, message } = await validate(req.body, rules);    
+    const { status, message } = await validate(req.body, rules);
     if (status === 0) {
       return helper.failed(res, variables.ValidationError, message);
     }
@@ -60,15 +56,15 @@ const updateAdminDetails = async (req, res) => {
     if (!user) {
       return helper.failed(res, variables.BadRequest, "User not exists");
     }
-    
-    if(password){
+
+    if (password) {
       let comparePwd = await bcrypt.compare(password, user.password);
       if (comparePwd) {
         return helper.failed(res, variables.ValidationError, "Password cannot be same as previous one.");
       }
       let pass = await bcrypt.hash(password, 10);
-      await User.update({ fullname, email, mobile , password: pass }, { where: { id: req.user.id, company_id: req.user.company_id } });
-    }else{
+      await User.update({ fullname, email, mobile, password: pass }, { where: { id: req.user.id, company_id: req.user.company_id } });
+    } else {
       await User.update({ fullname, email, mobile }, { where: { id: req.user.id, company_id: req.user.company_id } });
     }
     return helper.success(res, variables.Success, "Admin Profile Updated Successfully");
@@ -81,8 +77,8 @@ const updateAdminDetails = async (req, res) => {
 const getBlockedWebsites = async (req, res) => {
   // ___________-------- Role Permisisons Exists or not ---------________________
   const routeMethod = req.method;
-  const isApproved = await helper.checkRolePermission(req.user.roleId, "blockedWebsite", routeMethod, req.user.company_id);
-  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Blocked Website", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
   // ___________-------- Role Permisisons Exists or not ---------________________
 
   try {
@@ -113,7 +109,7 @@ const getBlockedWebsites = async (req, res) => {
       offset: offset,
       limit: limit,
       order: [["createdAt", "DESC"]],
-      attributes: ["id", "website", "website_name", "status", "logo","departmentId"],
+      attributes: ["id", "website", "website_name", "status", "logo", "departmentId"],
       include: [
         {
           model: department,
@@ -137,8 +133,8 @@ const getBlockedWebsites = async (req, res) => {
 const addBlockWebsites = async (req, res) => {
   // ___________-------- Role Permisisons Exists or not ---------________________
   const routeMethod = req.method;
-  const isApproved = await helper.checkRolePermission(req.user.roleId, "blockedWebsite", routeMethod, req.user.company_id);
-  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Blocked Website", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
   // ___________-------- Role Permisisons Exists or not ---------________________
 
   try {
@@ -159,7 +155,7 @@ const addBlockWebsites = async (req, res) => {
     }
 
     const isValidSite = await helper.validateDomain(website);
-    if(!isValidSite.status) return helper.failed(res, variables.ValidationError, isValidSite.message);
+    if (!isValidSite.status) return helper.failed(res, variables.ValidationError, isValidSite.message);
 
     const isDepartmentExists = await department.findOne({
       where: {
@@ -173,7 +169,7 @@ const addBlockWebsites = async (req, res) => {
     }
 
     const existingApp = await BlockedWebsites.findOne({
-      where: { website: website, companyId: req.user.company_id,departmentId : departmentId},
+      where: { website: website, companyId: req.user.company_id, departmentId: departmentId },
     });
 
     if (existingApp) {
@@ -196,8 +192,8 @@ const addBlockWebsites = async (req, res) => {
 const updateSitesStatus = async (req, res) => {
   // ___________-------- Role Permisisons Exists or not ---------________________
   const routeMethod = req.method;
-  const isApproved = await helper.checkRolePermission(req.user.roleId, "blockedWebsite", routeMethod, req.user.company_id);
-  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Blocked Website", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
   // ___________-------- Role Permisisons Exists or not ---------________________
 
   try {
@@ -229,8 +225,8 @@ const updateSitesStatus = async (req, res) => {
 const addProductiveApps = async (req, res) => {
   // ___________-------- Role Permisisons Exists or not ---------________________
   const routeMethod = req.method;
-  const isApproved = await helper.checkRolePermission(req.user.roleId, "productiveApp", routeMethod, req.user.company_id);
-  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Productive Application", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
   // ___________-------- Role Permisisons Exists or not ---------________________
 
   try {
@@ -278,8 +274,8 @@ const addProductiveApps = async (req, res) => {
 const getAppInfo = async (req, res) => {
   // ___________-------- Role Permisisons Exists or not ---------________________
   const routeMethod = req.method;
-  const isApproved = await helper.checkRolePermission(req.user.roleId, "productiveApp", routeMethod, req.user.company_id);
-  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Productive Application", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
   // ___________-------- Role Permisisons Exists or not ---------________________
   try {
     let { departmentId, limit, page } = req.query;
@@ -334,8 +330,8 @@ const getAppInfo = async (req, res) => {
 const getReportStatus = async (req, res) => {
   // ___________-------- Role Permisisons Exists or not ---------________________
   const routeMethod = req.method;
-  const isApproved = await helper.checkRolePermission(req.user.roleId, "reportSettings", routeMethod, req.user.company_id);
-  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Report Settings", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
   // ___________-------- Role Permisisons Exists or not ---------________________
 
   const getStatus = await reportSettings.findOne({
@@ -355,10 +351,10 @@ const getReportStatus = async (req, res) => {
 const updateReportSettings = async (req, res) => {
   // ___________-------- Role Permisisons Exists or not ---------________________
   const routeMethod = req.method;
-  const isApproved = await helper.checkRolePermission(req.user.roleId, "reportSettings", routeMethod, req.user.company_id);
-  if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Report Settings", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
   // ___________-------- Role Permisisons Exists or not ---------________________
-  
+
   try {
     const { exportType } = req.body;
 
@@ -427,6 +423,12 @@ const fetchFaviconUrl = async (website) => {
 
 const addProductiveWebsites = async (req, res) => {
   try {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Productive Website", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const { departmentId, website } = req.body;
     const rules = {
       departmentId: "required|integer",
@@ -440,7 +442,7 @@ const addProductiveWebsites = async (req, res) => {
     }
 
     const isValidSite = await helper.validateDomain(website);
-    if(!isValidSite.status) return helper.failed(res, variables.ValidationError, isValidSite.message);
+    if (!isValidSite.status) return helper.failed(res, variables.ValidationError, isValidSite.message);
 
     const isDepartmentExists = await department.findOne({
       where: {
@@ -453,7 +455,7 @@ const addProductiveWebsites = async (req, res) => {
       return helper.failed(res, variables.NotFound, "Department is not exist.");
     }
 
-    const existingApp = await ProductiveWebsite.findOne({ where: { website , company_id:  req.user.company_id, department_id: departmentId}  });
+    const existingApp = await ProductiveWebsite.findOne({ where: { website, company_id: req.user.company_id, department_id: departmentId } });
     if (existingApp) {
       return helper.failed(res, variables.NotFound, "Website with this name or URL already exists");
     }
@@ -473,6 +475,12 @@ const addProductiveWebsites = async (req, res) => {
 
 const getProductiveWebsites = async (req, res) => {
   try {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Productive Website", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    
     let { departmentId, limit, page } = req.query;
 
     limit = parseInt(limit) || 10;

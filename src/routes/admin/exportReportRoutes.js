@@ -6,21 +6,15 @@ import exportReportController from "../../app/controllers/admin/exportReportCont
 const router = express.Router();
 const exportReportInstance = new exportReportController();
 
-router.get("/getReportsDataSet",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getReportsDataSet);
-router.post("/getProductiveReport",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getProductiveReport);
-router.post("/getDeptPerformReport",  authMiddleware,verifyAdminMiddleware,   exportReportInstance.getDeptPerformReport);
-router.post("/getAttendanceReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getAttendanceReport);
-router.post("/getApplicationUsageReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getApplicationUsageReport);
-router.post("/getUnauthorizedWebReport", authMiddleware,verifyAdminMiddleware,   exportReportInstance.getUnauthorizedWebReport);
-// router.post("/getTeamList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getTeamList);
-// router.post("/getMemberList",authMiddleware,verifyAdminMiddleware, exportReportInstance.getMemberList);
-router.post("/getBrowserHistoryReport",authMiddleware,verifyAdminMiddleware, exportReportInstance.getBrowserHistoryReport);
+router.get("/getReportsDataSet",  authMiddleware,   exportReportInstance.getReportsDataSet);
+router.post("/getProductiveReport",  authMiddleware,   exportReportInstance.getProductiveReport);
+router.post("/getDeptPerformReport",  authMiddleware,   exportReportInstance.getDeptPerformReport);
+router.post("/getAttendanceReport", authMiddleware,   exportReportInstance.getAttendanceReport);
+router.post("/getApplicationUsageReport", authMiddleware,   exportReportInstance.getApplicationUsageReport);
+router.post("/getUnauthorizedWebReport", authMiddleware,   exportReportInstance.getUnauthorizedWebReport);
+router.post("/getBrowserHistoryReport",authMiddleware, exportReportInstance.getBrowserHistoryReport);
 router.get("/downloadExportReport", exportReportInstance.downloadExportReport);
-router.get("/downloadExportReportTest", exportReportInstance.downloadExportReportTest);
-
-
-
-router.get("/getExportHistory",authMiddleware,verifyAdminMiddleware, exportReportInstance.getExportHistoryReport);
-router.get("/viewHistory",authMiddleware,verifyAdminMiddleware, exportReportInstance.viewFile);
+router.get("/getExportHistory",authMiddleware, exportReportInstance.getExportHistoryReport);
+router.get("/viewHistory",authMiddleware, exportReportInstance.viewFile);
 
 export default router;

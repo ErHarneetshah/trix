@@ -79,7 +79,6 @@ export default {
   getTotalEmployeeDepartmentWise: async (deptId, dateRange, type = "count") => {
     try {
       const { startDate, endDate } = dateRange;
-      console.log(endDate);
       if (type === "count") {
         const totalEmployees = await User.count({
           where: {
@@ -255,7 +254,6 @@ export default {
         replacements,
       });
 
-      console.log(results);
       return results ? results.average_time_minutes : 0;
     } catch (error) {
       return 0;
@@ -579,7 +577,6 @@ export default {
         userIds,
       },
       type: sequelize.QueryTypes.SELECT,
-      logging: console.log,
     });
 
     return results;
@@ -698,215 +695,6 @@ GROUP BY u.id, tl.createdAt;`;
 
     return results;
   },
-
-  //  downloadFile = async (req, res, company_id, reportData, format, reportDescription, fromTime, toTime) => {
-  //   try {
-  //     const fileName = `${reportDescription}_${company_id}_${Date.now()}.${format === "xls" ? "xlsx" : "pdf"}`;
-  //     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  //     const filePath = path.resolve(__dirname, "../../../storage/files", fileName);
-  //     if (format === "xls") {
-  //       const workbook = new ExcelJS.Workbook();
-  //       const worksheet = workbook.addWorksheet(reportDescription);
-
-  //       if (reportDescription == "Attendance Report") {
-  //         worksheet.columns = [
-  //           { header: "Employee Name", key: "employee_name", width: 20 },
-  //           { header: "Team", key: "team", width: 15 },
-  //           { header: "Date", key: "date", width: 15 },
-  //           { header: "Day", key: "day", width: 10 },
-  //           { header: "Attendance Status", key: "attendance_status", width: 20 },
-  //           { header: "Shift Time In", key: "shift_time_in", width: 15 },
-  //           { header: "Time In", key: "time_in", width: 15 },
-  //           { header: "Shift Time Out", key: "shift_time_out", width: 15 },
-  //           { header: "Time Out", key: "time_out", width: 15 },
-  //         ];
-  //       } else if (reportDescription == "Productivity Report") {
-  //         worksheet.columns = [
-  //           { header: "Employee Name", key: "employee_name", width: 20 },
-  //           { header: "Department", key: "department", width: 15 },
-  //           { header: "Date", key: "date", width: 15 },
-  //           { header: "Total Active Hours", key: "total_active_hours", width: 10 },
-  //           { header: "Idle Time", key: "idle_time", width: 20 },
-  //           { header: "Time on Productive Apps", key: "productive_app_time", width: 15 },
-  //           { header: "Time on Non Prodcutive Apps", key: "nonProductive_app_time", width: 15 },
-  //           { header: "Productive Websites Count", key: "productive_website_count", width: 15 },
-  //           { header: "Non Productive Websites Count", key: "productive_website_count", width: 15 },
-  //           { header: "Average Productive Percentage", key: "average_productive", width: 15 },
-  //           { header: "Most Used Productive App", key: "most_used_productive_app", width: 15 },
-  //         ];
-  //       } else if (reportDescription == "Application Usage Report") {
-  //         worksheet.columns = [
-  //           { header: "Name", key: "name", width: 20 },
-  //           { header: "Department", key: "department", width: 15 },
-  //           { header: "Application", key: "applicationName", width: 15 },
-  //           { header: "Productive/NonProducitve", key: "isProductive", width: 10 },
-  //         ];
-  //       } else if (reportDescription == "Unauthorized Report") {
-  //         worksheet.columns = [
-  //           { header: "Name", key: "name", width: 20 },
-  //           { header: "Department", key: "department", width: 15 },
-  //           { header: "URL", key: "url", width: 15 },
-  //           { header: "Time", key: "time", width: 10 },
-  //         ];
-  //       } else if (reportDescription == "Department Performance Report") {
-  //         worksheet.columns = [
-  //           { header: "Employee Name", key: "employee_name", width: 20 },
-  //           { header: "Team", key: "team", width: 15 },
-  //           { header: "Date", key: "date", width: 15 },
-  //           { header: "Day", key: "day", width: 10 },
-  //           { header: "Attendance Status", key: "attendance_status", width: 20 },
-  //           { header: "Shift Time In", key: "shift_time_in", width: 15 },
-  //           { header: "Time In", key: "time_in", width: 15 },
-  //           { header: "Shift Time Out", key: "shift_time_out", width: 15 },
-  //           { header: "Time Out", key: "time_out", width: 15 },
-  //         ];
-  //       } else if (reportDescription == "Browser Activity Report") {
-  //         worksheet.columns = [
-  //           { header: "Employee Name", key: "employee_name", width: 20 },
-  //           { header: "Team", key: "team", width: 15 },
-  //           { header: "Date", key: "date", width: 15 },
-  //           { header: "Day", key: "day", width: 10 },
-  //           { header: "Attendance Status", key: "attendance_status", width: 20 },
-  //           { header: "Shift Time In", key: "shift_time_in", width: 15 },
-  //           { header: "Time In", key: "time_in", width: 15 },
-  //           { header: "Shift Time Out", key: "shift_time_out", width: 15 },
-  //           { header: "Time Out", key: "time_out", width: 15 },
-  //         ];
-  //       }
-
-  //       worksheet.addRows(reportData);
-
-  //       await workbook.xlsx.writeFile(filePath);
-
-  //       res.setHeader(
-  //         "Content-Type",
-  //         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  //       );
-  //       res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
-  //       res.download(filePath);
-
-  //       const newAppInfo = await exportHistories.create({ reportName: reportDescription, filePath: filePath, reportExtension: format, periodFrom: fromTime, periodTo: toTime });
-  //     } else {
-  //       const generatePDF = () =>
-  //         new Promise((resolve, reject) => {
-  //           const doc = new PDFDocument();
-  //           const writeStream = fs.createWriteStream(filePath);
-
-  //           doc.pipe(writeStream);
-
-  //           // Add title
-  //           doc.fontSize(18).text(reportDescription, { align: "center" });
-  //           doc.moveDown();
-
-  //           // Add headers
-  //           if (reportDescription == "Attendance Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-
-  //           } else if (reportDescription == "Performance Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-  //           } else if (reportDescription == "Application Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-  //           } else if (reportDescription == "Unauthorized Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-  //           } else if (reportDescription == "Department Performance Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-  //           } else if (reportDescription == "Browser Activity Report") {
-  //             doc.fontSize(12).text(
-  //               "Employee Name | Team | Date | Day | Attendance Status | Shift Time In | Time In | Shift Time Out | Time Out",
-  //               { underline: true }
-  //             );
-  //             doc.moveDown();
-
-  //             reportData.forEach((row) => {
-  //               doc
-  //                 .fontSize(10)
-  //                 .text(
-  //                   `${row.employee_name} | ${row.team} | ${row.date} | ${row.day} | ${row.attendance_status} | ${row.shift_time_in} | ${row.time_in} | ${row.shift_time_out} | ${row.time_out}`
-  //                 );
-  //             });
-  //           }
-
-  //           doc.end();
-
-  //           writeStream.on("finish", () => resolve());
-  //           writeStream.on("error", (err) => reject(err));
-  //         });
-
-  //       await generatePDF();
-  //       console.log(`File generated and sent to user: ${filePath}`);
-
-  //       // Set headers for reading the file in the browser
-  //       res.setHeader("Content-Type", "application/pdf");
-  //       res.setHeader("Content-Disposition", "inline; filename=" + fileName);
-
-  //       // Send the file as a response
-  //       res.download(filePath);
-
-  //     }
-  //   } catch (error) {
-  //     res.status(500).json({ status: "error", message: error.message });
-  //   }
-  // };
 
   downloadFileDynamically: async (res, fromTime, toTime, format = "xls", reportName, company_id, reportData, headers) => {
     const dbTransaction = await sequelize.transaction();

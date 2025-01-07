@@ -10,6 +10,12 @@ import designation from "../../../database/models/designationModel.js";
 
 const retrieveAllReport = async (req, res) => {
   try {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Work Reports", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     // ___________---------- Search, Limit, Pagination ----------_______________
     let { searchParam, limit, page, startDate, endDate } = req.query;
     const searchable = ["$user.fullname$", "$user.department.name$", "$user.designation.name$"];
@@ -80,18 +86,18 @@ const retrieveAllReport = async (req, res) => {
 
 const retrieveUserReport = async (req, res) => {
   try {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Work Reports", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     let { id } = req.query;
 
     if (!id || isNaN(id)) return helper.failed(res, variables.ValidationError, "Invalid or missing user ID.");
 
-    // const user = await User.findOne({
-    //   where: { id: id, company_id: req.user.company_id },
-    // });
-    // if (!user) return helper.failed(res, variables.NotFound, "User does  not exists");
-
     const query = `SELECT wr.id AS id, wr.description, wr.status, DATE_FORMAT(wr.createdAt, '%H:%i') AS submitted_time, DATE(wr.createdAt) AS submitted_date, u.fullname AS name FROM work_reports AS wr JOIN users AS u ON wr.user_id = u.id WHERE wr.id = ${id} AND wr.company_id = ${req.user.company_id};`;
     const userReport = await workReports.sequelize.query(query, {
-      // replacements: { userId: id },
       type: workReports.sequelize.QueryTypes.SELECT,
     });
 
@@ -111,6 +117,12 @@ const retrieveUserReport = async (req, res) => {
 
 const approveDisaproveReport = async (req, res) => {
   try {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Work Reports", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const { id, report_status, remarks } = req.body;
     const rules = {
       id: "required|integer",
@@ -137,7 +149,7 @@ const approveDisaproveReport = async (req, res) => {
     if (report_status == 2) {
       return helper.success(res, variables.Success, "Disapproved Report Successfully");
     }
-    
+
     return helper.success(res, variables.Success, "Approved Report Successfully");
   } catch (error) {
     console.error("Error while updating the status of approved ordisapproved reports:", error);

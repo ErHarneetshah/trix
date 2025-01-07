@@ -39,8 +39,6 @@ class authValidationSchema {
         isAdmin: "required",
       });
 
-      // //console.log("Register Validation -------------------------");
-      // //console.log(status);
       if (!status) {
         return helper.failed(res, variables.ValidationError, message);
       }
@@ -60,7 +58,6 @@ class authValidationSchema {
       });
 
       if (!status) {
-        // //console.log("Login Validation Error");
         return {status:false, message: message};
       }
 

@@ -7,13 +7,12 @@ import rolePermissionMiddleware from "../../app/middlewares/rolePermissionMiddle
 const router = express.Router();
 const deptInstance = new deptController();
 
-router.get("/getTestMiddleware",  authMiddleware,verifyAdminMiddleware,rolePermissionMiddleware,   deptInstance.getTestData);
-router.get("/getAllDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.getAllDept);
-router.get("/getDeptDropdown",  authMiddleware,verifyAdminMiddleware,   deptInstance.getDeptDropdown);
-router.get("/getSpecificDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.getSpecificDept);
-router.post("/addDept",  authMiddleware,verifyAdminMiddleware,   deptInstance.addDept);
-router.put("/updateDept", authMiddleware,verifyAdminMiddleware,   deptInstance.updateDept);
-router.delete("/deleteDept", authMiddleware,verifyAdminMiddleware,   deptInstance.deleteDept);
+router.get("/getAllDept",  authMiddleware,   deptInstance.getAllDept);
+router.get("/getDeptDropdown",  authMiddleware,   deptInstance.getDeptDropdown);
+router.get("/getSpecificDept",  authMiddleware,   deptInstance.getSpecificDept);
+router.post("/addDept",  authMiddleware,   deptInstance.addDept);
+router.put("/updateDept", authMiddleware,   deptInstance.updateDept);
+router.delete("/deleteDept", authMiddleware,   deptInstance.deleteDept);
 
 
 export default router;

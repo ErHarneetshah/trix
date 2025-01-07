@@ -50,6 +50,16 @@ app.get("/export/:path", (req, res) => {
   res.sendFile(__dirname + "/storage/files/" +  req.params.path);
 });
 
+app.post('/payment-webhook', (req, res) => {
+  console.log('Webhook received:', req.body);
+
+  if (req.body.event === 'order.created') {
+    console.log(`Order created: ${req.body}`);
+  }
+
+  res.status(200).send('Webhook received successfully');
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

@@ -21,7 +21,6 @@ const departmentPerformanceReport = async (req, res, next) => {
         const performanceArray = [];
         for (const element of allDepartments) {
             const totalEmployeesDepartmentWise = await GenerateReportHelper.getTotalEmployeeDepartmentWise(element.id, dateRange, 'user_ids');
-            console.log(totalEmployeesDepartmentWise);
             //getting attendance average
             const avgAttendence = await GenerateReportHelper.getAttendanceAvg(dateRange, totalEmployeesDepartmentWise, company_id);
             //getting logged in time average
@@ -53,7 +52,6 @@ const departmentPerformanceReport = async (req, res, next) => {
         return helper.success(res, variables.Success, "Department Performance Report Generated Successfully", performanceArray);
 
     } catch (error) {
-        console.log(`departmentPerformanceReport ${error.message}`);
         return helper.failed(res, variables.BadRequest, error.message)
     }
 };

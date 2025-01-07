@@ -13,8 +13,8 @@ class teamController {
     try {
       // ___________-------- Role Permisisons Exists or not ---------________________
       const routeMethod = req.method;
-      const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod, req.user.company_id);
-      if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Team", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
       // ___________-------- Role Permisisons Exists or not ---------________________
 
       // ___________---------- Search, Limit, Pagination ----------_______________
@@ -141,8 +141,8 @@ class teamController {
   addTeam = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Team", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
@@ -161,16 +161,6 @@ class teamController {
         },
         transaction: dbTransaction,
       });
-
-      // const existingTeamWithSameParam = await team.findOne({
-      //   where: {
-      //     company_id: req.user.company_id,
-      //     departmentId: requestData.departmentId,
-      //     shiftId: requestData.shiftId,
-      //   },
-      //   transaction: dbTransaction,
-      // });
-      // if (existingTeamWithSameParam) return helper.failed(res, variables.ValidationError, "Team Already Exists under different name!");
 
       const existingTeamWithSameName = await team.findOne({
         where: {
@@ -208,8 +198,8 @@ class teamController {
   updateTeam = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Team", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
@@ -280,8 +270,8 @@ class teamController {
   deleteTeam = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "team", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Team", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();

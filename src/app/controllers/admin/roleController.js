@@ -12,8 +12,8 @@ class roleController {
   getAllRole = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "role", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Role", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     try {
@@ -75,8 +75,8 @@ class roleController {
   addRole = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "role", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Role", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
@@ -117,8 +117,8 @@ class roleController {
   updateRole = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "role", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Role", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
 
     const dbTransaction = await sequelize.transaction();
@@ -168,8 +168,8 @@ class roleController {
   deleteRole = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
     const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "role", routeMethod, req.user.company_id);
-    if (!isApproved) return helper.failed(res, variables.Forbidden, isApproved.message);
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Role", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
     
     const dbTransaction = await sequelize.transaction();

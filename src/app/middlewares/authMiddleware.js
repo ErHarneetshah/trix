@@ -30,11 +30,12 @@ const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, jwtConfig);
 
     const user = await User.findOne({
-      where: { id: decoded.userId },
+      where: { id: decoded.userId},
       attributes: { exclude: ["password"] },
     });
     if (!user) return helper.failed(res, variables.NotFound, "User not found in system!");
 
+    if(!user.dataValues.status) return helper.failed(res, variables.Unauthorized, "Your are not Allowed to Authorize!");
 
     req.user = user;
     req.sessionToken = token;
@@ -43,7 +44,6 @@ const authMiddleware = async (req, res, next) => {
     if (e.name === "TokenExpiredError") {
       return helper.failed(res, variables.Unauthorized, "Already Logout");
     }
-    console.log("Authentication Middleware Issue: ", e.message);
     return helper.failed(res, variables.Unauthorized, "Authentication Failed");
   }
 };

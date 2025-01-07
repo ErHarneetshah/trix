@@ -1,11 +1,6 @@
 import Validator from 'validatorjs';
-// import { Model, Sequelize } from '../Database/sequelize.js';
-// import _ from "lodash";
-// import TronWeb from 'tronweb'
-// import moment from 'moment';
 
 Validator.registerAsync('gte', function (columnValue, attribute, req, passes) {
-    // //console.log({columnValue,attribute,req})
     if (parseFloat(attribute) > parseFloat(columnValue)) {
         return passes(false, `The ${req} should be greater than or equal to ${attribute}`);
     } else {
@@ -14,7 +9,6 @@ Validator.registerAsync('gte', function (columnValue, attribute, req, passes) {
 });
 
 Validator.registerAsync('gt', function (columnValue, attribute, req, passes) {
-    // //console.log({columnValue,attribute,req})
     if (parseFloat(attribute) >= parseFloat(columnValue)) {
         return passes(false, `The ${req} should be greater than ${attribute}`);
     } else {

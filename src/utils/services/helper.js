@@ -14,7 +14,7 @@ export default {
   checkRolePermission: async (roleId, moduleName, method, company_id) => {
     try {
       const permissionInstance = new rolePermissionController();
-      const getPermission = await permissionInstance.getSpecificRolePermissions(roleId, moduleName, company_id);
+      const getPermission = await permissionInstance.getSpecificRolePermissions(roleId, moduleName, method, company_id);
       if (!getPermission.success) {
         return {
           success: "false",
@@ -81,8 +81,6 @@ export default {
       result["data"] = data;
     }
 
-    //console.log({ result });
-
     return res.status(statusCode).json(result);
   },
 
@@ -114,7 +112,7 @@ export default {
         length: 10,
         numbers: true,
         uppercase: true,
-        symbols: true,
+        symbols: false,
         excludeSimilarCharacters: true,
         strict: true
     });
@@ -222,4 +220,14 @@ export default {
 
     return { startDate, endDate };
   },
+
+  prefixInit: async (name) => {
+    name = name.trim();  
+    if (name.length >= 4) {
+      return name.slice(0, 4);
+    }
+  
+    return name.toUpperCase(); 
+  },
+  
 };

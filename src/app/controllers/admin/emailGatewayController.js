@@ -7,46 +7,22 @@ import H from "../../../utils/Mail.js";
 import helper from "../../../utils/services/helper.js";
 import nodemailer from "nodemailer";
 
-// const addEmailGateeways = async (req, res) => {
-//     try {
-//         const { protocol, host, username, password, port } = req.body;
-//         let encryption = "tls"; // default option for encryption
-//         const rules = {
-//             protocol: 'required|string|min:2|max:50',
-//             host: 'required|string|min:2|max:50',
-//             username: 'required|email',
-//             password: [
-//                 'required',
-//             ],
-//             port: 'required|numeric|min:1|max:65535',
-//             // encryption: 'required|string|min:2|max:50'
-//         };
-
-//         const { status, message } = await validate(req.body, rules);
-//         if (status === 0) {
-//             return helper.failed(res, variables.ValidationError, message);
-//         }
-
-//         await emailGateway.destroy({ where: {} });
-//         await sequelize.query(`ALTER TABLE \`${emailGateway.getTableName()}\` AUTO_INCREMENT = 1;`);
-
-//         await emailGateway.create({ protocol, host, username, password, port, encryption });
-//         return helper.success(res, variables.Created, "Created the Email Gateway Successfully");
-//     } catch (error) {
-//         console.error('Error while creating the email gateway setup', error);
-//         return helper.failed(res, variables.BadRequest, error.message);
-//     }
-// };
-
 const addEmailGateeways = async (req, res) => {
-  try {
-    let { protocol, host, username, password, port, encryption,fromUsername} = req.body;
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Email Gateway", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
 
-    //console.log(req.body);
-    // Default encryption type
+  try {
+    let { protocol, host, username, password, port, encryption, fromUsername } = req.body;
+
+    // Default encryption type and options
     const defaultEncryption = "tls";
     const encryptionOptions = ["tls", "ssl"];
+    const validPorts = [587, 465, 25];
 
+    // Validation rules
     const rules = {
       protocol: "required|string|min:2|max:50",
       host: "required|string|min:2|max:50",
@@ -56,61 +32,53 @@ const addEmailGateeways = async (req, res) => {
       fromUsername: "required|string",
     };
 
-    if (encryption) {
-        encryption = encryption.toLowerCase();
-      if (!encryptionOptions.includes(encryption)) {
-        return helper.failed(
-          res,
-          variables.ValidationError,
-          "Invalid Email encryption provided"
-        );
-      }
-    }
-
-    const isport = parseInt(req.body.port, 10);
-    const validPorts = [587, 465, 25];
-    if (!validPorts.includes(isport)) {
-      return helper.failed(
-        res,
-        variables.ValidationError,
-        "Invalid SMTP port provided"
-      );
-    }
-
     const { status, message } = await validate(req.body, rules);
     if (status === 0) {
       return helper.failed(res, variables.ValidationError, message);
     }
 
-    const selectedEncryption = encryptionOptions.includes(encryption)
-      ? encryption
-      : defaultEncryption;
+    // Ensure encryption type is valid or use default
+    encryption = encryption ? encryption.toLowerCase() : defaultEncryption;
+    if (!encryptionOptions.includes(encryption)) {
+      return helper.failed(res, variables.ValidationError, "Invalid email encryption type provided. Use 'tls' or 'ssl'.");
+    }
 
-    const transporter = nodemailer.createTransport({
+    // Validate SMTP port
+    port = parseInt(port, 10);
+    if (!validPorts.includes(port)) {
+      return helper.failed(res, variables.ValidationError, `Invalid SMTP port provided. Valid ports are ${validPorts.join(", ")}.`);
+    }
+
+    // Configure nodemailer
+    const transporterConfig = {
       host,
       port,
-      secure: false,
+      secure: encryption === "ssl", // 'secure' is true only for SSL
       auth: {
         user: username,
         pass: password,
       },
-    });
+    };
 
-    try {
-      await transporter.verify();
-    } catch (verifyError) {
-      console.error("Email gateway verification failed:", verifyError);
-      return helper.failed(
-        res,
-        variables.BadRequest,
-        "Email gateway verification failed. Please check your credentials and try again."
-      );
-    }
+    const transporter = nodemailer.createTransport(transporterConfig);
 
+    // Log configuration for debugging
+
+    // Verify SMTP credentials
+    // try {
+    //   await transporter.verify();
+    // } catch (verifyError) {
+    //   console.error("SMTP verification failed:", verifyError);
+    //   return helper.failed(
+    //     res,
+    //     variables.BadRequest,
+    //     "SMTP verification failed: " + verifyError.message
+    //   );
+    // }
+
+    // Reset existing gateways for the company
     await emailGateway.destroy({ where: { company_id: req.user.company_id } });
-    await sequelize.query(
-      `ALTER TABLE \`${emailGateway.getTableName()}\` AUTO_INCREMENT = 1;`
-    );
+    await sequelize.query(`ALTER TABLE \`${emailGateway.getTableName()}\` AUTO_INCREMENT = 1;`);
 
     // Save the new gateway
     const gateway = await emailGateway.create({
@@ -120,17 +88,11 @@ const addEmailGateeways = async (req, res) => {
       username,
       password,
       port,
-      encryption: selectedEncryption,
-      fromUsername:fromUsername,
-
+      encryption,
+      fromUsername,
     });
 
-    return helper.success(
-      res,
-      variables.Created,
-      "Created the Email Gateway Successfully",
-      gateway
-    );
+    return helper.success(res, variables.Created, "Email gateway created successfully.", gateway);
   } catch (error) {
     console.error("Error while creating the email gateway setup:", error);
     return helper.failed(res, variables.BadRequest, error.message);
@@ -138,6 +100,12 @@ const addEmailGateeways = async (req, res) => {
 };
 
 const checkEmailServer = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Email Gateway", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   const { to, subject, message } = req.body;
 
   const rules = {
@@ -146,10 +114,7 @@ const checkEmailServer = async (req, res) => {
     message: "required|string|min:5|max:1000",
   };
 
-  const { status, message: validationMessage } = await validate(
-    req.body,
-    rules
-  );
+  const { status, message: validationMessage } = await validate(req.body, rules);
   if (status === 0) {
     return helper.failed(res, variables.ValidationError, validationMessage);
   }
@@ -158,15 +123,17 @@ const checkEmailServer = async (req, res) => {
   if (sendmail.success) {
     return helper.success(res, variables.Success, sendmail.message);
   } else {
-    return helper.failed(
-      res,
-      variables.BadRequest,
-      "PLease check the credentials first."
-    );
+    return helper.failed(res, variables.BadRequest, "PLease check the credentials first.");
   }
 };
 
 const getEmailList = async (req, res) => {
+  // ___________-------- Role Permisisons Exists or not ---------________________
+  const routeMethod = req.method;
+  const isApproved = await helper.checkRolePermission(req.user.roleId, "Email Gateway", routeMethod, req.user.company_id);
+  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+  // ___________-------- Role Permisisons Exists or not ---------________________
+
   try {
     const getEmailGateway = await emailGateway.findAll({
       where: {
@@ -176,12 +143,7 @@ const getEmailList = async (req, res) => {
       },
       attributes: ["id", "protocol", "host", "username", "port", "encryption"],
     });
-    return helper.success(
-      res,
-      variables.Success,
-      "Retrieved  Email Lists Successfully",
-      getEmailGateway
-    );
+    return helper.success(res, variables.Success, "Retrieved  Email Lists Successfully", getEmailGateway);
   } catch (error) {
     console.error("Error blocking website:", error);
     return helper.failed(res, variables.BadRequest, error.message);

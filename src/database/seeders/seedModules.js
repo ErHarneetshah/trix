@@ -7,22 +7,51 @@ const generateDummyData = async (transaction) => {
   await sequelize.query(`ALTER TABLE ${app_modules.getTableName()} AUTO_INCREMENT=1`);
 
   const moduleData = [
-    { name: "role", aliasName: "Role" },
-    { name: "reportingManager", aliasName: "Reporting Manager" },
-    { name: "team", aliasName: "Team" },
-    { name: "shifts", aliasName: "Shifts" },
-    { name: "teamMembers", aliasName: "Team Members" },
-    { name: "department", aliasName: "Department" },
-    { name: "designation", aliasName: "Designation" },
-    { name: "adminAuth", aliasName: "Admin Authorization" },
-    { name: "userSettings", aliasName: "User Settings" },
-    { name: "permissions", aliasName: "Permissions" },
-    { name: "blockedWebsite", aliasName: "Blocked Website" },
-    { name: "productiveApp", aliasName: "Productive Application" },
-    { name: "reportSettings", aliasName: "Report Settings" },
-    { name: "user", aliasName: "User" },
-    { name: "dashboard", aliasName: "Dashboard" },
-    { name: "allTeamMemberDashboard", aliasName: "All Team Member Dashboard" },
+    // { name: "role", aliasName: "Role" },
+    // { name: "reportingManager", aliasName: "Reporting Manager" },
+    // { name: "team", aliasName: "Team" },
+    // { name: "shifts", aliasName: "Shifts" },
+    // { name: "teamMembers", aliasName: "Team Members" },
+    // { name: "department", aliasName: "Department" },
+    // { name: "designation", aliasName: "Designation" },
+    // { name: "rolePermissions", aliasName: "Role Permissions" },
+    // { name: "blockedWebsite", aliasName: "Blocked Website" },
+    // { name: "productiveApp", aliasName: "Productive Application" },
+    // { name: "reportSettings", aliasName: "Report Settings" },
+    // { name: "dashboard", aliasName: "Dashboard" },
+    // { name: "allTeamMemberDashboard", aliasName: "All Team Member Dashboard" },
+    // { name: "auth", aliasName: "Authentication" },
+    // { name: "exportReports", aliasName: "Export Report" },
+    // { name: "tree", aliasName: "Team Structure" },
+    // { name: "ai", aliasName: "AI Reports" },
+    // { name: "compare", aliasName: "Compare Reports" },
+    // { name: "workReports", aliasName: "Work Reports" },
+
+    { name: "Role" },
+    { name: "Reporting Manager" },
+    { name: "Team" },
+    { name: "Shifts" },
+    { name: "Team Members" },
+    { name: "Department" },
+    { name: "Designation" },
+    { name: "Role Permissions" },
+    { name: "Blocked Website" },
+    { name: "Productive Application" },
+    { name: "Report Settings" },
+    { name: "Dashboard" },
+    { name: "All Team Member Dashboard" },
+    { name: "Authentication" },
+    { name: "Export Report" },
+    { name: "Team Structure" },
+    { name: "AI Reports" },
+    { name: "Compare Reports" },
+    { name: "Work Reports" },
+    { name: "Email Gateway" },
+    { name: "Language" },
+    { name: "Productive Website" },
+    { name: "Settings" },
+    { name: "Team Member Log" },
+
   ];
   
   // Insert into the database
@@ -33,7 +62,6 @@ const generateDummyData = async (transaction) => {
     }, { transaction });
   }
   
-  //console.log("Dummy data inserted successfully!");
 };
 
 const generateLanguageSeeder = async (transaction) => {

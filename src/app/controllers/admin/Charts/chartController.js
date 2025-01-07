@@ -250,7 +250,6 @@ const topApplicationChart = async (req, res, next) => {
   try {
     const results = await sequelize.query(query, {
       type: Sequelize.QueryTypes.SELECT,
-      logging:console.log
     });
 
     const pieChartData = results.map(result => ({
@@ -704,9 +703,6 @@ const productiveAppsAndproductiveWebsites = async (req, res, next) => {
     const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
     const productiveWebsiteData = await productiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
 
-    //console.log(productiveAppsData);
-    //console.log(productiveWebsiteData);
-
     // Validate data format
     if (!Array.isArray(productiveAppsData) || !Array.isArray(productiveWebsiteData)) {
       return helper.failed(res, 400, "User was absent on this date or the entered date", []);
@@ -793,7 +789,6 @@ const productiveAppAndNonproductiveApps = async (req, res, next) => {
     const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption, company_id });
     const productiveAppsData = await productiveAppsChart('', '', '', 'function', { filterType, dateOption, company_id });
 
-    console.log(nonProductiveAppsData);
     // Validate data format
     if (!Array.isArray(nonProductiveAppsData) || !Array.isArray(productiveAppsData)) {
       return helper.failed(res, 400, "Invalid data format", []);
@@ -955,7 +950,6 @@ const singleUserProductiveAppData = async (req, res, next, type = 'api', obj = {
 const singleUserNonProductiveAppData = async (req, res, next, type = 'api', obj = {}) => {
   try {
     // Extract `userId` and `date` based on the type of request
-    //console.log(req.user);
     const { userId, date } = type === 'api' ? req.query : obj;
     const { company_id, departmentId } = type === 'api' ? req.user : obj;
 
@@ -1095,10 +1089,7 @@ const singleUserProductiveWebsiteData = async (req, res, next, type = 'api', obj
     const results = await sequelize.query(query, {
       replacements: { date, userId, company_id, department_id: departmentId },
       type: Sequelize.QueryTypes.SELECT,
-    });
-
-    console.log({results});
-    
+    });    
 
     // Format results for pie chart data
     const pieChartData = results.map((result) => ({
@@ -1211,9 +1202,6 @@ const singleUserProductiveWebsitesAndNonproductiveWebsites = async (req, res, ne
     // Fetch data for non-productive and productive websites
     const nonProductiveWebsitesData = await singleUserNonProductiveWebsiteData('', '', '', 'function', { userId, date, company_id, departmentId });
     const productiveWebsitesData = await singleUserProductiveWebsiteData('', '', '', 'function', { userId, date, company_id, departmentId });
-
-    console.log(nonProductiveWebsitesData,"nonProductiveWebsitesData");
-    console.log(productiveWebsitesData,"productiveWebsitesData");
 
     // Validate data format
     if (!Array.isArray(nonProductiveWebsitesData) || !Array.isArray(productiveWebsitesData)) {

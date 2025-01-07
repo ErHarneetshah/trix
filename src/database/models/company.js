@@ -21,9 +21,40 @@ const company = sequelize.define(
       unique: true,
       allowNull: false,
      },
-    employeeNumber: {
+    companyEmpPrefix: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    employeeCount: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+      Comment: "Current Employee Count in company",
+    },
+    currentPlanId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      defaultValue: 0,
+    },
+    planEmployeeCount: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      Comment: "Employee Count allowed for the company based on plan",
+      defaultValue: 10,
+    },
+    planStartDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      defaultValue: DataTypes.NOW,
+    },
+    planEndDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      defaultValue: () => {
+        const today = new Date();
+        today.setDate(today.getDate() + 7);
+        return today.toISOString().split('T')[0];
+      },
     },
     status: {
       type: DataTypes.BOOLEAN,
@@ -31,30 +62,6 @@ const company = sequelize.define(
       defaultValue: 1,
       comment: "0 for Inactive, 1 for active",
     },
-    // screen_capture_time: {
-    //   type: DataTypes.STRING,
-    //   defaultValue: 60,
-    // },
-    // broswer_capture_time: {
-    //   type: DataTypes.STRING,
-    //   defaultValue: 60,
-    // },
-    // app_capture_time: {
-    //   type: DataTypes.STRING,
-    //   defaultValue: 60,
-    // },
-    // screen_capture: {
-    //   type: DataTypes.BOOLEAN,
-    //   defaultValue: 1,
-    // },
-    // broswer_capture: {
-    //   type: DataTypes.BOOLEAN,
-    //   defaultValue: 1,
-    // },
-    // app_capture: {
-    //   type: DataTypes.BOOLEAN,
-    //   defaultValue: 1,
-    // },
   },
   {
     timestamps: true,
@@ -89,5 +96,5 @@ const company = sequelize.define(
   }
 );
 
-// await company.sync({ alter: 1 });
+await company.sync({ alter: 1 });
 export default company;

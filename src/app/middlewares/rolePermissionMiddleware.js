@@ -10,15 +10,11 @@ const rolePermissionMiddleware = async (req, res, next) => {
     const routeUrl = req.originalUrl;
     const parts = routeUrl.split("/");
     const moduleName = parts[parts.length - 2];
-
-    console.log("Request Method", reqMethod);
-    console.log("Request URL", routeUrl);
-    console.log("Request URL", moduleName);
     // Testing variables
     // const customModule = "department";
     // const customRoleID = 30;
 
-    const getPermission = await permissionInstance.getSpecificRolePermissions(authUser.roleId, moduleName);
+    const getPermission = await permissionInstance.getSpecificRolePermissions(authUser.roleId, moduleName, reqMethod, req.user.company_id );
     const permissions = getPermission.dataValues.permissions;
     if (reqMethod in permissions) {
       if (permissions[reqMethod]) {

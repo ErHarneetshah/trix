@@ -13,6 +13,10 @@ const User = sequelize.define(
       autoIncrement: true,
       allowNull: false,
     },
+    empId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     company_id: {
       type: DataTypes.BIGINT,
       allowNull: true,
@@ -100,6 +104,14 @@ const User = sequelize.define(
     },
     next_reports_schedule_date: {
       type: DataTypes.DATE,
+    },
+    otp: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },  
+    otp_expire_time: {
+      type: DataTypes.DATE,
+      allowNull: true,
     }
   },
   {
@@ -123,7 +135,6 @@ const User = sequelize.define(
         let monitoredFields = ["currentStatus"];
         let fieldsChanged = options.fields.some((field) => monitoredFields.includes(field));
 
-        // //console.log({options , fieldsChanged , monitoredFields})
 
         if (fieldsChanged) {
           const whereCondition = { companyId: user.company_id };
@@ -172,5 +183,5 @@ const User = sequelize.define(
   }
 );
 
-// await User.sync({alter:1});
+await User.sync({alter:1});
 export default User;

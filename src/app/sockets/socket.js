@@ -98,7 +98,6 @@ const setupSocketIO = (io) => {
   io.on("connection", async (socket) => {
     socket.join(`Admin_${socket.user.company_id}`);
     if (socket.user.isAdmin) {
-      console.log(socket.user.userId);
       let userData = await User.findOne({ where: { id: socket.user.userId } });
       userData.socket_id = socket.id;
       userData.currentStatus = 1;
@@ -261,7 +260,6 @@ const handleAdminSocket = async (socket, io) => {
           clientSocket.leave(newRoom);
         }
       }
-      console.log("socket call");
       const response = await getUserReport(data);
       io.to(newRoom).emit("getUserReport", response);
     } catch (error) {
@@ -272,7 +270,6 @@ const handleAdminSocket = async (socket, io) => {
   });
 
   socket.on("disconnect", async () => {
-    //console.log(`Admin ID ${socket.user.userId} disconnected `);
     let userData = await User.findOne({ where: { id: socket.user.userId } });
     userData.currentStatus = 0;
     userData.socket_id = null;
@@ -392,13 +389,12 @@ const getUserStats = async (io, socket) => {
     await adminController.updateAppsStats(io, socket);
     await adminController.updateURLHostStats(io, socket);
   } catch (error) {
-    //console.log("Error fetching admin getuserstats:", error);
+    console.log("Error fetching admin getuserstats:", error);
   }
 };
 
 const getUserReport = async (data) => {
   try {
-    console.log(data);
 
     let user = await User.findOne({
       where: { id: data.id },
@@ -841,7 +837,7 @@ export const adminController = {
       });
       io.to(`Admin_${socket.user.company_id}`).emit("appUsageStats", findAll);
     } catch (error) {
-      //console.log("Error updating app stats:", error);
+      console.log("Error updating app stats:", error);
     }
   },
 
@@ -905,7 +901,6 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("uploadHistory", async (data) => {
     try {
-      //console.log("uploadHistory");
 
       let { url, title, visitTime } = data;
       let userId = socket.user.userId;
@@ -946,7 +941,6 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("uploadImage", async (data) => {
     try {
-      //console.log("uploadImage");
 
       let today = new Date().toISOString().split("T")[0];
       let userId = socket.user.userId;
@@ -976,15 +970,13 @@ const handleUserSocket = async (socket, io) => {
       io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
       socket.emit("imageSuccess", { message: "Images uploaded successfully" });
     } catch (error) {
-      //console.log("Error uploading images:", error);
+      console.log("Error uploading images:", error);
       socket.emit("imageError", { message: "Failed to upload images" });
     }
   });
 
   socket.on("uploadAppHistory", async (data) => {
     try {
-      //console.log("uploadAppHistory");
-
       let { histories } = data;
       let userId = socket.user.userId;
 
