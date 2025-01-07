@@ -248,7 +248,7 @@ class teamMemberController {
         const textMessage = `Hello ${teamMember.fullname},\n\nYour account has been created successfully!\n\nHere are your login details:\n\nUsername: ${teamMember.fullname}\nEmail: ${teamMember.email}\nPassword: ${plainTextPassword}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
 
         const subject = "Emonitrix-Your Credentials";
-        const sendmail = await H.sendM(requestData.email, subject, textMessage);
+        const sendmail = await H.sendM(req.user.company_id, requestData.email, subject, textMessage);
 
         if (!sendmail.success) {
           await dbTransaction.rollback();
@@ -485,7 +485,7 @@ class teamMemberController {
       const textMessage = `Hello ${isUserExists.fullname},\n\nYour new password generated successfully!\n\nHere are your login details:\nEmail: ${isUserExists.email}\nPassword: ${plainTextPassword}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
 
       const subject = "Emonitrix-Generate New Password";
-      const sendmail = await H.sendM(isUserExists.email, subject, textMessage);
+      const sendmail = await H.sendM(req.user.company_id, isUserExists.email, subject, textMessage);
 
       if (!sendmail.success) {
         return helper.failed(res, variables.BadRequest, "Failed to send Email");

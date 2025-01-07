@@ -119,7 +119,7 @@ const checkEmailServer = async (req, res) => {
     return helper.failed(res, variables.ValidationError, validationMessage);
   }
 
-  const sendmail = await H.sendM(to, subject, message);
+  const sendmail = await H.sendM(req.user.company_id, to, subject, message);
   if (sendmail.success) {
     return helper.success(res, variables.Success, sendmail.message);
   } else {
