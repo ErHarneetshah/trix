@@ -306,9 +306,9 @@ class rolePermissionController {
 
   viewPermittedRoles = async (req, res) => {
     try {
-      const allPermissions = await rolePermission.findAll({where: {company_id: req.user.company_id, roleId: req.user.roleId}});
-      const modulesAllowed = [];
-      const reqMethod = "GET";
+      const allPermissions = await rolePermission.findAll({ where: { company_id: req.user.company_id, roleId: req.user.roleId } });
+      const modulesAllowed = {};
+      const reqMethod = ["GET", "PUT", "POST", "DELETE"];
 
       for (const permissionRecord of allPermissions) {
         let { permissions, modules } = permissionRecord.dataValues;
@@ -317,8 +317,17 @@ class rolePermissionController {
           permissions = JSON.parse(permissions);
         }
 
-        if (permissions && reqMethod in permissions && permissions[reqMethod]) {
-          modulesAllowed.push(modules); 
+        if (permissions) {
+          const allowedMethods = [];
+          for (const method of ["GET", "PUT", "POST", "DELETE"]) {
+            if (permissions[method]) {
+              allowedMethods.push(method);
+            }
+          }
+
+          if (allowedMethods.length > 0) {
+            modulesAllowed[modules] = allowedMethods;
+          }
         }
       }
 

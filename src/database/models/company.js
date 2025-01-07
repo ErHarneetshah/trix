@@ -44,12 +44,12 @@ const company = sequelize.define(
     },
     planStartDate: {
       type: DataTypes.DATEONLY,
-      allowNull: false,
+      allowNull: true,
       defaultValue: DataTypes.NOW,
     },
     planEndDate: {
       type: DataTypes.DATEONLY,
-      allowNull: false,
+      allowNull: true,
       defaultValue: () => {
         const today = new Date();
         today.setDate(today.getDate() + 7);
