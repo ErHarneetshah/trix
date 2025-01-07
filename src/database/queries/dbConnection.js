@@ -32,7 +32,7 @@ await ensureDatabaseExists();
 const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.password, {
     host: dbConfig.host,
     dialect: 'mysql',
-    logging: true,
+    logging: false,
     timezone: '+05:30', // Asia/Kolkata timezone
     pool: {
         max: 20,
