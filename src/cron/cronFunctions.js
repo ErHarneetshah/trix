@@ -19,7 +19,7 @@ const sendEmailWithReports = async (req, res) => {
 
         while (hasMoreData) {
             const admins = await User.sequelize.query(
-                `SELECT u.id, u.email, rs.status FROM users AS u LEFT JOIN report_settings AS rs ON u.company_id = rs.company_id WHERE u.isAdmin = 1 AND u.next_reports_schedule_date = :todayDate LIMIT :limit OFFSET :offset`,
+                `SELECT u.id, u.company_id, u.email, rs.status FROM users AS u LEFT JOIN report_settings AS rs ON u.company_id = rs.company_id WHERE u.isAdmin = 1 AND u.next_reports_schedule_date = :todayDate LIMIT :limit OFFSET :offset`,
                 {
                     replacements: { todayDate, limit, offset },
                     type: QueryTypes.SELECT,
@@ -51,7 +51,7 @@ const sendEmailWithReports = async (req, res) => {
 
                     let message = (admin.status == 1) ? "Employees Monthly Reports" : (admin.status == 2) ? "Employees Weekly Reports" : (admin.status == 3) ? "Employees Daily Report" : "Unknown Report Status";
 
-                    const sendmail = await H.sendM(admin.email, "Reports Data", message, '', '', attachment);
+                    const sendmail = await H.sendM(admin.company_id, admin.email, "Reports Data", message, '', '', attachment);
                     if (sendmail.success) {
                         //get the report status and then after sending the mail, update the users table next_reports_scheduling date
 

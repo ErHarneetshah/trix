@@ -115,7 +115,6 @@ ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id
   }
 };
 
-//function for top five most effective users
 
 
 const topFiveEffectiveUsers = async (req, res, next) => {
@@ -406,7 +405,7 @@ ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company
 const getCompanyStats = async (companyId, date) => {
   try {
 
-    const formattedDate = new Date(date).toISOString().split('T')[0]; // Format as 'YYYY-MM-DD'
+    const formattedDate = new Date(date).toISOString().split('T')[0];
 
     const totalEmployees = await User.count({
       where: {
@@ -422,7 +421,6 @@ const getCompanyStats = async (companyId, date) => {
         logged_out_time: null,
         [Op.and]: Sequelize.literal(`DATE(createdAt) = '${formattedDate}'`),
       },
-
     });
 
     const totalNotWorkingEmployees = await TimeLog.count({
@@ -438,7 +436,7 @@ const getCompanyStats = async (companyId, date) => {
         company_id: companyId,
         isAdmin: 0,
         status: 1,
-        [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
+        [Op.and]: Sequelize.literal(`DATE(createdAt) = '${formattedDate}'`), // removed < sign from <=
         id: {
           [Op.notIn]: literal(`(
             SELECT user_id FROM timelogs 
@@ -470,12 +468,13 @@ const getCompanyStats = async (companyId, date) => {
       where: {
         company_id: companyId,
         idle_time: { [Op.gt]: 0 },
-        [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
+        [Op.and]: Sequelize.literal(`DATE(createdAt) = '${formattedDate}'`), // removed < sign from <=
         idle_time: {
           [Op.gt]: Sequelize.literal("(0.4 * (active_time + spare_time + idle_time))"),
         },
       },
     });
+
 
     const totalDectivated = await User.count({
       where: {

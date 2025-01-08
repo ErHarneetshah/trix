@@ -2,12 +2,13 @@ import nodeMailer from 'nodemailer'
 import emailGateway from "../database/models/emailGatewayModel.js";
 
 
-const sendM = async (to, subject, message, cc = '', from = "", attachment = null) => {
+const sendM = async (company_id, to, subject, message, cc = '', from = "", attachment = null) => {
     try {
         const activeEmailServer = await emailGateway.findOne({
-            where: { is_active: 1 }
+            where: { is_active: 1, company_id: company_id }
         });
 
+        console.log("enter sendM")
         if (activeEmailServer) {
             let transporter = nodeMailer.createTransport({
                 host: activeEmailServer.host,

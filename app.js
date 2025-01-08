@@ -50,7 +50,7 @@ app.get("/export/:path", (req, res) => {
   res.sendFile(__dirname + "/storage/files/" +  req.params.path);
 });
 
-app.post('/payment-webhook', (req, res) => {
+app.post('/webhook', (req, res) => {
   console.log('Webhook received:', req.body);
 
   if (req.body.event === 'order.created') {
