@@ -300,7 +300,7 @@ class teamMemberController {
           transaction: dbTransaction,
         });
 
-        if (id != existingTeamMemberWithEmail.id) {
+        if (existingTeamMemberWithEmail && id != existingTeamMemberWithEmail.id) {
           if (existingTeamMemberWithEmail) return helper.failed(res, variables.BadRequest, "Email is already used in system");
         }
       }
