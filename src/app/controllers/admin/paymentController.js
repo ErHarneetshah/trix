@@ -1,6 +1,7 @@
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
 import axios from "axios";
+import company from "../../../database/models/company.js";
 
 class paymentController {
   getPaymentPlans = async (req, res) => {
@@ -52,15 +53,22 @@ class paymentController {
 
   confirmPayment = async (req, res) => {
     try {
+      const dbTransaction = await sequelize.transaction();
       let { id, name, price, duration, userCount, api_key, userData } = req.body.plan;
 
       if (process.env.EMONITRIX_PRIVATE_KEY == api_key) {
         console.log(userData);
+        let companyDetails = await company.findOne({ where: { email: userData.email }, dbTransaction });
+        if(currentPlan == userData.plan_id)
+        {
+
+        }else{
+          
+        }
         return { status: true, message: "Plan Purchased Successfully" };
-      }else{
+      } else {
         return { status: false, message: "Request Submitted did not belongs to Emonitrix" };
       }
-      
     } catch (error) {
       console.error("Error in Payment Controller:", error.message);
       return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");

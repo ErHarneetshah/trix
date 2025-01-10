@@ -326,7 +326,7 @@ class teamMemberController {
         if (!existsTeam) return helper.failed(res, variables.BadRequest, "Team Does Not Exists");
       }
 
-      if (updateFields.teamId && updateField.departmentId) {
+      if (updateFields.teamId && updateFields.departmentId) {
         const existsTeamInDept = await team.findOne({
           where: { id: updateFields.teamId, departmentId: updateFields.departmentId, company_id: req.user.company_id },
         });
