@@ -6,8 +6,8 @@ class authValidationSchema {
   static companyRegisterValid = async (data, res) => {
     try {
       const { status, message } = await CValidator(data, {
-        name: "required|regex:/^[a-zA-Z-' ]+$/",
-        companyName: "required|min:3|max:50|regex:/^[a-zA-Z-' ]+$/",
+        name: "required|string",
+        companyName: "required|min:3|max:50|string",
         email: "required|email",
         password: "required|password_regex|min:8",
         confirmPassword: "required|same:password",

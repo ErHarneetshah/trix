@@ -203,10 +203,10 @@ class authController extends jwtService {
       }
 
       let companyUserCount = await User.count({
-        where:{
-          company_id: createCompany.id
-        }
-      })
+        where: {
+          company_id: createCompany.id,
+        },
+      });
 
       companyUserCount++;
 
@@ -238,6 +238,9 @@ class authController extends jwtService {
         if (dbTransaction) await dbTransaction.rollback();
         return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create User for this Company");
       }
+
+      const userWithRole = createUser.toJSON();
+      userWithRole.role = { name: createRole.name };
 
       const updateEmpCount = await company.increment(
         { employeeCount: Number(companyUserCount) },
@@ -294,7 +297,7 @@ class authController extends jwtService {
       await dbTransaction.commit();
       return helper.success(res, variables.Success, "Register Successfully", {
         token: token,
-        user: createUser,
+        user: userWithRole,
       });
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
@@ -359,7 +362,6 @@ class authController extends jwtService {
         token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
         await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
-
       } else {
         let now = new Date();
         let currentHours = now.getHours();
@@ -393,14 +395,12 @@ class authController extends jwtService {
         // // let [shiftHours, shiftMinutes] = shiftData.start_time.split(":").map(Number);
         // let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
 
-
         // if (currentHours > endHours || (currentHours == endHours && currentMinutes > endMinutes)) {
         //   return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
         // }
 
         //Deleting previous sessions here
         // await accessToken.destroy({ where: { userId: user.id } }); //! commenting for now
-
 
         token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
         let expireTime = this.calculateTime();
@@ -564,6 +564,12 @@ class authController extends jwtService {
 
   advanced_setting = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Advance Settings", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let { screen_capture, broswer_capture, app_capture, screen_capture_time, broswer_capture_time, app_capture_time } = req.body;
 
       // Normalize boolean inputs (convert string 'true'/'false' to actual booleans)
@@ -641,6 +647,12 @@ class authController extends jwtService {
 
   get_advanced_setting = async (req, res) => {
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Advance Settings", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
       let id = req.user.id;
       let data = await User.findOne({
         where: { id },
@@ -656,7 +668,6 @@ class authController extends jwtService {
   };
 
   sendOtp = async (req, res) => {
-
     try {
       let { email } = req.body;
       console.log(email);
@@ -682,7 +693,7 @@ class authController extends jwtService {
       let otpExpireTime = new Date();
       otpExpireTime.setMinutes(otpExpireTime.getMinutes() + 2);
       // UPDATE THE USERS TABLE
-      await User.update({ otp: otp , otp_expire_time: otpExpireTime}, { where: { id: isUserExist.id} });
+      await User.update({ otp: otp, otp_expire_time: otpExpireTime }, { where: { id: isUserExist.id } });
 
       const textMessage = `Hello ${isUserExist.fullname},\n\nYour OTP is ${otp}. This OTP is valid for only 2 mimnutes.\n\nBest regards`;
 
@@ -700,39 +711,35 @@ class authController extends jwtService {
 
   changePassword = async (req, res) => {
     try {
-      let { otp, password, confirmPassword  } = req.body;
+      let { otp, password, confirmPassword } = req.body;
 
       const rules = {
         otp: "required|integer",
-        password: 'string|password_regex',
+        password: "string|password_regex",
         confirmPassword: "required_with:password|same:password",
       };
-  
-      const { status, message } = await validate(req.body, rules);    
+
+      const { status, message } = await validate(req.body, rules);
       if (status === 0) {
         return helper.failed(res, variables.ValidationError, message);
       }
-  
+
       // Find user by OTP
       const user = await User.findOne({ where: { otp: otp } });
-  
+
       if (!user) {
         return helper.failed(res, variables.NotFound, "Invalid OTP.");
-
       }
-  
+
       // Check if OTP is expired
       if (new Date() > user.otp_expire_time) {
         return helper.failed(res, variables.NotFound, "OTP has expired.");
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-  
+
       // Update user's password
-      await User.update(
-        { password: hashedPassword, otp: null, otp_expire_time: null },
-        { where: { id: user.id } }
-      );
+      await User.update({ password: hashedPassword, otp: null, otp_expire_time: null }, { where: { id: user.id } });
       const textMessage = `Hello ${user.fullname},\n\nYour  password changed successfully!\n\nHere are your login details:\nEmail: ${user.email}\nPassword: ${password}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
 
       const subject = "Emonitrix-Updated Password";
@@ -742,13 +749,11 @@ class authController extends jwtService {
         return helper.failed(res, variables.BadRequest, "Failed to send Email");
       }
       return helper.success(res, variables.Success, "Password updated successfully.Please check your updated password email.");
-  
     } catch (error) {
       console.error("Error generateNewPassword:", error.message);
       return helper.failed(res, variables.BadRequest, "Failed to getTeamMember");
     }
   };
-
 }
 
 export default authController;

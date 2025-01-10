@@ -17,5 +17,5 @@ RUN npm install
 RUN npm install -g pm2
 
 # Command to run your app using nodemon
-CMD ["npx", "pm2-runtime", "start" ,"app.js"  ]
+CMD ["npx", "pm2-runtime", '--node-args="--max-old-space-size=4096"',"start" ,"app.js"  ]
 

@@ -7,26 +7,6 @@ const generateDummyData = async (transaction) => {
   await sequelize.query(`ALTER TABLE ${app_modules.getTableName()} AUTO_INCREMENT=1`);
 
   const moduleData = [
-    // { name: "role", aliasName: "Role" },
-    // { name: "reportingManager", aliasName: "Reporting Manager" },
-    // { name: "team", aliasName: "Team" },
-    // { name: "shifts", aliasName: "Shifts" },
-    // { name: "teamMembers", aliasName: "Team Members" },
-    // { name: "department", aliasName: "Department" },
-    // { name: "designation", aliasName: "Designation" },
-    // { name: "rolePermissions", aliasName: "Role Permissions" },
-    // { name: "blockedWebsite", aliasName: "Blocked Website" },
-    // { name: "productiveApp", aliasName: "Productive Application" },
-    // { name: "reportSettings", aliasName: "Report Settings" },
-    // { name: "dashboard", aliasName: "Dashboard" },
-    // { name: "allTeamMemberDashboard", aliasName: "All Team Member Dashboard" },
-    // { name: "auth", aliasName: "Authentication" },
-    // { name: "exportReports", aliasName: "Export Report" },
-    // { name: "tree", aliasName: "Team Structure" },
-    // { name: "ai", aliasName: "AI Reports" },
-    // { name: "compare", aliasName: "Compare Reports" },
-    // { name: "workReports", aliasName: "Work Reports" },
-
     { name: "Role" },
     { name: "Reporting Manager" },
     { name: "Team" },
@@ -38,7 +18,6 @@ const generateDummyData = async (transaction) => {
     { name: "Blocked Website" },
     { name: "Productive Application" },
     { name: "Report Settings" },
-    { name: "Dashboard" },
     { name: "All Team Member Dashboard" },
     { name: "Authentication" },
     { name: "Export Report" },
@@ -49,8 +28,9 @@ const generateDummyData = async (transaction) => {
     { name: "Email Gateway" },
     { name: "Language" },
     { name: "Productive Website" },
-    { name: "Settings" },
-    { name: "Team Member Log" },
+    { name: "General Settings" },
+    { name: "Advance Settings" },
+    { name: "Team Member Log"},
 
   ];
   

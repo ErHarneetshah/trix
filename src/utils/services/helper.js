@@ -224,7 +224,7 @@ export default {
   prefixInit: async (name) => {
     name = name.trim();  
     if (name.length >= 4) {
-      return name.slice(0, 4);
+      return name.slice(0, 4).toUpperCase();
     }
   
     return name.toUpperCase(); 
