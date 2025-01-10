@@ -305,25 +305,33 @@ class teamMemberController {
         }
       }
 
-      const existsDept = await department.findOne({
-        where: { id: updateFields.departmentId, company_id: req.user.company_id },
-      });
-      if (!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
+      if (updateFields.departmentId) {
+        const existsDept = await department.findOne({
+          where: { id: updateFields.departmentId, company_id: req.user.company_id },
+        });
+        if (!existsDept) return helper.failed(res, variables.BadRequest, "Department Does Not Exists");
+      }
 
-      const existsRole = await role.findOne({
-        where: { id: updateFields.roleId, company_id: req.user.company_id },
-      });
-      if (!existsRole) return helper.failed(res, variables.BadRequest, "Role Does Not Exists");
+      if (updateFields.roleId) {
+        const existsRole = await role.findOne({
+          where: { id: updateFields.roleId, company_id: req.user.company_id },
+        });
+        if (!existsRole) return helper.failed(res, variables.BadRequest, "Role Does Not Exists");
+      }
 
-      const existsTeam = await team.findOne({
-        where: { id: updateFields.teamId, company_id: req.user.company_id },
-      });
-      if (!existsTeam) return helper.failed(res, variables.BadRequest, "Team Does Not Exists");
+      if (updateFields.teamId) {
+        const existsTeam = await team.findOne({
+          where: { id: updateFields.teamId, company_id: req.user.company_id },
+        });
+        if (!existsTeam) return helper.failed(res, variables.BadRequest, "Team Does Not Exists");
+      }
 
-      const existsTeamInDept = await team.findOne({
-        where: { id: updateFields.teamId, departmentId: updateFields.departmentId, company_id: req.user.company_id },
-      });
-      if (!existsTeamInDept) return helper.failed(res, variables.BadRequest, "Team Does Not Exists in Department");
+      if (updateFields.teamId && updateField.departmentId) {
+        const existsTeamInDept = await team.findOne({
+          where: { id: updateFields.teamId, departmentId: updateFields.departmentId, company_id: req.user.company_id },
+        });
+        if (!existsTeamInDept) return helper.failed(res, variables.BadRequest, "Team Does Not Exists in Department");
+      }
 
       // Perform the update operation
       await User.update(updateFields, {
@@ -342,11 +350,11 @@ class teamMemberController {
 
   updateSettings = async (req, res) => {
     try {
-      // ___________-------- Role Permisisons Exists or not ---------________________
-      const routeMethod = req.method;
-      const isApproved = await helper.checkRolePermission(req.user.roleId, "Settings", routeMethod, req.user.company_id);
-      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
-      // ___________-------- Role Permisisons Exists or not ---------________________
+      // // ___________-------- Role Permisisons Exists or not ---------________________
+      // const routeMethod = req.method;
+      // const isApproved = await helper.checkRolePermission(req.user.roleId, "Settings", routeMethod, req.user.company_id);
+      // if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // // ___________-------- Role Permisisons Exists or not ---------________________
 
       let { id, screen_capture_time, broswer_capture_time, app_capture_time, screen_capture, broswer_capture, app_capture } = req.body;
 

@@ -13,8 +13,14 @@ import bcrypt from "bcrypt";
 
 const getAdminDetails = async (req, res) => {
   try {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "General Settings", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    
     const alldata = await User.findOne({
-      where: { isAdmin: 1, company_id: req.user.company_id },
+      where: { id: req.user.id, company_id: req.user.company_id },
       attributes: ["fullname", "email", "mobile"],
       include: [
         {
@@ -34,6 +40,12 @@ const getAdminDetails = async (req, res) => {
 
 const updateAdminDetails = async (req, res) => {
   try {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "General Settings", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
+
     const { fullname, email, mobile, password, confirm_password } = req.body;
 
     const rules = {
@@ -480,7 +492,7 @@ const getProductiveWebsites = async (req, res) => {
     const isApproved = await helper.checkRolePermission(req.user.roleId, "Productive Website", routeMethod, req.user.company_id);
     if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
-    
+
     let { departmentId, limit, page } = req.query;
 
     limit = parseInt(limit) || 10;
