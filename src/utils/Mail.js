@@ -8,7 +8,6 @@ const sendM = async (company_id, to, subject, message, cc = '', from = "", attac
             where: { is_active: 1, company_id: company_id }
         });
 
-        console.log("enter sendM")
         if (activeEmailServer) {
             let transporter = nodeMailer.createTransport({
                 host: activeEmailServer.host,

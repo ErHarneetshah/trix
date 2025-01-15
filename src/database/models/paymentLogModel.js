@@ -20,7 +20,6 @@ const paymentLog = sequelize.define(
     },
     companyEmail: {
       type: DataTypes.STRING,
-      unique: true,
       allowNull: false,
     },
     planId: {
@@ -50,7 +49,7 @@ const paymentLog = sequelize.define(
     status: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      Comment: "0 For Pending, 1 For Active, 2 For Completed",
+      Comment: "0 For Pending, 1 For Activ, 2 For Exhausted, 3 for Plan Changed",
     }
   },
   {
@@ -59,5 +58,5 @@ const paymentLog = sequelize.define(
   }
 );
 
-// await paymentLog.sync({alter:1});
+await paymentLog.sync({alter:1});
 export default paymentLog;
