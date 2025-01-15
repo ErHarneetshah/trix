@@ -15,6 +15,7 @@ import sequelize from "./src/database/queries/dbConnection.js";
 import paymentController from "./src/app/controllers/admin/paymentController.js";
 import helper from "./src/utils/services/helper.js";
 import variables from "./src/app/config/variableConfig.js";
+import "./src/utils/services/scheduleEmailForPlanPayment.js";
 
 
 const app = express();

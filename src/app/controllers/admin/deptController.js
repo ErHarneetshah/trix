@@ -20,7 +20,7 @@ class deptController {
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
       let searchable = ["name"];
-      limit = parseInt(limit) || 2;
+      limit = parseInt(limit) || 10;
       let offset = (page - 1) * limit || 0;
       let where = await helper.searchCondition(searchParam, searchable);
       where.company_id = req.user.company_id;

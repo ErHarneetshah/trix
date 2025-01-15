@@ -26,6 +26,7 @@ import languageSettings from "../../../database/models/languageSettingsModel.js"
 import commonfuncitons from "../../../utils/services/commonfuncitons.js";
 import validate from "../../../utils/CustomValidation.js";
 import H from "../../../utils/Mail.js";
+import paymentLog from "../../../database/models/paymentLogModel.js";
 
 class authController extends jwtService {
   companyRegister = async (req, res) => {
@@ -309,6 +310,8 @@ class authController extends jwtService {
     const dbTransaction = await sequelize.transaction();
     try {
       let requestData = req.body;
+      const today = new Date();
+      const dateOnly = today.toISOString().split("T")[0];
 
       let validationResult = await authValidation.loginValid(requestData, res);
       if (!validationResult.status) return helper.sendResponse(res, variables.ValidationError, 0, {}, validationResult.message);
@@ -344,6 +347,65 @@ class authController extends jwtService {
       });
       if (!user) {
         return helper.sendResponse(res, variables.BadRequest, 0, null, "Invalid Credentials");
+      }
+
+      let companyDetails = await company.findOne({ where: { id: user.company_id } });
+      if (companyDetails.planEndDate < dateOnly) {
+        await company.update({ status: 0 }, { where: { id: user.company_id } });
+      }
+
+      if (!companyDetails.status) {
+        let pendingPaymentUpdate = await paymentLog.findOne({
+          where: { company_id: user.company_id, status: 0 },
+        });
+        if (pendingPaymentUpdate) {
+          //* Changing previous payment log status to 2 (Exhausted)
+          await paymentLog.update(
+            {
+              status: 2,
+            },
+            {
+              where: {
+                company_id: user.company_id,
+                status: 1,
+              },
+              transaction: dbTransaction,
+            }
+          );
+
+          //* Changing new payment log status to 1 (Activated) from 0 (Pending/Unused)
+          let updatedPaymentLog = await paymentLog.update(
+            {
+              status: 1,
+            },
+            {
+              where: {
+                company_id: user.company_id,
+                status: 0,
+              },
+              transaction: dbTransaction,
+            }
+          );
+
+          //* Updating the Company Current Plan in Company table
+          await company.update(
+            {
+              currentPlanId: updatedPaymentLog.planId,
+              planEmployeeCount: updatedPaymentLog.allowedEmployeeCount,
+              planStartDate: updatedPaymentLog.start_date,
+              planEndDate: updatedPaymentLog.end_date,
+              status: 1,
+            },
+            {
+              where: { id: user.company_id },
+              transaction: dbTransaction,
+            }
+          );
+        } 
+        else {
+          const permissionInstance = new rolePermissionController();
+          await permissionInstance.notAllowRolePermissions(user.company_id);
+        }
       }
 
       let comparePwd = await bcrypt.compare(password, user.password);

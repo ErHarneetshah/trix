@@ -170,9 +170,15 @@ class teamMemberController {
     const dbTransaction = await sequelize.transaction();
     try {
       const requestData = req.body;
-      // Validating request body
       const validationResult = await teamsValidationSchema.teamMemberValid(requestData, res);
       if (!validationResult.status) return helper.failed(res, variables.BadRequest, validationResult.message);
+
+      //* Confirming whether you can add new employee based on employee
+      let companyDetails = await company.findOne({where: {id: req.user.company_id}});
+      if(companyDetails.employeeCount >= companyDetails.planEmployeeCount)
+      {
+        return helper.failed(res, variables.BadRequest, "Upgrade Plan To Add New Employees");
+      }
 
       const existsDept = await department.findOne({
         where: { id: requestData.departmentId, company_id: req.user.company_id },

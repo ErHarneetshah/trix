@@ -147,7 +147,7 @@ class rolePermissionController {
       console.error("Error adding role permissions:", error);
       throw new Error("Error adding role permissions");
     }
-  };
+  }; 
 
   updateMultipleRolePermission = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
@@ -337,6 +337,63 @@ class rolePermissionController {
       return helper.failed(res, variables.BadRequest, "View Permitted Roles Error");
     }
   };
+
+  allowRolePermissions = async (company_id) => {
+    const dbTransaction = await sequelize.transaction();
+    try {
+      const adminRoleID = await role.findOne({
+        where: {company_id: company_id, name: "Admin"}
+      });
+
+      await rolePermission.update({
+        permissions: {
+          POST: true,
+          GET: true,
+          PUT: true,
+          DELETE: true,
+        },
+      },{
+        where: {roleId: adminRoleID.id, company_id: company_id}
+      })
+      await dbTransaction.commit();
+      return ({status: true, message: "Permissions updated"})
+    } catch (error) {
+      if (dbTransaction) await dbTransaction.rollback();
+      console.error("Error updating role permissions:", error);
+      return ({status: false, message: "Internal Server Error"});
+    }
+  };
+
+  notAllowRolePermissions = async (company_id) => {
+    const dbTransaction = await sequelize.transaction();
+    try {
+      const adminRoleID = await role.findOne({
+        where: {company_id: company_id, name: "Admin"}
+      });
+
+      console.log(adminRoleID);
+
+      await rolePermission.update({
+        permissions: {
+          POST: false,
+          GET: false,
+          PUT: false,
+          DELETE: false,
+        },
+      },{
+        where: {roleId: adminRoleID.id, company_id: company_id}
+      })
+      await dbTransaction.commit();
+      return ({status: true, message: "Permissions updated"})
+    } catch (error) {
+      if (dbTransaction) await dbTransaction.rollback();
+      console.error("Error updating role permissions:", error);
+      return ({status: false, message: "Internal Server Error"});
+
+    }
+  };
+
+  
 }
 
 export default rolePermissionController;

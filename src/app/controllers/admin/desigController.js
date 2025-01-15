@@ -17,7 +17,7 @@ class desigController {
 
       // ___________---------- Search, Limit, Pagination ----------_______________
       let { searchParam, limit, page } = req.query;
-      limit = parseInt(limit) || 1;
+      limit = parseInt(limit) || 10;
       let searchable = ["name", "status"];
       let offset = (page - 1) * limit || 0;
       let where = await helper.searchCondition(searchParam, searchable);
