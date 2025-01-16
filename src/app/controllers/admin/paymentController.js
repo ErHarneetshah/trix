@@ -248,7 +248,7 @@ class paymentController extends appConfig {
         if (!sendmail.success) {
           console.log("Test13");
           await dbTransaction.rollback();
-          return helper.failed(res, variables.BadRequest, "Please Set the Email Credentials First");
+          return { status: false, message: "Please Set the Email Credentials First" };
         }
 
         console.log("Test14");
@@ -259,7 +259,7 @@ class paymentController extends appConfig {
       }
     } catch (error) {
       console.error("Error in Payment Controller:", error);
-      return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");
+      return { status: false, message: "Unable to Retrieve Plan List" };
     }
   };
 }

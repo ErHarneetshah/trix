@@ -65,8 +65,8 @@ app.post("/webhook", async (req, res) => {
   console.log("Webhook called");
   const ifVerified = await paymentInstance.confirmPayment(req, res);
   console.log("Tested");
-  if(!ifVerified.status) return helper.failed(res, variables.ValidationError, ifVerified.message)
-  return res.status(200).send(ifVerified.message);
+  if(!ifVerified.status) return helper.failed(res, variables.ValidationError, ifVerified.message);
+  return helper.success(res, variables.Success, ifVerified.message)
 });
 
 httpServer.listen(PORT, "0.0.0.0", () => console.log(`Server up and Running on http://${ip.address()}:${PORT}`));
