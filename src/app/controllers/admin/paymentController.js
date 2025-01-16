@@ -27,8 +27,9 @@ class paymentController extends appConfig {
       }
       
       response.data.data.data.forEach((plan) => {
-        plan.currentPlan = plan.id === companyDetails.currentPlanId;
+        plan.currentPlan = plan.id === companyDetails.currentPlanId ? "true" : "false";
       });
+      
 
       return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
     } catch (error) {
