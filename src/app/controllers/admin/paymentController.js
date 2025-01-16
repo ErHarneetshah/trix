@@ -5,12 +5,18 @@ import company from "../../../database/models/company.js";
 import sequelize from "../../../database/queries/dbConnection.js";
 import paymentLog from "../../../database/models/paymentLogModel.js";
 import rolePermissionController from "./rolePermissionController.js";
+import appConfig from "../../config/appConfig.js";
+import H from "../../../utils/Mail.js";
 
-class paymentController {
+
+class paymentController extends appConfig {
   getPaymentPlans = async (req, res) => {
     try {
       const privateKey = process.env.EMONITRIX_PRIVATE_KEY.replace(/"/g, "");
-      const response = await axios.get(`${process.env.SuperAdmin_BASE_URL}/api/product/getProductPlans?api_key=${privateKey}`);
+      
+      console.log(`${this.getSuperAdminUrl()}/api/product/getProductPlans?api_key=${privateKey}`);
+
+      const response = await axios.get(`${this.getSuperAdminUrl()}/api/product/getProductPlans?api_key=${privateKey}`);
 
       if (!response.data) return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");
 
@@ -29,7 +35,7 @@ class paymentController {
 
       let planDetails;
       try {
-        planDetails = await axios.get(`${process.env.SuperAdmin_BASE_URL}/api/product/viewPlan?plan_id=${planId}`);
+        planDetails = await axios.get(`${this.getSuperAdminUrl()}/api/product/viewPlan?plan_id=${planId}`);
       } catch (error) {
         if (error.response) {
           console.error("API Error Message:", error.response.data.message || error.response.data);
@@ -62,11 +68,11 @@ class paymentController {
 
       const gateway_id = `${process.env.GATEWAY_ID}`;
       const privateKey = process.env.EMONITRIX_PRIVATE_KEY.replace(/"/g, "");
-      const redirect_url = `${process.env.LOCAL_URL}/dashboard`;
+      const redirect_url = `${this.getRedirectUrl()}`;
 
       const response = await axios({
         method: "post",
-        url: `${process.env.SuperAdmin_BASE_URL}/api/subscription/purchaseSubscription`,
+        url: `${this.getSuperAdminUrl()}/api/subscription/purchaseSubscription`,
         data: {
           plan_id: `${planId}`,
           api_key: `${privateKey}`,

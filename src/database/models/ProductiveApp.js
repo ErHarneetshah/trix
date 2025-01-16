@@ -1,6 +1,8 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
+import appConfig from "../../app/config/appConfig.js";
 
+const imageUrlConfig = new appConfig().getImageUrl();
 export const ProductiveApp = sequelize.define("productive_app",
   {
     id: {
@@ -24,12 +26,11 @@ export const ProductiveApp = sequelize.define("productive_app",
       allowNull: false,
     },
 
-    
     app_logo: {
       type: DataTypes.STRING,
       allowNull: true,
       get() {
-          return (this.getDataValue('app_logo') ? process.env.BASE_URL + 'image/logos/' + this.getDataValue('app_logo') : null);
+          return (this.getDataValue('app_logo') ? imageUrlConfig  + 'image/logos/' + this.getDataValue('app_logo') : null);
       }
   },
 
