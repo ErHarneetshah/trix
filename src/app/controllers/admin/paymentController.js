@@ -13,12 +13,22 @@ class paymentController extends appConfig {
   getPaymentPlans = async (req, res) => {
     try {
       const privateKey = process.env.EMONITRIX_PRIVATE_KEY.replace(/"/g, "");
-      
-      console.log(`${this.getSuperAdminUrl()}/api/product/getProductPlans?api_key=${privateKey}`);
 
       const response = await axios.get(`${this.getSuperAdminUrl()}/api/product/getProductPlans?api_key=${privateKey}`);
 
       if (!response.data) return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");
+
+      const companyDetails = await company.findOne({
+        where: { id: req.user.company_id },
+      });
+      
+      if (!companyDetails) {
+        return helper.failed(res, variables.BadRequest, "Company details not found");
+      }
+      
+      response.data.data.data.forEach((plan) => {
+        plan.currentPlan = plan.id === companyDetails.currentPlanId;
+      });
 
       return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
     } catch (error) {
