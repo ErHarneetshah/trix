@@ -62,7 +62,9 @@ app.get("/image/:type/:path", (req, res) => {
 });
 
 app.post("/webhook", async (req, res) => {
+  console.log("Webhook called");
   const ifVerified = await paymentInstance.confirmPayment(req, res);
+  console.log("Tested");
   if(!ifVerified.status) return helper.failed(res, variables.ValidationError, ifVerified.message)
   return res.status(200).send(ifVerified.message);
 });

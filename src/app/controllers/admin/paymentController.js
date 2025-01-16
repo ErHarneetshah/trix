@@ -8,7 +8,6 @@ import rolePermissionController from "./rolePermissionController.js";
 import appConfig from "../../config/appConfig.js";
 import H from "../../../utils/Mail.js";
 
-
 class paymentController extends appConfig {
   getPaymentPlans = async (req, res) => {
     try {
@@ -21,15 +20,14 @@ class paymentController extends appConfig {
       const companyDetails = await company.findOne({
         where: { id: req.user.company_id },
       });
-      
+
       if (!companyDetails) {
         return helper.failed(res, variables.BadRequest, "Company details not found");
       }
-      
+
       response.data.data.data.forEach((plan) => {
         plan.currentPlan = plan.id === companyDetails.currentPlanId ? "true" : "false";
       });
-      
 
       return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
     } catch (error) {
@@ -107,16 +105,19 @@ class paymentController extends appConfig {
       const dbTransaction = await sequelize.transaction();
       const permissionInstance = new rolePermissionController();
       let { id, name, price, duration, userCount, api_key, userData } = req.body.plan;
-
+      console.log("Test1");
       if (process.env.EMONITRIX_PRIVATE_KEY == api_key) {
         let companyDetails = await company.findOne({ where: { email: userData.email }, dbTransaction });
+        console.log("Test2");
 
         //* If new plan id is the same as of current plan id
         if (companyDetails.currentPlanId == userData.plan_id) {
           const today = new Date();
           const dateOnly = today.toISOString().split("T")[0];
           //* If plan end date is less than todays's date, then update the paymnet log and companies table
+          console.log("Test3");
           if (companyDetails.planEndDate < dateOnly) {
+            console.log("Test4");
             await paymentLog.update(
               {
                 status: 2,
@@ -132,6 +133,7 @@ class paymentController extends appConfig {
               }
             );
 
+            console.log("Test5");
             await paymentLog.create(
               {
                 company_id: companyDetails.id,
@@ -148,6 +150,7 @@ class paymentController extends appConfig {
               { transaction: dbTransaction }
             );
 
+            console.log("Test6");
             await company.update(
               {
                 currentPlanId: id,
@@ -165,6 +168,7 @@ class paymentController extends appConfig {
             await permissionInstance.allowRolePermissions(companyDetails.id);
           } else {
             //* else update the paymnet log only
+            console.log("Test7");
             await paymentLog.create(
               {
                 company_id: companyDetails.id,
@@ -183,6 +187,7 @@ class paymentController extends appConfig {
           }
         } else {
           //* If new plan id is not the same as of current plan id
+          console.log("Test8");
           await paymentLog.update(
             {
               status: 3,
@@ -198,6 +203,7 @@ class paymentController extends appConfig {
             }
           );
 
+          console.log("Test9");
           await paymentLog.create(
             {
               company_id: companyDetails.id,
@@ -214,6 +220,7 @@ class paymentController extends appConfig {
             { transaction: dbTransaction }
           );
 
+          console.log("Test10");
           await company.update(
             {
               currentPlanId: id,
@@ -229,6 +236,7 @@ class paymentController extends appConfig {
           );
         }
 
+        console.log("Test11");
         await permissionInstance.allowRolePermissions(companyDetails.id);
 
         let textMessage = `Congratulations ${companyDetails.name},\n\nYou have successfully bought the Emonitrix Plan Pack ${name} and it will be valid for ${duration} days. \n\nBest regards`;
@@ -236,11 +244,14 @@ class paymentController extends appConfig {
         let subject = "Emonitrix Monthly Subscription";
         let sendmail = await H.sendM(companyDetails.id, companyDetails.email, subject, textMessage);
 
+        console.log("Test12");
         if (!sendmail.success) {
+          console.log("Test13");
           await dbTransaction.rollback();
           return helper.failed(res, variables.BadRequest, "Please Set the Email Credentials First");
         }
 
+        console.log("Test14");
         await dbTransaction.commit();
         return { status: true, message: "Plan Purchased Successfully" };
       } else {
