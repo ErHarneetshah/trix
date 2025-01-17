@@ -33,12 +33,14 @@ class paymentController extends appConfig {
           activePlanId = plan.id;
         }
       });
-      const isAdvanceExists = await paymentLog.Count({
+      const isAdvanceExists = await paymentLog.count({
         where: {company_id: req.user.company_id, planId: activePlanId, status: 0}
       })
       if(isAdvanceExists)
       {
         response.data.data.advanceBought = true;  
+      }else{
+        response.data.data.advanceBought = false;  
       }
 
       response.data.data.activePlanId = activePlanId;
