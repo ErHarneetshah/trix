@@ -231,12 +231,12 @@ export default {
 
   logger: async (res, file = "Unknown File", errorMessage) => {
     try {
-      let filePath = res.req?.originalUrl || "Unknown Url";
+      let filePath = res?.req?.originalUrl || "Unknown Url";
       const now = new Date();
       const timestamp = now.toISOString().slice(0, 19).replace("T", " ");
 
       //* First deleting previous enteries
-      const totalEntries = await model.count();
+      const totalEntries = await errorLog.count();
       const maxEntries = 100;
       await errorLog.destroy({
         where: {
