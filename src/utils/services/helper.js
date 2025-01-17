@@ -9,6 +9,7 @@ import { parse } from "tldts";
 import moment from "moment";
 import rolePermissionController from "../../app/controllers/admin/rolePermissionController.js";
 import dns from "dns";
+import errorLog from "../../database/models/errorLogs.js";
 
 export default {
   checkRolePermission: async (roleId, moduleName, method, company_id) => {
@@ -114,9 +115,9 @@ export default {
         uppercase: true,
         symbols: false,
         excludeSimilarCharacters: true,
-        strict: true
-    });
-    if (generatedPass) return generatedPass;    
+        strict: true,
+      });
+      if (generatedPass) return generatedPass;
 
       return this.failed(res, variables.BadRequest, "Unable to generate password for team member!");
     } catch (error) {
@@ -127,7 +128,7 @@ export default {
   validateDomain: async (url) => {
     try {
       const domain = new URL(url).hostname; // Extract the domain from the URL
-      
+
       const dnsCheck = await new Promise((resolve, reject) => {
         dns.lookup(domain, (err, address) => {
           if (err) {
@@ -139,14 +140,12 @@ export default {
           }
         });
       });
-  
+
       return dnsCheck;
     } catch (err) {
       return { status: false, message: "Website URL is not Valid" };
     }
   },
-  
-
 
   searchCondition: async (searchParam, searchable, otherField = null, otherParam = null) => {
     let where = {};
@@ -222,12 +221,51 @@ export default {
   },
 
   prefixInit: async (name) => {
-    name = name.trim();  
+    name = name.trim();
     if (name.length >= 4) {
       return name.slice(0, 4).toUpperCase();
     }
-  
-    return name.toUpperCase(); 
+
+    return name.toUpperCase();
   },
-  
+
+  logger: async (res, file = "Unknown File", errorMessage) => {
+    try {
+      let filePath = res.req?.originalUrl || "Unknown Url";
+      const now = new Date();
+      const timestamp = now.toISOString().slice(0, 19).replace("T", " ");
+
+      //* First deleting previous enteries
+      const totalEntries = await model.count();
+      const maxEntries = 100;
+      await errorLog.destroy({
+        where: {
+          [Op.or]: [
+            {
+              createdAt: {
+                [Op.lt]: timestamp,
+              },
+            },
+            {
+              id: {
+                [Op.in]: errorLog.sequelize.literal(`(SELECT id FROM ${errorLog.getTableName()} ORDER BY createdAt ASC LIMIT ${totalEntries - maxEntries})`),
+              },
+            },
+          ],
+        },
+      });
+
+      //* Second creating new enteries
+      const logEntry = { file: filePath, error: errorMessage.stack};
+      await errorLog.create({
+        error_file: file,
+        error_data: logEntry,
+      });
+    } catch (error) {
+      await errorLog.create({
+        error_file: "Helper Logger Function",
+        error_data: { file: "helper.js", error: errorMessage.stack },
+      });
+    }
+  },
 };
