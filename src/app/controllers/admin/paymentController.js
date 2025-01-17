@@ -25,10 +25,16 @@ class paymentController extends appConfig {
         return helper.failed(res, variables.BadRequest, "Company details not found");
       }
 
+      let activePlanId;
       response.data.data.data.forEach((plan) => {
         plan.currentPlan = plan.id === companyDetails.currentPlanId ? "true" : "false";
+        if(plan.currentPlan)
+        {
+          activePlanId = plan.id;
+        }
       });
 
+      response.data.data.activePlanId = activePlanId;
       return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
     } catch (error) {
       console.error("Error in Payment Controller:", error.message);
