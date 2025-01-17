@@ -75,7 +75,13 @@ class paymentController extends appConfig {
         return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan Details. Please Try Again");
       }
 
-      const gateway_id = `${process.env.GATEWAY_ID}`;
+      let gateway_id;
+      let paymentGateways = (planDetails = await axios.get(`${this.getSuperAdminUrl()}/api/gateway/paymentGateways`));
+      paymentGateways.data.data.forEach((gateway) => {
+        if (gateway.status) {
+          gateway_id = gateway.id;
+        }
+      });
       const privateKey = process.env.EMONITRIX_PRIVATE_KEY.replace(/"/g, "");
       const redirect_url = `${this.getRedirectUrl()}`;
 
