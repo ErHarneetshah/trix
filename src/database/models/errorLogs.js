@@ -15,7 +15,7 @@ const errorLog = sequelize.define(
       allowNull: true,
     },
     error_data: {
-      type: DataTypes.TEXT("long"),
+      type: DataTypes.JSON,
       allowNull: true,
     },
   },

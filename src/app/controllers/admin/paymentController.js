@@ -33,11 +33,19 @@ class paymentController extends appConfig {
           activePlanId = plan.id;
         }
       });
+      const isAdvanceExists = await paymentLog.Count({
+        where: {company_id: req.user.company_id, planId: activePlanId, status: 0}
+      })
+      if(isAdvanceExists)
+      {
+        response.data.data.advanceBought = true;  
+      }
 
       response.data.data.activePlanId = activePlanId;
       return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
     } catch (error) {
       console.error("Error in Payment Controller:", error.message);
+      // helper.logger(res, "Payment Controller -> getPlaymentPlans", error);
       return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");
     }
   };
