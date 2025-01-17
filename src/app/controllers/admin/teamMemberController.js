@@ -100,7 +100,7 @@ class teamMemberController {
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      helper.logger(res, "Team Member Controller -> getAllTeamMembers", error);
+      //helper.logger(res, "Team Member Controller -> getAllTeamMembers", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -141,7 +141,7 @@ class teamMemberController {
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      helper.logger(res, "Team Member Controller -> getSpecificTeamMembers", error);
+      //helper.logger(res, "Team Member Controller -> getSpecificTeamMembers", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -158,7 +158,7 @@ class teamMemberController {
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      helper.logger(res, "Team Member Controller -> getMembersInTeam", error);
+      //helper.logger(res, "Team Member Controller -> getMembersInTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -274,7 +274,7 @@ class teamMemberController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Team Member Controller -> addTeamMembers", error);
+      //helper.logger(res, "Team Member Controller -> addTeamMembers", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -353,7 +353,7 @@ class teamMemberController {
       return helper.success(res, variables.Success, "User Updated Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Team Member Controller -> updateTeamMembers", error);
+      //helper.logger(res, "Team Member Controller -> updateTeamMembers", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -439,7 +439,7 @@ class teamMemberController {
       return helper.sendResponse(res, variables.Success, 1, {}, "Settings Updated Successfully");
     } catch (error) {
       console.error("Error updating settings:", error.message);
-      helper.logger(res, "Team Member Controller -> updateSettings", error);
+      //helper.logger(res, "Team Member Controller -> updateSettings", error);
       return helper.failed(res, variables.BadRequest, "Failed to update settings");
     }
   };
@@ -471,7 +471,7 @@ class teamMemberController {
       return helper.sendResponse(res, variables.Success, 1, data, "Team List Fetched Successfully");
     } catch (error) {
       console.error("Error getTeamMember:", error.message);
-      helper.logger(res, "Team Member Controller -> getTeamList", error);
+      //helper.logger(res, "Team Member Controller -> getTeamList", error);
       return helper.failed(res, variables.BadRequest, "Failed to getTeamMember");
     }
   };
@@ -515,7 +515,7 @@ class teamMemberController {
       return helper.success(res, variables.Success, "New Password Generated Successfully.Please check your Email.");
     } catch (error) {
       console.error("Error generateNewPassword:", error.message);
-      helper.logger(res, "Team Member Controller -> generateNewPassword", error);
+      //helper.logger(res, "Team Member Controller -> generateNewPassword", error);
       return helper.failed(res, variables.BadRequest, "Failed to generateNewPassword");
     }
   };
@@ -549,7 +549,7 @@ class teamMemberController {
       return helper.success(res, variables.Success, message);
     } catch (error) {
       console.error("Error deactivateActivateTeamMember:", error.message);
-      helper.logger(res, "Team Member Controller -> deactivateActivateTeamMember", error);
+      //helper.logger(res, "Team Member Controller -> deactivateActivateTeamMember", error);
       return helper.failed(res, variables.BadRequest, "Failed to Update User Status");
     }
   };

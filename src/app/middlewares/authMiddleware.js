@@ -41,7 +41,7 @@ const authMiddleware = async (req, res, next) => {
     req.sessionToken = token;
     next();
   } catch (e) {
-    helper.logger(res, "Auth MiddleWare -> authMiddleware", e);
+    //helper.logger(res, "Auth MiddleWare -> authMiddleware", e);
     if (e.name === "TokenExpiredError") {
       return helper.failed(res, variables.Unauthorized, "Already Logout");
     }

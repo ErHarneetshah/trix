@@ -76,7 +76,7 @@ class dashboardController {
       };
     } catch (error) {
       console.error("Error fetching company stats:", error);
-      helper.logger(res, "Dashboard Controller -> getCompanyStats", error);
+      //helper.logger(res, "Dashboard Controller -> getCompanyStats", error);
       return {
         total_employees: 0,
         total_working_employee: 0,
@@ -95,7 +95,7 @@ class dashboardController {
       const companyStats = await getCompanyStats();
       return helper.success(res, variables.Success, "Data Fetched Successfully", companyStats);
     } catch (error) {
-      helper.logger(res, "Dashboard Controller -> getDashboardData", error);
+      //helper.logger(res, "Dashboard Controller -> getDashboardData", error);
       return helper.failed(res, 400, "Invalid data format", []);
     }
   };

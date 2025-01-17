@@ -43,7 +43,7 @@ class reportingManagerController {
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
-      helper.logger(res, "Reporting Manager Controller -> getAllReportManager", error);
+      //helper.logger(res, "Reporting Manager Controller -> getAllReportManager", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -64,7 +64,7 @@ class reportingManagerController {
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
-      helper.logger(res, "Reporting Manager Controller -> getReportManagerDropdown", error);
+      //helper.logger(res, "Reporting Manager Controller -> getReportManagerDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -158,7 +158,7 @@ class reportingManagerController {
       return helper.success(res, variables.Success, "Reporting Manager updated successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Reporting Manager Controller -> updateReportManager", error);
+      //helper.logger(res, "Reporting Manager Controller -> updateReportManager", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };

@@ -34,7 +34,7 @@ const getAdminDetails = async (req, res) => {
     return helper.success(res, variables.Success, "Retrieved Admin Profile Details Successfully.", alldata);
   } catch (error) {
     console.error("Error fetching questions:", error);
-    helper.logger(res, "Settings Controller -> getAdminDetails", error);
+    //helper.logger(res, "Settings Controller -> getAdminDetails", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -83,7 +83,7 @@ const updateAdminDetails = async (req, res) => {
     return helper.success(res, variables.Success, "Admin Profile Updated Successfully");
   } catch (error) {
     console.error("Error updating admin details:", error);
-    helper.logger(res, "Settings Controller -> updateAdminDetails", error);
+    //helper.logger(res, "Settings Controller -> updateAdminDetails", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -140,7 +140,7 @@ const getBlockedWebsites = async (req, res) => {
     return helper.success(res, variables.Success, "Blocked websites retrieved successfully.", blockedWebsite);
   } catch (error) {
     console.error("Error fetching blocked websites:", error);
-    helper.logger(res, "Settings Controller -> getBlockedWebsites", error);
+    //helper.logger(res, "Settings Controller -> getBlockedWebsites", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -200,7 +200,7 @@ const addBlockWebsites = async (req, res) => {
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
     console.error("Error creating app info:", error);
-    helper.logger(res, "Settings Controller -> addBlockWebsites", error);
+    //helper.logger(res, "Settings Controller -> addBlockWebsites", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -234,7 +234,7 @@ const updateSitesStatus = async (req, res) => {
     return helper.success(res, variables.Success, "Site status updated successfully");
   } catch (error) {
     console.error("Error updating site status:", error);
-    helper.logger(res, "Settings Controller -> updateSitesStatus", error);
+    //helper.logger(res, "Settings Controller -> updateSitesStatus", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -284,7 +284,7 @@ const addProductiveApps = async (req, res) => {
     return helper.success(res, variables.Success, "App added successfully", newAppInfo);
   } catch (error) {
     console.error("Error creating app info:", error.message);
-    helper.logger(res, "Settings Controller -> addProductiveApps", error);
+    //helper.logger(res, "Settings Controller -> addProductiveApps", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -341,7 +341,7 @@ const getAppInfo = async (req, res) => {
   } catch (error) {
     // Handle errors
     console.error("Error fetching app info:", error);
-    helper.logger(res, "Settings Controller -> getAppInfo", error);
+    //helper.logger(res, "Settings Controller -> getAppInfo", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -367,7 +367,7 @@ const getReportStatus = async (req, res) => {
     const statusType = getStatus ? statusMapping[getStatus.status] : "unknown";
     return helper.success(res, variables.Success, "Report settings retrieved successfully.", getStatus, { statusType });
   } catch (error) {
-    helper.logger(res, "Settings Controller -> getReportStatus", error);
+    //helper.logger(res, "Settings Controller -> getReportStatus", error);
     return helper.failed(res, variables.NotFound, "Unable to Retrieve Report Status");
   }
 };
@@ -405,7 +405,7 @@ const updateReportSettings = async (req, res) => {
     return helper.success(res, variables.Success, "Report Settings Updated Successfully");
   } catch (error) {
     console.error("Error updating report settings:", error);
-    helper.logger(res, "Settings Controller -> updateReportSettings", error);
+    //helper.logger(res, "Settings Controller -> updateReportSettings", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -435,7 +435,7 @@ const fetchFaviconUrl = async (website) => {
 
     return match ? new URL(match[1], websiteUrl.origin).href : `${websiteUrl.origin}/favicon.ico`;
   } catch (error) {
-    helper.logger(res, "Settings Controller -> fetchFaviconUrl", error);
+    //helper.logger(res, "Settings Controller -> fetchFaviconUrl", error);
     console.warn("Could not fetch favicon, using default:", error.message);
 
     // // Default to `/favicon.ico` for invalid URLs or other errors
@@ -495,7 +495,7 @@ const addProductiveWebsites = async (req, res) => {
     return helper.success(res, variables.Success, "Productive website added successfully", newAppInfo);
   } catch (error) {
     console.error("Error creating productive website:", error);
-    helper.logger(res, "Settings Controller -> addProductiveWebsites", error);
+    //helper.logger(res, "Settings Controller -> addProductiveWebsites", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -551,7 +551,7 @@ const getProductiveWebsites = async (req, res) => {
     return helper.success(res, variables.Success, "Productive websites retrieved successfully.", productiveWebsite);
   } catch (error) {
     console.error("Error fetching productive websites:", error);
-    helper.logger(res, "Settings Controller -> getProductiveWebsites", error);
+    //helper.logger(res, "Settings Controller -> getProductiveWebsites", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };

@@ -136,7 +136,7 @@ const getCompareReportsData = async (req, res, next) => {
     return helper.success(res, variables.Success, "Compare Report Data Fetched Successfully", combinedResult);
   } catch (error) {
     console.error(error.message);
-    helper.logger(res, "Compart Reports Controller -> getCompareReportsData", error);
+    //helper.logger(res, "Compart Reports Controller -> getCompareReportsData", error);
     return helper.failed(res, 400, error.message);
   }
 };
@@ -146,7 +146,7 @@ const calculateEffectiveness = (timeAtWork, offlineTime) => {
     const totalTime = timeAtWork + offlineTime;
     return totalTime ? (timeAtWork / totalTime) * 100 : 0;
   } catch (error) {
-    helper.logger(res, "Compart Reports Controller -> calculateEffectiveness", error);
+    //helper.logger(res, "Compart Reports Controller -> calculateEffectiveness", error);
   }
 };
 
@@ -187,7 +187,7 @@ const getActiveTime = async (timelogId) => {
     }
   } catch (error) {
     console.error(error);
-    helper.logger(res, "Compart Reports Controller -> getActiveTime", error);
+    //helper.logger(res, "Compart Reports Controller -> getActiveTime", error);
     return 0; // Return 0 in case of an error
   }
 };
@@ -211,7 +211,7 @@ const getAllUsers = async (req, res, next) => {
     // const transformedResult = result.map(item => `${item.fullname}-${item.name}-${item.id}`);
     return helper.success(res, variables.Success, "All Users Fetched Successfully", result);
   } catch (error) {
-    helper.logger(res, "Compart Reports Controller -> getAllUsers", error);
+    //helper.logger(res, "Compart Reports Controller -> getAllUsers", error);
     return helper.failed(res, variables.badGateway, error.message);
   }
 };

@@ -67,7 +67,7 @@ async function buildUserTree(parentDept, companyId, level = 0) {
 
     return parentDept;
   } catch (error) {
-    helper.logger(res, "Tree Structure Controller -> buildUserTree", error);
+    //helper.logger(res, "Tree Structure Controller -> buildUserTree", error);
     console.error("Error building user tree:", error);
   }
 }
@@ -121,7 +121,7 @@ const viewTreeStructure = async (req, res, next) => {
 
     return helper.success(res, variables.Success, "tree fetched successfully", tree);
   } catch (error) {
-    helper.logger(res, "Tree Structure Controller -> viewTreeStructure", error);
+    //helper.logger(res, "Tree Structure Controller -> viewTreeStructure", error);
     return helper.failed(res, variables.InternalServerError, error.message, {});
   }
 };

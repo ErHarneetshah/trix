@@ -35,7 +35,7 @@ class shiftController {
 
       return helper.success(res, variables.Success, "Shifts fetched successfully!", alldata);
     } catch (error) {
-      helper.logger(res, "Shift Controller -> getAllShift", error);
+      //helper.logger(res, "Shift Controller -> getAllShift", error);
       return helper.failed(res, variables.BadRequest, "Unable to fetch shifts");
     }
   };
@@ -50,7 +50,7 @@ class shiftController {
 
       return helper.success(res, variables.Success, "Shifts fetched successfully!", alldata);
     } catch (error) {
-      helper.logger(res, "Shift Controller -> getShiftDropdown", error);
+      //helper.logger(res, "Shift Controller -> getShiftDropdown", error);
       return helper.failed(res, variables.BadRequest, "Unable to Fetch Shifts");
     }
   };
@@ -71,7 +71,7 @@ class shiftController {
 
       return helper.success(res, variables.Success, "Shift Fetched Succesfully", specificData);
     } catch (error) {
-      helper.logger(res, "Shift Controller -> getSpecificShift", error);
+      //helper.logger(res, "Shift Controller -> getSpecificShift", error);
       return helper.failed(res, variables.BadRequest, "Unable to Fetch Shift");
     }
   };
@@ -153,7 +153,7 @@ class shiftController {
       return helper.success(res, variables.Success, "Shift Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Shift Controller -> addShift", error);
+      //helper.logger(res, "Shift Controller -> addShift", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -252,7 +252,7 @@ class shiftController {
       return helper.success(res, variables.Success, "Shift Updated Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Shift Controller -> updateShift", error);
+      //helper.logger(res, "Shift Controller -> updateShift", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -295,7 +295,7 @@ class shiftController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Shift Controller -> deleteShift", error);
+      //helper.logger(res, "Shift Controller -> deleteShift", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };

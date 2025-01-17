@@ -37,7 +37,7 @@ class roleController {
 
       return helper.success(res, variables.Success, "All Data Fetched Successfully!", allData);
     } catch (error) {
-      helper.logger(res, "Role Controller -> getAllRole", error);
+      //helper.logger(res, "Role Controller -> getAllRole", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -52,7 +52,7 @@ class roleController {
 
       return helper.success(res, variables.Success, "All Data Fetched Successfully!", allData);
     } catch (error) {
-      helper.logger(res, "Role Controller -> getRoleDropdown", error);
+      //helper.logger(res, "Role Controller -> getRoleDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -70,7 +70,7 @@ class roleController {
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", roleData);
     } catch (error) {
-      helper.logger(res, "Role Controller -> getSpecificRole", error);
+      //helper.logger(res, "Role Controller -> getSpecificRole", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -113,7 +113,7 @@ class roleController {
       return helper.success(res, variables.Created, "Role Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Role Controller -> addRole", error);
+      //helper.logger(res, "Role Controller -> addRole", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -165,7 +165,7 @@ class roleController {
       return helper.success(res, variables.Success, "Role Updated Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Role Controller -> updateRole", error);
+      //helper.logger(res, "Role Controller -> updateRole", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -213,7 +213,7 @@ class roleController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Role Controller -> deleteRole", error);
+      //helper.logger(res, "Role Controller -> deleteRole", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };

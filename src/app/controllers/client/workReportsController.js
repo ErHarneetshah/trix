@@ -59,7 +59,7 @@ const createReport = async (req, res) => {
     return helper.success(res, variables.Success, "Your report submitted successfully");
   } catch (error) {
     console.error("Error while creating the user report:", error);
-    helper.logger(res, "Work Reports Controller -> createReport", error);
+    //helper.logger(res, "Work Reports Controller -> createReport", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -78,7 +78,7 @@ const getSelfReport = async (req, res) => {
     return helper.success(res, variables.Success, "Retrieved User Report Successfully.", work_data);
   } catch (error) {
     console.error("Error fetching reports:", error);
-    helper.logger(res, "Work Reports Controller -> getSelfReport", error);
+    //helper.logger(res, "Work Reports Controller -> getSelfReport", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };

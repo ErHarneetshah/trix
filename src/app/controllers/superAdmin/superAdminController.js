@@ -51,7 +51,7 @@ export default {
 
       return res.status(200).json(result);
     } catch (error) {
-      helper.logger(res, "Super Admin Controller -> getAllAdmins", error);
+      //helper.logger(res, "Super Admin Controller -> getAllAdmins", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   },

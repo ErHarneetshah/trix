@@ -50,7 +50,7 @@ class teamController {
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      helper.logger(res, "Team Controller -> getAllTeam", error);
+      //helper.logger(res, "Team Controller -> getAllTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -65,7 +65,7 @@ class teamController {
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      helper.logger(res, "Team Controller -> getTeamDropdown", error);
+      //helper.logger(res, "Team Controller -> getTeamDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -89,7 +89,7 @@ class teamController {
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      helper.logger(res, "Team Controller -> getTeamUserDropdown", error);
+      //helper.logger(res, "Team Controller -> getTeamUserDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -106,7 +106,7 @@ class teamController {
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
-      helper.logger(res, "Team Controller -> getTeamDeptDropdown", error);
+      //helper.logger(res, "Team Controller -> getTeamDeptDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -138,7 +138,7 @@ class teamController {
 
       return helper.success(res, variables.Success, "Team details fetched successfully", specificData);
     } catch (error) {
-      helper.logger(res, "Team Controller -> getSpecificTeam", error);
+      //helper.logger(res, "Team Controller -> getSpecificTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -197,7 +197,7 @@ class teamController {
       return helper.success(res, variables.Created, "Team Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Team Controller -> addTeam", error);
+      //helper.logger(res, "Team Controller -> addTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -271,7 +271,7 @@ class teamController {
       return helper.success(res, variables.Success, "Team Updated Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Team Controller -> updateTeam", error);
+      //helper.logger(res, "Team Controller -> updateTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -315,7 +315,7 @@ class teamController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      helper.logger(res, "Team Controller -> deleteTeam", error);
+      //helper.logger(res, "Team Controller -> deleteTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };

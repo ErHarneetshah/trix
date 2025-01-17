@@ -95,7 +95,7 @@ const addEmailGateeways = async (req, res) => {
     return helper.success(res, variables.Created, "Email gateway created successfully.", gateway);
   } catch (error) {
     console.error("Error while creating the email gateway setup:", error);
-    helper.logger(res, "Email Gateway Controller -> addEmailGateeways", error);
+    //helper.logger(res, "Email Gateway Controller -> addEmailGateeways", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -128,7 +128,7 @@ const checkEmailServer = async (req, res) => {
       return helper.failed(res, variables.BadRequest, "Please check the credentials first.");
     }
   } catch (error) {
-    helper.logger(res, "Email Gateway Controller -> checkEmailServer", error);
+    //helper.logger(res, "Email Gateway Controller -> checkEmailServer", error);
     return helper.failed(res, variables.BadRequest, "Unable To Send Mail. Please Try Again Later!");
   }
 };
@@ -152,7 +152,7 @@ const getEmailList = async (req, res) => {
     return helper.success(res, variables.Success, "Retrieved  Email Lists Successfully", getEmailGateway);
   } catch (error) {
     console.error("Error blocking website:", error);
-    helper.logger(res, "Email Gateway Controller -> getEmailList", error);
+    //helper.logger(res, "Email Gateway Controller -> getEmailList", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };

@@ -28,7 +28,7 @@ class exportReportController {
 
       return helper.success(res, variables.Success, "Reports Data Retrieved Successfully", alldata);
     } catch (error) {
-      helper.logger(res, "Export Report Controller -> getReportsDataSet", error);
+      //helper.logger(res, "Export Report Controller -> getReportsDataSet", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -74,7 +74,7 @@ class exportReportController {
 
       return helper.success(res, variables.Success, "Reports Data Retrieved Successfully", getStatus);
     } catch (error) {
-      helper.logger(res, "Export Report Controller -> getExportHistoryReport", error);
+      //helper.logger(res, "Export Report Controller -> getExportHistoryReport", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -100,7 +100,7 @@ class exportReportController {
       return jsonData;
     } catch (err) {
       console.error("Error reading Excel file:", err);
-      helper.logger(res, "Export Report Controller -> readExcel", err);
+      //helper.logger(res, "Export Report Controller -> readExcel", err);
       throw err;
     }
   };
@@ -247,7 +247,7 @@ class exportReportController {
         return helper.success(res, variables.Success, "Productivity Report Generation Failed");
       }
     } catch (error) {
-      helper.logger(res, "Export Report Controller -> getProductiveReport", error);
+      //helper.logger(res, "Export Report Controller -> getProductiveReport", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -378,7 +378,7 @@ class exportReportController {
         return helper.success(res, variables.Success, "Attendance Report Generation Failed");
       }
     } catch (error) {
-      helper.logger(res, "Export Report Controller -> getAttendanceReport", error);
+      //helper.logger(res, "Export Report Controller -> getAttendanceReport", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -479,7 +479,7 @@ class exportReportController {
         return helper.success(res, variables.Success, "Application Usage Report Generation Failed");
       }
     } catch (error) {
-      helper.logger(res, "Export Report Controller -> getApplicationUsageReport", error);
+      //helper.logger(res, "Export Report Controller -> getApplicationUsageReport", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -578,7 +578,7 @@ class exportReportController {
         return helper.success(res, variables.Success, "Department Performance Report Generation Failed");
       }
     } catch (error) {
-      helper.logger(res, "Export Report Controller -> getDeptPerformReport", error);
+      //helper.logger(res, "Export Report Controller -> getDeptPerformReport", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -659,7 +659,7 @@ class exportReportController {
       }
     } catch (error) {
       console.error("Error fetching unauthorized access report:", error);
-      helper.logger(res, "Export Report Controller -> getUnauthorizedWebReport", error);
+      //helper.logger(res, "Export Report Controller -> getUnauthorizedWebReport", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -804,7 +804,7 @@ class exportReportController {
         return helper.success(res, variables.Success, "Browser History Report Generation Failed");
       }
     } catch (error) {
-      helper.logger(res, "Export Report Controller -> getBrowserHistoryReport", error);
+      //helper.logger(res, "Export Report Controller -> getBrowserHistoryReport", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -852,7 +852,7 @@ class exportReportController {
       });
     } catch (err) {
       console.error("Error during file download:", err);
-      helper.logger(res, "Export Report Controller -> downloadExportReport", err);
+      //helper.logger(res, "Export Report Controller -> downloadExportReport", err);
 
       if (err.code === "ENOENT") {
         return res.status(500).json({ message: "File not found" });

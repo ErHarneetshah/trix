@@ -38,7 +38,7 @@ const getWorkingDays = async (dateRange, userIds, companyId) => {
     );
     return results ? results.count : 0;
   } catch (error) {
-    helper.logger(res, "Generate Report Helper -> getWorkingDays", error);
+    //helper.logger(res, "Generate Report Helper -> getWorkingDays", error);
     console.log(`getWorkingDays ${error.message}`);
     return 0;
   }
@@ -69,7 +69,7 @@ const getTotalPersentDays = async (dateRange, user_id) => {
     return results ? results.distinctCount : 0;
   } catch (error) {
     console.log(`getTotalPersentDays ${error.message}`);
-    helper.logger(null, "Generate Report Helper -> getTotalPersentDays", error);
+    //helper.logger(null, "Generate Report Helper -> getTotalPersentDays", error);
     return 0;
   }
 };
@@ -107,7 +107,7 @@ export default {
       }
     } catch (error) {
       console.log(`getTotalEmployeeDepartmentWise ${error.message}`);
-      helper.logger(null, "Generate Report Helper -> getTotalEmployeeDepartmentWise", error);
+      //helper.logger(null, "Generate Report Helper -> getTotalEmployeeDepartmentWise", error);
       return 0;
     }
   },
@@ -148,7 +148,7 @@ export default {
       }
     } catch (error) {
       console.log(`getTotalEmployeeTeamWise ${error.message}`);
-      helper.logger(null, "Generate Report Helper -> getTotalEmployeeTeamWise", error);
+      //helper.logger(null, "Generate Report Helper -> getTotalEmployeeTeamWise", error);
       return 0;
     }
   },
@@ -175,7 +175,7 @@ export default {
       return results ? results.get("average_active_time") : 0;
     } catch (error) {
       console.log(`getAvgLoggedInTime ${error.message}`);
-      helper.logger(null, "Generate Report Helper -> getAvgLoggedInTime", error);
+      //helper.logger(null, "Generate Report Helper -> getAvgLoggedInTime", error);
       return 0;
     }
   },
@@ -214,7 +214,7 @@ export default {
       return totalAvg;
     } catch (error) {
       console.log(`getAttendanceAvg ${error.message}`);
-      helper.logger(null, "Generate Report Helper -> getAttendanceAvg", error);
+      //helper.logger(null, "Generate Report Helper -> getAttendanceAvg", error);
       return 0;
     }
   },
@@ -262,7 +262,7 @@ export default {
 
       return results ? results.average_time_minutes : 0;
     } catch (error) {
-      helper.logger(null, "Generate Report Helper -> getAvgProductiveAppTime", error);
+      //helper.logger(null, "Generate Report Helper -> getAvgProductiveAppTime", error);
       return 0;
     }
   },
@@ -310,7 +310,7 @@ export default {
 
       return results ? results.average_time_minutes : 0;
     } catch (error) {
-      helper.logger(null, "Generate Report Helper -> getAvgNonProductiveAppTime", error);
+      //helper.logger(null, "Generate Report Helper -> getAvgNonProductiveAppTime", error);
       return 0;
     }
   },

@@ -10,7 +10,7 @@ const getLanguageDropdown = async (req, res) => {
     return helper.success(res, variables.Success, "Language Dropdown Retrieved Successfully", getLanguageData);
   } catch (error) {
     console.error("Error fetching languages:", error);
-    helper.logger(res, "Language Controller -> getLanguageDropdown", error);
+    //helper.logger(res, "Language Controller -> getLanguageDropdown", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -50,7 +50,7 @@ const updateLanguage = async (req, res) => {
     return helper.success(res, variables.Success, "Language Updated Successfully");
   } catch (error) {
     console.error("Error while updating the languages:", error);
-    helper.logger(res, "Language Controller -> updateLanguage", error);
+    //helper.logger(res, "Language Controller -> updateLanguage", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -80,7 +80,7 @@ const getThemeStatus = async (req, res) => {
     return helper.success(res, variables.Success, "Theme Status Retrieved Successfully", theme, { themeType });
   } catch (error) {
     console.error("Error while updating the languages:", error);
-    helper.logger(res, "Language Controller -> getThemeStatus", error);
+    //helper.logger(res, "Language Controller -> getThemeStatus", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
