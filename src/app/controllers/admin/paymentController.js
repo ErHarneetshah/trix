@@ -27,20 +27,22 @@ class paymentController extends appConfig {
 
       let activePlanId;
       response.data.data.data.forEach((plan) => {
-        plan.currentPlan = plan.id === companyDetails.currentPlanId ? "true" : "false";
-        if(plan.currentPlan)
-        {
+        plan.currentPlan = plan.id == companyDetails.currentPlanId;
+        if (plan.currentPlan) {
           activePlanId = plan.id;
         }
       });
-      const isAdvanceExists = await paymentLog.count({
-        where: {company_id: req.user.company_id, planId: activePlanId, status: 0}
-      })
-      if(isAdvanceExists)
-      {
-        response.data.data.advanceBought = true;  
-      }else{
-        response.data.data.advanceBought = false;  
+
+      let isAdvanceExists = 0;
+      if (activePlanId) {
+        isAdvanceExists = await paymentLog.count({
+          where: { company_id: req.user.company_id, planId: activePlanId, status: 0 },
+        });
+      }
+      if (isAdvanceExists) {
+        response.data.data.advanceBought = true;
+      } else {
+        response.data.data.advanceBought = false;
       }
 
       response.data.data.activePlanId = activePlanId;
