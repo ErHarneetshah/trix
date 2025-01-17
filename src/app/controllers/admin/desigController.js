@@ -35,6 +35,7 @@ class desigController {
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
+      helper.logger(res, "Designation Controller -> getAllDesig", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -50,6 +51,7 @@ class desigController {
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
+      helper.logger(res, "Designation Controller -> getDesigDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -68,6 +70,7 @@ class desigController {
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", desigData);
     } catch (error) {
+      helper.logger(res, "Designation Controller -> getSpecificDesig", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -100,6 +103,7 @@ class desigController {
       return helper.success(res, variables.Success, "Designation Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Designation Controller -> addDesig", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -154,6 +158,7 @@ class desigController {
       return helper.success(res, variables.Success, "Designation updated Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Designation Controller -> updateDesig", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -197,6 +202,7 @@ class desigController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Designation Controller -> deleteDesig", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };

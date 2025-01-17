@@ -26,10 +26,12 @@ class paymentController extends appConfig {
       }
 
       let activePlanId;
+      // let activePlanName;
       response.data.data.data.forEach((plan) => {
         plan.currentPlan = plan.id == companyDetails.currentPlanId;
         if (plan.currentPlan) {
           activePlanId = plan.id;
+          // activePlanName = plan.name;
         }
       });
 
@@ -49,7 +51,7 @@ class paymentController extends appConfig {
       return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
     } catch (error) {
       console.error("Error in Payment Controller:", error.message);
-      // helper.logger(res, "Payment Controller -> getPlaymentPlans", error);
+      helper.logger(res, "Payment Controller -> getPlaymentPlans", error);
       return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");
     }
   };
@@ -84,7 +86,7 @@ class paymentController extends appConfig {
         }
 
         let previousBoughtPlan = await paymentLog.findOne({
-          where: { company_id: req.user.company_id, status: 0 },
+          where: { company_id: req.user.company_id, status: 0, planId: planId },
         });
         if (previousBoughtPlan) {
           return helper.failed(res, variables.BadRequest, "Already Bought A Plan in Advance");
@@ -120,6 +122,7 @@ class paymentController extends appConfig {
       return helper.success(res, variables.Success, "Plan Purchased Successfully", response.data.data);
     } catch (error) {
       console.error("Error in Payment Controller:", error.message);
+      helper.logger(res, "Payment Controller -> buyPaymentPlan", error);
       return helper.failed(res, variables.BadRequest, "Unable to Process Payment Request");
     }
   };
@@ -283,6 +286,7 @@ class paymentController extends appConfig {
       }
     } catch (error) {
       console.error("Error in Payment Controller:", error);
+      helper.logger(res, "Payment Controller -> confirmPayment", error);
       return { status: false, message: "Unable to Retrieve Plan List" };
     }
   };

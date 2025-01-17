@@ -1,6 +1,5 @@
 import express from "express";
 import authMiddleware from "../../app/middlewares/authMiddleware.js";
-import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.js";
 import desigController from "../../app/controllers/admin/desigController.js";
 
 const router = express.Router();

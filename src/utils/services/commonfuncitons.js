@@ -31,6 +31,7 @@ async function uploadPhotos(req, res, folder, imageArr) {
     });
   } catch (error) {
     logger.info(error.message);
+    helper.logger(res, "Common Function Service -> uploadPhotos", error);
     throw new Error("Upload failed: " + error.message);
   }
 }

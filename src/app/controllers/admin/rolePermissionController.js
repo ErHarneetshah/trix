@@ -59,6 +59,7 @@ class rolePermissionController {
 
       return helper.success(res, variables.Success, "All Data Fetched Successfully!", transformedData);
     } catch (error) {
+      helper.logger(res, "Role Permission Controller -> getAllRolePermissions", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -90,6 +91,7 @@ class rolePermissionController {
       };
     } catch (error) {
       console.error("Error fetching role permissions:", error);
+      helper.logger(null, "Role Permission Controller -> getSpecificRolePermissions", error);
       return {
         success: false,
         message: error.message,
@@ -122,6 +124,7 @@ class rolePermissionController {
       return true;
     } catch (error) {
       console.error("Error adding role permissions:", error);
+      helper.logger(null, "Role Permission Controller -> addRolePermissions", error);
       throw new Error("Error adding role permissions");
     }
   };
@@ -145,9 +148,10 @@ class rolePermissionController {
       return true;
     } catch (error) {
       console.error("Error adding role permissions:", error);
+      helper.logger(res, "Role Permission Controller -> addSuperRolePermissions", error);
       throw new Error("Error adding role permissions");
     }
-  }; 
+  };
 
   updateMultipleRolePermission = async (req, res) => {
     // ___________-------- Role Permisisons Exists or not ---------________________
@@ -247,6 +251,7 @@ class rolePermissionController {
       return helper.success(res, variables.Success, "Role permissions updated successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Role Permission Controller -> addSuperRolePermissions", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -300,6 +305,7 @@ class rolePermissionController {
       // Rollback transaction on error
       if (dbTransaction) await dbTransaction.rollback();
       console.error("Error updating role permissions:", error);
+      helper.logger(res, "Role Permission Controller -> resetRolePermissions", error);
       return helper.sendResponse(res, variables.ServerError, 0, {}, "Internal Server Error");
     }
   };
@@ -334,6 +340,7 @@ class rolePermissionController {
       return helper.success(res, variables.Success, "Permitted View Roles Fetched Successfully", modulesAllowed);
     } catch (error) {
       console.error("Error in viewPermittedRoles:", error);
+      helper.logger(res, "Role Permission Controller -> viewPermittedRoles", error);
       return helper.failed(res, variables.BadRequest, "View Permitted Roles Error");
     }
   };
@@ -342,25 +349,29 @@ class rolePermissionController {
     const dbTransaction = await sequelize.transaction();
     try {
       const adminRoleID = await role.findOne({
-        where: {company_id: company_id, name: "Admin"}
+        where: { company_id: company_id, name: "Admin" },
       });
 
-      await rolePermission.update({
-        permissions: {
-          POST: true,
-          GET: true,
-          PUT: true,
-          DELETE: true,
+      await rolePermission.update(
+        {
+          permissions: {
+            POST: true,
+            GET: true,
+            PUT: true,
+            DELETE: true,
+          },
         },
-      },{
-        where: {roleId: adminRoleID.id, company_id: company_id}
-      })
+        {
+          where: { roleId: adminRoleID.id, company_id: company_id },
+        }
+      );
       await dbTransaction.commit();
-      return ({status: true, message: "Permissions updated"})
+      return { status: true, message: "Permissions updated" };
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       console.error("Error updating role permissions:", error);
-      return ({status: false, message: "Internal Server Error"});
+      helper.logger(null, "Role Permission Controller -> allowRolePermissions", error);
+      return { status: false, message: "Internal Server Error" };
     }
   };
 
@@ -368,32 +379,33 @@ class rolePermissionController {
     const dbTransaction = await sequelize.transaction();
     try {
       const adminRoleID = await role.findOne({
-        where: {company_id: company_id, name: "Admin"}
+        where: { company_id: company_id, name: "Admin" },
       });
 
       console.log(adminRoleID);
 
-      await rolePermission.update({
-        permissions: {
-          POST: false,
-          GET: false,
-          PUT: false,
-          DELETE: false,
+      await rolePermission.update(
+        {
+          permissions: {
+            POST: false,
+            GET: false,
+            PUT: false,
+            DELETE: false,
+          },
         },
-      },{
-        where: {roleId: adminRoleID.id, company_id: company_id}
-      })
+        {
+          where: { roleId: adminRoleID.id, company_id: company_id },
+        }
+      );
       await dbTransaction.commit();
-      return ({status: true, message: "Permissions updated"})
+      return { status: true, message: "Permissions updated" };
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       console.error("Error updating role permissions:", error);
-      return ({status: false, message: "Internal Server Error"});
-
+      helper.logger(null, "Role Permission Controller -> notAllowRolePermissions", error);
+      return { status: false, message: "Internal Server Error" };
     }
   };
-
-  
 }
 
 export default rolePermissionController;

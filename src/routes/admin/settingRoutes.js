@@ -1,6 +1,5 @@
 import express from "express";
 import authMiddleware from "../../app/middlewares/authMiddleware.js";
-import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.js";
 import settingsController from "../../app/controllers/admin/settingsController.js";
 import emailGatewayController from "../../app/controllers/admin/emailGatewayController.js";
 import languageController from "../../app/controllers/admin/languageController.js";

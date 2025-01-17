@@ -37,6 +37,7 @@ class roleController {
 
       return helper.success(res, variables.Success, "All Data Fetched Successfully!", allData);
     } catch (error) {
+      helper.logger(res, "Role Controller -> getAllRole", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -51,6 +52,7 @@ class roleController {
 
       return helper.success(res, variables.Success, "All Data Fetched Successfully!", allData);
     } catch (error) {
+      helper.logger(res, "Role Controller -> getRoleDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -68,6 +70,7 @@ class roleController {
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", roleData);
     } catch (error) {
+      helper.logger(res, "Role Controller -> getSpecificRole", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -110,6 +113,7 @@ class roleController {
       return helper.success(res, variables.Created, "Role Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Role Controller -> addRole", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -161,6 +165,7 @@ class roleController {
       return helper.success(res, variables.Success, "Role Updated Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Role Controller -> updateRole", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -171,7 +176,7 @@ class roleController {
     const isApproved = await helper.checkRolePermission(req.user.roleId, "Role", routeMethod, req.user.company_id);
     if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
     // ___________-------- Role Permisisons Exists or not ---------________________
-    
+
     const dbTransaction = await sequelize.transaction();
     try {
       const { id } = req.body;
@@ -208,6 +213,7 @@ class roleController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Role Controller -> deleteRole", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };

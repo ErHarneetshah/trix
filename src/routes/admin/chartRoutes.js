@@ -2,7 +2,6 @@ import express from "express";
 const router = express.Router();
 import chartController from "../../app/controllers/admin/Charts/chartController.js";
 import authMiddleware from "../../app/middlewares/authMiddleware.js";
-import verifyAdminMiddleware from "../../app/middlewares/verifyAdminMiddleware.js";
 // router.get('/productiveApps',chartController.productiveChart);
 
 //ROUTER FOR TOP APPS CHART DATA

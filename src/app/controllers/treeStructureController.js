@@ -8,7 +8,6 @@ import role from "../../database/models/roleModel.js";
 
 async function buildUserTree(parentDept, companyId, level = 0) {
   try {
-
     // Fetch all child departments
     let children = await department.findAll({
       where: { parentDeptId: parentDept.id, company_id: companyId },
@@ -16,19 +15,18 @@ async function buildUserTree(parentDept, companyId, level = 0) {
         {
           model: team,
           as: "department",
-          required:false,
+          required: false,
           include: {
             model: User,
             as: "children",
-            required:false,
+            required: false,
 
             include: [
               {
-                model: role, 
+                model: role,
                 as: "role",
-                required:false
+                required: false,
               },
-              
             ],
           },
         },
@@ -39,8 +37,7 @@ async function buildUserTree(parentDept, companyId, level = 0) {
             {
               model: role,
               as: "role",
-              required:false
-
+              required: false,
             },
           ],
         },
@@ -70,6 +67,7 @@ async function buildUserTree(parentDept, companyId, level = 0) {
 
     return parentDept;
   } catch (error) {
+    helper.logger(res, "Tree Structure Controller -> buildUserTree", error);
     console.error("Error building user tree:", error);
   }
 }
@@ -103,8 +101,7 @@ const viewTreeStructure = async (req, res, next) => {
               {
                 model: role,
                 as: "role",
-                required:false
-
+                required: false,
               },
             ],
           },
@@ -124,7 +121,7 @@ const viewTreeStructure = async (req, res, next) => {
 
     return helper.success(res, variables.Success, "tree fetched successfully", tree);
   } catch (error) {
-
+    helper.logger(res, "Tree Structure Controller -> viewTreeStructure", error);
     return helper.failed(res, variables.InternalServerError, error.message, {});
   }
 };

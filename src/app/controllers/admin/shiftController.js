@@ -35,6 +35,7 @@ class shiftController {
 
       return helper.success(res, variables.Success, "Shifts fetched successfully!", alldata);
     } catch (error) {
+      helper.logger(res, "Shift Controller -> getAllShift", error);
       return helper.failed(res, variables.BadRequest, "Unable to fetch shifts");
     }
   };
@@ -49,6 +50,7 @@ class shiftController {
 
       return helper.success(res, variables.Success, "Shifts fetched successfully!", alldata);
     } catch (error) {
+      helper.logger(res, "Shift Controller -> getShiftDropdown", error);
       return helper.failed(res, variables.BadRequest, "Unable to Fetch Shifts");
     }
   };
@@ -69,6 +71,7 @@ class shiftController {
 
       return helper.success(res, variables.Success, "Shift Fetched Succesfully", specificData);
     } catch (error) {
+      helper.logger(res, "Shift Controller -> getSpecificShift", error);
       return helper.failed(res, variables.BadRequest, "Unable to Fetch Shift");
     }
   };
@@ -150,6 +153,7 @@ class shiftController {
       return helper.success(res, variables.Success, "Shift Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Shift Controller -> addShift", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -184,41 +188,40 @@ class shiftController {
       });
       if (!existingShift) return helper.failed(res, variables.ValidationError, "Shift does not exists in company!");
 
-      if(updateFields.name){
-      const existingShiftWithName = await shift.findOne({
-        where: {
-          name: updateFields.name,
-          company_id: req.user.company_id,
-          id: { [Op.ne]: id },
-        },
-        transaction: dbTransaction,
-      });
-      if (existingShiftWithName) {
-        return helper.failed(res, variables.ValidationError, "Shift name already exists in different record!");
-      }
-    }
-
-    if (updateFields.start_time && updateFields.end_time) {
-      if (updateFields.start_time == updateFields.end_time) {
-        return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
+      if (updateFields.name) {
+        const existingShiftWithName = await shift.findOne({
+          where: {
+            name: updateFields.name,
+            company_id: req.user.company_id,
+            id: { [Op.ne]: id },
+          },
+          transaction: dbTransaction,
+        });
+        if (existingShiftWithName) {
+          return helper.failed(res, variables.ValidationError, "Shift name already exists in different record!");
+        }
       }
 
-      const existingShiftWithparam = await shift.findOne({
-        where: {
-          // name: updateFields.name,
-          company_id: req.user.company_id,
-          start_time: updateFields.start_time,
-          end_time: updateFields.end_time,
-          // days: JSON.stringify(days),
-          id: { [Op.ne]: id },
-        },
-        transaction: dbTransaction,
-      });
-      if (existingShiftWithparam) {
-        return helper.failed(res, variables.ValidationError, "Shift already exists with same parameter in different record!");
-      }
-    }
+      if (updateFields.start_time && updateFields.end_time) {
+        if (updateFields.start_time == updateFields.end_time) {
+          return helper.failed(res, variables.ValidationError, "Start Time and End Time Cannot be the same");
+        }
 
+        const existingShiftWithparam = await shift.findOne({
+          where: {
+            // name: updateFields.name,
+            company_id: req.user.company_id,
+            start_time: updateFields.start_time,
+            end_time: updateFields.end_time,
+            // days: JSON.stringify(days),
+            id: { [Op.ne]: id },
+          },
+          transaction: dbTransaction,
+        });
+        if (existingShiftWithparam) {
+          return helper.failed(res, variables.ValidationError, "Shift already exists with same parameter in different record!");
+        }
+      }
 
       if (days) {
         await shift.update(
@@ -249,6 +252,7 @@ class shiftController {
       return helper.success(res, variables.Success, "Shift Updated Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Shift Controller -> updateShift", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -291,6 +295,7 @@ class shiftController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Shift Controller -> deleteShift", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };

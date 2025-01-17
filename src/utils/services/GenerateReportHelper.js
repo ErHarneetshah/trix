@@ -38,6 +38,7 @@ const getWorkingDays = async (dateRange, userIds, companyId) => {
     );
     return results ? results.count : 0;
   } catch (error) {
+    helper.logger(res, "Generate Report Helper -> getWorkingDays", error);
     console.log(`getWorkingDays ${error.message}`);
     return 0;
   }
@@ -68,6 +69,7 @@ const getTotalPersentDays = async (dateRange, user_id) => {
     return results ? results.distinctCount : 0;
   } catch (error) {
     console.log(`getTotalPersentDays ${error.message}`);
+    helper.logger(null, "Generate Report Helper -> getTotalPersentDays", error);
     return 0;
   }
 };
@@ -105,6 +107,7 @@ export default {
       }
     } catch (error) {
       console.log(`getTotalEmployeeDepartmentWise ${error.message}`);
+      helper.logger(null, "Generate Report Helper -> getTotalEmployeeDepartmentWise", error);
       return 0;
     }
   },
@@ -145,6 +148,7 @@ export default {
       }
     } catch (error) {
       console.log(`getTotalEmployeeTeamWise ${error.message}`);
+      helper.logger(null, "Generate Report Helper -> getTotalEmployeeTeamWise", error);
       return 0;
     }
   },
@@ -171,6 +175,7 @@ export default {
       return results ? results.get("average_active_time") : 0;
     } catch (error) {
       console.log(`getAvgLoggedInTime ${error.message}`);
+      helper.logger(null, "Generate Report Helper -> getAvgLoggedInTime", error);
       return 0;
     }
   },
@@ -209,6 +214,7 @@ export default {
       return totalAvg;
     } catch (error) {
       console.log(`getAttendanceAvg ${error.message}`);
+      helper.logger(null, "Generate Report Helper -> getAttendanceAvg", error);
       return 0;
     }
   },
@@ -256,6 +262,7 @@ export default {
 
       return results ? results.average_time_minutes : 0;
     } catch (error) {
+      helper.logger(null, "Generate Report Helper -> getAvgProductiveAppTime", error);
       return 0;
     }
   },
@@ -303,6 +310,7 @@ export default {
 
       return results ? results.average_time_minutes : 0;
     } catch (error) {
+      helper.logger(null, "Generate Report Helper -> getAvgNonProductiveAppTime", error);
       return 0;
     }
   },
@@ -651,8 +659,8 @@ GROUP BY u.id;`;
 
       return {
         "Employee Name": user.fullname,
-        "Department": user.department.name,
-        "Date": "2024-12-18", // Assuming you want to report for a specific date
+        Department: user.department.name,
+        Date: "2024-12-18", // Assuming you want to report for a specific date
         "Total Active Hours": userTimeLog ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
         "Idle time": userTimeLog ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
         "Time on Productive Apps": userProdAppAnalysis ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
@@ -835,7 +843,7 @@ GROUP BY u.id, tl.createdAt;`;
       report = [
         {
           "Employee Name": "N/A",
-          "Department": "N/A",
+          Department: "N/A",
           "Total Active Hours": "N/A",
           "Idle time": "N/A",
           "Time on Productive Apps": "N/A",
@@ -859,7 +867,7 @@ GROUP BY u.id, tl.createdAt;`;
 
         return {
           "Employee Name": user.fullname || "N/A",
-          "Department": user.department?.name || "N/A",
+          Department: user.department?.name || "N/A",
           "Total Active Hours": userTimeLog?.active_time_in_seconds ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
           "Idle time": userTimeLog?.idle_Time ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
           "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",

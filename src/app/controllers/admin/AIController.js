@@ -115,8 +115,8 @@ async function getOpenAIResponse(userId, question, date) {
 
     return response.choices[0].message.content;
   } catch (error) {
-
     console.error("Error calling OpenAI:", message.error);
+    helper.logger(res, "AI Controller -> getOpenAIResponse", error);
   }
 }
 
@@ -141,6 +141,7 @@ const aiController = {
       }
       return helper.sendResponse(res, variables.Success, 1, { response: openAIResponse }, "AI Report Get Successfully!!");
     } catch (error) {
+      helper.logger(res, "AI Controller -> getUserAnswerStream", error);
       return helper.sendResponse(res, variables.ValidationError, 0, error.message);
     }
   },
@@ -159,6 +160,7 @@ const aiController = {
       });
       return helper.success(res, variables.Success, "Data Fetched Succesfully", data);
     } catch (error) {
+      helper.logger(res, "AI Controller -> getUserdata", error);
       return helper.failed(res, variables.BadRequest, "Error fetching user data");
     }
   },

@@ -50,6 +50,7 @@ class teamController {
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
+      helper.logger(res, "Team Controller -> getAllTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -64,6 +65,7 @@ class teamController {
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
+      helper.logger(res, "Team Controller -> getTeamDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -87,6 +89,7 @@ class teamController {
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
+      helper.logger(res, "Team Controller -> getTeamUserDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -103,6 +106,7 @@ class teamController {
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
+      helper.logger(res, "Team Controller -> getTeamDeptDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -134,19 +138,21 @@ class teamController {
 
       return helper.success(res, variables.Success, "Team details fetched successfully", specificData);
     } catch (error) {
+      helper.logger(res, "Team Controller -> getSpecificTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   addTeam = async (req, res) => {
-    // ___________-------- Role Permisisons Exists or not ---------________________
-    const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "Team", routeMethod, req.user.company_id);
-    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
-    // ___________-------- Role Permisisons Exists or not ---------________________
-
-    const dbTransaction = await sequelize.transaction();
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Team", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
+      const dbTransaction = await sequelize.transaction();
+
       const requestData = req.body;
 
       const validateTeam = await teamsValidationSchema.teamsValid(requestData, res);
@@ -191,19 +197,21 @@ class teamController {
       return helper.success(res, variables.Created, "Team Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Team Controller -> addTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   updateTeam = async (req, res) => {
-    // ___________-------- Role Permisisons Exists or not ---------________________
-    const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "Team", routeMethod, req.user.company_id);
-    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
-    // ___________-------- Role Permisisons Exists or not ---------________________
-
-    const dbTransaction = await sequelize.transaction();
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Team", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
+      const dbTransaction = await sequelize.transaction();
+
       const { id, ...updateFields } = req.body;
       if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is Required and in numbers!");
 
@@ -263,19 +271,21 @@ class teamController {
       return helper.success(res, variables.Success, "Team Updated Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Team Controller -> updateTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
   deleteTeam = async (req, res) => {
-    // ___________-------- Role Permisisons Exists or not ---------________________
-    const routeMethod = req.method;
-    const isApproved = await helper.checkRolePermission(req.user.roleId, "Team", routeMethod, req.user.company_id);
-    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
-    // ___________-------- Role Permisisons Exists or not ---------________________
-
-    const dbTransaction = await sequelize.transaction();
     try {
+      // ___________-------- Role Permisisons Exists or not ---------________________
+      const routeMethod = req.method;
+      const isApproved = await helper.checkRolePermission(req.user.roleId, "Team", routeMethod, req.user.company_id);
+      if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+      // ___________-------- Role Permisisons Exists or not ---------________________
+
+      const dbTransaction = await sequelize.transaction();
+
       const { id } = req.body;
       if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is Required and in numbers!");
 
@@ -305,6 +315,7 @@ class teamController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Team Controller -> deleteTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };

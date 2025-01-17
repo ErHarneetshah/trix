@@ -44,6 +44,7 @@ class deptController {
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
+      helper.logger(res, "Department Controller -> getAllDept", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -59,6 +60,7 @@ class deptController {
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
     } catch (error) {
+      helper.logger(res, "Department Controller -> getDeptCOntroller", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -77,6 +79,7 @@ class deptController {
 
       return helper.success(res, variables.Success, "Data Fetched Succesfully", deptData);
     } catch (error) {
+      helper.logger(res, "Department Controller -> getSpecificDept", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -116,6 +119,7 @@ class deptController {
       return helper.success(res, variables.Created, "Department Added Successfully!");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Department Controller -> addDept", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -196,6 +200,7 @@ class deptController {
       return helper.success(res, variables.Success, "Data Updated Succesfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Department Controller -> updateDept", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -244,6 +249,7 @@ class deptController {
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Department Controller -> deleteDept", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
