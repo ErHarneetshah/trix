@@ -1,6 +1,6 @@
 import variables from "../../config/variableConfig.js";
 import helper from "../../../utils/services/helper.js";
-const { Op, fn, literal } = require('sequelize');
+import { Op, fn, literal } from "sequelize";
 import User from "../../../database/models/userModel.js";
 
 class dashboardController {
@@ -16,7 +16,7 @@ class dashboardController {
         where: {
           company_id: companyId,
           logged_out_time: null,
-          createdAt: { [Op.gte]: fn('DATE', fn('NOW')) },
+          createdAt: { [Op.gte]: fn("DATE", fn("NOW")) },
         },
       });
 
@@ -24,7 +24,7 @@ class dashboardController {
         where: {
           company_id: companyId,
           logged_out_time: { [Op.ne]: null },
-          createdAt: { [Op.gte]: fn('DATE', fn('NOW')) },
+          createdAt: { [Op.gte]: fn("DATE", fn("NOW")) },
         },
       });
 
@@ -44,7 +44,7 @@ class dashboardController {
         where: {
           company_id: companyId,
           late_coming_duration: { [Op.gt]: 0 },
-          createdAt: { [Op.gte]: fn('DATE', fn('NOW')) },
+          createdAt: { [Op.gte]: fn("DATE", fn("NOW")) },
         },
       });
 
@@ -56,7 +56,7 @@ class dashboardController {
         where: {
           company_id: companyId,
           idle_time: { [Op.gt]: 0 },
-          createdAt: { [Op.gte]: fn('DATE', fn('NOW')) },
+          createdAt: { [Op.gte]: fn("DATE", fn("NOW")) },
         },
       });
 
@@ -75,7 +75,8 @@ class dashboardController {
         total_slacking_users: totalSlackingEmployees,
       };
     } catch (error) {
-      console.error('Error fetching company stats:', error);
+      console.error("Error fetching company stats:", error);
+      helper.logger(res, "Dashboard Controller -> getCompanyStats", error);
       return {
         total_employees: 0,
         total_working_employee: 0,
@@ -93,14 +94,11 @@ class dashboardController {
     try {
       const companyStats = await getCompanyStats();
       return helper.success(res, variables.Success, "Data Fetched Successfully", companyStats);
-
     } catch (error) {
+      helper.logger(res, "Dashboard Controller -> getDashboardData", error);
       return helper.failed(res, 400, "Invalid data format", []);
-
     }
-  }
-
-
+  };
 }
 
 export default dashboardController;

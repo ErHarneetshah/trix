@@ -72,6 +72,7 @@ class teamMemberTimeLogController {
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
     } catch (error) {
+      helper.logger(res, "Team Member Time Log Controller -> getAllTeamMemberLog", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -200,6 +201,7 @@ GROUP BY
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", { count: count, rows: updatedJson });
     } catch (error) {
+      helper.logger(res, "Team Member Time Log Controller -> getTeamMemberLogFiltered2", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -373,6 +375,7 @@ GROUP BY
 
       return helper.success(res, variables.Success, "All Data fetched Successfully!", { countsData: countsData, other: {} });
     } catch (error) {
+      helper.logger(res, "Team Member Time Log Controller -> getFilterCount", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };

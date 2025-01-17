@@ -302,6 +302,7 @@ class authController extends jwtService {
       });
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Auth Controller -> companyRegister", error);
       return helper.sendResponse(res, variables.BadRequest, 0, {}, error.message);
     }
   };
@@ -401,8 +402,7 @@ class authController extends jwtService {
               transaction: dbTransaction,
             }
           );
-        } 
-        else {
+        } else {
           const permissionInstance = new rolePermissionController();
           await permissionInstance.notAllowRolePermissions(user.company_id);
         }
@@ -474,6 +474,7 @@ class authController extends jwtService {
       return helper.sendResponse(res, variables.Success, 1, { token: token, user: user }, "Login Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
+      helper.logger(res, "Auth Controller -> login", error);
       return helper.sendResponse(res, variables.Forbidden, 0, null, error.message);
     }
   };
@@ -488,6 +489,7 @@ class authController extends jwtService {
 
       return helper.success(res, variables.Success, "Logout Successfully");
     } catch (error) {
+      helper.logger(res, "Auth Controller -> logout", error);
       return helper.failed(res, variables.Unauthorized, error.message);
     }
   };
@@ -537,6 +539,7 @@ class authController extends jwtService {
       io.to(`Admin_${req.user.company_id}`).emit("getSystemDetail", create);
       return helper.success(res, variables.Success, "system configration add successfully");
     } catch (error) {
+      helper.logger(res, "Auth Controller -> device", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -557,6 +560,7 @@ class authController extends jwtService {
       });
       return helper.success(res, variables.Success, "Blocked websites fetched successfully!!", blockedWebsites);
     } catch (error) {
+      helper.logger(res, "Auth Controller -> blockedList", error);
       return helper.failed(res, variables.BadRequest, "Error in blocked Website!!!");
     }
   };
@@ -575,6 +579,7 @@ class authController extends jwtService {
       });
       return helper.success(res, variables.Success, "Absent Calender Data fetched successfully!!", Absent_data);
     } catch (error) {
+      helper.logger(res, "Auth Controller -> absent", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -591,6 +596,7 @@ class authController extends jwtService {
       });
       return helper.success(res, variables.Success, "Notification Data cleared successfully");
     } catch (error) {
+      helper.logger(res, "Auth Controller -> markAsRead", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -620,6 +626,7 @@ class authController extends jwtService {
 
       return helper.success(res, variables.Success, "Notification Data fetched successfully", data);
     } catch (error) {
+      helper.logger(res, "Auth Controller -> notification_page", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -703,6 +710,7 @@ class authController extends jwtService {
 
       return helper.success(res, variables.Success, "Advanced settings updated successfully!");
     } catch (error) {
+      helper.logger(res, "Auth Controller -> advanced_setting", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -725,6 +733,7 @@ class authController extends jwtService {
       }
       return helper.success(res, variables.Success, "Advanced settings updated successfully!", data);
     } catch (error) {
+      helper.logger(res, "Auth Controller -> get_advanced_setting", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
   };
@@ -767,6 +776,7 @@ class authController extends jwtService {
       }
       return helper.success(res, variables.Success, "OTP is sent to your email.Please check your Email.");
     } catch (error) {
+      helper.logger(res, "Auth Controller -> sendOtp", error);
       return helper.failed(res, variables.BadRequest, "Unable to Fulfil Request. Please Try Again!");
     }
   };
@@ -813,6 +823,7 @@ class authController extends jwtService {
       return helper.success(res, variables.Success, "Password updated successfully.Please check your updated password email.");
     } catch (error) {
       console.error("Error generateNewPassword:", error.message);
+      helper.logger(res, "Auth Controller -> changePassword", error);
       return helper.failed(res, variables.BadRequest, "Failed to getTeamMember");
     }
   };

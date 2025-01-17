@@ -95,35 +95,41 @@ const addEmailGateeways = async (req, res) => {
     return helper.success(res, variables.Created, "Email gateway created successfully.", gateway);
   } catch (error) {
     console.error("Error while creating the email gateway setup:", error);
+    helper.logger(res, "Email Gateway Controller -> addEmailGateeways", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
 
 const checkEmailServer = async (req, res) => {
-  // ___________-------- Role Permisisons Exists or not ---------________________
-  const routeMethod = req.method;
-  const isApproved = await helper.checkRolePermission(req.user.roleId, "Email Gateway", routeMethod, req.user.company_id);
-  if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
-  // ___________-------- Role Permisisons Exists or not ---------________________
+  try {
+    // ___________-------- Role Permisisons Exists or not ---------________________
+    const routeMethod = req.method;
+    const isApproved = await helper.checkRolePermission(req.user.roleId, "Email Gateway", routeMethod, req.user.company_id);
+    if (!isApproved.success) return helper.failed(res, variables.Forbidden, isApproved.message);
+    // ___________-------- Role Permisisons Exists or not ---------________________
 
-  const { to, subject, message } = req.body;
+    const { to, subject, message } = req.body;
 
-  const rules = {
-    to: "required|string|min:1|max:100",
-    subject: "required|string|min:3|max:100",
-    message: "required|string|min:5|max:1000",
-  };
+    const rules = {
+      to: "required|string|min:1|max:100",
+      subject: "required|string|min:3|max:100",
+      message: "required|string|min:5|max:1000",
+    };
 
-  const { status, message: validationMessage } = await validate(req.body, rules);
-  if (status === 0) {
-    return helper.failed(res, variables.ValidationError, validationMessage);
-  }
+    const { status, message: validationMessage } = await validate(req.body, rules);
+    if (status === 0) {
+      return helper.failed(res, variables.ValidationError, validationMessage);
+    }
 
-  const sendmail = await H.sendM(req.user.company_id, to, subject, message);
-  if (sendmail.success) {
-    return helper.success(res, variables.Success, sendmail.message);
-  } else {
-    return helper.failed(res, variables.BadRequest, "Please check the credentials first.");
+    const sendmail = await H.sendM(req.user.company_id, to, subject, message);
+    if (sendmail.success) {
+      return helper.success(res, variables.Success, sendmail.message);
+    } else {
+      return helper.failed(res, variables.BadRequest, "Please check the credentials first.");
+    }
+  } catch (error) {
+    helper.logger(res, "Email Gateway Controller -> checkEmailServer", error);
+    return helper.failed(res, variables.BadRequest, "Unable To Send Mail. Please Try Again Later!");
   }
 };
 
@@ -146,6 +152,7 @@ const getEmailList = async (req, res) => {
     return helper.success(res, variables.Success, "Retrieved  Email Lists Successfully", getEmailGateway);
   } catch (error) {
     console.error("Error blocking website:", error);
+    helper.logger(res, "Email Gateway Controller -> getEmailList", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };

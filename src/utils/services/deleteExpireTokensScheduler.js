@@ -18,6 +18,7 @@ async function deleteExpireAccessToken() {
     console.log(`Deleted ${deletedCount} expired access tokens.`);
     console.log(`Job executed at: ${new Date()}`);
   } catch (error) {
+    helper.logger(res, "Delete Expire Access Token -> deleteExpireAccessToken", error);
     console.log(error.message);
   }
 }

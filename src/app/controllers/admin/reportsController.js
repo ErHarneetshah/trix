@@ -80,6 +80,7 @@ const retrieveAllReport = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching reports:", error);
+    helper.logger(res, "Reports Controller -> retrieveAllReport", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -111,6 +112,7 @@ const retrieveUserReport = async (req, res) => {
     return helper.success(res, variables.Success, "Retrieved User Report Successfully", data);
   } catch (error) {
     console.error("Error fetching reports:", error);
+    helper.logger(res, "Reports Controller -> retrieveUserReport", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
@@ -153,6 +155,7 @@ const approveDisaproveReport = async (req, res) => {
     return helper.success(res, variables.Success, "Approved Report Successfully");
   } catch (error) {
     console.error("Error while updating the status of approved ordisapproved reports:", error);
+    helper.logger(res, "Reports Controller -> approveDisapproveReport", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };
