@@ -230,6 +230,21 @@ class paymentController extends appConfig {
             }
           );
 
+          await paymentLog.update(
+            {
+              status: 3,
+            },
+            {
+              where: {
+                company_id: companyDetails.id,
+                companyName: companyDetails.name,
+                companyEmail: companyDetails.email,
+                status: 0,
+              },
+              transaction: dbTransaction,
+            }
+          );
+
           console.log("Test9");
           await paymentLog.create(
             {
