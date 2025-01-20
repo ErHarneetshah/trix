@@ -146,6 +146,7 @@ const getEmailList = async (req, res) => {
         is_active: {
           [Op.ne]: 0,
         },
+        company_id: req.user.company_id,
       },
       attributes: ["id", "protocol", "host", "username", "port", "encryption"],
     });
