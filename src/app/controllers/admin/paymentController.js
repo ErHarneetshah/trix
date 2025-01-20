@@ -373,7 +373,7 @@ class paymentController extends appConfig {
       }
     } catch (error) {
       console.error("Error in Payment Controller:", error);
-      //helper.logger(res, "Payment Controller -> confirmPayment", error);
+      helper.logger(res, "Payment Controller -> confirmPayment", error);
       return { status: false, message: "Unable to Retrieve Plan List" };
     }
   };
