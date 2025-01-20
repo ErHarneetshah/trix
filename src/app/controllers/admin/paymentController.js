@@ -7,6 +7,7 @@ import paymentLog from "../../../database/models/paymentLogModel.js";
 import rolePermissionController from "./rolePermissionController.js";
 import appConfig from "../../config/appConfig.js";
 import H from "../../../utils/Mail.js";
+import emailGateway from "../../../database/models/emailGatewayModel.js";
 
 class paymentController extends appConfig {
   getPaymentPlans = async (req, res) => {
@@ -133,6 +134,11 @@ class paymentController extends appConfig {
       let { planId } = req.body;
       if (!req.user.isAdmin) return helper.failed(res, variables.ValidationError, "You are not authorized");
       if (!planId || isNaN(planId)) return helper.failed(res, variables.ValidationError, "Select a Plan to Buy");
+
+      let emailGateway = await emailGateway.findOne({
+        where: { company_id: req.user.company_id },
+      });
+      if (!emailGateway) return helper.failed(res, variables.BadRequest, "Need To Add Email Credentails First");
 
       let planDetails;
       try {
