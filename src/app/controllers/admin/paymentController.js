@@ -135,10 +135,10 @@ class paymentController extends appConfig {
       if (!req.user.isAdmin) return helper.failed(res, variables.ValidationError, "You are not authorized");
       if (!planId || isNaN(planId)) return helper.failed(res, variables.ValidationError, "Select a Plan to Buy");
 
-      let emailGateway = await emailGateway.findOne({
+      let emailGatewayDetails = await emailGateway.findOne({
         where: { company_id: req.user.company_id },
       });
-      if (!emailGateway) return helper.failed(res, variables.BadRequest, "Need To Add Email Credentails First");
+      if (!emailGatewayDetails) return helper.failed(res, variables.BadRequest, "Need To Add Email Credentails First");
 
       let planDetails;
       try {
