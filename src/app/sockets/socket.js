@@ -46,8 +46,8 @@ const userData = async (id) => {
     type: QueryTypes.SELECT,
   });
 
-  let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
-  let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+  // let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
+  // let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
   // Fetch productive and non-productive app data
   const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(id, today);
@@ -65,7 +65,7 @@ const userData = async (id) => {
     message: "User Report fetched successfully",
     data: {
       user,
-      image,
+      // image,
       userHistories,
       appHistories,
       productiveAndNonProductiveData: productiveAndNonProductiveData || [],
@@ -474,8 +474,8 @@ const getUserReport = async (data) => {
     });
 
     // Fetch image uploads
-    let image_query = `SELECT content FROM image_uploads WHERE date = "${today}" AND userId = ${data.id}`;
-    let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+    // let image_query = `SELECT content FROM image_uploads WHERE date = "${today}" AND userId = ${data.id}`;
+    // let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
     // Fetch productive and non-productive app data
     const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(data.id, today);
@@ -489,7 +489,7 @@ const getUserReport = async (data) => {
       message: "User Report fetched successfully",
       data: {
         user,
-        image,
+        // image,
         userHistories,
         appHistories,
         productiveAndNonProductiveData: productiveAndNonProductiveData || [],
