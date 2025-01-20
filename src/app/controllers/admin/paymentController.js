@@ -12,9 +12,9 @@ class paymentController extends appConfig {
   getPaymentPlans = async (req, res) => {
     try {
       const privateKey = process.env.EMONITRIX_PRIVATE_KEY.replace(/"/g, "");
+      if (!privateKey) return helper.failed(res, variables.BadRequest, "Unable to Identify the Product");
 
       const response = await axios.get(`${this.getSuperAdminUrl()}/api/product/getProductPlans?api_key=${privateKey}`);
-
       if (!response.data) return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");
 
       const companyDetails = await company.findOne({
@@ -48,6 +48,75 @@ class paymentController extends appConfig {
       }
 
       response.data.data.activePlanId = activePlanId;
+      return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
+    } catch (error) {
+      console.error("Error in Payment Controller:", error.message);
+      //helper.logger(res, "Payment Controller -> getPlaymentPlans", error);
+      return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");
+    }
+  };
+
+  getCurrentPaymentPlan = async (req, res) => {
+    try {
+      const paymentLogDetail = await paymentLog.findOne({
+        where: { company_id: req.user.company_id, status: 1 },
+      });
+      if (!paymentLogDetail) return helper.failed(res, variables.BadRequest, "Company Plan details not found");
+
+      const privateKey = process.env.EMONITRIX_PRIVATE_KEY.replace(/"/g, "");
+      if (!privateKey) return helper.failed(res, variables.BadRequest, "Unable to Identify the Product");
+
+      const response = await axios.get(`${this.getSuperAdminUrl()}/api/product/getProductPlans?api_key=${privateKey}`);
+      if (!response.data) return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");
+
+      if (paymentLogDetail.planId == 0) {
+        response.data.data.data = {
+          id: paymentLogDetail.planId,
+          name: paymentLogDetail.planName,
+          user_id: null,
+          product_id: null,
+          description: "A Trail Period of 7 days allow user to user our Product for free. It started when you register on our product",
+          price: 0,
+          duration: 7,
+          userCount: paymentLogDetail.allowedEmployeeCount,
+          startDate: paymentLogDetail.startDate,
+          endDate: paymentLogDetail.endDate,
+          currentPlan: true,
+        };
+      } else {
+        let planDetails;
+        try {
+          planDetails = await axios.get(`${this.getSuperAdminUrl()}/api/product/viewPlan?plan_id=${paymentLogDetail.planId}`);
+        } catch (error) {
+          if (error.response) {
+            console.error("API Error Message:", error.response.data.message || error.response.data);
+            console.error("Status Code:", error.response.status);
+            console.error("Headers:", error.response.headers);
+            return helper.failed(res, variables.BadRequest, error.response.data.message);
+          } else if (error.request) {
+            console.error("No Response from API:", error.request);
+            return helper.failed(res, variables.BadRequest, error.request);
+          } else {
+            console.error("Error Setting Up Request:", error.message);
+            return helper.failed(res, variables.BadRequest, "Error Setting Up Request");
+          }
+        }
+        response.data.data.data = planDetails.data.data;
+      }
+
+      let isAdvanceExists = 0;
+      if (paymentLogDetail.planId) {
+        isAdvanceExists = await paymentLog.count({
+          where: { company_id: req.user.company_id, planId: paymentLogDetail.planId, status: 0 },
+        });
+      }
+      if (isAdvanceExists) {
+        response.data.data.advanceBought = true;
+      } else {
+        response.data.data.advanceBought = false;
+      }
+
+      response.data.data.activePlanId = paymentLogDetail.planId;
       return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
     } catch (error) {
       console.error("Error in Payment Controller:", error.message);

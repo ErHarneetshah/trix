@@ -27,6 +27,7 @@ import commonfuncitons from "../../../utils/services/commonfuncitons.js";
 import validate from "../../../utils/CustomValidation.js";
 import H from "../../../utils/Mail.js";
 import paymentLog from "../../../database/models/paymentLogModel.js";
+import moment from "moment";
 
 class authController extends jwtService {
   companyRegister = async (req, res) => {
@@ -87,6 +88,26 @@ class authController extends jwtService {
           transaction: dbTransaction,
         }
       );
+
+      const createPaymentLog = await paymentLog.create({
+        company_id: createCompany.id,
+        companyName: createCompany.name,
+        companyEmail: createCompany.email,
+        planId: 0,
+        planName: "Trail",
+        amountPaid: 0,
+        allowedEmployeeCount: 10,
+        startDate: moment().tz("Asia/Kolkata").format("YYYY-MM-DD"),
+        endDate: moment().tz("Asia/Kolkata").add(7, "days").format("YYYY-MM-DD"),
+        status: 1,
+      },{
+        transaction: dbTransaction,
+      });
+
+      if (!createPaymentLog || !createPaymentLog.id) {
+        if (dbTransaction) await dbTransaction.rollback();
+        return helper.sendResponse(res, variables.BadRequest, 0, {}, "Unable to Create Payment Log for this Company");
+      }
 
       //* -------------- Create Report Settings --------------------------
       const createReportSettings = await reportSettings.create(
