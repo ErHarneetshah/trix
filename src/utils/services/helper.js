@@ -231,7 +231,7 @@ export default {
 
   logger: async (res, file = "Unknown File", errorMessage) => {
     try {
-      let filePath = res?.req?.originalUrl || "Unknown Url";
+      // let filePath = res?.req?.originalUrl || "Unknown Url";
       const now = new Date();
       const timestamp = now.toISOString().slice(0, 19).replace("T", " ");
 
@@ -256,15 +256,15 @@ export default {
       });
 
       //* Second creating new enteries
-      const logEntry = { file: filePath, error: errorMessage.stack};
+      const logEntry = {error: errorMessage};
       await errorLog.create({
-        error_file: file,
+        error_file: "Emonitrix",
         error_data: logEntry,
       });
     } catch (error) {
       await errorLog.create({
         error_file: "Helper Logger Function",
-        error_data: { file: "helper.js", error: errorMessage.stack },
+        error_data: { file: "helper.js", error: errorMessage },
       });
     }
   },
