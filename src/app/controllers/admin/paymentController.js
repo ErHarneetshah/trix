@@ -101,6 +101,9 @@ class paymentController extends appConfig {
             return helper.failed(res, variables.BadRequest, "Error Setting Up Request");
           }
         }
+        planDetails.data.data.startDate = paymentLogDetail.startDate;
+        planDetails.data.data.endDate = paymentLogDetail.endDate;
+        
         response.data.data.data = planDetails.data.data;
       }
 
