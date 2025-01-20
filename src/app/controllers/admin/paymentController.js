@@ -52,7 +52,7 @@ class paymentController extends appConfig {
       return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
     } catch (error) {
       console.error("Error in Payment Controller:", error.message);
-      helper.logger(res, "Payment Controller -> getPlaymentPlans", error);
+      // helper.logger(res, "Payment Controller -> getPlaymentPlans", error);
       return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");
     }
   };
@@ -124,8 +124,8 @@ class paymentController extends appConfig {
       return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
     } catch (error) {
       console.error("Error in Payment Controller:", error);
-      helper.logger(res, "Payment Controller -> getPlaymentPlans", error);
-      return helper.failed(res, variables.BadRequest, "Unable to Retrieve Plan List");
+      // helper.logger(res, "Payment Controller -> getPlaymentPlans", error);
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
@@ -200,8 +200,8 @@ class paymentController extends appConfig {
       return helper.success(res, variables.Success, "Plan Purchased Successfully", response.data.data);
     } catch (error) {
       console.error("Error in Payment Controller:", error.message);
-      helper.logger(res, "Payment Controller -> buyPaymentPlan", error);
-      return helper.failed(res, variables.BadRequest, "Unable to Process Payment Request");
+      // helper.logger(res, "Payment Controller -> buyPaymentPlan", error);
+      return helper.failed(res, variables.BadRequest, error.message);
     }
   };
 
@@ -379,8 +379,8 @@ class paymentController extends appConfig {
       }
     } catch (error) {
       console.error("Error in Payment Controller:", error);
-      helper.logger(res, "Payment Controller -> confirmPayment", error);
-      return { status: false, message: "Unable to Retrieve Plan List" };
+      // helper.logger(res, "Payment Controller -> confirmPayment", error);
+      return { status: false, message: error.message };
     }
   };
 }
