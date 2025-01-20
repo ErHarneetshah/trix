@@ -15,6 +15,7 @@ import team from "../../database/models/teamModel.js";
 import shift from "../../database/models/shiftModel.js";
 import department from "../../database/models/departmentModel.js";
 import designation from "../../database/models/designationModel.js";
+import helper from "../../utils/services/helper.js";
 
 const userData = async (id) => {
   let user = await User.findOne({
@@ -69,6 +70,45 @@ const userData = async (id) => {
       appHistories,
       productiveAndNonProductiveData: productiveAndNonProductiveData || [],
       productiveAndNonProductiveWebData: productiveAndNonProductiveWebData || [],
+    },
+  };
+  return response;
+};
+
+const getUserScreenshots = async (id) => {
+  let user = await User.findOne({
+    where: { id: id },
+  });
+
+  if (!user) {
+    return socket.emit("error", {
+      message: "User not found",
+    });
+  }
+
+  let { limit, page } = req.query;
+  limit = parseInt(limit) || 5;
+  let offset = (page - 1) * limit || 0;
+  let where = {};
+  where.company_id = req.user.company_id;
+  where.date = today;
+  where.userId = id;
+  // ___________----------------------------------------------________________
+
+  const userImages = await ImageUpload.findAndCountAll({
+    where: where,
+    offset: offset,
+    limit: limit,
+    order: [["id", "DESC"]],
+    attributes: ["content"],
+  });
+  if (!userImages) userImages = null;
+
+  let response = {
+    status: 1,
+    message: "User Screenshots fetched successfully",
+    data: {
+      userImages,
     },
   };
   return response;
@@ -395,7 +435,6 @@ const getUserStats = async (io, socket) => {
 
 const getUserReport = async (data) => {
   try {
-
     let user = await User.findOne({
       where: { id: data.id },
       include: [
@@ -901,7 +940,6 @@ const handleUserSocket = async (socket, io) => {
 
   socket.on("uploadHistory", async (data) => {
     try {
-
       let { url, title, visitTime } = data;
       let userId = socket.user.userId;
 
