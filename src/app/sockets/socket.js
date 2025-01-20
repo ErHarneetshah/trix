@@ -939,41 +939,42 @@ const handleUserSocket = async (socket, io) => {
     }
   });
 
-  socket.on("uploadImage", async (data) => {
-    try {
+  //! Commented For Now By Harneet
+  // socket.on("uploadImage", async (data) => {
+  //   try {
 
-      let today = new Date().toISOString().split("T")[0];
-      let userId = socket.user.userId;
+  //     let today = new Date().toISOString().split("T")[0];
+  //     let userId = socket.user.userId;
 
-      let user = await User.findOne({ where: { id: userId } });
-      if (!user) {
-        socket.emit("imageError", { message: "Unauthorized access" });
-        return;
-      }
-      let company_id = user?.company_id;
+  //     let user = await User.findOne({ where: { id: userId } });
+  //     if (!user) {
+  //       socket.emit("imageError", { message: "Unauthorized access" });
+  //       return;
+  //     }
+  //     let company_id = user?.company_id;
 
-      if (!data.images || data.images.length === 0) {
-        socket.emit("imageError", { message: "Invalid data" });
-        return;
-      }
+  //     if (!data.images || data.images.length === 0) {
+  //       socket.emit("imageError", { message: "Invalid data" });
+  //       return;
+  //     }
 
-      await Promise.all(
-        data.images.map((image) =>
-          ImageUpload.create({
-            userId,
-            date: today,
-            company_id,
-            content: `data:image/png;base64,${image.data}`,
-          })
-        )
-      );
-      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
-      socket.emit("imageSuccess", { message: "Images uploaded successfully" });
-    } catch (error) {
-      console.log("Error uploading images:", error);
-      socket.emit("imageError", { message: "Failed to upload images" });
-    }
-  });
+  //     await Promise.all(
+  //       data.images.map((image) =>
+  //         ImageUpload.create({
+  //           userId,
+  //           date: today,
+  //           company_id,
+  //           content: `data:image/png;base64,${image.data}`,
+  //         })
+  //       )
+  //     );
+  //     io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
+  //     socket.emit("imageSuccess", { message: "Images uploaded successfully" });
+  //   } catch (error) {
+  //     console.log("Error uploading images:", error);
+  //     socket.emit("imageError", { message: "Failed to upload images" });
+  //   }
+  // });
 
   socket.on("uploadAppHistory", async (data) => {
     try {
