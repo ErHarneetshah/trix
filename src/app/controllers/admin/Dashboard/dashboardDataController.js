@@ -5,10 +5,16 @@ import variables from "../../../config/variableConfig.js";
 import User from "../../../../database/models/userModel.js";
 import TimeLog from "../../../../database/models/timeLogsModel.js";
 
-
 const topFiveProductiveAppsUsers = async (req, res, next) => {
   try {
     const { company_id } = req.user;
+    const { date } = req.query;
+    let formattedDate;
+    if (!date) {
+      formattedDate = new Date().toISOString().split("T")[0];
+    }
+    formattedDate = new Date(date).toISOString().split("T")[0];
+
     // Define the SQL query
     const query = `
     SELECT 
@@ -32,6 +38,7 @@ LEFT JOIN
     
 WHERE 
     ah.company_id = :companyId
+    and ah.date = :date
 GROUP BY 
     ah.userId, u.fullname, u.departmentId, d.name
 ORDER BY 
@@ -40,7 +47,7 @@ LIMIT 5;
       `;
 
     const results = await sequelize.query(query, {
-      replacements: { companyId: company_id },
+      replacements: { companyId: company_id, date: formattedDate },
       type: Sequelize.QueryTypes.SELECT,
       logging: false,
     });
@@ -49,12 +56,7 @@ LIMIT 5;
       return helper.success(res, variables.Success, "No data found", []);
     }
 
-    return helper.success(
-      res,
-      variables.Success,
-      "Top Productive Users Fetched Successfully",
-      results
-    );
+    return helper.success(res, variables.Success, "Top Productive Users Fetched Successfully", results);
   } catch (error) {
     console.error("Error in topFiveProductiveAppsUsers:", error);
 
@@ -62,10 +64,16 @@ LIMIT 5;
   }
 };
 
-
 const topFiveUnProductiveAppsUsers = async (req, res, next) => {
   try {
     const { company_id } = req.user;
+    const { date } = req.query;
+    let formattedDate;
+    if (!date) {
+      formattedDate = new Date().toISOString().split("T")[0];
+    }
+    formattedDate = new Date(date).toISOString().split("T")[0];
+
     const query = `
     SELECT 
     u.fullname AS user_name,
@@ -83,7 +91,7 @@ const topFiveUnProductiveAppsUsers = async (req, res, next) => {
 designations AS d 
 ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id
   WHERE 
-    ah.appName NOT IN (SELECT app_name FROM productive_apps where company_id=:companyId) and ah.company_id=:companyId
+    ah.appName NOT IN (SELECT app_name FROM productive_apps where company_id=:companyId) and ah.company_id=:companyId and ah.date = :date
   GROUP BY 
     ah.userId
   ORDER BY 
@@ -92,7 +100,7 @@ ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id
       `;
 
     const results = await sequelize.query(query, {
-      replacements: { companyId: company_id },
+      replacements: { companyId: company_id, date: formattedDate },
       type: Sequelize.QueryTypes.SELECT,
       logging: false, // Set to `true` for debugging during development
     });
@@ -115,15 +123,18 @@ ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id
   }
 };
 
-
-
 const topFiveEffectiveUsers = async (req, res, next) => {
   try {
     const { company_id } = req.user;
+    const { date } = req.query;
+    let formattedDate;
+    if (!date) {
+      formattedDate = new Date().toISOString().split("T")[0];
+    }
+    formattedDate = new Date(date).toISOString().split("T")[0];
 
     const query = `
     WITH 
-
     unproductive_time AS (
         SELECT 
             u.fullname, 
@@ -136,7 +147,7 @@ const topFiveEffectiveUsers = async (req, res, next) => {
         ON 
             u.id = ah.userId and u.company_id=:companyId
         WHERE 
-            appName NOT IN (SELECT app_name FROM productive_apps where company_id=:companyId)  and ah.company_id=:companyId
+            appName NOT IN (SELECT app_name FROM productive_apps where company_id=:companyId)  and ah.company_id=:companyId and ah.date = :date
         GROUP BY 
             ah.userId
     ),
@@ -156,7 +167,7 @@ const topFiveEffectiveUsers = async (req, res, next) => {
         LEFT JOIN 
             users AS u 
         ON 
-            ah.userId = u.id and u.company_id=1 where ah.company_id=:companyId
+            ah.userId = u.id and u.company_id=1 where ah.company_id=:companyId and ah.date = :date
         GROUP BY 
             ah.userId
     )
@@ -189,7 +200,7 @@ ON d.id = us.designationId LEFT JOIN teams as t on us.teamId=t.id
       `;
 
     const results = await sequelize.query(query, {
-      replacements: { companyId: company_id },
+      replacements: { companyId: company_id, date: formattedDate },
       type: Sequelize.QueryTypes.SELECT,
       logging: false,
     });
@@ -198,12 +209,7 @@ ON d.id = us.designationId LEFT JOIN teams as t on us.teamId=t.id
       return helper.success(res, variables.Success, "No data found", []);
     }
 
-    return helper.success(
-      res,
-      variables.Success,
-      "Top Effective Users Fetched Successfully",
-      results
-    );
+    return helper.success(res, variables.Success, "Top Effective Users Fetched Successfully", results);
   } catch (error) {
     console.error("Error in topFiveEffectiveUsers:", error);
 
@@ -211,11 +217,15 @@ ON d.id = us.designationId LEFT JOIN teams as t on us.teamId=t.id
   }
 };
 
-
-
 const topFiveAbsentUsers = async (req, res, next) => {
   try {
     const { company_id } = req.user;
+    const { date } = req.query;
+    let formattedDate;
+    if (!date) {
+      formattedDate = new Date().toISOString().split("T")[0];
+    }
+    formattedDate = new Date(date).toISOString().split("T")[0];
 
     const query = `
     SELECT 
@@ -230,7 +240,7 @@ t.name as team_name
   ON 
     u.id = tl.user_id and u.company_id=:companyId and u.isAdmin=0 LEFT JOIN 
 designations AS d 
-ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company_id=:companyId
+ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company_id=:companyId and tl.date = :date
   GROUP BY 
     tl.user_id 
   ORDER BY 
@@ -239,41 +249,34 @@ ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company
     `;
 
     const results = await sequelize.query(query, {
-      replacements: { companyId: company_id },
+      replacements: { companyId: company_id, date: formattedDate },
       type: Sequelize.QueryTypes.SELECT,
       logging: false, // Disable logging for cleaner console output
     });
 
     // If no results are found, send an appropriate response
     if (!results || results.length === 0) {
-      return helper.success(
-        res,
-        variables.Success,
-        "No absent users found",
-        []
-      );
+      return helper.success(res, variables.Success, "No absent users found", []);
     }
 
-    return helper.success(
-      res,
-      variables.Success,
-      "Top 5 Absent Users Fetched Successfully",
-      results
-    );
+    return helper.success(res, variables.Success, "Top 5 Absent Users Fetched Successfully", results);
   } catch (error) {
     console.error("Error in getTopFiveAbsentUsers:", error);
 
-    return helper.failed(
-      res,
-      500,
-      "An error occurred while fetching top absent users."
-    );
+    return helper.failed(res, 500, "An error occurred while fetching top absent users.");
   }
 };
 
 const topFiveLateComingUsers = async (req, res, next) => {
   try {
     const { company_id } = req.user;
+    const { date } = req.query;
+    let formattedDate;
+    if (!date) {
+      formattedDate = new Date().toISOString().split("T")[0];
+    }
+    formattedDate = new Date(date).toISOString().split("T")[0];
+
     // SQL query to fetch the top 5 users with the highest total late-coming duration
     const query = `
     SELECT 
@@ -289,7 +292,7 @@ t.name as team_name,
   ON 
     u.id = tl.user_id and u.company_id=:companyId LEFT JOIN 
 designations AS d 
-ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company_id=:companyId
+ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company_id=:companyId and tl.date = :date
   GROUP BY 
     tl.user_id 
   HAVING 
@@ -301,38 +304,24 @@ ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company
 
     // Execute the query using Sequelize
     const results = await sequelize.query(query, {
-      replacements: { companyId: company_id },
+      replacements: { companyId: company_id, date: formattedDate },
       type: Sequelize.QueryTypes.SELECT,
       logging: false, // Disable query logging for cleaner console output
     });
 
     // If no results are found, send an appropriate response
     if (!results || results.length === 0) {
-      return helper.success(
-        res,
-        variables.Success,
-        "No late-coming users found.",
-        []
-      );
+      return helper.success(res, variables.Success, "No late-coming users found.", []);
     }
 
     // Return the results with a success response
-    return helper.success(
-      res,
-      variables.Success,
-      "Top 5 Late-Coming Users Fetched Successfully.",
-      results
-    );
+    return helper.success(res, variables.Success, "Top 5 Late-Coming Users Fetched Successfully.", results);
   } catch (error) {
     // Log the error for debugging
     console.error("Error in getTopFiveLateComingUsers:", error);
 
     // Send an error response
-    return helper.failed(
-      res,
-      500,
-      "An error occurred while fetching top late-coming users."
-    );
+    return helper.failed(res, 500, "An error occurred while fetching top late-coming users.");
   }
 };
 
@@ -340,6 +329,12 @@ const getTopFiveOfflineLoggedUsers = async (req, res, next) => {
   try {
     // SQL query to fetch the top 5 users with the highest total offline idle time
     const { company_id } = req.user;
+    const { date } = req.query;
+    let formattedDate;
+    if (!date) {
+      formattedDate = new Date().toISOString().split("T")[0];
+    }
+    formattedDate = new Date(date).toISOString().split("T")[0];
 
     const query = `
     SELECT 
@@ -355,7 +350,7 @@ t.name as team_name,
   ON 
     u.id = tl.user_id and u.company_id=:companyId LEFT JOIN 
 designations AS d 
-ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company_id=:companyId
+ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company_id=:companyId and tl.date = :date
   GROUP BY 
     tl.user_id 
   HAVING 
@@ -367,45 +362,30 @@ ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company
 
     // Execute the query using Sequelize
     const results = await sequelize.query(query, {
-      replacements: { companyId: company_id },
+      replacements: { companyId: company_id, date: formattedDate },
       type: Sequelize.QueryTypes.SELECT,
       logging: false, // Disable query logging for a cleaner console
     });
 
     // If no results are found, send an appropriate response
     if (!results || results.length === 0) {
-      return helper.success(
-        res,
-        variables.Success,
-        "No offline logged users found.",
-        []
-      );
+      return helper.success(res, variables.Success, "No offline logged users found.", []);
     }
 
     // Return the results with a success response
-    return helper.success(
-      res,
-      variables.Success,
-      "Top 5 Offline Logged Users Fetched Successfully.",
-      results
-    );
+    return helper.success(res, variables.Success, "Top 5 Offline Logged Users Fetched Successfully.", results);
   } catch (error) {
     // Log the error for debugging
     console.error("Error in getTopFiveOfflineLoggedUsers:", error);
 
     // Send an error response
-    return helper.failed(
-      res,
-      500,
-      "An error occurred while fetching top offline logged users."
-    );
+    return helper.failed(res, 500, "An error occurred while fetching top offline logged users.");
   }
 };
 
 const getCompanyStats = async (companyId, date) => {
   try {
-
-    const formattedDate = new Date(date).toISOString().split('T')[0];
+    const formattedDate = new Date(date).toISOString().split("T")[0];
 
     const totalEmployees = await User.count({
       where: {
@@ -460,9 +440,7 @@ const getCompanyStats = async (companyId, date) => {
         isAdmin: 0,
         [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
       },
-
     });
-
 
     const totalSlackingEmployees = await TimeLog.count({
       where: {
@@ -475,12 +453,11 @@ const getCompanyStats = async (companyId, date) => {
       },
     });
 
-
     const totalDectivated = await User.count({
       where: {
-        company_id: companyId, status: 0,
+        company_id: companyId,
+        status: 0,
         [Op.and]: Sequelize.literal(`DATE(createdAt) <= '${formattedDate}'`),
-
       },
     });
 
@@ -495,7 +472,7 @@ const getCompanyStats = async (companyId, date) => {
       total_slacking_users: totalSlackingEmployees,
     };
   } catch (error) {
-    console.error('Error fetching company stats:', error);
+    console.error("Error fetching company stats:", error);
     return {
       total_employees: 0,
       total_working_employee: 0,
@@ -510,22 +487,19 @@ const getCompanyStats = async (companyId, date) => {
 };
 
 const getDashbaordData = async (req, res, next) => {
-
   try {
     const { company_id } = req.user;
     const { date } = req.query;
 
     // Check if the date is valid
     if (!date || isNaN(new Date(date).getTime())) {
-      return res.status(400).json({ error: 'Invalid or missing date parameter.' });
+      return res.status(400).json({ error: "Invalid or missing date parameter." });
     }
     const companyStats = await getCompanyStats(company_id, date);
     return helper.success(res, variables.Success, "Data Fetched Successfully", companyStats);
-
   } catch (error) {
     return helper.failed(res, 400, error.message, []);
-
   }
-}
+};
 
-export default { topFiveProductiveAppsUsers, topFiveUnProductiveAppsUsers, topFiveEffectiveUsers, topFiveAbsentUsers, topFiveLateComingUsers, getTopFiveOfflineLoggedUsers, getDashbaordData }
+export default { topFiveProductiveAppsUsers, topFiveUnProductiveAppsUsers, topFiveEffectiveUsers, topFiveAbsentUsers, topFiveLateComingUsers, getTopFiveOfflineLoggedUsers, getDashbaordData };
