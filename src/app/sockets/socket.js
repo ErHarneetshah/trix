@@ -75,7 +75,7 @@ const userData = async (id) => {
   return response;
 };
 
-const getUserScreenshots = async (id) => {
+const getUserScreenshots = async (id, company_id, limit = 4, page = 1) => {
   let user = await User.findOne({
     where: { id: id },
   });
@@ -86,31 +86,29 @@ const getUserScreenshots = async (id) => {
     });
   }
 
-  let { limit, page } = req.query;
-  limit = parseInt(limit) || 5;
+  // let { limit, page } = req.query;
+  limit = parseInt(limit) || 4;
   let offset = (page - 1) * limit || 0;
   let where = {};
-  where.company_id = req.user.company_id;
-  where.date = today;
+  where.company_id = company_id;
   where.userId = id;
   // ___________----------------------------------------------________________
 
-  const userImages = await ImageUpload.findAndCountAll({
+  const data = await ImageUpload.findAndCountAll({
     where: where,
     offset: offset,
     limit: limit,
     order: [["id", "DESC"]],
     attributes: ["content"],
   });
-  if (!userImages) userImages = null;
+  if (!data) data = null;
 
   let response = {
     status: 1,
     message: "User Screenshots fetched successfully",
-    data: {
-      userImages,
-    },
+    data,
   };
+  console.log(response);
   return response;
 };
 
@@ -309,6 +307,38 @@ const handleAdminSocket = async (socket, io) => {
     }
   });
 
+  socket.on("getUserScreenshots", async (data) => {
+    try {
+      const adminId = socket.userId;
+
+      if (adminRooms[adminId]) {
+        const previousRoom = adminRooms[adminId];
+        socket.leave(previousRoom);
+      }
+
+      const newRoom = `privateRoom_${data.id}`;
+      adminRooms[adminId] = newRoom;
+
+      socket.join(newRoom);
+
+      const socketsInRoom = await io.in(newRoom).fetchSockets();
+      for (const clientSocket of socketsInRoom) {
+        if (clientSocket.id !== socket.id) {
+          clientSocket.leave(newRoom);
+        }
+      }
+
+      const response = await getUserScreenshots(data.id, data.company_id, data.limit, data.page);
+      // console.log(response.data);
+
+      io.to(newRoom).emit("getUserScreenshots", response);
+    } catch (error) {
+      socket.emit("getUserScreenshots", {
+        message: "Failed to fetch user's screenshot.",
+      });
+    }
+  });
+
   socket.on("disconnect", async () => {
     let userData = await User.findOne({ where: { id: socket.user.userId } });
     userData.currentStatus = 0;
@@ -435,6 +465,7 @@ const getUserStats = async (io, socket) => {
 
 const getUserReport = async (data) => {
   try {
+    console.log("getUserReport", data);
     let user = await User.findOne({
       where: { id: data.id },
       include: [
@@ -475,7 +506,7 @@ const getUserReport = async (data) => {
 
     // Fetch image uploads
     // let image_query = `SELECT content FROM image_uploads WHERE date = "${today}" AND userId = ${data.id}`;
-    // let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+    // let image = await getUserScreenshots(data.id, user.company_id);
 
     // Fetch productive and non-productive app data
     const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(data.id, today);
@@ -497,7 +528,7 @@ const getUserReport = async (data) => {
       },
     };
   } catch (error) {
-    console.error("Error getting user report:", error.message);
+    console.error("Error getting user report:", error);
     return { status: 0, message: "Error getting user report", data: null };
   }
 };

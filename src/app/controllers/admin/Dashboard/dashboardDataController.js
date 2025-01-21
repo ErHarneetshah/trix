@@ -489,11 +489,12 @@ const getCompanyStats = async (companyId, date) => {
 const getDashbaordData = async (req, res, next) => {
   try {
     const { company_id } = req.user;
-    const { date } = req.query;
+    let { date } = req.query;
 
     // Check if the date is valid
     if (!date || isNaN(new Date(date).getTime())) {
-      return res.status(400).json({ error: "Invalid or missing date parameter." });
+      // return res.status(400).json({ error: "Invalid or missing date parameter." });
+      date = new Date();
     }
     const companyStats = await getCompanyStats(company_id, date);
     return helper.success(res, variables.Success, "Data Fetched Successfully", companyStats);
