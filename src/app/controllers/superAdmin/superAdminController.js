@@ -37,6 +37,15 @@ export default {
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
       // Calculate total pages
 
+      allData.rows.forEach(element => {
+        if(element.dataValues.status)
+        {
+          element.dataValues.isActive = true;
+        }else{
+          element.dataValues.isActive = false;
+        }
+      });
+
       const totalPages = Math.ceil(allData.count / limit);
 
       let result = {
