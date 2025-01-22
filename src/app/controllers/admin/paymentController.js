@@ -123,7 +123,7 @@ class paymentController extends appConfig {
       response.data.data.activePlanId = paymentLogDetail.planId;
       return helper.success(res, variables.Success, "Plan List Retrieved", response.data.data);
     } catch (error) {
-      console.error("Error in Payment Controller:", error);
+      console.error("Error in Payment Controller:", error.message);
       // helper.logger(res, "Payment Controller -> getPlaymentPlans", error);
       return helper.failed(res, variables.BadRequest, error.message);
     }
@@ -378,7 +378,7 @@ class paymentController extends appConfig {
         return { status: false, message: "Request Submitted did not belongs to Emonitrix" };
       }
     } catch (error) {
-      console.error("Error in Payment Controller:", error);
+      console.error("Error in Payment Controller:", error.message);
       // helper.logger(res, "Payment Controller -> confirmPayment", error);
       return { status: false, message: error.message };
     }

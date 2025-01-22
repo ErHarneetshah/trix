@@ -108,7 +108,6 @@ const getUserScreenshots = async (id, company_id, limit = 4, page = 1) => {
     message: "User Screenshots fetched successfully",
     data,
   };
-  console.log(response);
   return response;
 };
 
@@ -328,6 +327,8 @@ const handleAdminSocket = async (socket, io) => {
         }
       }
 
+      console.log("called");
+      console.log(data);
       const response = await getUserScreenshots(data.id, data.company_id, data.limit, data.page);
       // console.log(response.data);
 
@@ -505,8 +506,8 @@ const getUserReport = async (data) => {
     });
 
     // Fetch image uploads
-    // let image_query = `SELECT content FROM image_uploads WHERE date = "${today}" AND userId = ${data.id}`;
-    // let image = await getUserScreenshots(data.id, user.company_id);
+    let image_query = `SELECT content FROM image_uploads WHERE date = "${today}" AND userId = ${data.id}`;
+    let image = await getUserScreenshots(data.id, user.company_id);
 
     // Fetch productive and non-productive app data
     const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(data.id, today);

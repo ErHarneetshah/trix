@@ -762,7 +762,6 @@ class authController extends jwtService {
   sendOtp = async (req, res) => {
     try {
       let { email } = req.body;
-      console.log(email);
       const rules = {
         email: "required|email",
       };

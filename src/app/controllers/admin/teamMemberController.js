@@ -505,7 +505,6 @@ class teamMemberController {
       const textMessage = `Hello ${isUserExists.fullname},\n\nYour new password generated successfully!\n\nHere are your login details:\nEmail: ${isUserExists.email}\nPassword: ${plainTextPassword}\n\nPlease log in to the application with these credentials.\n\nBest regards`;
 
       const subject = "Emonitrix-Generate New Password";
-      console.log(isUserExists);
       const sendmail = await H.sendM(isUserExists.company_id, isUserExists.email, subject, textMessage);
 
       if (!sendmail.success) {

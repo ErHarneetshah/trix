@@ -270,8 +270,6 @@ class rolePermissionController {
         roleId: permission.id,
       }));
 
-      console.log("Existing Permissions Backup:", permissionsBackup);
-
       // Step 3: Truncate the role_permissions table
       await rolePermission.destroy({ truncate: true, cascade: false });
 
@@ -381,8 +379,6 @@ class rolePermissionController {
       const adminRoleID = await role.findOne({
         where: { company_id: company_id, name: "Admin" },
       });
-
-      console.log(adminRoleID);
 
       await rolePermission.update(
         {

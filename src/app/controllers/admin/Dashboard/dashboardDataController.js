@@ -35,12 +35,13 @@ INNER JOIN
 LEFT JOIN 
     designations AS d 
     ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id
-    
 WHERE 
     ah.company_id = :companyId
     and ah.date = :date
 GROUP BY 
     ah.userId, u.fullname, u.departmentId, d.name
+HAVING 
+    total_time > 0
 ORDER BY 
     total_time DESC
 LIMIT 5;
@@ -94,6 +95,8 @@ ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id
     ah.appName NOT IN (SELECT app_name FROM productive_apps where company_id=:companyId) and ah.company_id=:companyId and ah.date = :date
   GROUP BY 
     ah.userId
+    HAVING 
+      total_time > 0
   ORDER BY 
     total_time DESC
   LIMIT 5;
@@ -195,6 +198,8 @@ const topFiveEffectiveUsers = async (req, res, next) => {
     LEFT JOIN 
 designations AS d 
 ON d.id = us.designationId LEFT JOIN teams as t on us.teamId=t.id
+    HAVING 
+      net_productivity_seconds > 0
     ORDER BY 
         net_productivity_seconds DESC limit 5;
       `;
@@ -245,7 +250,7 @@ ON d.id = u.designationId LEFT JOIN teams as t on u.teamId=t.id where tl.company
     tl.user_id 
   ORDER BY 
     total_present ASC 
-  LIMIT 5;;
+  LIMIT 5
     `;
 
     const results = await sequelize.query(query, {
