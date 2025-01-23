@@ -26,6 +26,7 @@ import languageSettings from "../models/languageSettingsModel.js";
 import exportReports from "../models/exportReportsModel.js";
 import exportHistories from "../models/exportHistoryModel.js";
 import paymentLog from "../models/paymentLogModel.js";
+import { BucketCredentailsModel } from "../models/BucketCredentialModel.js";
 
 (async () => {
   try {

@@ -556,22 +556,22 @@ class teamMemberController {
 
   getUserScreenshots = async (req, res) => {
     try {
-      const {id} = req.body;
+      const { id } = req.body;
       let user = await User.findOne({
         where: { id: id },
       });
-  
+
       if (!user) {
         return socket.emit("error", {
           message: "User not found",
         });
       }
-  
+
       // if (!date || date.trim() === "") {
       //   const currentDate = new Date();
       //   date = currentDate.toISOString().split("T")[0];
       // }
-  
+
       let { limit, page } = req.query;
       limit = parseInt(limit) || 4;
       let offset = (page - 1) * limit || 0;
@@ -580,7 +580,7 @@ class teamMemberController {
       where.userId = id;
       // where.date = date;
       // ___________----------------------------------------------________________
-  
+
       const data = await ImageUpload.findAndCountAll({
         where: where,
         offset: offset,
@@ -589,11 +589,48 @@ class teamMemberController {
         attributes: ["content"],
       });
       if (!data) data = null;
-  
+
       return helper.success(res, variables.Success, "User Screenshots fetched successfully", data);
     } catch (error) {
       console.log("Error in User Screenshot Team Member Controller: ", error);
       return helper.failed(res, variables.BadRequest, "Unable to retrieve User's Screenshot");
+    }
+  };
+
+  setBucketstorePath = async (req, res) => {
+    const dbTransaction = await sequelize.transaction();
+    try {
+      const bucketStorePrefix = await company.findAll({
+        attributes: ["id", "bucketStorePath"],
+      });
+  
+      const usersNames = await User.findAll({
+        attributes: ["id", "company_id", "fullname"],
+      });
+  
+      usersNames.forEach((element) => {
+        bucketStorePrefix.forEach(async (element2) => {
+          let alterName = element.fullname.toLowerCase().replace(/\s+/g, "_");
+          if (element.company_id == element2.id) {
+            let newPath = element2.bucketStorePath + "/images/" + alterName + "_" + element.id;
+            console.log(newPath);
+            await User.update(
+              {
+                image_storage_path: newPath,
+              },
+              {
+                where: { id: element.id },
+              }
+            );
+          }
+        });
+      });
+      
+      // await dbTransaction.commit();
+      return helper.success(res, variables.Success, "Task Completed", bucketStorePath);
+    } catch (error) {
+      // if(dbTransaction) await dbTransaction.rollback();
+      return helper.success(res, variables.Failed, error.message);
     }
   };
 }

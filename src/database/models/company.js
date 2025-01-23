@@ -56,6 +56,11 @@ const company = sequelize.define(
         return today.toISOString().split('T')[0];
       },
     },
+    bucketStorePath: {
+      type: DataTypes.STRING(500),
+      allowNull: false,
+      unique: true
+    },
     status: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
@@ -96,5 +101,5 @@ const company = sequelize.define(
   }
 );
 
-await company.sync({ alter: 1 });
+// await company.sync({ alter: 1 });
 export default company;

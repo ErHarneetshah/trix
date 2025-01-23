@@ -58,12 +58,15 @@ class authController extends jwtService {
 
       let companyPrefix = await helper.prefixInit(requestData.companyName);
 
+      let bucektStoragePath  = "emon_" + requestData.companyName.toLowerCase().replace(/\s+/g, "_");
+
       //* -------------- Create Company --------------------------
       const createCompany = await company.create(
         {
           name: requestData.companyName,
           email: requestData.email,
           employeeNumber: requestData.employeeNumber,
+          bucektStorePath: bucektStoragePath,
         },
         {
           transaction: dbTransaction,
