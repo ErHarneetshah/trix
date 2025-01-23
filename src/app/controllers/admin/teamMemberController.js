@@ -11,6 +11,7 @@ import { Op } from "sequelize";
 import H from "../../../utils/Mail.js";
 import bcrypt from "bcrypt";
 import company from "../../../database/models/company.js";
+import { ImageUpload } from "../../../database/models/ImageUpload.js";
 
 class teamMemberController {
   getAllTeamMembers = async (req, res) => {
@@ -550,6 +551,49 @@ class teamMemberController {
       console.error("Error deactivateActivateTeamMember:", error.message);
       //helper.logger(res, "Team Member Controller -> deactivateActivateTeamMember", error);
       return helper.failed(res, variables.BadRequest, "Failed to Update User Status");
+    }
+  };
+
+  getUserScreenshots = async (req, res) => {
+    try {
+      const {id} = req.body;
+      let user = await User.findOne({
+        where: { id: id },
+      });
+  
+      if (!user) {
+        return socket.emit("error", {
+          message: "User not found",
+        });
+      }
+  
+      // if (!date || date.trim() === "") {
+      //   const currentDate = new Date();
+      //   date = currentDate.toISOString().split("T")[0];
+      // }
+  
+      let { limit, page } = req.query;
+      limit = parseInt(limit) || 4;
+      let offset = (page - 1) * limit || 0;
+      let where = {};
+      where.company_id = req.user.company_id;
+      where.userId = id;
+      // where.date = date;
+      // ___________----------------------------------------------________________
+  
+      const data = await ImageUpload.findAndCountAll({
+        where: where,
+        offset: offset,
+        limit: limit,
+        order: [["id", "DESC"]],
+        attributes: ["content"],
+      });
+      if (!data) data = null;
+  
+      return helper.success(res, variables.Success, "User Screenshots fetched successfully", data);
+    } catch (error) {
+      console.log("Error in User Screenshot Team Member Controller: ", error);
+      return helper.failed(res, variables.BadRequest, "Unable to retrieve User's Screenshot");
     }
   };
 }

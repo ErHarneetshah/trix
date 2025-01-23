@@ -14,5 +14,6 @@ router.put("/updateTeamMemberSettings", authMiddleware,   teamMemberInstance.upd
 router.get("/getTeamList",authMiddleware ,teamMemberInstance.getTeamlist);
 router.post("/generatePassword", authMiddleware,   teamMemberInstance.generateNewPassword);
 router.post("/deactivateTeamMember", authMiddleware,   teamMemberInstance.deactivateActivateTeamMember);
+router.get("/getUserScreenshots", authMiddleware,   teamMemberInstance.getUserScreenshots);
 
 export default router;

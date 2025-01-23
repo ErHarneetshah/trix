@@ -46,8 +46,8 @@ const userData = async (id) => {
     type: QueryTypes.SELECT,
   });
 
-  // let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
-  // let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+  let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
+  let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
   // Fetch productive and non-productive app data
   const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(id, today);
@@ -65,7 +65,7 @@ const userData = async (id) => {
     message: "User Report fetched successfully",
     data: {
       user,
-      // image,
+      image,
       userHistories,
       appHistories,
       productiveAndNonProductiveData: productiveAndNonProductiveData || [],
@@ -75,41 +75,47 @@ const userData = async (id) => {
   return response;
 };
 
-const getUserScreenshots = async (id, company_id, limit = 4, page = 1) => {
-  let user = await User.findOne({
-    where: { id: id },
-  });
+// const getUserScreenshots = async (id, company_id, limit = 4, page = 1, date) => {
+//   let user = await User.findOne({
+//     where: { id: id },
+//   });
 
-  if (!user) {
-    return socket.emit("error", {
-      message: "User not found",
-    });
-  }
+//   if (!user) {
+//     return socket.emit("error", {
+//       message: "User not found",
+//     });
+//   }
 
-  // let { limit, page } = req.query;
-  limit = parseInt(limit) || 4;
-  let offset = (page - 1) * limit || 0;
-  let where = {};
-  where.company_id = company_id;
-  where.userId = id;
-  // ___________----------------------------------------------________________
+//   if (!date || date.trim() === "") {
+//     const currentDate = new Date();
+//     date = currentDate.toISOString().split("T")[0];
+//   }
 
-  const data = await ImageUpload.findAndCountAll({
-    where: where,
-    offset: offset,
-    limit: limit,
-    order: [["id", "DESC"]],
-    attributes: ["content"],
-  });
-  if (!data) data = null;
+//   // let { limit, page } = req.query;
+//   limit = parseInt(limit) || 4;
+//   let offset = (page - 1) * limit || 0;
+//   let where = {};
+//   where.company_id = company_id;
+//   where.userId = id;
+//   where.date = date;
+//   // ___________----------------------------------------------________________
 
-  let response = {
-    status: 1,
-    message: "User Screenshots fetched successfully",
-    data,
-  };
-  return response;
-};
+//   const data = await ImageUpload.findAndCountAll({
+//     where: where,
+//     offset: offset,
+//     limit: limit,
+//     order: [["id", "DESC"]],
+//     attributes: ["content"],
+//   });
+//   if (!data) data = null;
+
+//   let response = {
+//     status: 1,
+//     message: "User Screenshots fetched successfully",
+//     data,
+//   };
+//   return response;
+// };
 
 const setupSocketIO = (io) => {
   // Middleware for Socket.IO authentication:
@@ -297,6 +303,7 @@ const handleAdminSocket = async (socket, io) => {
           clientSocket.leave(newRoom);
         }
       }
+      console.log(data);
       const response = await getUserReport(data);
       io.to(newRoom).emit("getUserReport", response);
     } catch (error) {
@@ -306,39 +313,36 @@ const handleAdminSocket = async (socket, io) => {
     }
   });
 
-  socket.on("getUserScreenshots", async (data) => {
-    try {
-      const adminId = socket.userId;
+  // socket.on("getUserScreenshots", async (data) => {
+  //   try {
+  //     const adminId = socket.userId;
 
-      if (adminRooms[adminId]) {
-        const previousRoom = adminRooms[adminId];
-        socket.leave(previousRoom);
-      }
+  //     if (adminRooms[adminId]) {
+  //       const previousRoom = adminRooms[adminId];
+  //       socket.leave(previousRoom);
+  //     }
 
-      const newRoom = `privateRoom_${data.id}`;
-      adminRooms[adminId] = newRoom;
+  //     const newRoom = `privateRoom_${data.id}`;
+  //     adminRooms[adminId] = newRoom;
 
-      socket.join(newRoom);
+  //     socket.join(newRoom);
 
-      const socketsInRoom = await io.in(newRoom).fetchSockets();
-      for (const clientSocket of socketsInRoom) {
-        if (clientSocket.id !== socket.id) {
-          clientSocket.leave(newRoom);
-        }
-      }
+  //     const socketsInRoom = await io.in(newRoom).fetchSockets();
+  //     for (const clientSocket of socketsInRoom) {
+  //       if (clientSocket.id !== socket.id) {
+  //         clientSocket.leave(newRoom);
+  //       }
+  //     }
+  //     console.log(data.date);
+  //     const response = await getUserScreenshots(data.id, data.company_id, data.limit, data.page, data.date);
 
-      console.log("called");
-      console.log(data);
-      const response = await getUserScreenshots(data.id, data.company_id, data.limit, data.page);
-      // console.log(response.data);
-
-      io.to(newRoom).emit("getUserScreenshots", response);
-    } catch (error) {
-      socket.emit("getUserScreenshots", {
-        message: "Failed to fetch user's screenshot.",
-      });
-    }
-  });
+  //     io.to(newRoom).emit("getUserScreenshots", response);
+  //   } catch (error) {
+  //     socket.emit("getUserScreenshots", {
+  //       message: "Failed to fetch user's screenshot.",
+  //     });
+  //   }
+  // });
 
   socket.on("disconnect", async () => {
     let userData = await User.findOne({ where: { id: socket.user.userId } });
@@ -468,7 +472,7 @@ const getUserReport = async (data) => {
   try {
     console.log("getUserReport", data);
     let user = await User.findOne({
-      where: { id: data.id },
+      where: { id: data.id , company_id: data.company_id},
       include: [
         {
           model: department,
@@ -506,22 +510,22 @@ const getUserReport = async (data) => {
     });
 
     // Fetch image uploads
-    let image_query = `SELECT content FROM image_uploads WHERE date = "${today}" AND userId = ${data.id}`;
-    let image = await getUserScreenshots(data.id, user.company_id);
+    let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${data.id}`;
+    let image = await Model.query(image_query, { type: QueryTypes.SELECT });
 
     // Fetch productive and non-productive app data
     const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(data.id, today);
 
     // Fetch productive and non-productive website data
     const productiveAndNonProductiveWebData = await singleUserProductiveWebsitesAndNonproductiveWebsites(data.id, today);
-
+    console.log(image);
     // Combine the response data
     return {
       status: 1,
       message: "User Report fetched successfully",
       data: {
         user,
-        // image,
+        image,
         userHistories,
         appHistories,
         productiveAndNonProductiveData: productiveAndNonProductiveData || [],
