@@ -112,12 +112,7 @@ const User = sequelize.define(
     otp_expire_time: {
       type: DataTypes.DATE,
       allowNull: true,
-    },
-    image_storage_path: {
-      type: DataTypes.STRING(500),
-      allowNull: true,
-      // unique: true,
-    },
+    }
   },
   {
     timestamps: true,

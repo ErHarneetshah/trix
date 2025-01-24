@@ -239,7 +239,6 @@ class authController extends jwtService {
       companyUserCount++;
 
       let usersCount = await User.unscoped().count();
-      let image_storage_path = bucketStoragePath + "/images/" + requestData.companyName.toLowerCase().replace(/\s+/g, "_") + "_" + (usersCount + 1);
 
       //* -------------- Create User -------------------------
       const createUser = await User.create(
@@ -259,7 +258,6 @@ class authController extends jwtService {
           app_capture_time: 60,
           broswer_capture_time: 60,
           next_reports_schedule_date: commonfuncitons.getNextMonthDate(),
-          image_storage_path: image_storage_path,
         },
         {
           transaction: dbTransaction,
@@ -273,17 +271,6 @@ class authController extends jwtService {
 
       const userWithRole = createUser.toJSON();
       userWithRole.role = { name: createRole.name };
-
-      let updated_image_storage_path = bucketStoragePath + "/images/" + requestData.companyName.toLowerCase().replace(/\s+/g, "_") + "_" + createUser.id;
-      const updateUser = await User.update(
-        { image_storage_path: updated_image_storage_path },
-        {
-          where: {
-            id: createUser.id,
-          },
-          transaction: dbTransaction,
-        }
-      );
 
       const updateEmpCount = await company.increment(
         { employeeCount: Number(companyUserCount) },
