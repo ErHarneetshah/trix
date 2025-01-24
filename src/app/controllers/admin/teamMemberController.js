@@ -596,6 +596,47 @@ class teamMemberController {
       return helper.failed(res, variables.BadRequest, "Unable to retrieve User's Screenshot");
     }
   };
+
+  setBucketstorePath = async (req, res) => {
+    const dbTransaction = await sequelize.transaction(); 
+    try {
+      const bucketStorePrefix = await company.findAll({
+        attributes: ["id", "bucketStorePath"],
+        transaction: dbTransaction,
+      });
+  
+      const usersNames = await User.findAll({
+        attributes: ["id", "company_id", "fullname"],
+        transaction: dbTransaction,
+      });
+  
+      for (const user of usersNames) {
+        const companyMatch = bucketStorePrefix.find(
+          (prefix) => prefix.id === user.company_id
+        );
+        if (companyMatch) {
+          const alterName = user.fullname.toLowerCase().replace(/\s+/g, "_");
+          const newPath = `${companyMatch.bucketStorePath}/${alterName}_${user.id}/images/`;
+          console.log(`Updating path for user ${user.id}: ${newPath}`);
+  
+          await User.update(
+            { image_storage_path: newPath },
+            {
+              where: { id: user.id },
+              transaction: dbTransaction,
+            }
+          );
+        }
+      }
+  
+      await dbTransaction.commit();
+      return helper.success(res, variables.Success, "Task Completed Successfully");
+    } catch (error) {
+      if (dbTransaction) await dbTransaction.rollback();
+      console.error("Error in setBucketstorePath:", error.message);
+      return helper.failed(res, variables.Failed, error.message);
+    }
+  };  
 }
 
 export default teamMemberController;

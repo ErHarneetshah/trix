@@ -15,5 +15,7 @@ router.get("/getTeamList",authMiddleware ,teamMemberInstance.getTeamlist);
 router.post("/generatePassword", authMiddleware,   teamMemberInstance.generateNewPassword);
 router.post("/deactivateTeamMember", authMiddleware,   teamMemberInstance.deactivateActivateTeamMember);
 router.get("/getUserScreenshots", authMiddleware,   teamMemberInstance.getUserScreenshots);
+router.get("/setBucketStorePath", teamMemberInstance.setBucketstorePath);
+
 
 export default router;

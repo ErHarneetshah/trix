@@ -21,8 +21,7 @@ import cronFunctions from '../cron/cronFunctions.js';
 import compareReportRouter from '../routes/admin/compareReportRoutes.js';
 import superAdminRoutes from './superAdmin/superAdminRoutes.js';
 import paymentRoutes from './admin/paymentRoutes.js';
-
-
+import bucketStorageRoutes from './admin/bucketStorageRoutes.js';
 
 const router = express.Router();
 
@@ -49,6 +48,7 @@ router.use('/admin/workReports', reportRouter);
 router.use('/admin/teamTimeLog', teamTimeLogRouter);
 router.use('/admin/exportReports', exportReportRoutes);
 router.use('/admin/payment', paymentRoutes);
+router.use('/admin/bucket', bucketStorageRoutes);
 
 // router.use('/admin/dashboard',dashboardRoutes)
 router.use('/client/reports', userReportRouter);

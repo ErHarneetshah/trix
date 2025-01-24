@@ -58,12 +58,15 @@ class authController extends jwtService {
 
       let companyPrefix = await helper.prefixInit(requestData.companyName);
 
+      let bucketStoragePath = `/emon_` + requestData.companyName.toLowerCase().replace(/\s+/g, "_");
+
       //* -------------- Create Company --------------------------
       const createCompany = await company.create(
         {
           name: requestData.companyName,
           email: requestData.email,
           employeeNumber: requestData.employeeNumber,
+          bucketStorePath: bucketStoragePath,
         },
         {
           transaction: dbTransaction,
@@ -89,20 +92,23 @@ class authController extends jwtService {
         }
       );
 
-      const createPaymentLog = await paymentLog.create({
-        company_id: createCompany.id,
-        companyName: createCompany.name,
-        companyEmail: createCompany.email,
-        planId: 0,
-        planName: "Trail",
-        amountPaid: 0,
-        allowedEmployeeCount: 10,
-        startDate: moment().tz("Asia/Kolkata").format("YYYY-MM-DD"),
-        endDate: moment().tz("Asia/Kolkata").add(7, "days").format("YYYY-MM-DD"),
-        status: 1,
-      },{
-        transaction: dbTransaction,
-      });
+      const createPaymentLog = await paymentLog.create(
+        {
+          company_id: createCompany.id,
+          companyName: createCompany.name,
+          companyEmail: createCompany.email,
+          planId: 0,
+          planName: "Trail",
+          amountPaid: 0,
+          allowedEmployeeCount: 10,
+          startDate: moment().tz("Asia/Kolkata").format("YYYY-MM-DD"),
+          endDate: moment().tz("Asia/Kolkata").add(7, "days").format("YYYY-MM-DD"),
+          status: 1,
+        },
+        {
+          transaction: dbTransaction,
+        }
+      );
 
       if (!createPaymentLog || !createPaymentLog.id) {
         if (dbTransaction) await dbTransaction.rollback();
@@ -232,6 +238,9 @@ class authController extends jwtService {
 
       companyUserCount++;
 
+      let usersCount = await User.unscoped().count();
+      let image_storage_path = bucketStoragePath + "/images/" + requestData.companyName.toLowerCase().replace(/\s+/g, "_") + "_" + (usersCount + 1);
+
       //* -------------- Create User -------------------------
       const createUser = await User.create(
         {
@@ -250,6 +259,7 @@ class authController extends jwtService {
           app_capture_time: 60,
           broswer_capture_time: 60,
           next_reports_schedule_date: commonfuncitons.getNextMonthDate(),
+          image_storage_path: image_storage_path,
         },
         {
           transaction: dbTransaction,
@@ -263,6 +273,17 @@ class authController extends jwtService {
 
       const userWithRole = createUser.toJSON();
       userWithRole.role = { name: createRole.name };
+
+      let updated_image_storage_path = bucketStoragePath + "/images/" + requestData.companyName.toLowerCase().replace(/\s+/g, "_") + "_" + createUser.id;
+      const updateUser = await User.update(
+        { image_storage_path: updated_image_storage_path },
+        {
+          where: {
+            id: createUser.id,
+          },
+          transaction: dbTransaction,
+        }
+      );
 
       const updateEmpCount = await company.increment(
         { employeeCount: Number(companyUserCount) },
