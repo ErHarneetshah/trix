@@ -115,8 +115,8 @@ const User = sequelize.define(
     },
     image_storage_path: {
       type: DataTypes.STRING(500),
-      allowNull: false,
-      unique: true,
+      allowNull: true,
+      // unique: true,
     },
   },
   {

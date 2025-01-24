@@ -36,7 +36,7 @@ const getSingleBucketCredential = async (req, res) => {
 const addBucketCredential = async (req, res) => {
   const dbTransaction = await sequelize.transaction();
   try {
-    const { access_key, secret_key, bucket_name } = req.body;
+    const { access_key, secret_key, bucket_name, host, region } = req.body;
     const alreadyCredentialsExists = await BucketCredentialsModel.count({
       where: { company_id: req.user.company_id },
     });
@@ -68,6 +68,8 @@ const addBucketCredential = async (req, res) => {
         access_key: access_key,
         secret_key: secret_key,
         bucket_name: bucket_name,
+        host: host,
+        region: region,
       },
       { transaction: dbTransaction }
     );
