@@ -5,7 +5,7 @@ import sequelize from "../queries/dbConnection.js";
 export const bucketImageUpload = sequelize.define(
   "bucket_image_uploads",
   {
-    userId: {
+    user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
@@ -21,7 +21,7 @@ export const bucketImageUpload = sequelize.define(
       type: DataTypes.TEXT("long"),
       allowNull: false,
     },
-    bucekt_owner: {
+    bucket_owner: {
       type: DataTypes.TINYINT,
       allowNull: false,
       default: 1,

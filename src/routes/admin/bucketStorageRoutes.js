@@ -9,9 +9,11 @@ router.get('/getSingleBucketCredential',authMiddleware, bucketStorageController.
 router.post('/addBucketCredential', authMiddleware, bucketStorageController.addBucketCredential);
 router.put('/updateBucketCredential', authMiddleware, bucketStorageController.updateBucketCredential);
 router.delete('/deleteBucketCredential', authMiddleware, bucketStorageController.deleteBucketCredential);
-router.get('/getBucketObjects', authMiddleware, bucketStorageController.getBucketObjects);
-router.post('/uploadBucketImage', authMiddleware, bucketStorageController.uploadBucketImage);
+router.put('/uploadBucketImage', authMiddleware, bucketStorageController.uploadBucketImage);
+router.get('/retrieveBucketImage', authMiddleware, bucketStorageController.retrieveBucketImages);
+router.delete('/deleteBucketImage', bucketStorageController.deleteBucketImage);
 
+// router.get('/getBucketObjects', authMiddleware, bucketStorageController.getBucketObjects);
 
 export default router;
 

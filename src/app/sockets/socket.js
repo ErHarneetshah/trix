@@ -16,6 +16,8 @@ import shift from "../../database/models/shiftModel.js";
 import department from "../../database/models/departmentModel.js";
 import designation from "../../database/models/designationModel.js";
 import helper from "../../utils/services/helper.js";
+import axios from "axios";
+import bucketStorageController from "../controllers/admin/bucketStorageController.js";
 
 const userData = async (id) => {
   let user = await User.findOne({
@@ -75,47 +77,50 @@ const userData = async (id) => {
   return response;
 };
 
-// const getUserScreenshots = async (id, company_id, limit = 4, page = 1, date) => {
-//   let user = await User.findOne({
-//     where: { id: id },
-//   });
+const getUserScreenshots = async (data) => {  
+  let user = await User.findOne({
+    where: { id: data.id },
+  });
+  console.log(user);
+  
 
-//   if (!user) {
-//     return socket.emit("error", {
-//       message: "User not found",
-//     });
-//   }
+  if (!user) {
+    return socket.emit("error", {
+      message: "User not found",
+    });
+  }
 
-//   if (!date || date.trim() === "") {
-//     const currentDate = new Date();
-//     date = currentDate.toISOString().split("T")[0];
-//   }
+  let date;
+  if (!data.date || data.date.trim() === "") {
+    const currentDate = new Date();
+    date = currentDate.toISOString().split("T")[0];
+  }else{
+    date = data.date;
+  }
 
-//   // let { limit, page } = req.query;
-//   limit = parseInt(limit) || 4;
-//   let offset = (page - 1) * limit || 0;
-//   let where = {};
-//   where.company_id = company_id;
-//   where.userId = id;
-//   where.date = date;
-//   // ___________----------------------------------------------________________
+  // ___________----------------------------------------------________________
 
-//   const data = await ImageUpload.findAndCountAll({
-//     where: where,
-//     offset: offset,
-//     limit: limit,
-//     order: [["id", "DESC"]],
-//     attributes: ["content"],
-//   });
-//   if (!data) data = null;
+  // const data = await ImageUpload.findAndCountAll({
+  //   where: where,
+  //   offset: offset,
+  //   limit: limit,
+  //   order: [["id", "DESC"]],
+  //   attributes: ["content"],
+  // });
+  // if (!data) data = null;
 
-//   let response = {
-//     status: 1,
-//     message: "User Screenshots fetched successfully",
-//     data,
-//   };
-//   return response;
-// };
+  let image = await bucketStorageController.retrieveBucketImages(data.company_id, data.id, date, data.limit, data.page);
+  console.log("Get User Screenshots Images: ", image);
+
+  let response = {
+    status: 1,
+    message: "User Screenshots fetched successfully",
+    image,
+  };
+  console.log("Get User Screenshots response: ", response);
+
+  return response;
+};
 
 const setupSocketIO = (io) => {
   // Middleware for Socket.IO authentication:
@@ -303,7 +308,6 @@ const handleAdminSocket = async (socket, io) => {
           clientSocket.leave(newRoom);
         }
       }
-      console.log(data);
       const response = await getUserReport(data);
       io.to(newRoom).emit("getUserReport", response);
     } catch (error) {
@@ -313,36 +317,36 @@ const handleAdminSocket = async (socket, io) => {
     }
   });
 
-  // socket.on("getUserScreenshots", async (data) => {
-  //   try {
-  //     const adminId = socket.userId;
+  socket.on("getUserScreenshots", async (data) => {
+    try {
+      const adminId = socket.userId;
 
-  //     if (adminRooms[adminId]) {
-  //       const previousRoom = adminRooms[adminId];
-  //       socket.leave(previousRoom);
-  //     }
+      if (adminRooms[adminId]) {
+        const previousRoom = adminRooms[adminId];
+        socket.leave(previousRoom);
+      }
 
-  //     const newRoom = `privateRoom_${data.id}`;
-  //     adminRooms[adminId] = newRoom;
+      const newRoom = `privateRoom_${data.id}`;
+      adminRooms[adminId] = newRoom;
 
-  //     socket.join(newRoom);
+      socket.join(newRoom);
 
-  //     const socketsInRoom = await io.in(newRoom).fetchSockets();
-  //     for (const clientSocket of socketsInRoom) {
-  //       if (clientSocket.id !== socket.id) {
-  //         clientSocket.leave(newRoom);
-  //       }
-  //     }
-  //     console.log(data.date);
-  //     const response = await getUserScreenshots(data.id, data.company_id, data.limit, data.page, data.date);
-
-  //     io.to(newRoom).emit("getUserScreenshots", response);
-  //   } catch (error) {
-  //     socket.emit("getUserScreenshots", {
-  //       message: "Failed to fetch user's screenshot.",
-  //     });
-  //   }
-  // });
+      const socketsInRoom = await io.in(newRoom).fetchSockets();
+      for (const clientSocket of socketsInRoom) {
+        if (clientSocket.id !== socket.id) {
+          clientSocket.leave(newRoom);
+        }
+      }
+      const response = await getUserScreenshots(data);
+      io.to(newRoom).emit("getUserScreenshots", response);
+    } catch (error) {
+      console.log({error});
+      
+      socket.emit("getUserScreenshots", {
+        message: "Failed to fetch user report for admin.",
+      });
+    }
+  });
 
   socket.on("disconnect", async () => {
     let userData = await User.findOne({ where: { id: socket.user.userId } });
@@ -470,9 +474,9 @@ const getUserStats = async (io, socket) => {
 
 const getUserReport = async (data) => {
   try {
-    console.log("getUserReport", data);
+    // data = JSON.parse(data);
     let user = await User.findOne({
-      where: { id: data.id , company_id: data.company_id},
+      where: { id: data.id, company_id: data.company_id },
       include: [
         {
           model: department,
@@ -510,15 +514,14 @@ const getUserReport = async (data) => {
     });
 
     // Fetch image uploads
-    let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${data.id}`;
-    let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+    let image = await bucketStorageController.retrieveBucketImagesSeparate(data.company_id, data.id, today);
+    console.log("image: ", image);
 
     // Fetch productive and non-productive app data
     const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(data.id, today);
 
     // Fetch productive and non-productive website data
     const productiveAndNonProductiveWebData = await singleUserProductiveWebsitesAndNonproductiveWebsites(data.id, today);
-    console.log(image);
     // Combine the response data
     return {
       status: 1,
@@ -1014,41 +1017,64 @@ const handleUserSocket = async (socket, io) => {
   });
 
   //! Commented For Now By Harneet
-  // socket.on("uploadImage", async (data) => {
-  //   try {
+  socket.on("uploadImage", async (data) => {
+    try {
+      let today = new Date().toISOString().split("T")[0];
+      let userId = socket.user.userId;
+      console.log("uploadImage called");
 
-  //     let today = new Date().toISOString().split("T")[0];
-  //     let userId = socket.user.userId;
+      let user = await User.findOne({ where: { id: userId } });
+      if (!user) {
+        socket.emit("imageError", { message: "Unauthorized access" });
+        return;
+      }
+      let company_id = user?.company_id;
 
-  //     let user = await User.findOne({ where: { id: userId } });
-  //     if (!user) {
-  //       socket.emit("imageError", { message: "Unauthorized access" });
-  //       return;
-  //     }
-  //     let company_id = user?.company_id;
+      if (!data.images || data.images.length === 0) {
+        socket.emit("imageError", { message: "Invalid data" });
+        return;
+      }
 
-  //     if (!data.images || data.images.length === 0) {
-  //       socket.emit("imageError", { message: "Invalid data" });
-  //       return;
-  //     }
+      // await Promise.all(
+      //   data.images.map((image) =>
+      //     // ImageUpload.create({
+      //     //   userId,
+      //     //   date: today,
+      //     //   company_id,
+      //     //   content: `data:image/png;base64,${image.data}`,
+      //     // })
+      //     // console.log(image.data)
+      // ));
 
-  //     await Promise.all(
-  //       data.images.map((image) =>
-  //         ImageUpload.create({
-  //           userId,
-  //           date: today,
-  //           company_id,
-  //           content: `data:image/png;base64,${image.data}`,
-  //         })
-  //       )
-  //     );
-  //     io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
-  //     socket.emit("imageSuccess", { message: "Images uploaded successfully" });
-  //   } catch (error) {
-  //     console.log("Error uploading images:", error);
-  //     socket.emit("imageError", { message: "Failed to upload images" });
-  //   }
-  // });
+      await Promise.all(
+        data.images.map((image) => {
+          const req = {
+            body: {
+              user_id: userId,
+              company_id: company_id,
+              image_data: `${image.data}`,
+            },
+          };
+
+          const res = {
+            status: (code) => ({
+              json: (data) => {
+                // console.log("Response:", code, data);
+              },
+            }),
+          };
+
+          // return bucketStorageController.uploadBucketImage(req, res);
+          bucketStorageController.uploadBucketImage(req, res);
+        })
+      );
+      io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
+      socket.emit("imageSuccess", { message: "Images uploaded successfully" });
+    } catch (error) {
+      console.log("Error uploading images:", error);
+      socket.emit("imageError", { message: "Failed to upload images" });
+    }
+  });
 
   socket.on("uploadAppHistory", async (data) => {
     try {
@@ -1133,7 +1159,7 @@ const handleUserSocket = async (socket, io) => {
       let shiftData = await getShiftData(userData.teamId);
       let [endHours, endMinutes] = shiftData.end_time.split(":").map(Number);
       let [loginHours, loginMinutes] = time_data.logged_in_time.split(":").map(Number);
-      console.log({ time_data: time_data.logged_in_time });
+      // console.log({ time_data: time_data.logged_in_time });
 
       let shiftEndTimeInMinutes = endHours * 60 + endMinutes;
       let loginTimeInMinutes = loginHours * 60 + loginMinutes;
