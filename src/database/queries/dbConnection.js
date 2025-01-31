@@ -4,6 +4,8 @@ import appConfig from "../../app/config/appConfig.js";
 
 const dbConfig = new appConfig().getConfig();
 
+console.log({dbConfig})
+
 async function ensureDatabaseExists() {
   const { host, username, password, database, collation } = dbConfig;
 
@@ -29,19 +31,16 @@ async function ensureDatabaseExists() {
 await ensureDatabaseExists();
 
 const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.password, {
-  host: dbConfig.host,
-  dialect: "mysql",
-  logging: false,
-  timezone: "+05:30", // Asia/Kolkata timezone
-  dialectOptions: {
-    connectTimeout: 60000, // 60 seconds
-  },
-  pool: {
-    max: 40,
-    min: 10,
-    acquire: 120000,
-    idle: 60000,
-  },
+    host: dbConfig.host,
+    dialect: 'mysql',
+    logging: false,
+    timezone: '+05:30', // Asia/Kolkata timezone
+    pool: {
+        max: 50,
+        min: 5,
+        acquire: 120000,
+        idle: 180000,
+    },
 });
 
 try {
