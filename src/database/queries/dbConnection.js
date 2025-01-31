@@ -4,6 +4,8 @@ import appConfig from '../../app/config/appConfig.js';
 
 const dbConfig = new appConfig().getConfig();
 
+console.log({dbConfig})
+
 async function ensureDatabaseExists() {
     const { host, username, password, database, collation } = dbConfig;
 
