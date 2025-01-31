@@ -34,10 +34,10 @@ const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.p
     logging: false,
     timezone: '+05:30', // Asia/Kolkata timezone
     pool: {
-        max: 20,
-        min: 2,
-        acquire: 30000,
-        idle: 60000,
+        max: 50,
+        min: 5,
+        acquire: 120000,
+        idle: 180000,
     },
 });
 
