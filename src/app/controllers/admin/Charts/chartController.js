@@ -843,6 +843,14 @@ const activityData = async (req, res, next) => {
     const nonProductiveAppsData = await nonProductiveAppsChart('', '', '', 'function', { filterType, dateOption,company_id });
     const nonProductiveWebsiteData = await NonProductiveWebsiteChart('', '', '', 'function', { filterType, dateOption,company_id });
 
+    // console.log({
+    //   "Productive Apps Data": productiveAppsData, 
+    //   "Productive Website Data": productiveWebsiteData, 
+    //   "Non-Productive Apps Data": nonProductiveAppsData, 
+    //   "Non-Productive Website Data": nonProductiveWebsiteData
+    // })
+
+
     const periods = productiveAppsData.map((item) => item.period);
     // Transform data for seriesData
     const seriesData = [

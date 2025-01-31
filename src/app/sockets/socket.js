@@ -18,6 +18,8 @@ import designation from "../../database/models/designationModel.js";
 import helper from "../../utils/services/helper.js";
 import axios from "axios";
 import bucketStorageController from "../controllers/admin/bucketStorageController.js";
+import { bucketImageUpload } from "../../database/models/bucketImageModel.js";
+import { BucketCredentialsModel } from "../../database/models/BucketCredentialModel.js";
 
 const userData = async (id) => {
   let user = await User.findOne({
@@ -77,12 +79,10 @@ const userData = async (id) => {
   return response;
 };
 
-const getUserScreenshots = async (data) => {  
+const getUserScreenshots = async (data) => {
   let user = await User.findOne({
     where: { id: data.id },
   });
-  console.log(user);
-  
 
   if (!user) {
     return socket.emit("error", {
@@ -94,7 +94,7 @@ const getUserScreenshots = async (data) => {
   if (!data.date || data.date.trim() === "") {
     const currentDate = new Date();
     date = currentDate.toISOString().split("T")[0];
-  }else{
+  } else {
     date = data.date;
   }
 
@@ -110,15 +110,12 @@ const getUserScreenshots = async (data) => {
   // if (!data) data = null;
 
   let image = await bucketStorageController.retrieveBucketImages(data.company_id, data.id, date, data.limit, data.page);
-  console.log("Get User Screenshots Images: ", image);
 
   let response = {
     status: 1,
     message: "User Screenshots fetched successfully",
     image,
   };
-  console.log("Get User Screenshots response: ", response);
-
   return response;
 };
 
@@ -290,6 +287,7 @@ const handleAdminSocket = async (socket, io) => {
 
   socket.on("getUserReport", async (data) => {
     try {
+      console.log("Emit Socket: ", data.id);
       const adminId = socket.userId;
 
       if (adminRooms[adminId]) {
@@ -340,8 +338,8 @@ const handleAdminSocket = async (socket, io) => {
       const response = await getUserScreenshots(data);
       io.to(newRoom).emit("getUserScreenshots", response);
     } catch (error) {
-      console.log({error});
-      
+      console.log({ error });
+
       socket.emit("getUserScreenshots", {
         message: "Failed to fetch user report for admin.",
       });
@@ -475,6 +473,9 @@ const getUserStats = async (io, socket) => {
 const getUserReport = async (data) => {
   try {
     // data = JSON.parse(data);
+    console.log("Get User Report: ", data);
+    console.log(".................................................................");
+
     let user = await User.findOne({
       where: { id: data.id, company_id: data.company_id },
       include: [
@@ -514,8 +515,7 @@ const getUserReport = async (data) => {
     });
 
     // Fetch image uploads
-    let image = await bucketStorageController.retrieveBucketImagesSeparate(data.company_id, data.id, today);
-    console.log("image: ", image);
+    let image = await retrieveBucketImagesSeparate(data.company_id, data.id, today);
 
     // Fetch productive and non-productive app data
     const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(data.id, today);
@@ -542,6 +542,41 @@ const getUserReport = async (data) => {
 };
 
 // APP Data Calculate:  ----->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+const retrieveBucketImagesSeparate = async (company_id, user_id, date) => {
+  try {
+    let getBucketCredentials = await BucketCredentialsModel.findOne({
+      where: { company_id: company_id },
+    });
+    if (!getBucketCredentials) {
+      getBucketCredentials = {
+        host: process.env.LINODE_HOST,
+        region: process.env.LINODE_REGION,
+        access_key: process.env.LINODE_ACCESS_KEY,
+        secret_key: process.env.LINODE_SECRET_KEY,
+        bucket_name: process.env.LINODE_BUCKET_NAME,
+      };
+    }
+
+    let keys = [];
+
+    const imageRecords = await bucketImageUpload.findAll({
+      where: { user_id: user_id, company_id: company_id, date: date },
+      order: [["createdAt", "DESC"]],
+    });
+
+    console.log(imageRecords.length);
+
+    for (const record of imageRecords) {
+      keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path });
+    }
+
+    return keys;
+  } catch (error) {
+    console.log("Error in Bucket Controller (retrieveBucketImages): ", error.message);
+    return [];
+  }
+};
 
 const singleUserProductiveAppAndNonproductiveApps = async (userId, date) => {
   try {
@@ -1021,7 +1056,6 @@ const handleUserSocket = async (socket, io) => {
     try {
       let today = new Date().toISOString().split("T")[0];
       let userId = socket.user.userId;
-      console.log("uploadImage called");
 
       let user = await User.findOne({ where: { id: userId } });
       if (!user) {

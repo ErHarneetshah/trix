@@ -38,4 +38,4 @@ export const bucketImageUpload = sequelize.define(
   }
 );
 
-await bucketImageUpload.sync({ alter: 1 });
+// await bucketImageUpload.sync({ alter: 1 });

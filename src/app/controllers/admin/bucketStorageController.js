@@ -308,6 +308,7 @@ const deleteBucketImage = async (req, res) => {
 const retrieveBucketImages = async (company_id, user_id, date, limit = null, page = null) => {
   const dbTransaction = await sequelize.transaction();
   try {
+    console.log("Not Separate ---------------------------------------------------------------")
     console.log("Company_id: ", company_id);
     console.log("User_id: ", user_id);
     console.log("Date: ", date)
@@ -362,7 +363,6 @@ const retrieveBucketImages = async (company_id, user_id, date, limit = null, pag
       count: imageRecords.count,
       data: keys
     }
-    console.log(data);
     return data;
   } catch (error) {
     console.log("Error in Bucket Controller (retrieveBucketImages): ", error.message);
@@ -370,60 +370,65 @@ const retrieveBucketImages = async (company_id, user_id, date, limit = null, pag
   }
 };
 
-const retrieveBucketImagesSeparate = async (company_id, user_id, date, limit = null, page = null) => {
-  const dbTransaction = await sequelize.transaction();
-  try {
-    console.log("Company_id: ", company_id);
-    console.log("User_id: ", user_id);
-    console.log("Date: ", date)
-    let getBucketCredentials = await BucketCredentialsModel.findOne({
-      where: { company_id: company_id },
-    });
-    if (!getBucketCredentials) {
-      getBucketCredentials = {
-        host: process.env.LINODE_HOST,
-        region: process.env.LINODE_REGION,
-        access_key: process.env.LINODE_ACCESS_KEY,
-        secret_key: process.env.LINODE_SECRET_KEY,
-        bucket_name: process.env.LINODE_BUCKET_NAME,
-      };
-    }
+// const retrieveBucketImagesSeparate = async (company_id, user_id, date, limit = null, page = null) => {
+//   const dbTransaction = await sequelize.transaction();
+//   try {
+//     console.log("Separate >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+//     console.log("Company_id: ", company_id);
+//     console.log("User_id: ", user_id);
+//     console.log("Date: ", date)
+//     console.log("Limit: ", limit)
+//     console.log("Page: ", page)
+//     let getBucketCredentials = await BucketCredentialsModel.findOne({
+//       where: { company_id: company_id },
+//     });
+//     if (!getBucketCredentials) {
+//       getBucketCredentials = {
+//         host: process.env.LINODE_HOST,
+//         region: process.env.LINODE_REGION,
+//         access_key: process.env.LINODE_ACCESS_KEY,
+//         secret_key: process.env.LINODE_SECRET_KEY,
+//         bucket_name: process.env.LINODE_BUCKET_NAME,
+//       };
+//     }
 
-    let keys = [];
-    let offset = null;
-    let imageRecords;
+//     let keys = [];
+//     let offset = null;
+//     let imageRecords;
 
-    if (!limit || !page) {
-      imageRecords = await bucketImageUpload.findAndCountAll({
-        where: {user_id: user_id, company_id: company_id, date: date},
-        order: [["createdAt", "DESC"]],
-      });
-    } else {
-      limit = parseInt(limit) || 4;
-      offset = (page - 1) * limit || 0;
-      let where = {};
-      where.company_id = company_id;
-      where.user_id = user_id;
-      where.date = date;
+//     if (!limit || !page) {
+//       imageRecords = await bucketImageUpload.findAndCountAll({
+//         where: {user_id: user_id, company_id: company_id, date: date},
+//         order: [["createdAt", "DESC"]],
+//       });
+//     } else {
+//       limit = parseInt(limit) || 4;
+//       offset = (page - 1) * limit || 0;
+//       let where = {};
+//       where.company_id = company_id;
+//       where.user_id = user_id;
+//       where.date = date;
 
-      imageRecords = await bucketImageUpload.findAndCountAll({
-        where: where,
-        offset: offset,
-        limit: limit,
-        order: [["createdAt", "DESC"]],
-      });
-    }
+//       imageRecords = await bucketImageUpload.findAndCountAll({
+//         where: where,
+//         offset: offset,
+//         limit: limit,
+//         order: [["createdAt", "DESC"]],
+//       });
+//     }
 
-    for (const record of imageRecords.rows) {
-      keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path });
-    }
+//     console.log(imageRecords.rows.length);
 
-    return keys;
-  } catch (error) {
-    console.log("Error in Bucket Controller (retrieveBucketImages): ", error.message);
-    return [];
-  }
-};
+//     for (const record of imageRecords.rows) {
+//       keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path });
+//     }
+
+//     return keys;
+//   } catch (error) {
+//     console.log("Error in Bucket Controller (retrieveBucketImages): ", error.message);
+//     return [];
+//   }
+// };
 
 export default {
   getAllBucketCredentials,
@@ -435,5 +440,5 @@ export default {
   // getBucketObjects,
   deleteBucketImage,
   retrieveBucketImages,
-  retrieveBucketImagesSeparate,
+  // retrieveBucketImagesSeparate,
 };

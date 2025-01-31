@@ -6,6 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon app.js",
+    "start-pm2": "pm2 start app.js --name Emonitrix --watch",
+    "stop-pm2": "pm2 stop Emonitrix",
+    "list-pm2": "pm2 list",
+    "logs-pm2": "pm2 logs Emonitrix",
     "generatePass": "node src/utils/development/generateBycrptPass.js",
     "generateSecretKey": "node src/utils/development/generateSecretKey.js",
     "seedTeamMemberDailyLog": "node src/database/seeders/seedTeamMemberDailyLog.js",
@@ -54,6 +58,7 @@
     "pdf-parse": "^1.1.1",
     "pdf2json": "^3.1.4",
     "pdfkit": "^0.15.2",
+    "pm2": "^5.4.3",
     "punycode": "^2.3.1",
     "sequelize": "^6.37.5",
     "socket.io": "^4.8.1",
