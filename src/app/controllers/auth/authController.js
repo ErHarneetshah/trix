@@ -445,6 +445,9 @@ class authController extends jwtService {
       if (!user.status) {
         return helper.sendResponse(res, variables.Unauthorized, 0, null, "Your Account has been De-Activated. Contact Support");
       }
+
+
+
       let token;
       if (user.isAdmin) {
         //Deleting previous sessions here
@@ -499,8 +502,9 @@ class authController extends jwtService {
         const generatedToken = await createAccessToken(user.id, user.isAdmin, user.company_id, token, expireTime, dbTransaction);
         if (!generatedToken) return helper.sendResponse(res, variables.BadRequest, 0, null, "Token Did not saved in db");
       }
+
       await dbTransaction.commit();
-      return helper.sendResponse(res, variables.Success, 1, { token: token, user: user }, "Login Successfully");
+      return helper.sendResponse(res, variables.Success, 1, { token: token, user: user, bucket_storage_key: companyDetails.bucketStorePath }, "Login Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       //helper.logger(res, "Auth Controller -> login", error);

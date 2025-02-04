@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon app.js",
     "start-pm2": "pm2 start app.js --name Emonitrix --watch",
+    "runtime-pm2": "pm2-runtime app.js --name Emonitrix",
     "stop-pm2": "pm2 stop Emonitrix",
     "list-pm2": "pm2 list",
     "logs-pm2": "pm2 logs Emonitrix",

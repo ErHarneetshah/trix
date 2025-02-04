@@ -193,7 +193,7 @@ const deleteBucketCredential = async (req, res) => {
 const uploadBucketImage = async (req, res) => {
   const dbTransaction = await sequelize.transaction();
   try {
-    let { user_id, company_id, image_data } = req.body;
+    let { user_id, company_id, data } = req.body;
 
     let getBucketCredentials = await BucketCredentialsModel.findOne({
       where: { company_id: company_id },
@@ -208,31 +208,34 @@ const uploadBucketImage = async (req, res) => {
       attributes: ["bucketStorePath"],
     });
 
-    const response = await axios.post(`${appConfigInstance.getBucketUrl()}/api/upload/uploadMedia`, {
-      product_key: appConfigInstance.getEmonKey(),
-      credentials: getBucketCredentials,
-      mediaData: image_data,
-      mediaType: 1,
-      key: uploadKey.bucketStorePath,
-    });
+    // const response = await axios.post(`${appConfigInstance.getBucketUrl()}/api/upload/uploadMedia`, {
+    //   product_key: appConfigInstance.getEmonKey(),
+    //   credentials: getBucketCredentials,
+    //   mediaData: image_data,
+    //   mediaType: 1,
+    //   key: uploadKey.bucketStorePath,
+    // });
 
-    if (response.data.status) {
+    // if (response.data.status) {
+    for (const image_data of data.images) {
       await bucketImageUpload.create(
         {
           user_id: user_id,
           company_id: company_id,
-          image_name: response.data.data.image_name,
-          image_upload_path: response.data.data.image_upload_path,
-          bucket_owner: response.data.data.bucket_owner,
-          date: response.data.data.date,
+          image_name: image_data.name,
+          image_upload_path: image_data.data,
+          bucket_owner: 1,
+          date: new Date().toISOString().split("T")[0],
         },
         { transaction: dbTransaction }
       );
-      await dbTransaction.commit();
-      return helper.success(res, variables.Success, response.data.message, response.data.data);
-    } else {
-      return helper.failed(res, variables.BadRequest, response.data.message);
-    }
+    };
+    await dbTransaction.commit();
+    console.log("Image uploaded");
+    return helper.success(res, variables.Success, "Image Uploaded Successfully");
+    // } else {
+    //   return helper.failed(res, variables.BadRequest, response.data.message);
+    // }
   } catch (error) {
     console.log("Error in Bucket Controller (uploadBucketImage): ", error.message);
     await dbTransaction.rollback();
@@ -308,10 +311,10 @@ const deleteBucketImage = async (req, res) => {
 const retrieveBucketImages = async (company_id, user_id, date, limit = null, page = null) => {
   const dbTransaction = await sequelize.transaction();
   try {
-    console.log("Not Separate ---------------------------------------------------------------")
+    console.log("Not Separate ---------------------------------------------------------------");
     console.log("Company_id: ", company_id);
     console.log("User_id: ", user_id);
-    console.log("Date: ", date)
+    console.log("Date: ", date);
     let getBucketCredentials = await BucketCredentialsModel.findOne({
       where: { company_id: company_id },
     });
@@ -331,7 +334,7 @@ const retrieveBucketImages = async (company_id, user_id, date, limit = null, pag
 
     if (!limit || !page) {
       imageRecords = await bucketImageUpload.findAndCountAll({
-        where: {user_id: user_id, company_id: company_id, date: date},
+        where: { user_id: user_id, company_id: company_id, date: date },
         order: [["createdAt", "DESC"]],
       });
     } else {
@@ -361,8 +364,8 @@ const retrieveBucketImages = async (company_id, user_id, date, limit = null, pag
       offset: offset,
       page: page,
       count: imageRecords.count,
-      data: keys
-    }
+      data: keys,
+    };
     return data;
   } catch (error) {
     console.log("Error in Bucket Controller (retrieveBucketImages): ", error.message);
