@@ -190,33 +190,67 @@ const deleteBucketCredential = async (req, res) => {
 //   }
 // };
 
+/*
+!Previous Bucket Upload Image Code
+ */
+// const uploadBucketImage = async (req, res) => {
+//   const dbTransaction = await sequelize.transaction();
+//   try {
+//     let { user_id, company_id, data } = req.body;
+
+//     let getBucketCredentials = await BucketCredentialsModel.findOne({
+//       where: { company_id: company_id },
+//     });
+
+//     if (!getBucketCredentials) {
+//       getBucketCredentials = null;
+//     }
+
+//     const uploadKey = await company.findOne({
+//       where: { id: company_id },
+//       attributes: ["bucketStorePath"],
+//     });
+
+//     // const response = await axios.post(`${appConfigInstance.getBucketUrl()}/api/upload/uploadMedia`, {
+//     //   product_key: appConfigInstance.getEmonKey(),
+//     //   credentials: getBucketCredentials,
+//     //   mediaData: image_data,
+//     //   mediaType: 1,
+//     //   key: uploadKey.bucketStorePath,
+//     // });
+
+//     // if (response.data.status) {
+//     for (const image_data of data.images) {
+//       await bucketImageUpload.create(
+//         {
+//           user_id: user_id,
+//           company_id: company_id,
+//           image_name: image_data.name,
+//           image_upload_path: image_data.data,
+//           bucket_owner: 1,
+//           date: new Date().toISOString().split("T")[0],
+//         },
+//         { transaction: dbTransaction }
+//       );
+//     };
+//     await dbTransaction.commit();
+//     console.log("Image uploaded");
+//     return helper.success(res, variables.Success, "Image Uploaded Successfully");
+//     // } else {
+//     //   return helper.failed(res, variables.BadRequest, response.data.message);
+//     // }
+//   } catch (error) {
+//     console.log("Error in Bucket Controller (uploadBucketImage): ", error.message);
+//     await dbTransaction.rollback();
+//     return helper.failed(res, variables.BadRequest, "Unable to upload Image");
+//   }
+// };
+
 const uploadBucketImage = async (req, res) => {
   const dbTransaction = await sequelize.transaction();
   try {
     let { user_id, company_id, data } = req.body;
 
-    let getBucketCredentials = await BucketCredentialsModel.findOne({
-      where: { company_id: company_id },
-    });
-
-    if (!getBucketCredentials) {
-      getBucketCredentials = null;
-    }
-
-    const uploadKey = await company.findOne({
-      where: { id: company_id },
-      attributes: ["bucketStorePath"],
-    });
-
-    // const response = await axios.post(`${appConfigInstance.getBucketUrl()}/api/upload/uploadMedia`, {
-    //   product_key: appConfigInstance.getEmonKey(),
-    //   credentials: getBucketCredentials,
-    //   mediaData: image_data,
-    //   mediaType: 1,
-    //   key: uploadKey.bucketStorePath,
-    // });
-
-    // if (response.data.status) {
     for (const image_data of data.images) {
       await bucketImageUpload.create(
         {
@@ -232,14 +266,11 @@ const uploadBucketImage = async (req, res) => {
     };
     await dbTransaction.commit();
     console.log("Image uploaded");
-    return helper.success(res, variables.Success, "Image Uploaded Successfully");
-    // } else {
-    //   return helper.failed(res, variables.BadRequest, response.data.message);
-    // }
+    return { status: 1, message: "Image Uploaded Successfully"};
   } catch (error) {
     console.log("Error in Bucket Controller (uploadBucketImage): ", error.message);
     await dbTransaction.rollback();
-    return helper.failed(res, variables.BadRequest, "Unable to upload Image");
+    return { status: 0, message: "Unable to upload Image"};
   }
 };
 

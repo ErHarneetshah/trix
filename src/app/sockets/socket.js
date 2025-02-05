@@ -1,5 +1,5 @@
 import { getShiftData, verifyToken } from "../../utils/validations/socketValidation.js";
-import { Notification } from "../../database/models/Notification.js";
+import { Notification, sequelize } from "../../database/models/Notification.js";
 import { UserHistory } from "../../database/models/UserHistory.js";
 import User from "../../database/models/userModel.js";
 import AppHistoryEntry from "../../database/models/AppHistoryEntry.js";
@@ -50,8 +50,9 @@ const userData = async (id) => {
     type: QueryTypes.SELECT,
   });
 
-  let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
-  let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+  // let image_query = `SELECT content FROM image_uploads where date = "${today}" AND userId = ${id}`;
+  // let image = await Model.query(image_query, { type: QueryTypes.SELECT });
+  let image = await retrieveBucketImagesSeparate(user.company_id, id, today);
 
   // Fetch productive and non-productive app data
   const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(id, today);
@@ -110,6 +111,7 @@ const getUserScreenshots = async (data) => {
   // if (!data) data = null;
 
   let image = await bucketStorageController.retrieveBucketImages(data.company_id, data.id, date, data.limit, data.page);
+  console.log("Get User Screenshots: ", image)
 
   let response = {
     status: 1,
@@ -516,6 +518,7 @@ const getUserReport = async (data) => {
 
     // Fetch image uploads
     let image = await retrieveBucketImagesSeparate(data.company_id, data.id, today);
+    console.log("Get User Report Image: ", image);
 
     // Fetch productive and non-productive app data
     const productiveAndNonProductiveData = await singleUserProductiveAppAndNonproductiveApps(data.id, today);
@@ -545,6 +548,7 @@ const getUserReport = async (data) => {
 
 const retrieveBucketImagesSeparate = async (company_id, user_id, date) => {
   try {
+    console.log("Retrieve Bucket Image: ",{company_id, user_id, date})
     let getBucketCredentials = await BucketCredentialsModel.findOne({
       where: { company_id: company_id },
     });
@@ -565,12 +569,12 @@ const retrieveBucketImagesSeparate = async (company_id, user_id, date) => {
       order: [["createdAt", "DESC"]],
     });
 
-    console.log(imageRecords.length);
+    console.log("imageRecords.length: ",imageRecords.length);
 
     for (const record of imageRecords) {
       keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path });
     }
-
+    console.log("Keys: ",keys);
     return keys;
   } catch (error) {
     console.log("Error in Bucket Controller (retrieveBucketImages): ", error.message);
@@ -1054,6 +1058,7 @@ const handleUserSocket = async (socket, io) => {
   //! Commented For Now By Harneet
   socket.on("uploadImage", async (data) => {
     try {
+      console.log(data);
       let today = new Date().toISOString().split("T")[0];
       let userId = socket.user.userId;
 
@@ -1064,23 +1069,6 @@ const handleUserSocket = async (socket, io) => {
       }
       let company_id = user?.company_id;
 
-      // if (!data.images || data.images.length === 0) {
-      //   socket.emit("imageError", { message: "Invalid data" });
-      //   return;
-      // }
-      console.log("Upload Image: ", data);
-      console.log("=================================================================");
-
-      // await Promise.all(
-      //   data.images.map((image) =>
-      //     // ImageUpload.create({
-      //     //   userId,
-      //     //   date: today,
-      //     //   company_id,
-      //     //   content: `data:image/png;base64,${image.data}`,
-      //     // })
-      //     // console.log(image.data)
-      // ));
       const req = {
         body: {
           user_id: userId,
@@ -1092,34 +1080,11 @@ const handleUserSocket = async (socket, io) => {
       const res = {
         status: (code) => ({
           json: (data) => {
-            // console.log("Response:", code, data);
           },
         }),
       };
       await bucketStorageController.uploadBucketImage(req, res);
 
-      // await Promise.all(
-      //   data.map((image) => {
-      //     const req = {
-      //       body: {
-      //         user_id: userId,
-      //         company_id: company_id,
-      //         image_data: `${image}`,
-      //       },
-      //     };
-
-      //     const res = {
-      //       status: (code) => ({
-      //         json: (data) => {
-      //           // console.log("Response:", code, data);
-      //         },
-      //       }),
-      //     };
-
-      //     // return bucketStorageController.uploadBucketImage(req, res);
-      //     // bucketStorageController.uploadBucketImage(req, res);
-      //   })
-      // );
       io.to(`privateRoom_${userId}`).emit("getUserReport", await userData(userId));
       socket.emit("imageSuccess", { message: "Images uploaded successfully" });
     } catch (error) {

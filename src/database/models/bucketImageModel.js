@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../queries/dbConnection.js";
-// import { getUserStats } from "../../app/sockets/socket.js";
 
 export const bucketImageUpload = sequelize.define(
   "bucket_image_uploads",
