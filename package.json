@@ -23,6 +23,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.744.0",
     "@sequelize/core": "^7.0.0-alpha.43",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",

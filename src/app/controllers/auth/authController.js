@@ -28,6 +28,7 @@ import validate from "../../../utils/CustomValidation.js";
 import H from "../../../utils/Mail.js";
 import paymentLog from "../../../database/models/paymentLogModel.js";
 import moment from "moment";
+import { BucketCredentialsModel } from "../../../database/models/BucketCredentialModel.js";
 
 class authController extends jwtService {
   companyRegister = async (req, res) => {
@@ -446,8 +447,6 @@ class authController extends jwtService {
         return helper.sendResponse(res, variables.Unauthorized, 0, null, "Your Account has been De-Activated. Contact Support");
       }
 
-
-
       let token;
       if (user.isAdmin) {
         //Deleting previous sessions here
@@ -493,7 +492,7 @@ class authController extends jwtService {
         //   return helper.sendResponse(res, variables.Forbidden, 0, {}, "Your shift is over. You cannot log in at this time.");
         // }
 
-        //Deleting previous sessions here
+        // Deleting previous sessions here
         // await accessToken.destroy({ where: { userId: user.id } }); //! commenting for now
 
         token = this.generateToken(user.id.toString(), user.isAdmin, user.company_id, "1d");
@@ -503,11 +502,18 @@ class authController extends jwtService {
         if (!generatedToken) return helper.sendResponse(res, variables.BadRequest, 0, null, "Token Did not saved in db");
       }
 
+      let isBucketExist = false;
+      if (companyDetails.currentPlanId != 0) {
+        const bucketCheck = await BucketCredentialsModel.findOne({
+          where: { company_id: companyDetails.id },
+        });
+        if (bucketCheck) isBucketExist = true;
+      }
+
       await dbTransaction.commit();
-      return helper.sendResponse(res, variables.Success, 1, { token: token, user: user, bucket_storage_key: companyDetails.bucketStorePath }, "Login Successfully");
+      return helper.sendResponse(res, variables.Success, 1, { token: token, user: user, bucket_storage_key: companyDetails.bucketStorePath, bucket_credentials_provided: isBucketExist }, "Login Successfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
-      //helper.logger(res, "Auth Controller -> login", error);
       return helper.sendResponse(res, variables.Forbidden, 0, null, error.message);
     }
   };

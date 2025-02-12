@@ -213,17 +213,16 @@ class teamMemberController {
         where: { email: requestData.email, company_id: req.user.company_id },
         transaction: dbTransaction,
       });
+      if (existingUser) {
+        return helper.failed(res, variables.BadRequest, "User already exists with this mail!");
+      }
 
       const existingAnyUser = await User.findOne({
         where: { email: requestData.email },
         transaction: dbTransaction,
       });
-      if (existingUser) {
+      if (existingAnyUser) {
         return helper.failed(res, variables.BadRequest, "This mail already exists in emonitrix system!");
-      }
-
-      if (existingUser) {
-        return helper.failed(res, variables.BadRequest, "User already exists with this mail!");
       }
 
       const plainTextPassword = await helper.generatePass();

@@ -71,7 +71,5 @@ const fileUpload = async (req, res, next) => {
 
 
 
-
-
 export default fileUpload;
 

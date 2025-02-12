@@ -40,12 +40,12 @@ const userData = async (id) => {
 
   let today = new Date().toISOString().split("T")[0];
 
-  let web_query = `SELECT url , count(id) as visits FROM user_histories where date = "${today}" AND userId = ${id} GROUP by url`;
+  let web_query = `SELECT url, createdAt, count(id) as visits FROM user_histories where date = "${today}" AND userId = ${id} GROUP by url`;
   let userHistories = await Model.query(web_query, {
     type: QueryTypes.SELECT,
   });
 
-  let app_query = `SELECT appName , count(id) as visits FROM app_histories where date = "${today}" AND userId = ${id} GROUP by appName`;
+  let app_query = `SELECT appName, createdAt, count(id) as visits FROM app_histories where date = "${today}" AND userId = ${id} GROUP by appName`;
   let appHistories = await Model.query(app_query, {
     type: QueryTypes.SELECT,
   });
@@ -337,6 +337,7 @@ const handleAdminSocket = async (socket, io) => {
           clientSocket.leave(newRoom);
         }
       }
+      console.log("Get User Screeshots Emit: ", data)
       const response = await getUserScreenshots(data);
       io.to(newRoom).emit("getUserScreenshots", response);
     } catch (error) {
@@ -505,13 +506,13 @@ const getUserReport = async (data) => {
     let today = data.date ? new Date(data.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
 
     // Fetch web history
-    let web_query = `SELECT url, count(id) as visits FROM user_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY url`;
+    let web_query = `SELECT url, createdAt, count(id) as visits FROM user_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY url`;
     let userHistories = await Model.query(web_query, {
       type: QueryTypes.SELECT,
     });
 
     // Fetch app history
-    let app_query = `SELECT appName, count(id) as visits FROM app_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY appName`;
+    let app_query = `SELECT appName, createdAt, count(id) as visits FROM app_histories WHERE date = "${today}" AND userId = ${data.id} GROUP BY appName`;
     let appHistories = await Model.query(app_query, {
       type: QueryTypes.SELECT,
     });
@@ -572,7 +573,7 @@ const retrieveBucketImagesSeparate = async (company_id, user_id, date) => {
     console.log("imageRecords.length: ",imageRecords.length);
 
     for (const record of imageRecords) {
-      keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path });
+      keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path, dateTime: record.createdAt });
     }
     console.log("Keys: ",keys);
     return keys;

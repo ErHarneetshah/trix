@@ -6,6 +6,8 @@ import appConfig from "../../config/appConfig.js";
 import variables from "../../config/variableConfig.js";
 import company from "../../../database/models/company.js";
 import { bucketImageUpload } from "../../../database/models/bucketImageModel.js";
+import { HeadBucketCommand, S3Client } from "@aws-sdk/client-s3";
+import { Op } from "sequelize";
 
 const appConfigInstance = new appConfig();
 
@@ -25,6 +27,7 @@ const getSingleBucketCredential = async (req, res) => {
   try {
     const allData = await BucketCredentialsModel.findOne({
       where: { company_id: req.user.company_id },
+      attributes: { exclude: ["access_key", "secret_key"]}
     });
     if (!allData) return helper.failed(res, variables.NotFound, "No Credentials Found");
 
@@ -39,7 +42,7 @@ const addBucketCredential = async (req, res) => {
   const dbTransaction = await sequelize.transaction();
   try {
     if (!req.user.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized.Only Admin have permission");
-    const { access_key, secret_key, bucket_name, host_endpoint, region } = req.body;
+    const { access_key, secret_key, bucket_name, host, region } = req.body;
 
     const alreadyCredentialsExists = await BucketCredentialsModel.count({
       where: { company_id: req.user.company_id },
@@ -67,13 +70,16 @@ const addBucketCredential = async (req, res) => {
       }
     }
 
+    const isBucketExist = await checkBucketExists(host, region, access_key, secret_key, bucket_name);
+    if(!isBucketExist) return helper.failed(res, variables.ValidationError, "Bucket Credentials Incorrect. Please Enter Correct Credentails");
+
     const allData = await BucketCredentialsModel.create(
       {
         company_id: req.user.company_id,
         access_key: access_key,
         secret_key: secret_key,
         bucket_name: bucket_name,
-        host_endpoint: host_endpoint,
+        host: host,
         region: region,
       },
       { transaction: dbTransaction }
@@ -100,19 +106,19 @@ const updateBucketCredential = async (req, res) => {
       bucket_name: bucket_name,
     };
 
-    for (const [key, value] of Object.entries(constraints)) {
-      const condition = {};
-      condition[key] = value;
+    // for (const [key, value] of Object.entries(constraints)) {
+    //   const condition = {};
+    //   condition[key] = value;
 
-      const alreadyExists = await BucketCredentialsModel.count({
-        where: condition,
-        company_id: { [Op.not]: req.user.company_id },
-      });
+    //   const alreadyExists = await BucketCredentialsModel.count({
+    //     where: condition,
+    //     company_id: { [Op.not]: req.user.company_id },
+    //   });
 
-      if (alreadyExists > 0) {
-        return helper.failed(res, variables.Unauthorized, `${key} value already exists in system.`);
-      }
-    }
+    //   if (alreadyExists > 0) {
+    //     return helper.failed(res, variables.Unauthorized, `${key} value already exists in system.`);
+    //   }
+    // }
 
     await BucketCredentialsModel.update(
       {
@@ -190,10 +196,8 @@ const deleteBucketCredential = async (req, res) => {
 //   }
 // };
 
-/*
-!Previous Bucket Upload Image Code
- */
-// const uploadBucketImage = async (req, res) => {
+
+// const uploadImageInBucket = async (req, res) => {
 //   const dbTransaction = await sequelize.transaction();
 //   try {
 //     let { user_id, company_id, data } = req.body;
@@ -338,7 +342,6 @@ const deleteBucketImage = async (req, res) => {
   }
 };
 
-// const retrieveBucketImages = async (req, res) => {
 const retrieveBucketImages = async (company_id, user_id, date, limit = null, page = null) => {
   const dbTransaction = await sequelize.transaction();
   try {
@@ -385,7 +388,7 @@ const retrieveBucketImages = async (company_id, user_id, date, limit = null, pag
     }
 
     for (const record of imageRecords.rows) {
-      keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path });
+      keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path, dateTime: record.createdAt});
     }
 
     let data = {
@@ -404,65 +407,30 @@ const retrieveBucketImages = async (company_id, user_id, date, limit = null, pag
   }
 };
 
-// const retrieveBucketImagesSeparate = async (company_id, user_id, date, limit = null, page = null) => {
-//   const dbTransaction = await sequelize.transaction();
-//   try {
-//     console.log("Separate >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-//     console.log("Company_id: ", company_id);
-//     console.log("User_id: ", user_id);
-//     console.log("Date: ", date)
-//     console.log("Limit: ", limit)
-//     console.log("Page: ", page)
-//     let getBucketCredentials = await BucketCredentialsModel.findOne({
-//       where: { company_id: company_id },
-//     });
-//     if (!getBucketCredentials) {
-//       getBucketCredentials = {
-//         host: process.env.LINODE_HOST,
-//         region: process.env.LINODE_REGION,
-//         access_key: process.env.LINODE_ACCESS_KEY,
-//         secret_key: process.env.LINODE_SECRET_KEY,
-//         bucket_name: process.env.LINODE_BUCKET_NAME,
-//       };
-//     }
+const checkBucketExists = async (host, region, accessKey, secretKey, bucketName) => {
+  try {
+    const params = {
+      Bucket: bucketName,
+    };
+    let s3 = new S3Client({
+      endpoint: host,
+      region: region,
+      credentials: {
+        accessKeyId: accessKey,
+        secretAccessKey: secretKey,
+      },
+      forcePathStyle: true,
+    });
+    const command = new HeadBucketCommand(params);
+    await s3.send(command);
 
-//     let keys = [];
-//     let offset = null;
-//     let imageRecords;
+    return true;
+  } catch (error) {
+    console.error(`Bucket "${bucketName}" does not exist or is inaccessible.`, error);
+    return false;
+  }
+};
 
-//     if (!limit || !page) {
-//       imageRecords = await bucketImageUpload.findAndCountAll({
-//         where: {user_id: user_id, company_id: company_id, date: date},
-//         order: [["createdAt", "DESC"]],
-//       });
-//     } else {
-//       limit = parseInt(limit) || 4;
-//       offset = (page - 1) * limit || 0;
-//       let where = {};
-//       where.company_id = company_id;
-//       where.user_id = user_id;
-//       where.date = date;
-
-//       imageRecords = await bucketImageUpload.findAndCountAll({
-//         where: where,
-//         offset: offset,
-//         limit: limit,
-//         order: [["createdAt", "DESC"]],
-//       });
-//     }
-
-//     console.log(imageRecords.rows.length);
-
-//     for (const record of imageRecords.rows) {
-//       keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path });
-//     }
-
-//     return keys;
-//   } catch (error) {
-//     console.log("Error in Bucket Controller (retrieveBucketImages): ", error.message);
-//     return [];
-//   }
-// };
 
 export default {
   getAllBucketCredentials,
@@ -471,8 +439,6 @@ export default {
   updateBucketCredential,
   deleteBucketCredential,
   uploadBucketImage,
-  // getBucketObjects,
   deleteBucketImage,
-  retrieveBucketImages,
-  // retrieveBucketImagesSeparate,
+  retrieveBucketImages
 };

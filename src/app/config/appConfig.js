@@ -40,15 +40,15 @@ class appConfig {
       this.#SuperAdminUrl = process.env.SuperAdmin_Demo_URL;
       this.#redirectUrl = process.env.Redirect_Demo_URL;
       this.#bucketUrl = process.env.Bucket_Demo_URL;
-    } else {
+    } else if (process.env.NODE_ENV == "live") {
       this.#config = {
         port: process.env.L_DB_PORT,
         host: process.env.L_DB_HOST,
         database: process.env.L_DB_NAME,
         username: process.env.L_DB_USERNAME,
         password: process.env.L_DB_PASSWORD,
-        app_id: process.env.L_APP_ID,
-        app_secret: process.env.L_APP_SECRET,
+        app_id: process.env.APP_ID,
+        app_secret: process.env.APP_SECRET,
       };
       this.#imageBaseUrl = process.env.Demo_Image_Url;
       this.#SuperAdminUrl = process.env.SuperAdmin_Demo_URL;
