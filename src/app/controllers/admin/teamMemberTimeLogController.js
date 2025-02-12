@@ -119,6 +119,7 @@ class teamMemberTimeLogController {
 
       const timeLogQuery2 = `SELECT
     u.id AS userId,
+    u.empId AS empId,
     u.fullname AS name,
     u.currentStatus AS currentStatus,
     s.start_time AS startTime,

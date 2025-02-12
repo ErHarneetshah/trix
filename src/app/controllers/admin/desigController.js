@@ -33,7 +33,7 @@ class desigController {
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
-      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
+      return helper.success(res, variables.Success, "Designations Fetched Succesfully", allData);
     } catch (error) {
       //helper.logger(res, "Designation Controller -> getAllDesig", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -49,7 +49,7 @@ class desigController {
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
-      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
+      return helper.success(res, variables.Success, "Designations Fetched Succesfully", allData);
     } catch (error) {
       //helper.logger(res, "Designation Controller -> getDesigDropdown", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -68,7 +68,7 @@ class desigController {
       });
       if (!desigData) return helper.failed(res, variables.NotFound, "Designation Not Found in company");
 
-      return helper.success(res, variables.Success, "Data Fetched Succesfully", desigData);
+      return helper.success(res, variables.Success, "Designation Fetched Succesfully", desigData);
     } catch (error) {
       //helper.logger(res, "Designation Controller -> getSpecificDesig", error);
       return helper.failed(res, variables.BadRequest, error.message);

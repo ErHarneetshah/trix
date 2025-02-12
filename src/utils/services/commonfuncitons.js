@@ -206,6 +206,7 @@ const createResponse2 = (inputData) => {
     // Constructing the response object
     return {
       user_id: data.userId,
+      emp_id: data.empId,
       shift_id: data.shiftId,
       logged_in_time: data.logged_in_time,
       active_time: (data.active_time ?? 0),
@@ -215,6 +216,7 @@ const createResponse2 = (inputData) => {
       wasAbsent: absent,
       user: {
         id: data.userId,
+        empId: data.empId,
         fullname: data.name,
         currentStatus: data.currentStatus,
         productiveTime: productiveTime,

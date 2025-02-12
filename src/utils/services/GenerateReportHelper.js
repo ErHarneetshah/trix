@@ -843,7 +843,7 @@ GROUP BY u.id, tl.createdAt;`;
       report = [
         {
           "Employee Name": "N/A",
-          Department: "N/A",
+          "Department": "N/A",
           "Total Active Hours": "N/A",
           "Idle time": "N/A",
           "Time on Productive Apps": "N/A",
@@ -865,15 +865,16 @@ GROUP BY u.id, tl.createdAt;`;
 
         const averageProductivePercentage = activeTimeInSeconds > 0 ? (totalTimeSpentOnProductiveApps / activeTimeInSeconds) * 100 : 0;
 
+
         return {
           "Employee Name": user.fullname || "N/A",
-          Department: user.department?.name || "N/A",
+          "Department": user.department?.name || "N/A",
           "Total Active Hours": userTimeLog?.active_time_in_seconds ? (userTimeLog.active_time_in_seconds / 3600).toFixed(2) : "0.00",
           "Idle time": userTimeLog?.idle_Time ? (userTimeLog.idle_Time / 3600).toFixed(2) : "0.00",
           "Time on Productive Apps": userProdAppAnalysis?.total_time_spent_on_productive_apps ? (userProdAppAnalysis.total_time_spent_on_productive_apps / 3600).toFixed(2) : "0.00",
           "Time on Non Productive Apps": userProdAppAnalysis?.total_time_spent_on_non_productive_apps ? (userProdAppAnalysis.total_time_spent_on_non_productive_apps / 3600).toFixed(2) : "0.00",
-          "Productive Websites Count": userProdWebCount?.productive_count ?? "0",
-          "Non Productive Websites Count": userProdWebCount?.non_productive_count ?? "0",
+          "Productive Websites Count": `${userProdWebCount?.productive_count}`,
+          "Non Productive Websites Count": `${userProdWebCount?.non_productive_count}`,
           "Average Productive %": averageProductivePercentage ? averageProductivePercentage.toFixed(2) + "%" : "0.00%",
           "Most Used Productive App": userProdAppAnalysis?.app_name_with_max_time || "N/A",
         };

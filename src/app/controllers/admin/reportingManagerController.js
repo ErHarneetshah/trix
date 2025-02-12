@@ -54,7 +54,7 @@ class reportingManagerController {
       const allData = await User.findAll({
         where: {
           status: true,
-          isAdmin: 0,
+          // isAdmin: 0,
           company_id: req.user.company_id,
         },
         attributes: ["id", "fullname"],
@@ -123,9 +123,9 @@ class reportingManagerController {
         return helper.failed(res, variables.NotFound, "Id and reportManagerId both are Required!");
       }
 
-      if (id == reportManagerId) {
-        return helper.failed(res, variables.NotFound, "Id and reportManagerId cannot be same!");
-      }
+      // if (id == reportManagerId) {
+      //   return helper.failed(res, variables.NotFound, "Id and reportManagerId cannot be same!");
+      // }
 
       // ________-------- Report Managers Exists or Not ---------______________
       const existingReportManager = await department.findOne({
@@ -133,6 +133,10 @@ class reportingManagerController {
         transaction: dbTransaction,
       });
       if (!existingReportManager) return helper.failed(res, variables.ValidationError, "Department does not exists!");
+      if(existingReportManager.isRootId)
+      {
+        return helper.failed(res, variables.ValidationError, "Not Allowed To Update this Department");
+      }
 
       // ________-------- User Exists or Not ---------______________
       const existingUser = await User.findOne({

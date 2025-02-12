@@ -10,6 +10,12 @@ class jwtService {
     });
   };
 
+  generateCustomToken = () => {
+    return jwt.sign({ "product_name": "emonitrix" }, jwtConfig, {
+      // expiresIn: expTime,
+    });
+  };  
+
   verifyToken = (token) => {
     try {
       return jwt.verify(token, jwtConfig);

@@ -8,6 +8,7 @@ import company from "../../../database/models/company.js";
 import { bucketImageUpload } from "../../../database/models/bucketImageModel.js";
 import { HeadBucketCommand, S3Client } from "@aws-sdk/client-s3";
 import { Op } from "sequelize";
+import jwtService from "../../../utils/services/jwtService.js";
 
 const appConfigInstance = new appConfig();
 
@@ -28,6 +29,24 @@ const getSingleBucketCredential = async (req, res) => {
     const allData = await BucketCredentialsModel.findOne({
       where: { company_id: req.user.company_id },
       attributes: { exclude: ["access_key", "secret_key"]}
+    });
+    if (!allData) return helper.failed(res, variables.NotFound, "No Credentials Found");
+
+    return helper.success(res, variables.Success, "Bucket Credentials Retrieved Successfully", allData);
+  } catch (error) {
+    console.log("Error in Bucket Controller (getSingleBucektCredential): ", error.message);
+    return helper.failed(res, variables.BadRequest, "Unable to Get Bucket Credentials");
+  }
+};
+
+const getFluterBucketCredential = async (req, res) => {
+  try {
+    const decodeToken = new jwtService().verifyToken(req.query.token);
+    if(!decodeToken.product_name) return helper.failed(res, variables.Unauthorized,"Unauthorized Request");
+    
+    const allData = await BucketCredentialsModel.findOne({
+      where: { company_id: req.body.company_id }
+      // attributes: { exclude: ["access_key", "secret_key"]}
     });
     if (!allData) return helper.failed(res, variables.NotFound, "No Credentials Found");
 
@@ -435,6 +454,7 @@ const checkBucketExists = async (host, region, accessKey, secretKey, bucketName)
 export default {
   getAllBucketCredentials,
   getSingleBucketCredential,
+  getFluterBucketCredential,
   addBucketCredential,
   updateBucketCredential,
   deleteBucketCredential,

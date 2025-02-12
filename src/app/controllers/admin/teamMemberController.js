@@ -99,7 +99,7 @@ class teamMemberController {
       }
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+      return helper.success(res, variables.Success, "Team Members fetched Successfully!", alldata);
     } catch (error) {
       //helper.logger(res, "Team Member Controller -> getAllTeamMembers", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -140,7 +140,7 @@ class teamMemberController {
       });
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+      return helper.success(res, variables.Success, "Team Members fetched Successfully!", alldata);
     } catch (error) {
       //helper.logger(res, "Team Member Controller -> getSpecificTeamMembers", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -157,7 +157,7 @@ class teamMemberController {
       });
 
       if (!alldata) return helper.failed(res, variables.NotFound, "No Data is available!");
-      return helper.success(res, variables.Success, "All Data fetched Successfully!", alldata);
+      return helper.success(res, variables.Success, "Team's Members fetched Successfully!", alldata);
     } catch (error) {
       //helper.logger(res, "Team Member Controller -> getMembersInTeam", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -222,7 +222,7 @@ class teamMemberController {
         transaction: dbTransaction,
       });
       if (existingAnyUser) {
-        return helper.failed(res, variables.BadRequest, "This mail already exists in emonitrix system!");
+        return helper.failed(res, variables.BadRequest, "Mail already exists by others in system!");
       }
 
       const plainTextPassword = await helper.generatePass();

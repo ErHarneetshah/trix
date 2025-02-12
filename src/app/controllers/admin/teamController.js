@@ -242,7 +242,7 @@ class teamController {
           where: { id: id, name: updateFields.name, company_id: req.user.company_id, departmentId: updateFields.departmentId, shiftId: updateFields.shiftId },
           transaction: dbTransaction,
         });
-        if (alreadySameTeam) return helper.success(res, variables.Success, "Team Re-Updated Successfully!");
+        if (alreadySameTeam) return helper.success(res, variables.Success, "Team Updated Successfully!");
       }
 
       if (updateFields.departmentId) {

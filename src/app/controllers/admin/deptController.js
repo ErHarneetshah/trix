@@ -42,7 +42,7 @@ class deptController {
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
-      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
+      return helper.success(res, variables.Success, "Departments Fetched Succesfully", allData);
     } catch (error) {
       //helper.logger(res, "Department Controller -> getAllDept", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -58,7 +58,7 @@ class deptController {
       });
       if (!allData) return helper.failed(res, variables.NotFound, "Data Not Found");
 
-      return helper.success(res, variables.Success, "Data Fetched Succesfully", allData);
+      return helper.success(res, variables.Success, "Departments Fetched Succesfully", allData);
     } catch (error) {
       //helper.logger(res, "Department Controller -> getDeptCOntroller", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -77,7 +77,7 @@ class deptController {
       });
       if (!deptData) return helper.failed(res, variables.NotFound, "Department Not Found in company data");
 
-      return helper.success(res, variables.Success, "Data Fetched Succesfully", deptData);
+      return helper.success(res, variables.Success, "Department Fetched Succesfully", deptData);
     } catch (error) {
       //helper.logger(res, "Department Controller -> getSpecificDept", error);
       return helper.failed(res, variables.BadRequest, error.message);
@@ -137,7 +137,7 @@ class deptController {
       let { id, name, parentDeptId } = req.body;
       if (!id || isNaN(id)) return helper.failed(res, variables.NotFound, "Id is Required!");
       if ((!name || typeof name !== "string") && (!parentDeptId || isNaN(parentDeptId))) return helper.failed(res, variables.NotFound, "Either Name (String) or parentDeptId (Number) is Required");
-      if (parentDeptId) if (id == parentDeptId) return helper.failed(res, variables.BadRequest, "Both Id and ParentDeptId cannot be same");
+      if (parentDeptId) if (id == parentDeptId) return helper.failed(res, variables.BadRequest, "Both Department and Parent Department cannot be same");
 
       // ___________-------- Dept exists or not ---------________________
       const existingDept = await department.findOne({
@@ -197,7 +197,7 @@ class deptController {
       }
 
       await dbTransaction.commit();
-      return helper.success(res, variables.Success, "Data Updated Succesfully");
+      return helper.success(res, variables.Success, "Department Updated Succesfully");
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
       //helper.logger(res, "Department Controller -> updateDept", error);
@@ -245,7 +245,7 @@ class deptController {
         return helper.success(res, variables.Success, "Department Successfully Deleted");
       } else {
         if (dbTransaction) await dbTransaction.rollback();
-        return helper.failed(res, variables.BadRequest, "Unable to delete department");
+        return helper.failed(res, variables.BadRequest, "Unable to Delete Department");
       }
     } catch (error) {
       if (dbTransaction) await dbTransaction.rollback();
