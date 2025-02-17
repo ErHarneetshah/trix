@@ -1059,7 +1059,6 @@ const handleUserSocket = async (socket, io) => {
   //! Commented For Now By Harneet
   socket.on("uploadImage", async (data) => {
     try {
-      console.log(data);
       let today = new Date().toISOString().split("T")[0];
       let userId = socket.user.userId;
 

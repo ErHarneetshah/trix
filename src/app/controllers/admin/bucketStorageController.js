@@ -30,12 +30,14 @@ const getSingleBucketCredential = async (req, res) => {
       where: { company_id: req.user.company_id },
       attributes: { exclude: ["access_key", "secret_key"]}
     });
-    if (!allData) return helper.failed(res, variables.NotFound, "No Credentials Found");
+    if (!allData) return helper.failed(res, variables.NotFound, "No Credentials Found", {bucketSubmitted: "false"});
+
+    allData.dataValues.bucketSubmitted = "true";
 
     return helper.success(res, variables.Success, "Bucket Credentials Retrieved Successfully", allData);
   } catch (error) {
     console.log("Error in Bucket Controller (getSingleBucektCredential): ", error.message);
-    return helper.failed(res, variables.BadRequest, "Unable to Get Bucket Credentials");
+    return helper.failed(res, variables.BadRequest, "Unable to Get Bucket Credentials", {bucketSubmitted: "false"});
   }
 };
 
@@ -60,13 +62,13 @@ const getFluterBucketCredential = async (req, res) => {
 const addBucketCredential = async (req, res) => {
   const dbTransaction = await sequelize.transaction();
   try {
-    if (!req.user.isAdmin) return helper.failed(res, variables.Unauthorized, "You are not authorized.Only Admin have permission");
+    if (!req.user.isAdmin) return helper.failed(res, variables.ValidationError, "You are not authorized.Only Admin have permission");
     const { access_key, secret_key, bucket_name, host, region } = req.body;
 
     const alreadyCredentialsExists = await BucketCredentialsModel.count({
       where: { company_id: req.user.company_id },
     });
-    if (alreadyCredentialsExists > 0) return helper.failed(res, variables.Unauthorized, "Not Allowed to add more than 1 Bucket Credential");
+    if (alreadyCredentialsExists > 0) return helper.failed(res, variables.ValidationError, "Not Allowed to add more than 1 Bucket Credential");
 
     const constraints = {
       company_id: req.user.company_id,
@@ -103,6 +105,8 @@ const addBucketCredential = async (req, res) => {
       },
       { transaction: dbTransaction }
     );
+
+    allData.dataValues.bucketSubmitted = "true";
 
     await dbTransaction.commit();
     return helper.success(res, variables.Success, "Bucket Credentials Created Successfully", allData);
