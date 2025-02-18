@@ -55,7 +55,7 @@ const addEmailGateeways = async (req, res) => {
       port,
       secure: encryption === "ssl", // 'secure' is true only for SSL
       auth: {
-        user: fromUsername,
+        user: username,
         pass: password,
       },
     };
@@ -65,16 +65,12 @@ const addEmailGateeways = async (req, res) => {
     // Log configuration for debugging
 
     // Verify SMTP credentials
-    // try {
-    //   await transporter.verify();
-    // } catch (verifyError) {
-    //   console.error("SMTP verification failed:", verifyError);
-    //   return helper.failed(
-    //     res,
-    //     variables.BadRequest,
-    //     "SMTP verification failed: " + verifyError.message
-    //   );
-    // }
+    try {
+      await transporter.verify();
+    } catch (verifyError) {
+      console.error("SMTP verification failed:", verifyError);
+      return helper.failed(res, variables.BadRequest, "SMTP Credentials Failed. Please try Again");
+    }
 
     // Reset existing gateways for the company
     await emailGateway.destroy({ where: { company_id: req.user.company_id } });
@@ -85,17 +81,16 @@ const addEmailGateeways = async (req, res) => {
       company_id: req.user.company_id,
       protocol,
       host,
-      username,
+      username, // Email
       password,
       port,
       encryption,
-      fromUsername,
+      fromUsername, // Email By
     });
 
     return helper.success(res, variables.Created, "Email gateway created successfully.", gateway);
   } catch (error) {
     console.error("Error while creating the email gateway setup:", error);
-    //helper.logger(res, "Email Gateway Controller -> addEmailGateeways", error);
     return helper.failed(res, variables.BadRequest, error.message);
   }
 };

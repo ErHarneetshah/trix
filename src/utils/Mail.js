@@ -14,7 +14,7 @@ const sendM = async (company_id, to, subject, message, cc = '', from = "", attac
                 port: activeEmailServer.port,
                 secure: false,
                 auth: {
-                    user: activeEmailServer.fromUsername,
+                    user: activeEmailServer.username, // Email
                     pass: activeEmailServer.password,
                 }
             });
@@ -26,7 +26,7 @@ const sendM = async (company_id, to, subject, message, cc = '', from = "", attac
                 return { success: false, message: "SMTP server verification failed.", error: verifyError };
             }
             let mailOptions = {
-                from: `${activeEmailServer.username} <${activeEmailServer.fromUsername}>`,
+                from: `${activeEmailServer.fromUsername} <${activeEmailServer.username}>`,
                 to: to,
                 subject: subject || 'Test',
                 text: message,

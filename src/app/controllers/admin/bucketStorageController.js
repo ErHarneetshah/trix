@@ -28,29 +28,45 @@ const getSingleBucketCredential = async (req, res) => {
   try {
     const allData = await BucketCredentialsModel.findOne({
       where: { company_id: req.user.company_id },
-      attributes: { exclude: ["access_key", "secret_key"]}
+      attributes: { exclude: ["access_key", "secret_key"] },
     });
-    if (!allData) return helper.failed(res, variables.NotFound, "No Credentials Found", {bucketSubmitted: "false"});
+    if (!allData) return helper.failed(res, variables.NotFound, "No Credentials Found", { bucketSubmitted: "false" });
 
     allData.dataValues.bucketSubmitted = "true";
 
     return helper.success(res, variables.Success, "Bucket Credentials Retrieved Successfully", allData);
   } catch (error) {
     console.log("Error in Bucket Controller (getSingleBucektCredential): ", error.message);
-    return helper.failed(res, variables.BadRequest, "Unable to Get Bucket Credentials", {bucketSubmitted: "false"});
+    return helper.failed(res, variables.BadRequest, "Unable to Get Bucket Credentials", { bucketSubmitted: "false" });
   }
 };
 
 const getFluterBucketCredential = async (req, res) => {
   try {
     const decodeToken = new jwtService().verifyToken(req.query.token);
-    if(!decodeToken.product_name) return helper.failed(res, variables.Unauthorized,"Unauthorized Request");
-    
-    const allData = await BucketCredentialsModel.findOne({
-      where: { company_id: req.body.company_id }
-      // attributes: { exclude: ["access_key", "secret_key"]}
+    if (!decodeToken.product_name) return helper.failed(res, variables.Unauthorized, "Unauthorized Request");
+
+    const companyDetails = await company.findOne({
+      where: { id: req.user.company_id },
     });
-    if (!allData) return helper.failed(res, variables.NotFound, "No Credentials Found");
+
+    let allData;
+    if (companyDetails.currentPlanId == 0) {
+      allData = {
+        host: process.env.LINODE_HOST,
+        region: process.env.LINODE_REGION,
+        access_key: process.env.LINODE_ACCESS_KEY,
+        secret_key: process.env.LINODE_SECRET_KEY,
+        bucket_name: process.env.LINODE_BUCKET_NAME,
+        status: 1,
+      };
+    } else {
+      allData = await BucketCredentialsModel.findOne({
+        where: { company_id: req.body.company_id },
+        // attributes: { exclude: ["access_key", "secret_key"]}
+      });
+      if (!allData) return helper.failed(res, variables.NotFound, "No Credentials Found");
+    }
 
     return helper.success(res, variables.Success, "Bucket Credentials Retrieved Successfully", allData);
   } catch (error) {
@@ -92,7 +108,7 @@ const addBucketCredential = async (req, res) => {
     }
 
     const isBucketExist = await checkBucketExists(host, region, access_key, secret_key, bucket_name);
-    if(!isBucketExist) return helper.failed(res, variables.ValidationError, "Bucket Credentials Incorrect. Please Enter Correct Credentails");
+    if (!isBucketExist) return helper.failed(res, variables.ValidationError, "Bucket Credentials Incorrect. Please Enter Correct Credentails");
 
     const allData = await BucketCredentialsModel.create(
       {
@@ -219,7 +235,6 @@ const deleteBucketCredential = async (req, res) => {
 //   }
 // };
 
-
 // const uploadImageInBucket = async (req, res) => {
 //   const dbTransaction = await sequelize.transaction();
 //   try {
@@ -290,14 +305,14 @@ const uploadBucketImage = async (req, res) => {
         },
         { transaction: dbTransaction }
       );
-    };
+    }
     await dbTransaction.commit();
     console.log("Image uploaded");
-    return { status: 1, message: "Image Uploaded Successfully"};
+    return { status: 1, message: "Image Uploaded Successfully" };
   } catch (error) {
     console.log("Error in Bucket Controller (uploadBucketImage): ", error.message);
     await dbTransaction.rollback();
-    return { status: 0, message: "Unable to upload Image"};
+    return { status: 0, message: "Unable to upload Image" };
   }
 };
 
@@ -411,7 +426,7 @@ const retrieveBucketImages = async (company_id, user_id, date, limit = null, pag
     }
 
     for (const record of imageRecords.rows) {
-      keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path, dateTime: record.createdAt});
+      keys.push({ host: getBucketCredentials.host, region: getBucketCredentials.region, bucket_name: getBucketCredentials.bucket_name, path: record.image_upload_path, dateTime: record.createdAt });
     }
 
     let data = {
@@ -454,7 +469,6 @@ const checkBucketExists = async (host, region, accessKey, secretKey, bucketName)
   }
 };
 
-
 export default {
   getAllBucketCredentials,
   getSingleBucketCredential,
@@ -464,5 +478,5 @@ export default {
   deleteBucketCredential,
   uploadBucketImage,
   deleteBucketImage,
-  retrieveBucketImages
+  retrieveBucketImages,
 };
