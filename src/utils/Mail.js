@@ -14,7 +14,7 @@ const sendM = async (company_id, to, subject, message, cc = '', from = "", attac
                 port: activeEmailServer.port,
                 secure: false,
                 auth: {
-                    user: activeEmailServer.username, // Email
+                    user: activeEmailServer.fromUsername, // Email
                     pass: activeEmailServer.password,
                 }
             });

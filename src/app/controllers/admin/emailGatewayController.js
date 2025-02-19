@@ -55,7 +55,7 @@ const addEmailGateeways = async (req, res) => {
       port,
       secure: encryption === "ssl", // 'secure' is true only for SSL
       auth: {
-        user: username,
+        user: fromUsername,
         pass: password,
       },
     };

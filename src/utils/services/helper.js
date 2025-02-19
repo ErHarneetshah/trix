@@ -147,7 +147,7 @@ export default {
     }
   },
 
-  searchCondition: async (searchParam, searchable, otherField = null, otherParam = null) => {
+  searchCondition: async (searchParam, searchable) => {
     let where = {};
     let search = [];
 
@@ -163,10 +163,6 @@ export default {
       where = {
         [Op.or]: search,
       };
-
-      if (otherParam) {
-        where.otherField = otherParam;
-      }
     }
     return where;
   },
